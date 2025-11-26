@@ -21,4 +21,7 @@
 **Epic 7: Simple Sales Dashboard**
 *   **Goal:** Provide store owners with an at-a-glance summary of the current day's sales activity, including total revenue, number of sales, and average sale value.
 
+**Epic 8: Inventory Adjustments**
+*   **Goal:** Allow users to manually adjust inventory levels to account for shrinkage (e.g., damaged, stolen) and provide an audit trail for these changes.
+
 ---

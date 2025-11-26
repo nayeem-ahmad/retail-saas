@@ -191,6 +191,24 @@ paths:
         '401':
           $ref: '#/components/responses/UnauthorizedError'
 
+  /inventory/adjustments:
+    post:
+      summary: Create Inventory Adjustment
+      description: Creates a manual adjustment for a product's inventory level.
+      tags:
+        - Inventory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewInventoryAdjustment'
+      responses:
+        '201':
+          description: The newly created inventory adjustment record.
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+
 # =====================================================================================
 # Components
 # =====================================================================================
@@ -354,6 +372,25 @@ components:
               reason:
                 type: string
                 nullable: true
+
+    NewInventoryAdjustment:
+      type: object
+      required:
+        - product_id
+        - quantity_changed
+        - reason
+      properties:
+        product_id:
+          type: string
+          format: uuid
+        quantity_changed:
+          type: integer
+        reason:
+          type: string
+          enum: [damaged, stolen, stock_count, other]
+        notes:
+          type: string
+          nullable: true
 
     SalesSummary:
       type: object

@@ -134,3 +134,23 @@ The handler will:
 3.  The query will calculate `SUM(total_amount)`, `COUNT(id)`, and `AVG(total_amount)`.
 4.  The handler will return a `SalesSummary` object with the results.
 
+### Inventory Adjustment Service
+
+This service allows for manual changes to inventory levels for reasons like damage or theft.
+
+#### New API Route
+```text
+src/app/api/
+└── inventory/
+    └── adjustments/
+        └── route.ts    # Handles POST for /api/inventory/adjustments
+```
+
+#### Core Logic (`POST /api/inventory/adjustments`)
+
+The handler will perform the following operations within a database transaction:
+1.  Validate the input against the `NewInventoryAdjustment` schema.
+2.  Create a new `InventoryAdjustment` record to log the change.
+3.  Update the `quantity` on the corresponding `Product` record by adding the `quantity_changed` value.
+4.  Return a `201` status on success.
+

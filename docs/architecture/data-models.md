@@ -339,6 +339,39 @@ interface ProductionOrder {
 **Relationships:**
 - **Belongs To:** A `ProductionOrder` is associated with one `Store` and one `Product`.
 
+### InventoryAdjustment
+
+**Purpose:** Represents a manual adjustment to a product's inventory level, providing an audit trail for changes outside of sales, returns, or purchases.
+
+**Key Attributes:**
+- `id`: `UUID` - The unique identifier for the adjustment.
+- `store_id`: `UUID` - Foreign key to the `Store`.
+- `product_id`: `UUID` - Foreign key to the `Product` being adjusted.
+- `user_id`: `UUID` - Foreign key to the `User` who made the adjustment.
+- `quantity_changed`: `integer` - The amount the quantity was changed by (can be positive or negative).
+- `reason`: `string` - The reason for the adjustment (e.g., `damaged`, `stolen`, `stock_count`, `other`).
+- `notes`: `text` (optional) - Additional details about the adjustment.
+- `created_at`: `timestamp` - The timestamp when the adjustment was made.
+
+**TypeScript Interface:**
+```typescript
+type AdjustmentReason = 'damaged' | 'stolen' | 'stock_count' | 'other';
+
+interface InventoryAdjustment {
+  id: string; // UUID
+  store_id: string; // UUID
+  product_id: string; // UUID
+  user_id: string; // UUID
+  quantity_changed: number;
+  reason: AdjustmentReason;
+  notes?: string;
+  created_at: string; // ISO 8601 date string
+}
+```
+
+**Relationships:**
+- **Belongs To:** An `InventoryAdjustment` belongs to one `Store`, one `Product`, and one `User`.
+
 ### SalesReturn
 
 **Purpose:** Represents a record of a customer returning a previously purchased item.

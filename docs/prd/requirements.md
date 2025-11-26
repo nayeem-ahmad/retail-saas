@@ -13,6 +13,7 @@
 10. **FR10:** The system shall manage purchase returns by allowing users to create purchase return orders, track items being returned to suppliers, update inventory and accounts payable, and manage supplier credit memos.
 11. **FR11:** The system shall provide a dashboard widget that displays a list of all products that have fallen below their specified reorder level.
 12. **FR12:** The system shall display a dashboard with key performance indicators for the current day's sales, including total revenue, number of sales, and average sale value.
+13. **FR13:** The system shall allow authorized users to manually adjust product inventory levels and provide a reason (e.g., damaged, stolen, stock count correction) for the adjustment.
 
 ### Non-Functional Requirements
 1.  **NFR1:** The system's user interface must be available in both English and Bangla.

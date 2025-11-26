@@ -148,6 +148,29 @@ The sales dashboard feature will be tested to ensure the accuracy of its calcula
     1.  Log in.
     2.  (Programmatically) create a new sale via the API.
     3.  Navigate to the dashboard.
-    4.  Verify that the "Today's Revenue" and "Number of Sales" metrics have been updated correctly.
+-   Verify that the "Today's Revenue" and "Number of Sales" metrics have been updated correctly.
+
+### Testing for Inventory Adjustments
+
+This feature will be tested to ensure it correctly modifies inventory and maintains a proper audit trail.
+
+#### Integration Tests (Jest + Supertest)
+
+-   **Scope:** Test the new `POST /api/inventory/adjustments` endpoint.
+-   **Key Scenarios to Test:**
+    1.  **Success Case (Decrement):** A valid request with a negative `quantity_changed` correctly decreases the product's quantity and creates an adjustment log.
+    2.  **Success Case (Increment):** A valid request with a positive `quantity_changed` correctly increases the product's quantity.
+    3.  **Transactional Integrity:** If the product quantity update fails, the adjustment log is not created.
+
+#### E2E Tests (Playwright)
+
+-   **Scope:** A user journey for making an adjustment.
+-   **Example Scenario:**
+    1.  Log in as a manager.
+    2.  Navigate to a product's detail page.
+    3.  Open the adjustment form, enter "-2" for quantity and select "damaged" as the reason.
+    4.  Submit the form and verify the product's stock has decreased by 2.
+    5.  (Optional) Verify a new entry exists in an audit log view.
+
 
 
