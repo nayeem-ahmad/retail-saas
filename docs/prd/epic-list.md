@@ -27,4 +27,7 @@
 **Epic 9: Advanced Payment Handling**
 *   **Goal:** Refactor the core sales process to properly handle multiple, configurable payment methods, providing a foundation for accurate ledger accounting.
 
+**Epic 10: Scalability & Infrastructure Resilience**
+*   **Goal:** Enhance the platform's infrastructure to handle high concurrency, large user volumes, and computationally intensive tasks without degrading performance by implementing rate limiting, connection pooling, and background processing.
+
 ---

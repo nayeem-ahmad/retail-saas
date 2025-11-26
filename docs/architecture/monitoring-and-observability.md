@@ -32,6 +32,7 @@ We will track the following key metrics to ensure the application is performing 
     - **API Error Rate:** The percentage of API requests that result in a 5xx server error should be below **0.1%**.
     - **API Latency (P95):** The 95th percentile response time for all core API endpoints should remain under **200ms**.
     - **Cold Start Duration:** The P95 cold start duration for serverless functions should be monitored and kept under **1 second**.
+    - **Job Queue Metrics:** Monitor queue depth, job processing latency, and failure rates for background tasks.
 
 - **Business & Usage Metrics:**
     - Daily/Weekly Active Users (DAU/WAU)

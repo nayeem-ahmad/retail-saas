@@ -2,6 +2,18 @@
 
 This section defines the key requirements and strategies for ensuring the application is secure, fast, and reliable.
 
+### Scalability & High Availability
+
+To ensure the system can handle high concurrency and large user volumes, the following strategies will be implemented:
+
+-   **Database Scalability:**
+    -   **Connection Pooling:** Supabase Transaction Mode (PgBouncer) will be enforced for all backend connections to prevent connection exhaustion under load.
+    -   **Read Replicas:** For heavy reporting and analytical queries (e.g., Dashboards), we will utilize read-only replicas to offload traffic from the primary write node.
+-   **Traffic Management:**
+    -   **Rate Limiting:** Application-level rate limiting (via Upstash Redis or Vercel KV) will be implemented to protect API endpoints from abuse and spikes (e.g., 100 req/min per user).
+-   **Asynchronous Processing:**
+    -   **Background Jobs:** Heavy computational tasks and non-critical writes (e.g., daily sales aggregation, email notifications) will be offloaded to a background job queue (e.g., Inngest or BullMQ) to keep the API responsive.
+
 ### Security Requirements
 
 - **Frontend Security:**
