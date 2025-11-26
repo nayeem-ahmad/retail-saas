@@ -92,3 +92,24 @@ The `sales-returns/route.ts` handler will contain the primary business logic for
 7.  **Return Response**: Respond with the newly created `SalesReturn` object.
 
 This entire sequence should be wrapped in a database transaction to ensure atomicity. If any step fails, the entire transaction should be rolled back.
+
+### Low-Stock Alert Service
+
+A new service will be created to expose products that are running low on stock.
+
+#### New API Route
+
+A new read-only API route will be created:
+```text
+src/app/api/
+└── products/
+    └── low-stock/
+        └── route.ts    # Handles GET for /api/products/low-stock
+```
+
+#### Core Logic (`GET /api/products/low-stock`)
+
+The `low-stock/route.ts` handler will:
+1.  Use the `ProductRepository` to query the database.
+2.  The query will select all products for the user's store where `quantity` <= `reorder_level`.
+3.  The handler will return the array of matching `Product` objects.

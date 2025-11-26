@@ -107,4 +107,26 @@ The new returns management functionality will be tested at all levels of the pyr
     3.  Find a specific sale and initiate a return.
     4.  Select items to return and submit the form.
     5.  Verify that a "Return Complete" message is displayed.
-    6.  Navigate to the inventory page and confirm that the stock for the returned items has been correctly updated.
+-   Navigate to the inventory page and confirm that the stock for the returned items has been correctly updated.
+
+### Testing for Low-Stock Alerts
+
+The low-stock alert feature will be tested to ensure its accuracy and performance.
+
+#### Integration Tests (Jest + Supertest)
+
+-   **Scope:** Test the new `GET /api/products/low-stock` endpoint.
+-   **Key Scenarios to Test:**
+    1.  **Success Case:** The endpoint correctly returns only the products that are at or below their `reorder_level`.
+    2.  **Edge Case:** The endpoint returns an empty array when no products are low on stock.
+    3.  **Data Integrity:** Ensure products without a `reorder_level` set are not included in the results.
+
+#### E2E Tests (Playwright)
+
+-   **Scope:** A user journey to verify the dashboard widget.
+-   **Example Scenario:**
+    1.  Log in.
+    2.  Manually edit a product to set its quantity equal to its reorder level.
+    3.  Navigate to the dashboard.
+    4.  Verify that the product now appears in the "Low-Stock Alerts" widget.
+

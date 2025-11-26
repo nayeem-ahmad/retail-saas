@@ -15,4 +15,7 @@
 **Epic 5: Sales and Purchase Returns Management**
 *   **Goal:** Introduce a comprehensive system for managing both sales and purchase returns to enable accurate inventory tracking and financial accounting for returned goods.
 
+**Epic 6: Low-Stock Alerts Dashboard**
+*   **Goal:** Provide store owners with a simple dashboard widget to see which products are running low, preventing stockouts and streamlining the reordering process.
+
 ---

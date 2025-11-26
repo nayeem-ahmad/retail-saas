@@ -149,6 +149,24 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequestError'
 
+  /products/low-stock:
+    get:
+      summary: List Low-Stock Products
+      description: Retrieves a list of all products where the current quantity is at or below the defined reorder level.
+      tags:
+        - Products
+      responses:
+        '200':
+          description: A JSON array of low-stock products.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Product'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
 # =====================================================================================
 # Components
 # =====================================================================================
@@ -188,6 +206,9 @@ components:
           format: decimal
         quantity:
           type: integer
+        reorder_level:
+          type: integer
+          nullable: true
         sku:
           type: string
           nullable: true

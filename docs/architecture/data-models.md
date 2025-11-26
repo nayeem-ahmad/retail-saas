@@ -56,6 +56,7 @@ interface Store {
 - `name`: `string` - The display name of the product.
 - `price`: `decimal` - The selling price of the product.
 - `quantity`: `integer` - The current stock on hand.
+- `reorder_level`: `integer` (optional) - The stock level at which to trigger a low-stock alert.
 - `sku`: `string` (optional) - The Stock Keeping Unit.
 
 **TypeScript Interface:**
@@ -66,6 +67,7 @@ interface Product {
   name: string;
   price: number;
   quantity: number;
+  reorder_level?: number;
   sku?: string;
 }
 ```
