@@ -45,3 +45,12 @@
     5.  Upon completion of the sale, the stock level for the sold product is correctly decreased.
 
 ---
+**Story 1.6: Customer SMS Notification**
+*   As a Shop Owner, I want my customers to receive an SMS notification when they make a purchase or payment, so that they have an immediate record of the transaction.
+*   **Acceptance Criteria:**
+    1.  When a new sale is completed, the system checks if a customer phone number is associated with the sale.
+    2.  If a phone number is present, the system sends an SMS containing the store name, total amount, and transaction ID.
+    3.  The system handles SMS sending asynchronously to avoid delaying the POS response.
+    4.  (Optional for MVP) If the SMS fails, the error is logged, but the sale remains valid.
+
+---

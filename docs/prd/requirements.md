@@ -15,6 +15,7 @@
 12. **FR12:** The system shall display a dashboard with key performance indicators for the current day's sales, including total revenue, number of sales, and average sale value.
 13. **FR13:** The system shall allow authorized users to manually adjust product inventory levels and provide a reason (e.g., damaged, stolen, stock count correction) for the adjustment.
 14. **FR14:** The system shall allow users to create, view, update, and deactivate various payment methods, each linked to an internal account for ledger tracking.
+15. **FR15:** The system shall send an automated SMS notification to the customer's mobile number when a new sales entry is created or a payment is received.
 
 ### Non-Functional Requirements
 1.  **NFR1:** The system's user interface must be available in both English and Bangla.

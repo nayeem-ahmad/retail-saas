@@ -29,3 +29,19 @@
 - `GET /remote-payment-gateway-payment/{paymentRefId}` - To verify the status of the payment after the user returns to the site.
 
 **Integration Notes:** Similar to the bKash integration, this will be a backend-only responsibility. A dedicated server-side module will be created to handle the specific API flow for Nagad. The frontend will be abstracted from the details of which payment gateway is being used.
+
+### SMS Gateway API (Generic)
+
+- **Purpose:** To send automated transaction alerts (Sales, Payments) to customers.
+- **Documentation:** Dependent on the selected local provider (e.g., Twilio, GreenWeb, Diana Host).
+- **Base URL(s):** Provider-specific.
+- **Authentication:** API Key/Secret stored in environment variables.
+- **Rate Limits:** Dependent on the provider plan.
+
+**Key Endpoints Used (Example Flow):**
+- `POST /send-sms` - To dispatch a single SMS message.
+- `GET /balance` - To check the remaining SMS credit balance.
+
+**Integration Notes:**
+-   Sending will be handled asynchronously via the **Background Job Queue** (see Scalability Epic) to prevent blocking the main sales flow.
+-   A `NotificationService` wrapper will be created to abstract the specific provider, allowing us to switch providers without changing business logic.

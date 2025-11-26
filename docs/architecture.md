@@ -59,6 +59,7 @@ graph TD
 
     subgraph External Services
         G[bKash/Nagad]
+        H[SMS Gateway]
     end
 
     A --> B
@@ -67,6 +68,7 @@ graph TD
     C --> E
     C --> F
     C --> G
+    C --> H
 ```
 
 #### Architectural Patterns
