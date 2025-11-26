@@ -167,6 +167,30 @@ paths:
         '401':
           $ref: '#/components/responses/UnauthorizedError'
 
+  /dashboard/sales-summary:
+    get:
+      summary: Get Sales Summary
+      description: Retrieves a summary of sales metrics for a given period (e.g., today).
+      tags:
+        - Dashboard
+      parameters:
+        - name: period
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [today, week, month]
+            default: today
+      responses:
+        '200':
+          description: An object containing sales summary data.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SalesSummary'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
 # =====================================================================================
 # Components
 # =====================================================================================
@@ -330,6 +354,20 @@ components:
               reason:
                 type: string
                 nullable: true
+
+    SalesSummary:
+      type: object
+      properties:
+        total_revenue:
+          type: number
+          format: decimal
+        sale_count:
+          type: integer
+        average_sale_value:
+          type: number
+          format: decimal
+        period:
+          type: string
 
     ApiError:
       type: object

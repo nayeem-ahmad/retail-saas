@@ -18,4 +18,7 @@
 **Epic 6: Low-Stock Alerts Dashboard**
 *   **Goal:** Provide store owners with a simple dashboard widget to see which products are running low, preventing stockouts and streamlining the reordering process.
 
+**Epic 7: Simple Sales Dashboard**
+*   **Goal:** Provide store owners with an at-a-glance summary of the current day's sales activity, including total revenue, number of sales, and average sale value.
+
 ---

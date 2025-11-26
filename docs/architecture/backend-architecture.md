@@ -113,3 +113,24 @@ The `low-stock/route.ts` handler will:
 1.  Use the `ProductRepository` to query the database.
 2.  The query will select all products for the user's store where `quantity` <= `reorder_level`.
 3.  The handler will return the array of matching `Product` objects.
+
+### Dashboard Service
+
+A service to provide aggregated data for frontend dashboards.
+
+#### New API Route
+```text
+src/app/api/
+└── dashboard/
+    └── sales-summary/
+        └── route.ts    # Handles GET for /api/dashboard/sales-summary
+```
+
+#### Core Logic (`GET /api/dashboard/sales-summary`)
+
+The handler will:
+1.  Read the optional `period` query parameter (defaulting to 'today').
+2.  Use the `SaleRepository` to perform an aggregation query on the `sales` table for the user's store within the specified time period.
+3.  The query will calculate `SUM(total_amount)`, `COUNT(id)`, and `AVG(total_amount)`.
+4.  The handler will return a `SalesSummary` object with the results.
+

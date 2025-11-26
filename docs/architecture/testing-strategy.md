@@ -127,6 +127,27 @@ The low-stock alert feature will be tested to ensure its accuracy and performanc
 -   **Example Scenario:**
     1.  Log in.
     2.  Manually edit a product to set its quantity equal to its reorder level.
+-   Navigate to the dashboard.
+    -   Verify that the product now appears in the "Low-Stock Alerts" widget.
+
+### Testing for Sales Dashboard
+
+The sales dashboard feature will be tested to ensure the accuracy of its calculations.
+
+#### Integration Tests (Jest + Supertest)
+
+-   **Scope:** Test the new `GET /api/dashboard/sales-summary` endpoint.
+-   **Key Scenarios to Test:**
+    1.  **Success Case:** The endpoint correctly calculates and returns the `total_revenue`, `sale_count`, and `average_sale_value` from a set of mock sales data.
+    2.  **Edge Case:** The endpoint returns zero for all values when there are no sales in the specified period.
+
+#### E2E Tests (Playwright)
+
+-   **Scope:** A user journey to verify the dashboard UI.
+-   **Example Scenario:**
+    1.  Log in.
+    2.  (Programmatically) create a new sale via the API.
     3.  Navigate to the dashboard.
-    4.  Verify that the product now appears in the "Low-Stock Alerts" widget.
+    4.  Verify that the "Today's Revenue" and "Number of Sales" metrics have been updated correctly.
+
 
