@@ -1,7 +1,7 @@
 # Requirements
 
 ### Functional Requirements
-1.  **FR1:** The system shall provide a Point of Sale (POS) interface to process sales and accept payments.
+1.  **FR1:** The system shall provide a Point of Sale (POS) interface to process sales and accept payments via one or more configurable payment methods (e.g., cash, card, mobile wallet).
 2.  **FR2:** The system shall manage product inventory, including tracking stock levels, defining products with optional reorder levels, and handling stock transfers.
 3.  **FR3:** The system shall support purchasing workflows, including creating purchase orders and managing supplier data.
 4.  **FR4:** The system shall provide basic Customer Relationship Management (CRM) capabilities for storing customer information.
@@ -14,6 +14,7 @@
 11. **FR11:** The system shall provide a dashboard widget that displays a list of all products that have fallen below their specified reorder level.
 12. **FR12:** The system shall display a dashboard with key performance indicators for the current day's sales, including total revenue, number of sales, and average sale value.
 13. **FR13:** The system shall allow authorized users to manually adjust product inventory levels and provide a reason (e.g., damaged, stolen, stock count correction) for the adjustment.
+14. **FR14:** The system shall allow users to create, view, update, and deactivate various payment methods, each linked to an internal account for ledger tracking.
 
 ### Non-Functional Requirements
 1.  **NFR1:** The system's user interface must be available in both English and Bangla.

@@ -83,22 +83,31 @@ interface Product {
 **Key Attributes:**
 - `id`: `UUID` - The unique identifier for the transaction.
 - `store_id`: `UUID` - A foreign key referencing the `Store` where the sale occurred.
-- `total_amount`: `decimal` - The total value of the sale.
+- `customer_id`: `UUID` (optional) - Foreign key to the `Customer`.
+- `total_amount`: `decimal` - The total value of all items in the sale.
+- `amount_due`: `decimal` - The remaining amount to be paid.
+- `status`: `string` - The payment status of the sale (e.g., `due`, `paid`, `void`).
 - `created_at`: `timestamp` - The timestamp when the sale was completed.
 
 **TypeScript Interface:**
 ```typescript
+type SaleStatus = 'due' | 'paid' | 'void';
+
 interface Sale {
   id: string; // UUID
   store_id: string; // UUID
+  customer_id?: string; // UUID
   total_amount: number;
+  amount_due: number;
+  status: SaleStatus;
   created_at: string; // ISO 8601 date string
 }
 ```
 
 **Relationships:**
-- **Belongs To:** A `Sale` belongs to one `Store`.
+- **Belongs To:** A `Sale` belongs to one `Store` and can optionally belong to a `Customer`.
 - **Has Many:** A `Sale` has many `SaleItem`s.
+- **Has Many:** A `Sale` has many `Payment`s.
 
 ### SaleItem
 
@@ -371,6 +380,61 @@ interface InventoryAdjustment {
 
 **Relationships:**
 - **Belongs To:** An `InventoryAdjustment` belongs to one `Store`, one `Product`, and one `User`.
+
+### PaymentMethod
+
+**Purpose:** Represents a configurable method of payment that a store accepts, which can be linked to an internal account for ledger purposes.
+
+**Key Attributes:**
+- `id`: `UUID` - The unique identifier for the payment method.
+- `store_id`: `UUID` - Foreign key to the `Store`.
+- `name`: `string` - The display name of the payment method (e.g., "Cash", "bKash", "City Bank Card").
+- `type`: `string` - The type of payment method (e.g., `cash`, `mobile_wallet`, `card`, `bank_transfer`).
+- `is_active`: `boolean` - Whether the payment method is currently active.
+
+**TypeScript Interface:**
+```typescript
+type PaymentMethodType = 'cash' | 'mobile_wallet' | 'card' | 'bank_transfer';
+
+interface PaymentMethod {
+  id: string; // UUID
+  store_id: string; // UUID
+  name: string;
+  type: PaymentMethodType;
+  is_active: boolean;
+}
+```
+
+**Relationships:**
+- **Belongs To:** A `PaymentMethod` belongs to one `Store`.
+- **Has Many:** A `PaymentMethod` can be used in many `Payment`s.
+
+### Payment
+
+**Purpose:** Represents a single payment transaction applied to a sale. A sale can have one or more payments.
+
+**Key Attributes:**
+- `id`: `UUID` - The unique identifier for the payment.
+- `store_id`: `UUID` - Foreign key to the `Store`.
+- `sale_id`: `UUID` - Foreign key to the `Sale` this payment is for.
+- `payment_method_id`: `UUID` - Foreign key to the `PaymentMethod` used.
+- `amount`: `decimal` - The amount of money received in this payment.
+- `created_at`: `timestamp` - The timestamp when the payment was made.
+
+**TypeScript Interface:**
+```typescript
+interface Payment {
+  id: string; // UUID
+  store_id: string; // UUID
+  sale_id: string; // UUID
+  payment_method_id: string; // UUID
+  amount: number;
+  created_at: string; // ISO 8601 date string
+}
+```
+
+**Relationships:**
+- **Belongs To:** A `Payment` belongs to one `Store`, one `Sale`, and one `PaymentMethod`.
 
 ### SalesReturn
 

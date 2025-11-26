@@ -82,6 +82,28 @@ paths:
         '404':
           $ref: '#/components/responses/NotFoundError'
 
+  /sales:
+    post:
+      summary: Create Sale
+      description: Creates a new sale, including items sold and payments made.
+      tags:
+        - Sales
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewSale'
+      responses:
+        '201':
+          description: The newly created sale record.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Sale'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+
   /sales-returns:
     post:
       summary: Create Sales Return
@@ -209,6 +231,101 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequestError'
 
+  /payment-methods:
+    get:
+      summary: List Payment Methods
+      description: Retrieves a list of all active payment methods for the store.
+      tags:
+        - Payment Methods
+      responses:
+        '200':
+          description: A JSON array of payment methods.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PaymentMethod'
+    post:
+      summary: Create Payment Method
+      description: Creates a new payment method.
+      tags:
+        - Payment Methods
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewPaymentMethod'
+      responses:
+        '201':
+          description: The newly created payment method.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentMethod'
+
+  /payment-methods/{methodId}:
+    get:
+      summary: Get Payment Method
+      description: Retrieves a single payment method by its ID.
+      tags:
+        - Payment Methods
+      parameters:
+        - name: methodId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: A single payment method.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentMethod'
+    put:
+      summary: Update Payment Method
+      description: Updates an existing payment method.
+      tags:
+        - Payment Methods
+      parameters:
+        - name: methodId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewPaymentMethod'
+      responses:
+        '200':
+          description: The updated payment method.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentMethod'
+    delete:
+      summary: Deactivate Payment Method
+      description: Deactivates a payment method (soft delete).
+      tags:
+        - Payment Methods
+      parameters:
+        - name: methodId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Payment method deactivated successfully.
+
 # =====================================================================================
 # Components
 # =====================================================================================
@@ -254,6 +371,98 @@ components:
         sku:
           type: string
           nullable: true
+
+    Sale:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        total_amount:
+          type: number
+          format: decimal
+        amount_due:
+          type: number
+          format: decimal
+        status:
+          type: string
+          enum: [due, paid, void]
+
+    NewSale:
+      type: object
+      required:
+        - items
+        - payments
+      properties:
+        customer_id:
+          type: string
+          format: uuid
+          nullable: true
+        items:
+          type: array
+          items:
+            type: object
+            required: [product_id, quantity]
+            properties:
+              product_id:
+                type: string
+                format: uuid
+              quantity:
+                type: integer
+        payments:
+          type: array
+          items:
+            type: object
+            required: [payment_method_id, amount]
+            properties:
+              payment_method_id:
+                type: string
+                format: uuid
+              amount:
+                type: number
+                format: decimal
+
+    PaymentMethod:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        type:
+          type: string
+          enum: [cash, mobile_wallet, card, bank_transfer]
+        is_active:
+          type: boolean
+
+    NewPaymentMethod:
+      type: object
+      required:
+        - name
+        - type
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+          enum: [cash, mobile_wallet, card, bank_transfer]
+
+    Payment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        sale_id:
+          type: string
+          format: uuid
+        payment_method_id:
+          type: string
+          format: uuid
+        amount:
+          type: number
+          format: decimal
 
     SalesReturn:
       type: object

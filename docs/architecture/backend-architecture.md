@@ -26,6 +26,28 @@ src/app/api/
 - **Schema Design:** The database schema is defined in the "Database Schema" section above, using PostgreSQL DDL and leveraging Supabase's Row-Level Security for data isolation.
 - **Data Access Layer:** We will implement the **Repository Pattern**. For each core data model (e.g., `Product`), a corresponding repository class (e.g., `ProductRepository`) will be created. This class will encapsulate all the database query logic (SQL) for that model. The API route handlers will use these repositories to interact with the database, keeping the route handlers clean and separating business logic from data access concerns.
 
+### Core Logic for `POST /api/sales`
+
+The `sales/route.ts` handler will perform the following in a single database transaction:
+1.  Calculate `total_amount` from the provided items.
+2.  Create the `Sale` record with the correct `status` ('paid' or 'due') based on payments received.
+3.  Create a `SaleItem` record for each item in the sale and decrement the corresponding product's stock.
+4.  Create a `Payment` record for each payment provided in the request.
+
+### Payment Method Service
+
+A new service will be created to manage payment methods.
+
+#### New API Routes
+```text
+src/app/api/
+└── payment-methods/
+    ├── route.ts        # Handles GET (list) and POST (create)
+    └── [methodId]/
+        └── route.ts    # Handles GET (one), PUT, and DELETE
+```
+This provides full CRUD functionality for users to manage their accepted payment methods.
+
 ### Authentication and Authorization
 
 - **Authentication Flow:** Authentication will be handled by Supabase Auth. The client-side frontend will interact with Supabase directly to sign users in and get a JSON Web Token (JWT). This JWT will then be sent with every API request to the backend.

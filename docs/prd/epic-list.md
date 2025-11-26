@@ -24,4 +24,7 @@
 **Epic 8: Inventory Adjustments**
 *   **Goal:** Allow users to manually adjust inventory levels to account for shrinkage (e.g., damaged, stolen) and provide an audit trail for these changes.
 
+**Epic 9: Advanced Payment Handling**
+*   **Goal:** Refactor the core sales process to properly handle multiple, configurable payment methods, providing a foundation for accurate ledger accounting.
+
 ---

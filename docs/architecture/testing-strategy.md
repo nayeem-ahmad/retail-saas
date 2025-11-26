@@ -170,7 +170,33 @@ This feature will be tested to ensure it correctly modifies inventory and mainta
     2.  Navigate to a product's detail page.
     3.  Open the adjustment form, enter "-2" for quantity and select "damaged" as the reason.
     4.  Submit the form and verify the product's stock has decreased by 2.
-    5.  (Optional) Verify a new entry exists in an audit log view.
+-   (Optional) Verify a new entry exists in an audit log view.
+
+### Testing for Advanced Payment Handling
+
+This core feature will be rigorously tested to ensure financial accuracy.
+
+#### Integration Tests (Jest + Supertest)
+
+-   **Scope:** Test the refactored `POST /api/sales` endpoint and the new `POST /api/payment-methods` endpoint.
+-   **Key Scenarios to Test for `POST /api/sales`:**
+    1.  **Success Case (Single Payment):** A sale with a single, full payment is processed correctly.
+    2.  **Success Case (Split Payment):** A sale with two or more payments that sum to the total amount is processed correctly.
+    3.  **Success Case (Partial Payment):** A sale where the payment is less than the total amount is created with a `due` status.
+    4.  **Failure Case:** A sale where the payment amount is greater than the total is rejected.
+    5.  **Transactional Integrity:** If any part of the process fails (e.g., stock update, payment creation), the entire sale is rolled back.
+
+#### E2E Tests (Playwright)
+
+-   **Scope:** A full user journey for a sale with split payments.
+-   **Example Scenario:**
+    1.  Log in as a cashier.
+    2.  Add items to the cart.
+    3.  Proceed to payment and select "Cash", enter a partial amount.
+    4.  Select "bKash" and enter the remaining amount.
+    5.  Complete the sale and verify the confirmation.
+    6.  Check the sale details to ensure both payments were recorded correctly.
+
 
 
 

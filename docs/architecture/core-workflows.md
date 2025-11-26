@@ -1,6 +1,10 @@
 # Core Workflows
 
-This section uses sequence diagrams to illustrate critical user journeys. Here is the workflow for an in-store Point of Sale (POS) transaction.
+This section uses sequence diagrams to illustrate critical user journeys.
+
+### Point of Sale (POS) Transaction Workflow
+
+This diagram illustrates the workflow for an in-store POS transaction with payment processing.
 
 ```mermaid
 sequenceDiagram
@@ -9,23 +13,23 @@ sequenceDiagram
     participant Backend as (API Route)
     participant DB as (Supabase DB)
 
-    User->>Frontend: 1. Adds items to cart and clicks "Complete Sale"
-    Frontend->>Backend: 2. POST /api/sales (cart details)
+    User->>Frontend: 1. Adds items and payment details, then clicks "Complete Sale"
+    Frontend->>Backend: 2. POST /api/sales (items, payments)
     Backend->>DB: 3. BEGIN TRANSACTION
-    Backend->>DB: 4. For each item: SELECT quantity FROM products WHERE id = ? FOR UPDATE
-    DB-->>Backend: 5. Returns current quantity
-    alt Stock is sufficient
-        Backend->>DB: 6. INSERT INTO sales (...)
-        Backend->>DB: 7. INSERT INTO sale_items (...)
-        Backend->>DB: 8. UPDATE products SET quantity = quantity - ? WHERE id = ?
-    else Stock is insufficient
-        Backend->>DB: 9. ROLLBACK
-        Backend-->>Frontend: 10. 400 Bad Request (error: "Insufficient stock")
-        Frontend->>User: 11. Display error message
-        end
+    Backend->>Backend: 4. Calculate total_amount from items
+    Backend->>Backend: 5. Calculate total_paid from payments
+    alt total_paid < total_amount
+        Backend->>Backend: 6. Set sale status = 'due'
+    else
+        Backend->>Backend: 7. Set sale status = 'paid'
+    end
+    Backend->>DB: 8. INSERT INTO sales (total_amount, amount_due, status)
+    DB-->>Backend: 9. Returns new sale_id
+    Backend->>DB: 10. For each item: INSERT INTO sale_items (...) & UPDATE products SET quantity = quantity - ?
+    Backend->>DB: 11. For each payment: INSERT INTO payments (...)
     Backend->>DB: 12. COMMIT TRANSACTION
     DB-->>Backend: 13. Commit successful
-    Backend-->>Frontend: 14. 201 Created (sale details)
+    Backend-->>Frontend: 14. 201 Created (new sale details)
     Frontend->>User: 15. Display "Sale Complete" confirmation
 ```
 
