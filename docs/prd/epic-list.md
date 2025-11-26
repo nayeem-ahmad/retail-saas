@@ -12,4 +12,7 @@
 **Epic 4: Manufacturing & Supply Chain**
 *   **Goal:** Introduce manufacturing capabilities for businesses that produce their own goods.
 
+**Epic 5: Sales and Purchase Returns Management**
+*   **Goal:** Introduce a comprehensive system for managing both sales and purchase returns to enable accurate inventory tracking and financial accounting for returned goods.
+
 ---

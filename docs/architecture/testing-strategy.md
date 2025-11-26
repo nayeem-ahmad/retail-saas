@@ -77,3 +77,34 @@ A multi-layered approach will be used to ensure the application meets accessibil
     -   **Checklist:** This includes verifying keyboard-only navigation, testing with a screen reader (e.g., VoiceOver, NVDA), and checking for sufficient color contrast.
 -   **Developer Tooling:**
     -   Developers are expected to use browser extensions like **Axe DevTools** or the **Lighthouse** panel in Chrome DevTools to audit their work continuously during development.
+
+### Testing for Returns Management
+
+The new returns management functionality will be tested at all levels of the pyramid to ensure correctness and prevent regressions.
+
+#### Unit Tests (Jest)
+
+-   **Scope:** Test individual helper functions and business logic in isolation.
+-   **Examples:**
+    -   A function that calculates the total refund amount.
+    -   A function that validates the status transition of a return (e.g., `requested` -> `approved`).
+
+#### Integration Tests (Jest + Supertest)
+
+-   **Scope:** These are the most critical tests for this feature. They will test the new API routes with mocked database repositories.
+-   **Key Scenarios to Test for `POST /api/sales-returns`:**
+    1.  **Success Case:** A valid return request successfully creates a `SalesReturn` record, updates product inventory, and returns a `201` status.
+    2.  **Failure Case (Invalid Input):** The request fails with a `400` error if the `original_sale_id` is missing or the items array is empty.
+    3.  **Failure Case (Not Found):** The request fails with a `404` error if the `original_sale_id` does not exist.
+    4.  **Transactional Integrity:** If updating the product inventory fails, the entire transaction is rolled back, and no `SalesReturn` record is created. This will be tested by mocking the `ProductRepository` to throw an error.
+
+#### E2E Tests (Playwright)
+
+-   **Scope:** A full user journey that simulates a cashier processing a return.
+-   **Example Scenario:**
+    1.  Log in as a cashier.
+    2.  Navigate to the sales history page.
+    3.  Find a specific sale and initiate a return.
+    4.  Select items to return and submit the form.
+    5.  Verify that a "Return Complete" message is displayed.
+    6.  Navigate to the inventory page and confirm that the stock for the returned items has been correctly updated.

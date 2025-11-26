@@ -54,3 +54,41 @@ sequenceDiagram
     Backend API->>Backend API: Executes business logic (e.g., calls repository)
     Backend API-->>Frontend: Returns API response
 ```
+
+### Returns Handling Services
+
+The sales and purchase return functionalities will be implemented as new services following the existing architectural patterns.
+
+#### New API Routes
+
+New API routes will be created to handle the endpoints defined in the API Specification:
+
+```text
+src/app/api/
+├── sales-returns/
+│   ├── route.ts        # Handles POST for /api/sales-returns
+│   └── [returnId]/
+│       └── route.ts    # Handles GET for /api/sales-returns/{returnId}
+└── purchase-returns/
+    └── route.ts        # Handles POST for /api/purchase-returns
+```
+
+#### New Repositories
+
+To maintain the separation of concerns, new repositories will be created for the new data models:
+-   `SalesReturnRepository`: Will manage all database operations for the `SalesReturn` and `SalesReturnItem` tables.
+-   `PurchaseReturnRepository`: Will manage all database operations for the `PurchaseReturn` and `PurchaseReturnItem` tables.
+
+#### Core Logic for Sales Returns (`POST /api/sales-returns`)
+
+The `sales-returns/route.ts` handler will contain the primary business logic for creating a sales return. The sequence of operations will be:
+
+1.  **Validate Input**: Ensure the request body matches the `NewSalesReturn` schema.
+2.  **Verify Original Sale**: Check that the `original_sale_id` exists and belongs to the user's store.
+3.  **Create `SalesReturn` Record**: Use `SalesReturnRepository` to create a new `SalesReturn` record in the database with a status of `requested` or `approved`.
+4.  **Create `SalesReturnItem` Records**: For each item in the request, create a corresponding `SalesReturnItem` record linked to the new `SalesReturn`.
+5.  **Update Inventory**: For each returned item, use `ProductRepository` to increase the `quantity` of the corresponding product in the `Product` table.
+6.  **Handle Refund**: (Future Scope) Integrate with a payment service to process the refund or issue store credit. For now, this will be a manual step reflected by the `total_refund_amount`.
+7.  **Return Response**: Respond with the newly created `SalesReturn` object.
+
+This entire sequence should be wrapped in a database transaction to ensure atomicity. If any step fails, the entire transaction should be rolled back.

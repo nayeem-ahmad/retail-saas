@@ -336,3 +336,117 @@ interface ProductionOrder {
 
 **Relationships:**
 - **Belongs To:** A `ProductionOrder` is associated with one `Store` and one `Product`.
+
+### SalesReturn
+
+**Purpose:** Represents a record of a customer returning a previously purchased item.
+
+**Key Attributes:**
+- `id`: `UUID` - The unique identifier for the sales return.
+- `store_id`: `UUID` - Foreign key to the `Store`.
+- `original_sale_id`: `UUID` - Foreign key to the original `Sale` transaction.
+- `customer_id`: `UUID` (optional) - Foreign key to the `Customer` who made the return.
+- `return_date`: `timestamp` - The date the return was processed.
+- `total_refund_amount`: `decimal` - The total amount refunded to the customer.
+- `status`: `string` - The status of the return (e.g., `requested`, `approved`, `completed`).
+
+**TypeScript Interface:**
+```typescript
+type SalesReturnStatus = 'requested' | 'approved' | 'completed';
+
+interface SalesReturn {
+  id: string; // UUID
+  store_id: string; // UUID
+  original_sale_id: string; // UUID
+  customer_id?: string; // UUID
+  return_date: string; // ISO 8601 date string
+  total_refund_amount: number;
+  status: SalesReturnStatus;
+}
+```
+
+**Relationships:**
+- **Belongs To:** A `SalesReturn` belongs to one `Store` and one `Sale`. It can optionally belong to a `Customer`.
+- **Has Many:** A `SalesReturn` has many `SalesReturnItem`s.
+
+### SalesReturnItem
+
+**Purpose:** Represents a single item being returned within a `SalesReturn`.
+
+**Key Attributes:**
+- `id`: `UUID` - The unique identifier for the return line item.
+- `sales_return_id`: `UUID` - Foreign key to the `SalesReturn`.
+- `product_id`: `UUID` - Foreign key to the `Product` being returned.
+- `quantity`: `integer` - The number of units returned.
+- `reason`: `text` (optional) - The reason for the return.
+
+**TypeScript Interface:**
+```typescript
+interface SalesReturnItem {
+  id: string; // UUID
+  sales_return_id: string; // UUID
+  product_id: string; // UUID
+  quantity: number;
+  reason?: string;
+}
+```
+
+**Relationships:**
+- **Belongs To:** A `SalesReturnItem` belongs to one `SalesReturn` and one `Product`.
+
+### PurchaseReturn
+
+**Purpose:** Represents a record of returning goods to a supplier.
+
+**Key Attributes:**
+- `id`: `UUID` - The unique identifier for the purchase return.
+- `store_id`: `UUID` - Foreign key to the `Store`.
+- `original_purchase_id`: `UUID` - Foreign key to the original `Purchase` record.
+- `supplier_id`: `UUID` - Foreign key to the `Supplier` the goods are being returned to.
+- `return_date`: `timestamp` - The date the return was initiated.
+- `total_credit_amount`: `decimal` - The total credit expected from the supplier.
+- `status`: `string` - The status of the return (e.g., `shipped`, `received_by_supplier`, `credited`).
+
+**TypeScript Interface:**
+```typescript
+type PurchaseReturnStatus = 'shipped' | 'received_by_supplier' | 'credited';
+
+interface PurchaseReturn {
+  id: string; // UUID
+  store_id: string; // UUID
+  original_purchase_id: string; // UUID
+  supplier_id: string; // UUID
+  return_date: string; // ISO 8601 date string
+  total_credit_amount: number;
+  status: PurchaseReturnStatus;
+}
+```
+
+**Relationships:**
+- **Belongs To:** A `PurchaseReturn` belongs to one `Store`, one `Purchase`, and one `Supplier`.
+- **Has Many:** A `PurchaseReturn` has many `PurchaseReturnItem`s.
+
+### PurchaseReturnItem
+
+**Purpose:** Represents a single item being returned within a `PurchaseReturn`.
+
+**Key Attributes:**
+- `id`: `UUID` - The unique identifier for the return line item.
+- `purchase_return_id`: `UUID` - Foreign key to the `PurchaseReturn`.
+- `product_id`: `UUID` - Foreign key to the `Product` being returned.
+- `quantity`: `integer` - The number of units returned.
+- `reason`: `text` (optional) - The reason for the return.
+
+**TypeScript Interface:**
+```typescript
+interface PurchaseReturnItem {
+  id: string; // UUID
+  purchase_return_id: string; // UUID
+  product_id: string; // UUID
+  quantity: number;
+  reason?: string;
+}
+```
+
+**Relationships:**
+- **Belongs To:** A `PurchaseReturnItem` belongs to one `PurchaseReturn` and one `Product`.

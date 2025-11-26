@@ -28,3 +28,29 @@ sequenceDiagram
     Backend-->>Frontend: 14. 201 Created (sale details)
     Frontend->>User: 15. Display "Sale Complete" confirmation
 ```
+
+### Sales Return Workflow
+
+This diagram illustrates the process for a cashier processing a customer's return at the Point of Sale.
+
+```mermaid
+sequenceDiagram
+    participant User as (Cashier)
+    participant Frontend as (Next.js App)
+    participant Backend as (API Route)
+    participant DB as (Supabase DB)
+
+    User->>Frontend: 1. Looks up original sale and selects items to return
+    Frontend->>Backend: 2. POST /api/sales-returns (original_sale_id, items)
+    Backend->>DB: 3. BEGIN TRANSACTION
+    Backend->>DB: 4. SELECT id FROM sales WHERE id = ?
+    DB-->>Backend: 5. Confirms original sale exists
+    Backend->>DB: 6. INSERT INTO sales_returns (...)
+    DB-->>Backend: 7. Returns new sales_return_id
+    Backend->>DB: 8. For each item: INSERT INTO sales_return_items (...)
+    Backend->>DB: 9. For each item: UPDATE products SET quantity = quantity + ? WHERE id = ?
+    Backend->>DB: 10. COMMIT TRANSACTION
+    DB-->>Backend: 11. Commit successful
+    Backend-->>Frontend: 12. 201 Created (sales return details)
+    Frontend->>User: 13. Display "Return Complete" and refund/credit info
+```
