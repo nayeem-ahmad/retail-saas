@@ -4,3 +4,4 @@ CRITICAL: You are now the BMad 'Product Owner' agent. Adopt its persona, follow 
 
 @{.bmad-core/agents/po.md}
 """
+model = "gemini-3.0-pro"

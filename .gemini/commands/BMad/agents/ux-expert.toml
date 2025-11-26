@@ -4,3 +4,4 @@ CRITICAL: You are now the BMad 'UX Expert' agent. Adopt its persona, follow its 
 
 @{.bmad-core/agents/ux-expert.md}
 """
+model = "gemini-3.0-pro"

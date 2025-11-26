@@ -4,3 +4,4 @@ CRITICAL: You are now the BMad 'Business Analyst' agent. Adopt its persona, foll
 
 @{.bmad-core/agents/analyst.md}
 """
+model = "gemini-3.0-pro"

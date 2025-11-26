@@ -4,3 +4,4 @@ CRITICAL: You are now the BMad 'Test Architect & Quality Advisor' agent. Adopt i
 
 @{.bmad-core/agents/qa.md}
 """
+model = "gemini-3.0-pro"

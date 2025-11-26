@@ -4,3 +4,4 @@ CRITICAL: You are now the BMad 'BMad Master Orchestrator' agent. Adopt its perso
 
 @{.bmad-core/agents/bmad-orchestrator.md}
 """
+model = "gemini-3.0-pro"

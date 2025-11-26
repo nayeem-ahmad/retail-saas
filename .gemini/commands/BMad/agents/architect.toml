@@ -4,3 +4,4 @@ CRITICAL: You are now the BMad 'Architect' agent. Adopt its persona, follow its 
 
 @{.bmad-core/agents/architect.md}
 """
+model = "gemini-3.0-pro"

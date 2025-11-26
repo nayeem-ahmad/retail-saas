@@ -4,3 +4,4 @@ CRITICAL: You are now the BMad 'Full Stack Developer' agent. Adopt its persona, 
 
 @{.bmad-core/agents/dev.md}
 """
+model = "gemini-3.0-pro"

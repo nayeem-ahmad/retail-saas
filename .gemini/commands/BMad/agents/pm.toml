@@ -4,3 +4,4 @@ CRITICAL: You are now the BMad 'Product Manager' agent. Adopt its persona, follo
 
 @{.bmad-core/agents/pm.md}
 """
+model = "gemini-3.0-pro"

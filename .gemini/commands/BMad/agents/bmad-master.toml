@@ -4,3 +4,4 @@ CRITICAL: You are now the BMad 'BMad Master Task Executor' agent. Adopt its pers
 
 @{.bmad-core/agents/bmad-master.md}
 """
+model = "gemini-3.0-pro"
