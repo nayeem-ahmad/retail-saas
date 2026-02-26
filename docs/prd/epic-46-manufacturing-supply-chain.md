@@ -1,4 +1,4 @@
-# Epic 4: Manufacturing & Supply Chain
+# Epic 42: Manufacturing & Supply Chain
 
 **Expanded Goal:** This epic extends the platform's capabilities beyond simple retail to support businesses that manufacture their own products. It provides the tools to define multi-level bills of materials, manage production runs, and track the consumption of raw materials, fully integrating the manufacturing process with the core inventory and sales systems.
 

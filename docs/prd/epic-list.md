@@ -1,33 +1,64 @@
 # Epic List
 
-**Epic 1: Foundation & Core Retail Operations (MVP)**
-*   **Goal:** Establish the project's technical foundation and deliver the core, end-to-end functionality for a single retail store to manage sales and inventory using the Basic Tier features.
+This document provides a master list of all epics for the Retail SaaS platform, organized by module and priority.
 
-**Epic 2: Advanced Operations & Business Intelligence**
-*   **Goal:** Enhance the platform with premium features for multi-user support, advanced analytics, CRM, accounting, and HR capabilities.
+## 🏗️ Foundation (01-09)
+*   **Epic 01: Core Retail Operations MVP**
+*   **Epic 02: Scalability & Infrastructure Resilience**
+*   **Epic 03: SaaS Multi-Tenancy & Billing**
+*   **Epic 04: Main Executive Dashboard (Landing)**
+    *   **Goal:** Global KPI overview and actionable alerts immediately after login.
 
-**Epic 3: E-commerce & Delivery Enablement**
-*   **Goal:** Launch the customer-facing e-commerce storefront and provide the tools for managing online orders and deliveries.
+## 💰 Sales (10-19)
+*   **Epic 10: Core Sales & POS Transactions**
+*   **Epic 11: Sales Returns Management**
+*   **Epic 12: Sales Order Management**
+*   **Epic 13: Sales Quotation Management**
+*   **Epic 14: Sales Dashboard & Reporting**
+    *   **Goal:** Visual summaries for Sales, Returns, Orders, and Quotes with analytics.
+*   **Epic 15: Sales Settings & Configuration**
+*   **Epic 16: E-commerce Storefront Enablement**
+*   **Epic 17: Delivery & Fulfillment Management**
 
-**Epic 4: Manufacturing & Supply Chain**
-*   **Goal:** Introduce manufacturing capabilities for businesses that produce their own goods.
+## 📦 Purchase (20-29)
+*   **Epic 20: Core Purchase Transactions**
+*   **Epic 21: Purchase Returns Management**
+*   **Epic 22: Purchase Order (PO) Management**
+*   **Epic 23: Purchase Quotation (RFQ) Management**
+*   **Epic 24: Purchase Dashboard & Reporting**
+    *   **Goal:** Visual summaries of procurement and supplier performance.
+*   **Epic 25: Purchase Settings & Configuration**
 
-**Epic 5: Sales and Purchase Returns Management**
-*   **Goal:** Introduce a comprehensive system for managing both sales and purchase returns to enable accurate inventory tracking and financial accounting for returned goods.
+## 📊 Accounting & Expense (30-39, 50-59)
+*   **Epic 30: Financial Ledgers & Core Accounting**
+*   **Epic 34: Accounting & Financial Dashboard**
+    *   **Goal:** Cash flow, net profit, and tax liability visualizations.
+*   **Epic 50: Business Expense Management**
+*   **Epic 54: Expense Dashboard & Analytics**
+    *   **Goal:** operational spending trends and category-wise breakdowns.
 
-**Epic 6: Low-Stock Alerts Dashboard**
-*   **Goal:** Provide store owners with a simple dashboard widget to see which products are running low, preventing stockouts and streamlining the reordering process.
+## 📦 Inventory (40-49)
+*   **Epic 40: Warehouse to Warehouse Transfer**
+*   **Epic 41: Lost/Stolen Product Management (Shrinkage)**
+*   **Epic 42: Discrepancy Entry & Stock Take**
+*   **Epic 43: Inventory Dashboard & Reporting**
+    *   **Goal:** Stock health metrics and replenishment suggestions (Suggest Items).
+*   **Epic 44: Inventory Settings & Configuration**
+*   **Epic 45: Product Categorization & Hierarchy**
+*   **Epic 46: Manufacturing & BOM**
 
-**Epic 7: Simple Sales Dashboard**
-*   **Goal:** Provide store owners with an at-a-glance summary of the current day's sales activity, including total revenue, number of sales, and average sale value.
+## 🕒 HR & Payroll (60-79)
+*   **Epic 60: Staff Attendance Tracking**
+*   **Epic 70: Payroll Processing**
+*   **Epic 74: HR & Payroll Dashboard**
+    *   **Goal:** Attendance snapshot, leave management, and payroll trends.
 
-**Epic 8: Inventory Adjustments**
-*   **Goal:** Allow users to manually adjust inventory levels to account for shrinkage (e.g., damaged, stolen) and provide an audit trail for these changes.
+## 🤝 CRM (80-89)
+*   **Epic 80: Customer Management & Loyalty**
+*   **Epic 84: CRM & Customer Dashboard**
+    *   **Goal:** Retention, top customers, and loyalty program metrics.
 
-**Epic 9: Advanced Payment Handling**
-*   **Goal:** Refactor the core sales process to properly handle multiple, configurable payment methods, providing a foundation for accurate ledger accounting.
-
-**Epic 10: Scalability & Infrastructure Resilience**
-*   **Goal:** Enhance the platform's infrastructure to handle high concurrency, large user volumes, and computationally intensive tasks without degrading performance by implementing rate limiting, connection pooling, and background processing.
-
----
+## ⚙️ Admin (90-99)
+*   **Epic 90: Multi-user Role-Based Access Control (RBAC)**
+*   **Epic 91: System Audit Logs**
+*   **Epic 92: Store-wide Settings & Localization**

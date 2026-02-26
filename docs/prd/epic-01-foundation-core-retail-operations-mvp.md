@@ -1,4 +1,4 @@
-# Epic 1: Foundation & Core Retail Operations (MVP)
+# Epic 01: Foundation & Core Retail Operations (MVP)
 
 **Expanded Goal:** This epic focuses on delivering the absolute core value proposition of the product. By the end of this epic, a user will be able to set up their store, manage their basic inventory and purchases, and conduct daily sales through the POS system. This establishes the foundational loop of a retail business and provides immediate utility.
 

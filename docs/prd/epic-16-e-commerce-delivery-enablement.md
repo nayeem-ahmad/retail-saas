@@ -1,4 +1,4 @@
-# Epic 3: E-commerce & Delivery Enablement
+# Epic 11: E-commerce & Delivery Enablement
 
 **Expanded Goal:** This epic introduces a major new sales channel for the business. It enables shop owners to create and manage their own customer-facing online store, accept orders, and manage the entire fulfillment and delivery process, transforming their brick-and-mortar operation into a multi-channel retail business.
 

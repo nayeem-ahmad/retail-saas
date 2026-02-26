@@ -1,4 +1,4 @@
-# Epic 10: Scalability & Infrastructure Resilience
+# Epic 02: Scalability & Infrastructure Resilience
 
 ## Goal
 Enhance the platform's infrastructure to handle high concurrency, large user volumes, and computationally intensive tasks without degrading performance. This epic focuses on "serving many users efficiently" by implementing rate limiting, connection pooling, and background processing.

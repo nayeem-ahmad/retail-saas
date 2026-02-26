@@ -29,7 +29,59 @@ This document defines the user experience goals, information architecture, user 
 | 2025-10-17 | 1.0 | Initial Draft | Sally (UX Expert) |
 | 2025-11-26 | 2.0 | Updated with SMS Notification flows and detailed screen layouts | Sally (UX Expert) |
 
+## Global UI Patterns
+
+### Standard Data Table (List View)
+Every module containing a list of records (e.g., Products, Sales, Customers) MUST implement a consistent Data Table component with the following features:
+
+1.  **Toolbar Actions:**
+    *   **Global Search:** A persistent search bar that filters the list in real-time.
+    *   **Column Management:** A dropdown to hide/show specific columns and re-order them via drag-and-drop.
+    *   **Export:** Buttons to export the currently filtered/sorted view to **CSV** or **Excel**.
+
+2.  **Table Functionality:**
+    *   **Sorting:** All columns should be sortable (Ascending/Descending) by clicking the column header.
+    *   **Column Resizing:** Users must be able to click and drag the edge of a column header to change its width.
+    *   **Multi-Select:** A checkbox in the header to "Select All" and a checkbox in each row to select one or more records for bulk actions.
+    *   **Persistent State:** (Optional/Preferred) The system should remember the user's hidden columns and preferred column widths.
+
+3.  **Actions Column:**
+    *   A dedicated column (usually the last) containing icon-based buttons for row-level actions (e.g., `View`, `Edit`, `Delete`, `Print`).
+    *   Actions should show a tooltip on hover and a confirmation modal for destructive actions like `Delete`.
+
+4.  **Pagination & Density:**
+    *   **Rows Per Page:** A dropdown at the bottom of the table to select results per page: `10`, `20`, `50`, `100`, or `All`.
+    *   **Navigation:** Standard "Next", "Previous", and "Page Number" controls.
+
+5.  **Visual Feedback:**
+    *   **Loading States:** A skeleton screen or progress bar when data is fetching.
+    *   **Empty States:** A clear illustration or message when no results match the search or filter.
+
+### Standard Form & Entry Patterns
+Every data entry interface (e.g., Add Product, Create Sale, Record Expense) MUST adhere to the following behavioral standards:
+
+1.  **Advanced Dropdowns (Select Inputs):**
+    *   **Searchable:** All dropdowns with more than 5 items must include a search/filter box within the menu.
+    *   **Logical Sorting:** Items must be sorted alphabetically by name, or by frequency of use where applicable.
+    *   **Multi-Select:** Support for selecting multiple items (with "Select All" / "Clear All" shortcuts) where required by the data model.
+    *   **Create New (Inline):** If a user cannot find an item (e.g., a new Supplier or Product Group), the dropdown must provide a " + Add New [Item]" option that opens a quick-entry modal without leaving the current form.
+
+2.  **Serial Numbers & Identifiers:**
+    *   **Unique & Auto-generated:** Fields like Invoice # or Adjustment # must be automatically generated using a sequential or patterned logic.
+    *   **Editable:** Auto-generated numbers must remain editable by the user (with a warning if they change it) to allow for manual corrections or specific numbering schemes.
+    *   **Validation:** Immediate "duplicate" check on blur to ensure uniqueness within the store.
+
+3.  **Entry Metadata:**
+    *   **Date & Time:** Always default to the current system time (`now()`) upon form load.
+    *   **Manual Reference Number:** Every transaction entry must include a dedicated "Reference Number" field to allow users to link the digital record to their manual/paper-based system.
+
+4.  **Form Validation & UX:**
+    *   **Inline Validation:** Show error messages immediately as the user types or leaves a field.
+    *   **Required Indicators:** Clearly mark required fields with an asterisk (`*`).
+    *   **Dirty State:** Show a "You have unsaved changes" confirmation if the user attempts to navigate away from a partially filled form.
+
 ## Information Architecture (IA)
+
 
 ### Site Map / Screen Inventory
 
