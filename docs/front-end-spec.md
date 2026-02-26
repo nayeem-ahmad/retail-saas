@@ -26,7 +26,8 @@ This document defines the user experience goals, information architecture, user 
 
 | Date | Version | Description | Author |
 |---|---|---|---|
-| Friday, October 17, 2025 | 1.0 | Initial Draft | Sally (UX Expert) |
+| 2025-10-17 | 1.0 | Initial Draft | Sally (UX Expert) |
+| 2025-11-26 | 2.0 | Updated with SMS Notification flows and detailed screen layouts | Sally (UX Expert) |
 
 ## Information Architecture (IA)
 
@@ -40,6 +41,7 @@ graph TD
     B --> E[Sales & Reports]
     B --> F[Customers]
     B --> G[Settings]
+    B --> H[Notification Center]
     D --> D1[Products List]
     D --> D2[Suppliers]
     D --> D3[Stock Adjustments]
@@ -50,54 +52,135 @@ graph TD
     F --> F2[Loyalty Programs]
     G --> G1[User Management]
     G --> G2[Store Profile]
-    G --> G3[Integrations]
+    G --> G3[Payment Methods]
+    G --> G4[Integrations (SMS/Payment)]
 ```
 
 ### Navigation Structure
 
-**Primary Navigation:** A persistent sidebar or top-level menu providing quick access to major modules: Dashboard, POS, Inventory, Sales & Reports, Customers, Settings.
+**Primary Navigation:** A persistent sidebar (desktop) or bottom tab bar (mobile) providing quick access to major modules: Dashboard, POS, Inventory, Sales, Customers, Settings.
 
-**Secondary Navigation:** Contextual navigation within each major module (e.g., within Inventory: Products List, Suppliers, Stock Adjustments).
+**Secondary Navigation:** Contextual navigation within each major module (e.g., tabs for Products/Suppliers within Inventory).
 
-**Breadcrumb Strategy:** Clear breadcrumbs to indicate the user's current location within the application hierarchy, aiding navigation and orientation.
+**Breadcrumb Strategy:** Clear breadcrumbs (e.g., "Inventory > Products > Add Product") to indicate location and allow easy upward navigation.
 
 ## User Flows
 
-This section will contain detailed user flow diagrams and descriptions for critical tasks within the Grocery SaaS application. Each flow will outline the user's goal, entry points, success criteria, and potential edge cases.
+### Flow: Complete a Sale with SMS Notification
 
-*(Specific user flows to be defined in subsequent iterations or linked from external design tools.)*
+**User Goal:** Process a customer purchase quickly and ensure they receive a digital receipt via SMS.
+
+**Entry Points:** POS Screen
+
+**Success Criteria:** Sale recorded, inventory updated, SMS sent to customer.
+
+#### Flow Diagram
+```mermaid
+graph TD
+    A[Start: POS Screen] --> B{Add Items to Cart}
+    B --> C[Review Cart Total]
+    C --> D{Select Payment Method}
+    D --> E[Enter Customer Phone (Optional)]
+    E --> F[Confirm Payment]
+    F --> G{Payment Successful?}
+    G -- Yes --> H[Show Success Screen]
+    G -- No --> I[Show Error & Retry]
+    H --> J[System Sends SMS Async]
+    H --> K[Print Receipt (Optional)]
+    H --> L[Return to New Sale]
+```
+
+#### Edge Cases & Error Handling:
+- **Invalid Phone Number:** Validate phone number format before submission. If invalid, show inline error "Please enter a valid mobile number".
+- **SMS Service Down:** If SMS fails silently in background, do not block the UI. Log the error for admin review.
+- **Payment Failure:** Clear error message explaining why (e.g., "Insufficient Funds", "Network Error") and allow retry.
+
+**Notes:** The SMS step is automated on the backend; the UI only needs to collect the phone number.
+
+### Flow: Manage Inventory (Add Product)
+
+**User Goal:** Add a new product to the store inventory.
+
+**Entry Points:** Inventory Dashboard > "Add Product" Button
+
+**Success Criteria:** Product saved to database and visible in list.
+
+#### Flow Diagram
+```mermaid
+graph TD
+    A[Inventory Screen] --> B[Click 'Add Product']
+    B --> C[Fill Product Details Form]
+    C --> D{Validate Inputs}
+    D -- Valid --> E[Save Product]
+    D -- Invalid --> F[Show Inline Errors]
+    E --> G[Show Success Toast]
+    E --> H[Redirect to Product List]
+```
+
+#### Edge Cases & Error Handling:
+- **Duplicate SKU:** If SKU exists, show error "Product with this SKU already exists".
+- **Unsaved Changes:** If user tries to leave form with unsaved data, show confirmation modal "Discard changes?".
 
 ## Wireframes & Mockups
 
-### Primary Design Files
-**Primary Design Files:** [Link to Figma Project (Placeholder)]
+**Primary Design Files:** [Figma Project Link Placeholder]
 
 ### Key Screen Layouts
-This section will detail the wireframes and mockups for key screens, outlining their purpose, main elements, and interaction notes.
 
-*(Specific screen layouts and their corresponding design file references will be added here as they are developed in the chosen design tool.)*
+#### Screen: Point of Sale (POS)
+**Purpose:** The core interface for processing sales. Optimized for speed and touch interaction.
+
+**Key Elements:**
+- **Product Grid/List:** Left/Center panel showing available products with images and prices. Search bar at top.
+- **Cart Panel:** Right sidebar (or slide-up on mobile) showing added items, quantities, subtotals, and tax.
+- **Customer Input:** Field to enter/search customer name or mobile number (for SMS).
+- **Payment Action Bar:** Large "Pay" button and quick payment method toggles (Cash, Card, Mobile Pay).
+
+**Interaction Notes:** Tapping a product adds 1 unit. Long-press allows quantity edit. "Pay" triggers the Payment Modal.
+
+#### Screen: Inventory List
+**Purpose:** View and manage stock levels.
+
+**Key Elements:**
+- **Filter/Search Bar:** Filter by category, low stock status, or search by name/SKU.
+- **Data Table:** Columns for Image, Name, SKU, Price, Current Stock, Status (In Stock/Low Stock).
+- **Quick Actions:** "Edit" and "Adjust Stock" buttons per row.
+- **Low Stock Indicator:** Red badge or row highlight for items below reorder level.
+
+**Interaction Notes:** "Adjust Stock" opens a quick modal to +/- quantity without leaving the list.
 
 ## Component Library / Design System
 
-### Design System Approach
-**Design System Approach:** We will adopt a modular component-based approach, leveraging an existing framework (e.g., Material-UI, Ant Design) or building a custom design system incrementally. The goal is to ensure consistency, reusability, and maintainability across the application.
+**Design System Approach:** We will build a custom system using **Shadcn/UI** (based on Radix UI) + **Tailwind CSS**. This provides accessible, unstyled primitives that we can style to match our "Radical Simplicity" aesthetic.
 
 ### Core Components
-This section will list and describe the core UI components that form the building blocks of the application.
 
-- **Button:** Primary, Secondary, Tertiary, Icon-only; various states (default, hover, active, disabled, loading).
-- **Input Field:** Text, Number, Password, Date; various states (default, focused, error, disabled).
-- **Dropdown/Select:** Single and multi-select options.
-- **Modal/Dialog:** For critical user interactions and confirmations.
-- **Table:** For displaying structured data, with sorting and pagination.
-- **Card:** For grouping related content.
-- **Navigation Elements:** Tabs, Accordions, Breadcrumbs.
+#### Component: Action Button
+**Purpose:** Primary user interaction trigger.
+
+**Variants:**
+- **Primary:** Solid Green (#4CAF50). Used for "Pay", "Save", "Confirm".
+- **Secondary:** Outlined/Ghost. Used for "Cancel", "Back", "Export".
+- **Destructive:** Solid Red (#F44336). Used for "Delete", "Void Sale".
+
+**States:** Default, Hover (slightly darker), Active (pressed), Disabled (greyed out, no interaction), Loading (spinner replaces text).
+
+**Usage Guidelines:** Use Primary only once per view for the main action.
+
+#### Component: Status Badge
+**Purpose:** Indicate state of an entity (Order, Product).
+
+**Variants:**
+- **Success:** Green bg/text. (e.g., "Paid", "In Stock")
+- **Warning:** Orange bg/text. (e.g., "Low Stock", "Pending")
+- **Error:** Red bg/text. (e.g., "Cancelled", "Out of Stock")
+
+**Usage Guidelines:** Place next to the entity name or in a status column.
 
 ## Branding & Style Guide
 
 ### Visual Identity
-**Brand Guidelines:** [Link to Company Brand Guidelines (if available)]
-The visual identity will be clean, modern, and professional, aligning with the "Radical Simplicity" design principle.
+**Brand Guidelines:** Clean, modern, trustworthy.
 
 ### Color Palette
 
@@ -112,112 +195,74 @@ The visual identity will be clean, modern, and professional, aligning with the "
 | Neutral | #212121, #757575, #BDBDBD, #EEEEEE, #FAFAFA | Text, borders, backgrounds |
 
 ### Typography
+- **Primary:** Roboto (Headings)
+- **Secondary:** Open Sans (Body)
+- **Monospace:** Fira Code (Data/Code)
 
-#### Font Families
-- **Primary:** Roboto (or similar sans-serif for readability)
-- **Secondary:** Open Sans (or similar sans-serif for body text)
-- **Monospace:** Fira Code (or similar for code blocks)
-
-#### Type Scale
-
-| Element | Size | Weight | Line Height |
-|---|---|---|---|
-| H1 | 36px | Bold | 1.2 |
-| H2 | 28px | Semi-Bold | 1.3 |
-| H3 | 22px | Medium | 1.4 |
-| Body | 16px | Regular | 1.5 |
-| Small | 12px | Regular | 1.6 |
+**Type Scale:**
+- H1: 36px / Bold
+- H2: 28px / Semi-Bold
+- Body: 16px / Regular
 
 ### Iconography
-**Icon Library:** Material Icons (or similar open-source library)
-**Usage Guidelines:** Icons should be clear, consistent, and used sparingly to enhance comprehension without cluttering the interface.
-
-### Spacing & Layout
-**Grid System:** 12-column flexible grid system for responsive layouts.
-**Spacing Scale:** A consistent 8pt-based spacing system (e.g., 8px, 16px, 24px, 32px) for margins, padding, and component spacing.
+**Icon Library:** Lucide React (clean, consistent SVG icons).
+**Usage Guidelines:** Use outlined icons for general UI, filled icons for active states.
 
 ## Accessibility Requirements
 
-### Compliance Target
 **Standard:** WCAG 2.1 Level AA
-The application aims to meet Web Content Accessibility Guidelines (WCAG) 2.1 Level AA to ensure it is usable by the widest possible audience, including individuals with disabilities.
 
-### Key Requirements
+**Key Requirements:**
+- **Visual:** Minimum 4.5:1 contrast for text. Visible focus rings on all interactive elements.
+- **Interaction:** Full keyboard navigability (Tab, Enter, Space, Esc). Touch targets min 44x44px.
+- **Content:** All images must have `alt` text. Forms must have associated `<label>` elements.
 
-**Visual:**
-- Color contrast ratios: Minimum 4.5:1 for normal text, 3:1 for large text and graphical objects.
-- Focus indicators: Clear and visible focus indicators for all interactive elements.
-- Text sizing: Users must be able to resize text up to 200% without loss of content or functionality.
-
-**Interaction:**
-- Keyboard navigation: All interactive elements must be operable via keyboard alone, with a logical tab order.
-- Screen reader support: Content and interactive elements must be properly structured and labeled for screen reader interpretation.
-- Touch targets: Minimum touch target size of 44x44 CSS pixels for interactive elements.
-
-**Content:**
-- Alternative text: All non-text content (images, icons) must have appropriate alternative text.
-- Heading structure: Semantic heading structure (H1, H2, H3, etc.) must be used to convey document hierarchy.
-- Form labels: All form fields must have visible and programmatically associated labels.
-
-### Testing Strategy
-**Accessibility Testing:** Regular automated and manual accessibility audits will be conducted throughout the development lifecycle, including testing with screen readers and keyboard-only navigation. User testing will include participants with diverse accessibility needs.
+**Testing Strategy:** Automated audit via `axe-core` in CI/CD + Manual keyboard testing for every new feature.
 
 ## Responsiveness Strategy
 
 ### Breakpoints
-
-| Breakpoint | Min Width | Max Width | Target Devices |
-|---|---|---|---|
-| Mobile | 0px | 576px | Smartphones (portrait) |
-| Tablet | 577px | 992px | Tablets (portrait & landscape), small laptops |
-| Desktop | 993px | 1200px | Laptops, desktop monitors |
-| Wide | 1201px | - | Large desktop monitors |
+- **Mobile:** < 576px (Smartphones)
+- **Tablet:** 577px - 992px (Tablets/iPads)
+- **Desktop:** > 993px (Laptops/Monitors)
 
 ### Adaptation Patterns
-**Layout Changes:** Layouts will adapt using a fluid grid system, reordering or stacking content vertically on smaller screens. Key information will remain prominent.
-
-**Navigation Changes:** Primary navigation will transform into a hamburger menu or off-canvas navigation on mobile and tablet breakpoints. Secondary navigation will adapt to accordions or tabs.
-
-**Content Priority:** Content will be prioritized for smaller screens, potentially hiding less critical information or making it accessible through progressive disclosure.
-
-**Interaction Changes:** Touch-friendly interactions will be emphasized on mobile and tablet devices, with larger tap targets and swipe gestures where appropriate.
+- **Layout:** Single column on mobile, multi-column on desktop. Sidebars become bottom tabs or hamburger menus on mobile.
+- **Tables:** On mobile, complex tables transform into "Card Lists" to avoid horizontal scrolling.
+- **Navigation:** "App-like" bottom navigation for core actions on mobile.
 
 ## Animation & Micro-interactions
 
-### Motion Principles
-**Motion Principles:** Animations will be subtle, functional, and purposeful, enhancing the user experience without distracting or slowing down interactions. They should provide clear feedback, guide attention, and improve perceived performance.
+**Motion Principles:** Quick, subtle, informative. Max 300ms duration.
 
-### Key Animations
-- **Button Click/Tap Feedback:** Subtle visual feedback (e.g., slight scale, color change) on interactive elements to confirm user input. (Duration: 150ms, Easing: ease-out)
-- **Page Transitions:** Smooth, non-disruptive transitions between major application views to maintain context. (Duration: 300ms, Easing: ease-in-out)
-- **Loading Indicators:** Clear and engaging loading animations for data fetching or process completion. (Duration: indefinite, Easing: linear)
-- **Form Validation:** Gentle animations to highlight invalid input fields or confirm successful submission. (Duration: 200ms, Easing: ease-in-out)
+**Key Animations:**
+- **Modal Slide-up:** Slide up from bottom on mobile, fade in/scale up on desktop. (300ms, ease-out)
+- **Toast Notification:** Slide in from top-right (desktop) or top-center (mobile). Auto-dismiss after 3s.
+- **Button Feedback:** Subtle scale down (0.95x) on press.
 
 ## Performance Considerations
 
-### Performance Goals
-- **Page Load:** Initial page load (First Contentful Paint) under 2 seconds on a 3G connection.
-- **Interaction Response:** User interface interactions (e.g., button clicks, form submissions) should respond within 100ms.
-- **Animation FPS:** Animations should maintain a smooth 60 frames per second (FPS).
-
-### Design Strategies
-**Design Strategies:** Prioritize efficient asset loading (lazy loading images, code splitting), minimize render-blocking resources, optimize image and video assets, and leverage browser caching. Design choices will favor performance, such as avoiding overly complex animations that could degrade frame rates.
+- **Page Load:** < 2s FCP on 3G.
+- **Interaction:** < 100ms response to taps.
+- **Design Strategies:**
+    - Lazy load below-the-fold images.
+    - Skeleton screens instead of spinners for initial data load.
+    - Optimistic UI updates for "Add to Cart" and "Like" actions.
 
 ## Next Steps
 
 ### Immediate Actions
-1.  Review this UI/UX Specification with key stakeholders (Product Owner, Development Lead, QA Lead).
-2.  Begin creating/updating detailed visual designs and prototypes in the chosen design tool (e.g., Figma).
-3.  Prepare for handoff to the Design Architect for frontend architecture planning.
+1.  Create high-fidelity Figma mockups for the **POS** and **Inventory** screens based on these layouts.
+2.  Prototype the **SMS Notification flow** to test user understanding of the "optional" phone number field.
+3.  Review this spec with the Lead Developer to confirm component feasibility.
 
 ### Design Handoff Checklist
--   All user flows documented
--   Component inventory complete
--   Accessibility requirements defined
--   Responsive strategy clear
--   Brand guidelines incorporated
--   Performance goals established
+- [ ] All user flows documented
+- [ ] Component inventory complete
+- [ ] Accessibility requirements defined
+- [ ] Responsive strategy clear
+- [ ] Brand guidelines incorporated
+- [ ] Performance goals established
 
 ## Checklist Results
-
-*(This section is reserved for reporting the results of any UI/UX checklists run against this document, ensuring all defined criteria are met.)*
+*(Pending Checklist Execution)*
