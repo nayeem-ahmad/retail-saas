@@ -22,7 +22,7 @@ export async function getTenantContext(): Promise<TenantContext> {
   }
 
   // Retrieve tenant ID from cookie
-  const cookieStore = cookies()
+  const cookieStore = await cookies()
   const tenantId = cookieStore.get('x-tenant-id')?.value
 
   if (!tenantId) {
