@@ -36,3 +36,5 @@ next-env.d.ts
 .bmad-core/
 .gemini/
 .vscode/
+
+/src/generated/prisma

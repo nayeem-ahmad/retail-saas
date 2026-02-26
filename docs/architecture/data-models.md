@@ -255,7 +255,7 @@ interface Product {
 
 **Key Attributes:**
 - `id`: `UUID` - The unique identifier for the transaction.
-- `store_id`: `UUID` - A foreign key referencing the `Store` where the sale occurred.
+- `store_id`: `UUID` - A foreign key referencing the `Store where the sale occurred.
 - `customer_id`: `UUID` (optional) - Foreign key to the `Customer`.
 - `total_amount`: `decimal` - The total value of all items in the sale.
 - `amount_due`: `decimal` - The remaining amount to be paid.
@@ -400,5 +400,251 @@ interface InventoryAdjustment {
 
 **Relationships:**
 - **Belongs To:** An `InventoryAdjustment` belongs to one `Store`, one `Product`, one `Warehouse`, and one `User`.
+
+### Accounting Module
+
+### AccountGroup
+
+**Purpose:** Represents high-level financial categories (e.g., "Current Assets", "Operating Expenses").
+
+**Key Attributes:**
+- `id`: `UUID`
+- `tenant_id`: `UUID`
+- `name`: `string`
+- `type`: `string` (`asset`, `liability`, `equity`, `revenue`, `expense`)
+
+**Relationships:**
+- **Belongs To:** A `Tenant`.
+- **Has Many:** `AccountSubGroup`s and `Account`s.
+
+### AccountSubGroup
+
+**Purpose:** Represents a more specific classification within an Account Group (e.g., "Cash and Bank" under "Current Assets").
+
+**Key Attributes:**
+- `id`: `UUID`
+- `tenant_id`: `UUID`
+- `group_id`: `UUID` - Foreign key to the parent `AccountGroup`.
+- `name`: `string`
+
+**Relationships:**
+- **Belongs To:** A `Tenant` and an `AccountGroup`.
+- **Has Many:** `Account`s.
+
+### Account
+
+**Purpose:** Represents an entry in the Chart of Accounts (COA) for tracking financial balances.
+
+**Key Attributes:**
+- `id`: `UUID`
+- `tenant_id`: `UUID`
+- `group_id`: `UUID` - Foreign key to the `AccountGroup`.
+- `subgroup_id`: `UUID` (optional) - Foreign key to the `AccountSubGroup`.
+- `name`: `string` (e.g., "Cash in Hand", "City Bank A/C", "Sales Revenue")
+- `category`: `string` (`cash`, `bank`, `general`) - Used to filter for specific voucher types.
+- `code`: `string` (optional) - Manual accounting code.
+
+**Relationships:**
+- **Belongs To:** A `Tenant`, an `AccountGroup`, and optionally an `AccountSubGroup`.
+- **Has Many:** An `Account` appears in many `VoucherDetail` records.
+
+### Voucher
+
+**Purpose:** The header for a double-entry accounting transaction.
+
+**Key Attributes:**
+- `id`: `UUID`
+- `tenant_id`: `UUID`
+- `voucher_number`: `string` (Auto-generated, editable)
+- `voucher_type`: `string` (`cash_payment`, `cash_receive`, `bank_payment`, `bank_receive`, `fund_transfer`, `journal`)
+- `description`: `text` (The overall narration for the transaction)
+- `reference_number`: `string` (Manual reference)
+- `date`: `timestamp` (Default: `now()`)
+
+**Relationships:**
+- **Belongs To:** A `Tenant`.
+- **Has Many:** A `Voucher` has two or more `VoucherDetail` items.
+
+### VoucherDetail
+
+**Purpose:** Represents a single row within a voucher (a debit or credit entry).
+
+**Key Attributes:**
+- `id`: `UUID`
+- `voucher_id`: `UUID`
+- `account_id`: `UUID`
+- `debit_amount`: `decimal` (0 if credit)
+- `credit_amount`: `decimal` (0 if debit)
+- `comment`: `string` (Row-level narration)
+
+**Relationships:**
+- **Belongs To:** A `Voucher` and an `Account`.
+
+### HR & Payroll Module
+
+### Department
+
+**Purpose:** Represents a functional area within the tenant's business (e.g., "Sales", "Warehouse", "Admin").
+
+**Key Attributes:**
+- `id`: `UUID`
+- `tenant_id`: `UUID`
+- `name`: `string`
+
+**Relationships:**
+- **Belongs To:** A `Tenant`.
+- **Has Many:** `Employee`s.
+
+### Designation
+
+**Purpose:** Represents an employee's job title or rank (e.g., "Senior Cashier", "Floor Manager").
+
+**Key Attributes:**
+- `id`: `UUID`
+- `tenant_id`: `UUID`
+- `name`: `string`
+
+**Relationships:**
+- **Belongs To:** A `Tenant`.
+- **Has Many:** `Employee`s.
+
+### Employee
+
+**Purpose:** Represents a staff member working for the tenant.
+
+**Key Attributes:**
+- `id`: `UUID`
+- `tenant_id`: `UUID`
+- `user_id`: `UUID` (optional) - Links to a `User` if they have system login access.
+- `designation_id`: `UUID`
+- `department_id`: `UUID`
+- `store_id`: `UUID` (optional) - Primary store location.
+- `name`: `string`
+- `phone`: `string`
+- `nid_number`: `string` (National ID for compliance)
+- `joining_date`: `date`
+- `basic_salary`: `decimal`
+- `allowances_json`: `jsonb` - Configurable allowances (House Rent, Medical, etc.).
+- `status`: `string` (`active`, `on_leave`, `terminated`)
+
+**Relationships:**
+- **Belongs To:** A `Tenant`, `Department`, `Designation`, and optionally a `Store`.
+- **Has Many:** `Attendance` records, `LeaveRequest`s, and `SalaryDisbursement`s.
+
+### Admin & Security Module
+
+### Role
+
+**Purpose:** A set of permissions assigned to a group of users (e.g., "Cashier", "Manager").
+
+**Key Attributes:**
+- `id`: `UUID`
+- `tenant_id`: `UUID`
+- `name`: `string`
+- `description`: `text` (optional)
+- `is_system_role`: `boolean` (Default roles like 'Owner' cannot be edited)
+
+**Relationships:**
+- **Belongs To:** A `Tenant`.
+- **Has Many (Through):** `User`s via `TenantUser`.
+- **Has Many:** `Permission`s.
+
+### Permission
+
+**Purpose:** Defines a specific granular action that can be performed (e.g., `view_cost_price`, `delete_sale`).
+
+**Key Attributes:**
+- `id`: `UUID`
+- `name`: `string` (e.g., `POS_DISCOUNT_OVERRIDE`)
+- `module`: `string` (e.g., `SALES`, `INVENTORY`)
+- `description`: `text`
+
+**Relationships:**
+- **Belongs To:** Many `Role`s.
+
+### AuditLog
+
+**Purpose:** A permanent record of all critical user actions for fraud prevention and accountability.
+
+**Key Attributes:**
+- `id`: `UUID`
+- `tenant_id`: `UUID`
+- `user_id`: `UUID`
+- `action`: `string` (e.g., `UPDATE_PRODUCT_PRICE`)
+- `entity_type`: `string` (e.g., `Product`)
+- `entity_id`: `UUID`
+- `old_values`: `jsonb`
+- `new_values`: `jsonb`
+- `ip_address`: `string`
+- `user_agent`: `string`
+- `created_at`: `timestamp`
+
+**Relationships:**
+- **Belongs To:** A `Tenant` and a `User`.
+
+### CRM & Loyalty Module
+
+### Customer
+
+**Purpose:** Represents a customer of the tenant, allowing for purchase history tracking, loyalty rewards, and store credit management.
+
+**Key Attributes:**
+- `id`: `UUID`
+- `tenant_id`: `UUID`
+- `name`: `string`
+- `phone`: `string` (Unique within tenant)
+- `email`: `string` (optional)
+- `address`: `text` (optional)
+- `segment`: `string` (`new`, `regular`, `vip`, `at_risk`)
+- `created_at`: `timestamp`
+
+**Relationships:**
+- **Belongs To:** A `Tenant`.
+- **Has One:** `CustomerWallet`.
+- **Has Many:** `LoyaltyPoint` records, `Sale`s, and `Order`s.
+
+### CustomerWallet
+
+**Purpose:** Manages a customer's store credit balance (prepaid or return credits).
+
+**Key Attributes:**
+- `id`: `UUID`
+- `customer_id`: `UUID`
+- `balance`: `decimal`
+- `last_updated`: `timestamp`
+
+**Relationships:**
+- **Belongs To:** A `Customer`.
+
+### LoyaltyPoint
+
+**Purpose:** Tracks the points earned or redeemed by a customer.
+
+**Key Attributes:**
+- `id`: `UUID`
+- `customer_id`: `UUID`
+- `sale_id`: `UUID` (optional - if points were earned from a sale)
+- `points_earned`: `integer`
+- `points_redeemed`: `integer`
+- `balance_after`: `integer`
+- `description`: `string`
+
+**Relationships:**
+- **Belongs To:** A `Customer` and optionally a `Sale`.
+
+### LoyaltyRule
+
+**Purpose:** Defines how points are calculated (e.g., "1 point per 100 BDT").
+
+**Key Attributes:**
+- `id`: `UUID`
+- `tenant_id`: `UUID`
+- `min_spend`: `decimal`
+- `points_per_unit`: `integer`
+- `redemption_rate`: `decimal` (e.g., 10 points = 1 BDT)
+- `is_active`: `boolean`
+
+**Relationships:**
+- **Belongs To:** A `Tenant`.
 
 ### ... (Other models remain unchanged)

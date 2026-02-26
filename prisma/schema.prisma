@@ -1,0 +1,167 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum SubscriptionStatus {
+  active
+  past_due
+  cancelled
+  trialing
+}
+
+enum UserRole {
+  owner
+  manager
+  cashier
+  accountant
+}
+
+model Tenant {
+  id         String   @id @default(uuid())
+  name       String
+  ownerId    String   @map("owner_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  stores        Store[]
+  users         TenantUser[]
+  subscription  TenantSubscription?
+  products      Product[]
+  productGroups ProductGroup[]
+  subgroups     ProductSubGroup[]
+  warehouses    Warehouse[]
+  stocks        ProductStock[]
+
+  @@map("tenants")
+}
+
+model SubscriptionPlan {
+  id           String   @id @default(uuid())
+  name         String
+  monthlyPrice Decimal  @map("monthly_price") @db.Decimal(12, 2)
+  featuresJson Json     @default("{}") @map("features_json")
+  isActive     Boolean  @default(true) @map("is_active")
+
+  subscriptions TenantSubscription[]
+
+  @@map("subscription_plans")
+}
+
+model TenantSubscription {
+  id               String             @id @default(uuid())
+  tenantId         String             @unique @map("tenant_id")
+  planId           String             @map("plan_id")
+  status           SubscriptionStatus @default(trialing)
+  currentPeriodEnd DateTime           @map("current_period_end")
+
+  tenant Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  plan   SubscriptionPlan @relation(fields: [planId], references: [id])
+
+  @@map("tenant_subscriptions")
+}
+
+model Store {
+  id        String   @id @default(uuid())
+  tenantId  String   @map("tenant_id")
+  name      String
+  address   String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  warehouses Warehouse[]
+
+  @@map("stores")
+}
+
+model Warehouse {
+  id        String   @id @default(uuid())
+  storeId   String   @map("store_id")
+  tenantId  String   @map("tenant_id")
+  name      String
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  store  Store          @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  tenant Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  stocks ProductStock[]
+
+  @@map("warehouses")
+}
+
+model TenantUser {
+  id       String   @id @default(uuid())
+  tenantId String   @map("tenant_id")
+  userId   String   @map("user_id")
+  role     UserRole @default(cashier)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, userId])
+  @@map("tenant_users")
+}
+
+model Product {
+  id         String   @id @default(uuid())
+  tenantId   String   @map("tenant_id")
+  groupId    String?  @map("group_id")
+  subgroupId String?  @map("subgroup_id")
+  name       String
+  sku        String?
+  price      Decimal  @default(0) @db.Decimal(12, 2)
+  reorderLevel Int    @default(10) @map("reorder_level")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  tenant     Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  group      ProductGroup?    @relation(fields: [groupId], references: [id])
+  subgroup   ProductSubGroup? @relation(fields: [subgroupId], references: [id])
+  stocks     ProductStock[]
+
+  @@unique([tenantId, sku])
+  @@map("products")
+}
+
+model ProductGroup {
+  id       String   @id @default(uuid())
+  tenantId String   @map("tenant_id")
+  name     String
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  subgroups ProductSubGroup[]
+  products  Product[]
+
+  @@unique([tenantId, name])
+  @@map("product_groups")
+}
+
+model ProductSubGroup {
+  id       String   @id @default(uuid())
+  groupId  String   @map("group_id")
+  tenantId String   @map("tenant_id")
+  name     String
+  group    ProductGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  tenant   Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  products Product[]
+
+  @@unique([groupId, name])
+  @@map("product_subgroups")
+}
+
+model ProductStock {
+  id          String    @id @default(uuid())
+  tenantId    String    @map("tenant_id")
+  productId   String    @map("product_id")
+  warehouseId String    @map("warehouse_id")
+  quantity    Int       @default(0)
+
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  product   Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, warehouseId])
+  @@map("product_stocks")
+}
