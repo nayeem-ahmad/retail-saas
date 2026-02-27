@@ -10,6 +10,7 @@ Build a centralized customer database that enables personalized service and data
 *   **Preferences Tracking:** Record favorite product categories or communication preferences.
 
 **Stories:**
+
 1. **Story 1: Customer CRUD API & UI** - Interface to add/edit customer profiles with unique phone number validation.
 2. **Story 2: Segment Logic Engine** - Automated background job to update customer segments based on transaction frequency and value.
 3. **Story 3: Purchase History Dashboard** - View a customer's lifetime sales and order history in one place.

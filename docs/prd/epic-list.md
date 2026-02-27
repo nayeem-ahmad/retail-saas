@@ -3,11 +3,13 @@
 This document provides a master list of all epics for the Retail SaaS platform, organized by module and priority.
 
 ## 🏗️ Foundation (01-09)
-*   **Epic 01: Core Retail Operations MVP**
+*   **Epic 01: SaaS Foundation & Infrastructure**
 *   **Epic 02: Scalability & Infrastructure Resilience**
 *   **Epic 03: SaaS Multi-Tenancy & Billing**
 *   **Epic 04: Main Executive Dashboard (Landing)**
     *   **Goal:** Global KPI overview and actionable alerts immediately after login.
+*   **Epic 05: Core Platform Services**
+    *   **Goal:** Unified infrastructure for Cloud Storage, Email, and Multi-channel Notifications.
 
 ## 💰 Sales (10-19)
 *   **Epic 10: Core Sales & POS Transactions**
@@ -48,20 +50,14 @@ This document provides a master list of all epics for the Retail SaaS platform, 
 *   **Epic 46: Manufacturing & BOM**
 
 ## 🕒 HR & Payroll (60-79)
-*   **Epic 60: HR Setup & Employee Profiles**
+*   **Epic 60: HR & Employee Management**
     *   **Goal:** Manage departments, designations, and comprehensive digital employee files.
-*   **Epic 61: Shift & Attendance Tracking**
-    *   **Goal:** Geofenced clock-in/out, shift scheduling, and overtime tracking.
-*   **Epic 62: Leave Management Workflow**
-    *   **Goal:** Automated leave requests, manager approvals, and balance tracking.
-*   **Epic 70: Salary Profiles & Payroll Setup**
-    *   **Goal:** Define pay structures, allowances (House Rent, etc.), and deductions.
-*   **Epic 71: Employee Loans & Advances**
-    *   **Goal:** Track salary advances and loans with automated payroll deductions.
-*   **Epic 72: Monthly Payroll Processing**
-    *   **Goal:** One-click payroll generation, digital payslips, and accounting voucher integration.
-*   **Epic 74: HR & Payroll Dashboard**
-    *   **Goal:** Attendance snapshot, leave management, and payroll trends.
+*   **Epic 61: Attendance & Leave Management**
+    *   **Goal:** Integrated clock-in/out, simple shifts, and automated leave tracking.
+*   **Epic 62: Payroll & Salary Management**
+    *   **Goal:** Define pay structures, manage loans/advances, and monthly payroll processing.
+*   **Epic 63: HR & Payroll Analytics**
+    *   **Goal:** Real-time staff presence, leave status, and payroll trends dashboard.
 
 ## 🤝 CRM & Loyalty (80-89)
 *   **Epic 80: Customer Profiles & Segmentation**
@@ -70,6 +66,8 @@ This document provides a master list of all epics for the Retail SaaS platform, 
     *   **Goal:** Implement rule-based point earning and redemption logic linked to POS sales.
 *   **Epic 82: Customer Wallets & Store Credit**
     *   **Goal:** Manage digital balances for prepaid top-ups or return-based store credits.
+*   **Epic 83: Customer Engagement & Messaging**
+    *   **Goal:** Direct communication through automated SMS, email, and push notifications.
 *   **Epic 84: CRM & Customer Dashboard**
     *   **Goal:** Retention metrics, top customers, and loyalty program effectiveness.
 
