@@ -3,20 +3,40 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Lock, Mail, ArrowRight, Loader2 } from 'lucide-react';
+import { api } from '@/lib/api';
 
 export default function LoginPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const router = useRouter();
 
-    const handleLogin = (e: React.FormEvent) => {
+    const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
-        // Simulate local login
-        setTimeout(() => {
+        setError(null);
+
+        try {
+            const loginRes = await api.login({ email, password });
+            localStorage.setItem('access_token', loginRes.access_token);
+
+            // Fetch user info to get tenants
+            const meRes = await api.getMe();
+            if (meRes.tenants && meRes.tenants.length > 0) {
+                const primaryTenant = meRes.tenants[0];
+                localStorage.setItem('tenant_id', primaryTenant.id);
+                if (primaryTenant.stores && primaryTenant.stores.length > 0) {
+                    localStorage.setItem('store_id', primaryTenant.stores[0].id);
+                }
+            }
+
             router.push('/dashboard');
-        }, 1200);
+        } catch (err: any) {
+            setError(err.message || 'Login failed. Please check your credentials.');
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -30,6 +50,12 @@ export default function LoginPage() {
                         <h1 className="text-2xl font-bold tracking-tight">Welcome back</h1>
                         <p className="text-gray-500 mt-2 text-sm">Please enter your details to sign in</p>
                     </div>
+
+                    {error && (
+                        <div className="mb-6 p-3 bg-red-50 border border-red-100 text-red-600 text-sm rounded-xl text-center animate-in fade-in slide-in-from-top-1">
+                            {error}
+                        </div>
+                    )}
 
                     <form onSubmit={handleLogin} className="space-y-6">
                         <div className="space-y-2">

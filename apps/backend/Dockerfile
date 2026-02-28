@@ -38,4 +38,4 @@ ENV PORT=4000
 ENV HOSTNAME="0.0.0.0"
 
 # Command to run the NestJS application
-CMD ["node", "apps/backend/dist/main"]
+CMD ["node", "apps/backend/dist/src/main.js"]

@@ -63,6 +63,39 @@ export class AuthService {
         };
     }
 
+    async getMe(userId: string) {
+        const user = await this.db.user.findUnique({
+            where: { id: userId },
+            include: {
+                tenantMembers: {
+                    include: {
+                        tenant: {
+                            include: {
+                                stores: true,
+                            },
+                        },
+                    },
+                },
+            },
+        });
+
+        if (!user) {
+            throw new UnauthorizedException('User not found');
+        }
+
+        return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            tenants: user.tenantMembers.map((m) => ({
+                id: m.tenant.id,
+                name: m.tenant.name,
+                role: m.role,
+                stores: m.tenant.stores,
+            })),
+        };
+    }
+
     async setupStore(userId: string, dto: { name: string; address?: string }) {
         return this.db.$transaction(async (tx) => {
             const tenant = await tx.tenant.create({

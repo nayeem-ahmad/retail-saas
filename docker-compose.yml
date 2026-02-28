@@ -1,4 +1,16 @@
 services:
+  db:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password123
+      - POSTGRES_DB=retail_saas
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
   frontend:
     platform: linux/amd64
     build:
@@ -10,7 +22,13 @@ services:
       - .env
     environment:
       - NODE_ENV=production
+      - DATABASE_URL=postgresql://postgres:password123@db:5432/retail_saas
+    depends_on:
+      - db
     restart: always
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
 
   backend:
     platform: linux/amd64
@@ -23,4 +41,13 @@ services:
       - .env
     environment:
       - NODE_ENV=production
+      - DATABASE_URL=postgresql://postgres:password123@db:5432/retail_saas
+    depends_on:
+      - db
     restart: always
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+
+volumes:
+  postgres_data:

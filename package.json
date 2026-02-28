@@ -16,9 +16,10 @@
     "clean": "turbo clean"
   },
   "devDependencies": {
+    "@types/node": "^22.13.5",
+    "ts-node": "^10.9.2",
     "turbo": "^2.4.4",
-    "typescript": "^5.7.3",
-    "@types/node": "^22.13.5"
+    "typescript": "^5.7.3"
   },
   "optionalDependencies": {
     "lightningcss-linux-arm64-gnu": "latest",

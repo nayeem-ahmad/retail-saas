@@ -56,4 +56,14 @@ export const api = {
         body: JSON.stringify(data),
         headers: { 'Content-Type': 'application/json' },
     }),
+    getSales: () => fetchWithAuth('/sales'),
+    login: (data: any) => fetch(`${API_URL}/auth/login`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+    }).then(res => {
+        if (!res.ok) throw new Error('Login failed');
+        return res.json();
+    }),
+    getMe: () => fetchWithAuth('/auth/me'),
 };

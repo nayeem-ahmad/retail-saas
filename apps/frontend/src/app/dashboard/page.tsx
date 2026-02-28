@@ -16,8 +16,43 @@ import {
     LinkIcon
 } from 'lucide-react';
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { api } from '@/lib/api';
 
 export default function DashboardPage() {
+    const [user, setUser] = useState<any>(null);
+    const [sales, setSales] = useState<any[]>([]);
+    const [products, setProducts] = useState<any[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const [meRes, productsRes, salesRes] = await Promise.all([
+                    api.getMe(),
+                    api.getProducts(),
+                    api.getSales()
+                ]);
+                setUser(meRes);
+                setProducts(productsRes);
+                setSales(salesRes);
+            } catch (error) {
+                console.error('Failed to fetch dashboard data:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchData();
+    }, []);
+
+    const totalSalesAmount = sales.reduce((acc, sale) => acc + Number(sale.total_amount), 0);
+    const activeOrdersCount = sales.length;
+
+    // Calculate top products by scanning sales items or just use a subset for now
+    // For v0.1 simplification, we'll just show the products we have
+    const displayedProducts = products.slice(0, 4);
+
     return (
         <div className="flex h-screen bg-[#f9fafb] font-sans text-[#111827]">
             {/* Sidebar */}
@@ -34,7 +69,7 @@ export default function DashboardPage() {
                         <NavItem href="/dashboard" icon={<LayoutDashboard />} label="Dashboard" active />
                         <NavItem href="/dashboard/pos" icon={<ShoppingCart />} label="POS" />
                         <NavItem href="/dashboard/inventory" icon={<Package />} label="Inventory" />
-                        <NavItem href="#" icon={<Users />} label="Customers" />
+                        <NavItem icon={<Users />} label="Customers" />
                         <div className="pt-10 pb-4">
                             <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest pl-3">Management</span>
                         </div>
@@ -43,7 +78,13 @@ export default function DashboardPage() {
                 </div>
 
                 <div className="mt-auto p-4 border-t border-gray-100">
-                    <button className="flex items-center space-x-3 w-full px-3 py-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors group">
+                    <button
+                        onClick={() => {
+                            localStorage.clear();
+                            window.location.href = '/login';
+                        }}
+                        className="flex items-center space-x-3 w-full px-3 py-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors group"
+                    >
                         <LogOut className="w-5 h-5 group-hover:rotate-12 transition-transform" />
                         <span className="font-medium text-sm">Sign out</span>
                     </button>
@@ -59,7 +100,7 @@ export default function DashboardPage() {
                         <input
                             type="text"
                             placeholder="Search orders, products..."
-                            className="bg-gray-50 border-none rounded-lg py-2 pl-10 pr-4 text-sm w-full focus:ring-2 focus:ring-blue-500/10 transition-all"
+                            className="bg-gray-50 border-none rounded-lg py-2 pl-10 pr-4 text-sm w-full focus:ring-2 focus:ring-blue-500/10 transition-all font-sans"
                         />
                     </div>
 
@@ -71,11 +112,11 @@ export default function DashboardPage() {
                         <div className="h-8 w-[1px] bg-gray-200 mx-2"></div>
                         <div className="flex items-center space-x-3">
                             <div className="text-right">
-                                <p className="text-sm font-semibold uppercase tracking-tight">Alex Rivera</p>
-                                <p className="text-xs text-gray-500 uppercase font-medium">Store Admin</p>
+                                <p className="text-sm font-semibold uppercase tracking-tight">{user?.name || 'Loading...'}</p>
+                                <p className="text-xs text-gray-500 uppercase font-medium">{user?.tenants?.[0]?.role || 'Staff'}</p>
                             </div>
                             <div className="w-9 h-9 bg-blue-100 rounded-full flex items-center justify-center text-blue-700 font-bold overflow-hidden border border-blue-200 shadow-sm transition-transform hover:scale-105 cursor-pointer">
-                                AR
+                                {user?.name?.split(' ').map((n: string) => n[0]).join('') || '??'}
                             </div>
                         </div>
                     </div>
@@ -85,28 +126,30 @@ export default function DashboardPage() {
                 <div className="flex-1 overflow-y-auto p-8">
                     <div className="mb-8">
                         <h1 className="text-2xl font-bold tracking-tight">Dashboard Overview</h1>
-                        <p className="text-gray-500 text-sm mt-1 uppercase font-medium tracking-wide">Last updated: Today, 10:45 AM</p>
+                        <p className="text-gray-500 text-sm mt-1 uppercase font-medium tracking-wide">
+                            {user?.tenants?.[0]?.name || 'Your Business'} • Last updated: Today
+                        </p>
                     </div>
 
                     {/* Stats Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                         <StatCard
                             title="Total Sales"
-                            value="$128,430"
-                            trend="+12% from last month"
+                            value={`$${totalSalesAmount.toLocaleString()}`}
+                            trend="+0% from last month"
                             isPositive={true}
                         />
                         <StatCard
                             title="Active Orders"
-                            value="1,240"
-                            trend="+48 since yesterday"
+                            value={activeOrdersCount.toString()}
+                            trend="Real-time data"
                             isPositive={true}
                         />
                         <StatCard
-                            title="Cart Rate"
-                            value="3.42%"
-                            trend="-0.5% from last week"
-                            isPositive={false}
+                            title="Products"
+                            value={products.length.toString()}
+                            trend="In inventory"
+                            isPositive={true}
                         />
                     </div>
 
@@ -121,41 +164,41 @@ export default function DashboardPage() {
                                 </button>
                             </div>
                             <div className="p-0">
-                                <ActivityItem
-                                    title="New Order #FR-9012"
-                                    description="Processed for Emma Watson"
-                                    time="12 mins ago"
-                                />
-                                <ActivityItem
-                                    title="Inventory Alert"
-                                    description="Product 'Minimalist Desk' low"
-                                    time="2 hours ago"
-                                    isWarning
-                                />
-                                <ActivityItem
-                                    title="New Customer"
-                                    description="Liam Neeson signed up"
-                                    time="5 hours ago"
-                                />
-                                <ActivityItem
-                                    title="System Update"
-                                    description="Cloud sync completed"
-                                    time="Yesterday"
-                                />
+                                {sales.length > 0 ? (
+                                    sales.slice(0, 5).map((sale) => (
+                                        <ActivityItem
+                                            key={sale.id}
+                                            title={`Sale ${sale.serial_number}`}
+                                            description={`Amount: $${Number(sale.total_amount).toFixed(2)}`}
+                                            time={new Date(sale.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        />
+                                    ))
+                                ) : (
+                                    <div className="p-8 text-center text-gray-400 text-sm">No recent activity</div>
+                                )}
                             </div>
                         </div>
 
                         {/* Top Products */}
                         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                             <div className="flex items-center justify-between mb-6">
-                                <h2 className="font-bold text-gray-900 tracking-tight">Top Products</h2>
+                                <h2 className="font-bold text-gray-900 tracking-tight">Inventory Overview</h2>
                                 <MoreVertical className="w-5 h-5 text-gray-400 cursor-pointer" />
                             </div>
                             <div className="space-y-6">
-                                <ProductRow name="Ergonomic Chair" price="$240" sales="154" />
-                                <ProductRow name="Wireless Earbuds" price="$89" sales="142" />
-                                <ProductRow name="Glass Desk Lamp" price="$55" sales="98" />
-                                <ProductRow name="Mechanical Keyboard" price="$120" sales="75" />
+                                {displayedProducts.length > 0 ? (
+                                    displayedProducts.map((product) => (
+                                        <ProductRow
+                                            key={product.id}
+                                            name={product.name}
+                                            price={`$${Number(product.price).toFixed(2)}`}
+                                            sales={product.stocks?.[0]?.quantity?.toString() || '0'}
+                                            salesLabel="Stock"
+                                        />
+                                    ))
+                                ) : (
+                                    <div className="text-center text-gray-400 text-sm py-4">No products found</div>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -207,7 +250,7 @@ function ActivityItem({ title, description, time, isWarning = false }: { title: 
     );
 }
 
-function ProductRow({ name, price, sales }: { name: string, price: string, sales: string }) {
+function ProductRow({ name, price, sales, salesLabel = 'Sales' }: { name: string, price: string, sales: string, salesLabel?: string }) {
     return (
         <div className="flex items-center justify-between group cursor-pointer hover:bg-gray-50 p-2 -mx-2 rounded-xl transition-colors">
             <div className="flex items-center space-x-4">
@@ -219,7 +262,7 @@ function ProductRow({ name, price, sales }: { name: string, price: string, sales
             </div>
             <div className="text-right">
                 <p className="text-sm font-bold tracking-tight">{sales}</p>
-                <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest">Sales</p>
+                <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest">{salesLabel}</p>
             </div>
         </div>
     );
