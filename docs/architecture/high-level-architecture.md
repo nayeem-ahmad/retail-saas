@@ -2,58 +2,58 @@
 
 ### Technical Summary
 
-This architecture outlines a modern, scalable, and maintainable full-stack solution for the "SaaS Platform for Grocery Shops". It is designed as a modular monolith, leveraging a serverless-first approach for the backend and a component-based, single-page application for the frontend. The key integration point is a REST API. The entire system will be hosted on a major cloud platform to ensure scalability and reliability, directly supporting the PRD's goals of a robust and scalable platform.
+The Retail SaaS platform is architected as a **Containerized Monorepo**. It prioritizes **Type Safety** through an all-TypeScript web/backend core, while leveraging **Flutter** for a high-performance mobile POS. The system is deployed as independent Docker services on **Render.com**, providing a balance between the simplicity of a PaaS and the control of a containerized environment.
 
 ### Platform and Infrastructure Choice
 
-**Platform:** Vercel + Supabase
-**Key Services:** Vercel (Hosting, CDN), Supabase (PostgreSQL, Auth, Storage)
-**Deployment Host and Regions:** Vercel Edge Network (Global), Supabase (nearest region to Bangladesh)
+**Platform:** Render.com
+**Key Services:** Render Web Services (Docker), Render Managed PostgreSQL, Render Redis.
+**Containerization:** Docker is used for all service deployments to ensure environment parity and portability.
 
 ### Repository Structure
 
-**Structure:** Monorepo
-**Monorepo Tool:** npm workspaces
-**Package Organization:**
-- `apps/web`: The Next.js frontend application.
-- `apps/api`: The backend API (e.g., Express.js or Next.js API routes).
-- `packages/shared`: Shared code, such as TypeScript types and validation schemas.
-- `packages/ui`: Shared UI components.
+**Structure:** Monorepo (using npm workspaces and Turborepo)
+**Organization:**
+- `apps/backend`: NestJS API (Node.js/TypeScript).
+- `apps/frontend`: Next.js Web Dashboard.
+- `apps/mobile`: Flutter Mobile Application.
+- `packages/*`: Shared database schemas, types, and validation logic.
 
 ### High Level Architecture Diagram
 
 ```mermaid
 graph TD
-    subgraph User
-        A[Browser/Mobile]
+    subgraph Clients
+        Web[Next.js Dashboard]
+        Mobile[Flutter POS]
     end
 
-    subgraph Vercel
-        B(Next.js Frontend)
-        C(API Routes)
+    subgraph Render_Cloud
+        LB[Load Balancer]
+        API[NestJS Docker Container]
+        DB[(PostgreSQL)]
+        Redis[(Redis Cache)]
     end
 
-    subgraph Supabase
-        D[PostgreSQL DB]
-        E[Auth]
-        F[Storage]
+    subgraph External
+        SMS[Twilio/SMS]
+        Storage[S3/Cloudinary]
+        Pay[bKash/Nagad]
     end
 
-    subgraph External Services
-        G[bKash/Nagad]
-    end
-
-    A --> B
-    B --> C
-    C --> D
-    C --> E
-    C --> F
-    C --> G
+    Web --> LB
+    Mobile --> LB
+    LB --> API
+    API --> DB
+    API --> Redis
+    API --> SMS
+    API --> Storage
+    API --> Pay
 ```
 
 ### Architectural Patterns
 
--   **Jamstack Architecture:** The frontend will be a static or server-rendered application, consuming APIs for dynamic functionality. _Rationale:_ Optimal performance, scalability, and security.
--   **Component-Based UI:** The frontend will be built with reusable React components. _Rationale:_ Maintainability, consistency, and reusability.
--   **Repository Pattern:** The backend will use a repository pattern to abstract data access logic. _Rationale:_ Decouples business logic from data sources, improving testability and flexibility.
--   **API Gateway Pattern:** All API requests will be routed through a single gateway (Vercel's API routes). _Rationale:_ Centralized point for routing, authentication, and logging.
+-   **Polyglot Monorepo:** Shared TypeScript types and validation across web/backend, with Flutter as a high-fidelity mobile consumer.
+-   **Dependency Injection (NestJS):** Architecture inspired by Spring Boot for maintainability and testability in the backend.
+-   **Docker-First Deployment:** Every application is containerized, ensuring that "what works locally works in production."
+-   **Centralized API Gateway:** The NestJS backend serves as the single entry point for all business logic and external integrations.

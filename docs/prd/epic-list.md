@@ -47,9 +47,18 @@ This document provides a master list of all epics for the Retail SaaS platform, 
     *   **Goal:** Stock health metrics and replenishment suggestions (Suggest Items).
 *   **Epic 44: Inventory Settings & Configuration**
 *   **Epic 45: Product Categorization & Hierarchy**
-*   **Epic 46: Manufacturing & BOM**
 
-## 🕒 HR & Payroll (60-79)
+## 🏭 Manufacturing & Production (70-79)
+*   **Epic 70: Simple Manufacturing Setup (BOM)**
+    *   **Goal:** Define bills of materials (recipes) for products made from other inventory items.
+*   **Epic 71: Production Work Orders**
+    *   **Goal:** Create and track manufacturing runs from planning to completion.
+*   **Epic 72: Manufacturing Inventory Sync**
+    *   **Goal:** Automated consumption of raw materials and incrementing finished goods.
+*   **Epic 73: Basic Manufacturing Analytics**
+    *   **Goal:** Monitor production costs, yields, and raw material efficiency.
+
+## 🕒 HR & Payroll (60-69)
 *   **Epic 60: HR & Employee Management**
     *   **Goal:** Manage departments, designations, and comprehensive digital employee files.
 *   **Epic 61: Attendance & Leave Management**

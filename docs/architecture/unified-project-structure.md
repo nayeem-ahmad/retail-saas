@@ -1,31 +1,32 @@
 # Unified Project Structure
 
-This section defines the monorepo structure that will house all the code for the frontend, backend, and shared packages.
+This section defines the monorepo structure that houses the frontend, backend, and mobile applications, along with shared logic.
 
 ```plaintext
-saas-platform-for-grocery-shops/
-├── .github/                    # CI/CD workflows (e.g., deploy on push to main)
+retail-saas/
+├── .github/                    # CI/CD workflows (e.g., deploy to Render)
 │   └── workflows/
-│       └── deploy.yaml
+│       └── main.yaml
 ├── apps/                       # The individual applications
-│   └── web/                    # The Next.js full-stack application
-│       ├── src/
-│       │   ├── app/            # Next.js App Router (pages and API routes)
-│       │   │   ├── (main)/     # Protected app routes
-│       │   │   ├── (auth)/     # Auth routes
-│       │   │   └── api/        # API routes
-│       │   ├── components/     # React components (UI and domain)
-│       │   ├── lib/            # Libraries, hooks, API client
-│       │   └── styles/         # Global styles
-│       ├── public/             # Static assets
-│       └── next.config.js
+│   ├── backend/                # NestJS (Node.js/TypeScript) API
+│   │   ├── src/
+│   │   ├── test/
+│   │   ├── Dockerfile
+│   │   └── package.json
+│   ├── frontend/               # Next.js (TypeScript) Web Dashboard
+│   │   ├── src/
+│   │   ├── public/
+│   │   ├── Dockerfile
+│   │   └── package.json
+│   └── mobile/                 # Flutter (Dart) Mobile App
+│       ├── lib/
+│       ├── pubspec.yaml
+│       └── README.md
 ├── packages/                   # Shared code between applications
-│   ├── shared-types/           # Shared TypeScript types (e.g., data models)
-│   │   └── index.ts
-│   └── ui/                     # Shared UI components (if any)
-│       └── package.json
-├── .env.local                  # Local environment variables (uncommitted)
-├── .gitignore
+│   ├── database/               # Prisma schema and generated client
+│   ├── shared-types/           # Shared TypeScript types/interfaces
+│   └── validation/             # Shared Zod schemas for E2E validation
+├── docker-compose.yml          # Local development environment
 ├── package.json                # Root package.json for npm workspaces
-└── tsconfig.json               # Root TypeScript configuration
+└── turbo.json                  # Turborepo configuration for build orchestration
 ```

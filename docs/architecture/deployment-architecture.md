@@ -1,51 +1,38 @@
 # Deployment Architecture
 
-This section defines the strategy for deploying the application to staging and production environments. Our architecture is designed for continuous deployment using Vercel and GitHub.
+This section defines the strategy for deploying the application using **Docker** containers on the **Render.com** platform.
 
 ### Deployment Strategy
 
-The entire full-stack Next.js application will be deployed as a single unit to Vercel.
+We leverage a **Docker-first** strategy. Each application in our `apps/` directory (Frontend and Backend) contains its own `Dockerfile`. 
 
-- **Platform:** Vercel
-- **Deployment Method:** Git Integration. Vercel will be connected to our GitHub repository.
-    - A `git push` to the `main` branch will automatically trigger a **production deployment**.
-    - A `git push` to any other branch (e.g., a feature branch in a pull request) will automatically trigger a **preview deployment** with a unique URL.
+- **Platform:** Render.com
+- **Deployment Method:** Docker Web Services. Render monitors our GitHub repository and triggers a build when changes are pushed to `main`.
+- **Private Networking:** The Backend and Database communicate over Render's internal private network, ensuring the database is not exposed to the public internet.
 
 ### CI/CD Pipeline
 
-The CI/CD pipeline is managed by Vercel's GitHub integration. The process is as follows:
+The pipeline is orchestrated via **GitHub Actions** and Render's automatic deployment hooks:
 
-1.  **Push:** A developer pushes code to a GitHub branch.
-2.  **Build:** Vercel automatically pulls the code, installs dependencies (`npm install`), and runs the build command (`npm run build`).
-3.  **Test:** Unit and integration tests can be added as a step in the build process.
-4.  **Deploy:** If the build and tests are successful, Vercel deploys the application and assigns it a URL.
+1.  **Push:** Code is pushed to the `main` branch.
+2.  **Lint & Test:** GitHub Actions runs `npm run lint` and `npm test` across the monorepo.
+3.  **Docker Build (Render):** Render detects the push, executes the `Dockerfile` for each service (Frontend/Backend), and builds a production-ready image.
+4.  **Health Check:** Render performs a zero-downtime deploy, switching traffic to the new containers only after they pass health checks.
 
-Here is a conceptual `workflow.yaml` for GitHub Actions, which Vercel's integration automates:
+### Environment Management
 
-```yaml
-# This is a conceptual representation. Vercel handles this automatically.
-name: Deploy to Vercel
-on: [push]
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Install, Build, and Deploy
-        # Vercel's platform detects the Next.js project and runs the
-        # appropriate commands, linking the deployment to the commit.
-        # Secrets (environment variables) are managed in Vercel's UI.
-        run: |
-          echo "Vercel handles this step automatically."
-          echo "Connect the GitHub repo in the Vercel project settings."
-```
+Environment variables are managed within the Render Dashboard for each service (Production/Staging).
 
-### Environments
-
-We will use three primary environments:
-
-| Environment | URL | Purpose |
+| Environment | Hosting | Purpose |
 | :--- | :--- | :--- |
-| **Development** | `localhost:3000` | Local development on developer machines. |
-| **Staging / Preview** | `[branch-name]-project.vercel.app` | Automatically generated for every pull request. Used for testing and review before merging. |
-| **Production** | `your-production-domain.com` | The live application accessible to end-users. Deployed from the `main` branch. |
+| **Development** | `docker-compose` | Local replication of the full production environment. |
+| **Staging** | Render (Docker) | Pre-production environment for final UAT. |
+| **Production** | Render (Docker) | Live environment for retail stores. |
+
+### Local Development Flow
+
+Developers can spin up the entire stack (Postgres, NestJS, Next.js) using a single command:
+```bash
+docker-compose up
+```
+This ensures that every developer is working against the same versions of the database and runtime as production.

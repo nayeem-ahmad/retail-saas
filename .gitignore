@@ -16,6 +16,11 @@ build
 # Misc
 .DS_Store
 *.pem
+.agent/
+_bmad/
+_bmad-output/
+.kilocode/
+.kilocodemodes
 
 # Debug
 npm-debug.log*

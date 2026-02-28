@@ -1,0 +1,26 @@
+services:
+  frontend:
+    platform: linux/amd64
+    build:
+      context: .
+      dockerfile: apps/frontend/Dockerfile
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+    restart: always
+
+  backend:
+    platform: linux/amd64
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+    ports:
+      - "4000:4000"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+    restart: always
