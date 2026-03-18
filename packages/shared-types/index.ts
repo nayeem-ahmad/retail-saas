@@ -49,3 +49,33 @@ export const SignupSchema = z.object({
 });
 
 export type SignupInput = z.infer<typeof SignupSchema>;
+
+// --- PRODUCT SCHEMAS ---
+
+export interface Product {
+  id: string;
+  tenant_id: string;
+  group_id?: string;
+  subgroup_id?: string;
+  name: string;
+  sku: string;
+  price: number;
+  reorder_level: number;
+}
+
+export interface ProductStock {
+  id: string;
+  tenant_id: string;
+  product_id: string;
+  warehouse_id: string;
+  quantity: number;
+}
+
+export const ProductSchema = z.object({
+  name: z.string().min(2, "Product name must be at least 2 characters"),
+  sku: z.string().min(3, "SKU must be at least 3 characters"),
+  price: z.coerce.number().min(0, "Price cannot be negative"),
+  initialStock: z.coerce.number().min(0, "Initial stock cannot be negative").default(0),
+});
+
+export type ProductInput = z.infer<typeof ProductSchema>;
