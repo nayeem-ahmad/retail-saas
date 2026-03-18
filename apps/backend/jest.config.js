@@ -12,4 +12,12 @@ module.exports = {
         '^@retail-saas/database(|/.*)$': '<rootDir>/../../packages/database/$1',
         '^@retail-saas/shared-types(|/.*)$': '<rootDir>/../../packages/shared-types/$1',
     },
+    coverageThreshold: {
+        global: {
+            branches: 80,
+            functions: 80,
+            lines: 80,
+            statements: 80,
+        },
+    },
 };
