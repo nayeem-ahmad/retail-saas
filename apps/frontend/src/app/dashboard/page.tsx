@@ -13,7 +13,10 @@ import {
     TrendingDown,
     Clock,
     MoreVertical,
-    LinkIcon
+    LinkIcon,
+    ArrowLeftRight,
+    ClipboardList,
+    FileText
 } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
@@ -69,7 +72,10 @@ export default function DashboardPage() {
                         <NavItem href="/dashboard" icon={<LayoutDashboard />} label="Dashboard" active />
                         <NavItem href="/dashboard/pos" icon={<ShoppingCart />} label="POS" />
                         <NavItem href="/dashboard/inventory" icon={<Package />} label="Inventory" />
-                        <NavItem icon={<Users />} label="Customers" />
+                        <NavItem href="/dashboard/customers" icon={<Users />} label="Customers" />
+                        <NavItem href="/dashboard/quotes" icon={<FileText />} label="Quotes" />
+                        <NavItem href="/dashboard/orders" icon={<ClipboardList />} label="Orders" />
+                        <NavItem href="/dashboard/returns" icon={<ArrowLeftRight />} label="Returns" />
                         <div className="pt-10 pb-4">
                             <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest pl-3">Management</span>
                         </div>

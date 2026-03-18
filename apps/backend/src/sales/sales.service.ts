@@ -16,10 +16,17 @@ export class SalesService {
                 data: {
                     tenant_id: tenantId,
                     store_id: dto.storeId,
+                    customer_id: dto.customerId,
                     serial_number: serialNumber,
                     total_amount: dto.totalAmount,
                     amount_paid: dto.amountPaid,
                     status: 'COMPLETED',
+                    payments: dto.payments ? {
+                        create: dto.payments.map(p => ({
+                            payment_method: p.paymentMethod,
+                            amount: p.amount
+                        }))
+                    } : undefined
                 },
             });
 
@@ -35,22 +42,29 @@ export class SalesService {
                     },
                 });
 
-                // Decrement Stock
-                const stock = await tx.productStock.findUnique({
-                    where: { product_id: item.productId },
-                });
-
-                if (!stock || stock.quantity < item.quantity) {
-                    throw new BadRequestException(`Insufficient stock for product ${item.productId}`);
-                }
-
-                await tx.productStock.update({
-                    where: { product_id: item.productId },
+                // Atomic Decrement Stock
+                const updateRes = await tx.productStock.updateMany({
+                    where: { 
+                        product_id: item.productId,
+                        quantity: { gte: item.quantity }
+                    },
                     data: {
                         quantity: {
                             decrement: item.quantity,
                         },
                     },
+                });
+
+                if (updateRes.count === 0) {
+                    throw new BadRequestException(`Insufficient stock for product ${item.productId}`);
+                }
+            }
+            if (dto.customerId) {
+                await tx.customer.update({
+                    where: { id: dto.customerId },
+                    data: {
+                        total_spent: { increment: dto.totalAmount }
+                    }
                 });
             }
 
@@ -61,7 +75,10 @@ export class SalesService {
     async findAll(tenantId: string) {
         return this.db.sale.findMany({
             where: { tenant_id: tenantId },
-            include: { items: { include: { product: true } } },
+            include: { 
+                items: { include: { product: true } },
+                payments: true
+            },
             orderBy: { created_at: 'desc' },
         });
     }

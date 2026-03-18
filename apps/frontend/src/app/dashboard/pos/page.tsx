@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ShoppingCart, Search, Package, Trash2, Plus, Minus, CreditCard, ChevronRight, Store } from 'lucide-react';
+import { ShoppingCart, Search, Package, Trash2, Plus, Minus, CreditCard, ChevronRight, Store, X, Banknote } from 'lucide-react';
 import { api } from '../../../lib/api';
 
 export default function POSPage() {
@@ -9,6 +9,11 @@ export default function POSPage() {
     const [cart, setCart] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
+
+    const [showCheckout, setShowCheckout] = useState(false);
+    const [cashAmount, setCashAmount] = useState<number>(0);
+    const [bkashAmount, setBkashAmount] = useState<number>(0);
+    const [cardAmount, setCardAmount] = useState<number>(0);
 
     useEffect(() => {
         loadProducts();
@@ -52,22 +57,43 @@ export default function POSPage() {
     const tax = subtotal * 0.1; // 10% tax mock
     const total = subtotal + tax;
 
-    const handleCheckout = async () => {
+    const totalPaid = (cashAmount || 0) + (bkashAmount || 0) + (cardAmount || 0);
+    const changeDue = Math.max(0, totalPaid - total);
+
+    const handleCheckoutClick = () => {
         if (cart.length === 0) return;
+        setCashAmount(total);
+        setBkashAmount(0);
+        setCardAmount(0);
+        setShowCheckout(true);
+    };
+
+    const handleConfirmCheckout = async () => {
+        if (totalPaid < total) {
+            alert('Insufficient amount paid!');
+            return;
+        }
         try {
+            const payments = [];
+            if (cashAmount > 0) payments.push({ paymentMethod: 'CASH', amount: cashAmount });
+            if (bkashAmount > 0) payments.push({ paymentMethod: 'BKASH', amount: bkashAmount });
+            if (cardAmount > 0) payments.push({ paymentMethod: 'CARD', amount: cardAmount });
+
             const saleData = {
                 storeId: localStorage.getItem('store_id') || '',
                 totalAmount: total,
-                amountPaid: total,
+                amountPaid: totalPaid,
                 items: cart.map(item => ({
                     productId: item.id,
                     quantity: item.quantity,
                     priceAtSale: parseFloat(item.price),
                 })),
+                payments
             };
             await api.createSale(saleData);
             alert('Sale completed successfully!');
             setCart([]);
+            setShowCheckout(false);
             loadProducts(); // Update stock levels
         } catch (error) {
             console.error('Checkout failed', error);
@@ -200,7 +226,7 @@ export default function POSPage() {
                     </div>
 
                     <button
-                        onClick={handleCheckout}
+                        onClick={handleCheckoutClick}
                         disabled={cart.length === 0}
                         className="w-full bg-gray-900 hover:bg-blue-600 text-white py-4 rounded-3xl font-black text-sm uppercase tracking-widest shadow-xl shadow-gray-200 flex items-center justify-center group transition-all hover:-translate-y-1 active:translate-y-0 disabled:opacity-20 disabled:grayscale disabled:translate-y-0"
                     >
@@ -210,6 +236,71 @@ export default function POSPage() {
                     </button>
                 </div>
             </div>
+
+            {/* Checkout Modal */}
+            {showCheckout && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
+                    <div className="bg-white w-[500px] rounded-3xl shadow-2xl overflow-hidden flex flex-col">
+                        <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+                            <div className="flex items-center space-x-3">
+                                <div className="p-2 bg-blue-50 rounded-xl text-blue-600">
+                                    <Banknote className="w-6 h-6" />
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-black tracking-tight">Payment Details</h2>
+                                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Split or multiple methods</p>
+                                </div>
+                            </div>
+                            <button onClick={() => setShowCheckout(false)} className="p-2 hover:bg-white rounded-xl text-gray-400 hover:text-gray-900 transition-all shadow-sm">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <div className="p-6 space-y-6">
+                            <div className="bg-blue-50 p-4 rounded-2xl flex items-center justify-between border border-blue-100">
+                                <span className="font-black uppercase tracking-widest text-blue-900 text-sm">Total Due</span>
+                                <span className="text-3xl font-black text-blue-600">${total.toFixed(2)}</span>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">Cash Paid</label>
+                                    <input type="number" min="0" value={cashAmount || ''} onChange={(e) => setCashAmount(parseFloat(e.target.value) || 0)} className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 font-black text-gray-900 focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all shadow-sm" placeholder="0.00" />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">bKash</label>
+                                    <input type="number" min="0" value={bkashAmount || ''} onChange={(e) => setBkashAmount(parseFloat(e.target.value) || 0)} className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 font-black text-gray-900 focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all shadow-sm" placeholder="0.00" />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">Credit Card</label>
+                                    <input type="number" min="0" value={cardAmount || ''} onChange={(e) => setCardAmount(parseFloat(e.target.value) || 0)} className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 font-black text-gray-900 focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all shadow-sm" placeholder="0.00" />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4 pt-4 border-t border-dashed border-gray-200">
+                                <div className="bg-gray-50 p-3 rounded-2xl flex flex-col justify-center">
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Total Paid</span>
+                                    <span className="text-lg font-black text-gray-900">${totalPaid.toFixed(2)}</span>
+                                </div>
+                                <div className={`p-3 rounded-2xl flex flex-col justify-center ${totalPaid < total ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-600'}`}>
+                                    <span className={`text-[10px] font-black uppercase tracking-widest mb-1 ${totalPaid < total ? 'text-red-400' : 'text-green-500'}`}>
+                                        {totalPaid < total ? 'Remaining' : 'Change Due'}
+                                    </span>
+                                    <span className="text-lg font-black">${Math.abs(totalPaid - total).toFixed(2)}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="p-6 bg-gray-50 border-t border-gray-100">
+                            <button
+                                onClick={handleConfirmCheckout}
+                                disabled={totalPaid < total}
+                                className="w-full py-4 rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl flex items-center justify-center transition-all disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed bg-blue-600 hover:bg-blue-700 text-white shadow-blue-500/20 hover:-translate-y-0.5"
+                            >
+                                Confirm Transaction
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

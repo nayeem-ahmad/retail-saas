@@ -17,6 +17,7 @@
     "@nestjs/jwt": "^11.0.0",
     "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^11.0.10",
+    "@nestjs/schedule": "^6.1.1",
     "@retail-saas/database": "*",
     "@retail-saas/shared-types": "*",
     "@supabase/supabase-js": "^2.98.0",

@@ -57,6 +57,50 @@ export const api = {
         headers: { 'Content-Type': 'application/json' },
     }),
     getSales: () => fetchWithAuth('/sales'),
+    getCustomers: () => fetchWithAuth('/customers'),
+    getCustomer: (id: string) => fetchWithAuth(`/customers/${id}/history`),
+    createCustomer: (data: any) => fetchWithAuth('/customers', {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+    }),
+    getReturns: () => fetchWithAuth('/sales-returns'),
+    getReturn: (id: string) => fetchWithAuth(`/sales-returns/${id}`),
+    createReturn: (data: any) => fetchWithAuth('/sales-returns', {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+    }),
+    getOrders: () => fetchWithAuth('/sales-orders'),
+    getOrder: (id: string) => fetchWithAuth(`/sales-orders/${id}`),
+    createOrder: (data: any) => fetchWithAuth('/sales-orders', {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+    }),
+    updateOrderStatus: (id: string, status: string) => fetchWithAuth(`/sales-orders/${id}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status }),
+        headers: { 'Content-Type': 'application/json' },
+    }),
+    addOrderDeposit: (id: string, data: any) => fetchWithAuth(`/sales-orders/${id}/deposits`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+    }),
+    getQuotations: () => fetchWithAuth('/sales-quotations'),
+    getQuotation: (id: string) => fetchWithAuth(`/sales-quotations/${id}`),
+    createQuotation: (data: any) => fetchWithAuth('/sales-quotations', {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+    }),
+    reviseQuotation: (id: string) => fetchWithAuth(`/sales-quotations/${id}/revise`, {
+        method: 'POST',
+    }),
+    convertQuotation: (id: string) => fetchWithAuth(`/sales-quotations/${id}/convert`, {
+        method: 'POST',
+    }),
     login: (data: any) => fetch(`${API_URL}/auth/login`, {
         method: 'POST',
         body: JSON.stringify(data),
