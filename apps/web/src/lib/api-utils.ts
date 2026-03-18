@@ -13,6 +13,7 @@ export const ERROR_CODES = {
   DATABASE_ERROR: "database_error",
   INTERNAL_ERROR: "internal_server_error",
   UNKNOWN_ERROR: "unknown_error",
+  TOO_MANY_REQUESTS: "too_many_requests",
 };
 
 /**
@@ -121,5 +122,32 @@ export function withErrorHandler(handler: (req: Request, ...args: unknown[]) => 
         headers: { "x-request-id": requestId }
       });
     }
+  };
+}
+
+/**
+ * Higher-order function to add caching headers to API responses.
+ * Uses the Stale-While-Revalidate (SWR) pattern for optimal Edge performance.
+ */
+export function withCache(
+  handler: (req: Request, ...args: unknown[]) => Promise<Response>,
+  sMaxAge: number = 60,
+  staleWhileRevalidate: number = 86400
+) {
+  return async (req: Request, ...args: unknown[]) => {
+    const response = await handler(req, ...args);
+    
+    // Only cache successful GET requests
+    if (req.method === 'GET' && response.status === 200) {
+      // Create a new response to allow mutating headers
+      const newResponse = new NextResponse(response.body, response);
+      newResponse.headers.set(
+        "Cache-Control",
+        `public, s-maxage=${sMaxAge}, stale-while-revalidate=${staleWhileRevalidate}`
+      );
+      return newResponse;
+    }
+    
+    return response;
   };
 }
