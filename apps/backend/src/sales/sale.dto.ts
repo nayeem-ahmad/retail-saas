@@ -16,4 +16,5 @@ export class CreateSaleDto {
     amountPaid: number;
     items: CreateSaleItemDto[];
     payments?: CreatePaymentDto[];
+    note?: string;
 }

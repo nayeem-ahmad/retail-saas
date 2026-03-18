@@ -8,6 +8,7 @@ import { CustomersModule } from './customers/customers.module';
 import { SalesReturnsModule } from './sales-returns/sales-returns.module';
 import { SalesOrdersModule } from './sales-orders/sales-orders.module';
 import { SalesQuotationsModule } from './sales-quotations/sales-quotations.module';
+import { CashierSessionsModule } from './cashier-sessions/cashier-sessions.module';
 import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
@@ -21,6 +22,7 @@ import { ScheduleModule } from '@nestjs/schedule';
         SalesReturnsModule,
         SalesOrdersModule,
         SalesQuotationsModule,
+        CashierSessionsModule,
         ScheduleModule.forRoot()
     ],
     controllers: [],

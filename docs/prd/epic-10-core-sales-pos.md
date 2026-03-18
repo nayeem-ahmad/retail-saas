@@ -34,3 +34,5 @@ This epic defines the primary revenue-generating loop for the SaaS platform. It 
 2. **Story 2: Split Payment Logic** - API and UI support for multiple payment records against a single `Sale`.
 3. **Story 3: Real-time Stock Lock/Decrement** - Atomically update `ProductStock` per warehouse upon sale completion.
 4. **Story 4: Cashier Session Tracking** - Daily register opening/closing and cash reconciliation.
+
+5. **Story 5: Sales History & Management** - UI showing list of already done sales. Any sales entry can be opened for view, edit. It can be print-previewed.

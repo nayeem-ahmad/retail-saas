@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Controller, Post, Get, Body, Param, UseGuards, UseInterceptors, Patch } from '@nestjs/common';
 import { SalesService } from './sales.service';
 import { CreateSaleDto } from './sale.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -19,5 +19,15 @@ export class SalesController {
     @Get()
     async findAll(@Tenant() tenant: TenantContext) {
         return this.salesService.findAll(tenant.tenantId);
+    }
+
+    @Get(':id')
+    async findOne(@Tenant() tenant: TenantContext, @Param('id') id: string) {
+        return this.salesService.findOne(tenant.tenantId, id);
+    }
+
+    @Patch(':id')
+    async update(@Tenant() tenant: TenantContext, @Param('id') id: string, @Body() dto: Partial<CreateSaleDto>) {
+        return this.salesService.update(tenant.tenantId, id, dto);
     }
 }

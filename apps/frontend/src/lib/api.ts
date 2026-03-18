@@ -101,6 +101,32 @@ export const api = {
     convertQuotation: (id: string) => fetchWithAuth(`/sales-quotations/${id}/convert`, {
         method: 'POST',
     }),
+    // Sales detail
+    getSale: (id: string) => fetchWithAuth(`/sales/${id}`),
+    updateSale: (id: string, data: any) => fetchWithAuth(`/sales/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+    }),
+    // Cashier sessions
+    openCashierSession: (data: any) => fetchWithAuth('/cashier-sessions/open', {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+    }),
+    closeCashierSession: (sessionId: string, data: any) => fetchWithAuth(`/cashier-sessions/${sessionId}/close`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+    }),
+    getOpenCashierSession: () => fetchWithAuth('/cashier-sessions/open'),
+    getCashierSession: (sessionId: string) => fetchWithAuth(`/cashier-sessions/${sessionId}`),
+    addCashTransaction: (sessionId: string, data: any) => fetchWithAuth(`/cashier-sessions/${sessionId}/cash-transaction`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+    }),
+    getCashTransactions: (sessionId: string) => fetchWithAuth(`/cashier-sessions/${sessionId}/cash-transactions`),
     login: (data: any) => fetch(`${API_URL}/auth/login`, {
         method: 'POST',
         body: JSON.stringify(data),

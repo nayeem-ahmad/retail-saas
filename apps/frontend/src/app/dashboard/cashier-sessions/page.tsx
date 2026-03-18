@@ -1,0 +1,359 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { Clock, DollarSign, ArrowDownCircle, ArrowUpCircle, X, CheckCircle, AlertCircle } from 'lucide-react';
+import { api } from '../../../lib/api';
+
+export default function CashierSessionsPage() {
+    const [session, setSession] = useState<any>(null);
+    const [transactions, setTransactions] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [openingCash, setOpeningCash] = useState<number>(0);
+    const [closingCash, setClosingCash] = useState<number>(0);
+    const [txAmount, setTxAmount] = useState<number>(0);
+    const [txType, setTxType] = useState('DROP');
+    const [txDescription, setTxDescription] = useState('');
+    const [showOpenModal, setShowOpenModal] = useState(false);
+    const [showCloseModal, setShowCloseModal] = useState(false);
+    const [showTxModal, setShowTxModal] = useState(false);
+
+    useEffect(() => {
+        loadSession();
+    }, []);
+
+    const loadSession = async () => {
+        try {
+            const data = await api.getOpenCashierSession();
+            setSession(data);
+            if (data?.id) {
+                const txData = await api.getCashTransactions(data.id);
+                setTransactions(txData);
+            }
+        } catch (error) {
+            console.error('Failed to load session', error);
+            setSession(null);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleOpenSession = async () => {
+        try {
+            const storeId = localStorage.getItem('store_id') || '';
+            await api.openCashierSession({ storeId, openingCash });
+            setShowOpenModal(false);
+            setOpeningCash(0);
+            loadSession();
+        } catch (error: any) {
+            alert(error.message || 'Failed to open session');
+        }
+    };
+
+    const handleCloseSession = async () => {
+        if (!session) return;
+        try {
+            await api.closeCashierSession(session.id, { closingCash });
+            setShowCloseModal(false);
+            setClosingCash(0);
+            setSession(null);
+            setTransactions([]);
+            loadSession();
+        } catch (error: any) {
+            alert(error.message || 'Failed to close session');
+        }
+    };
+
+    const handleAddTransaction = async () => {
+        if (!session) return;
+        try {
+            await api.addCashTransaction(session.id, {
+                amount: txAmount,
+                type: txType,
+                description: txDescription,
+            });
+            setShowTxModal(false);
+            setTxAmount(0);
+            setTxType('DROP');
+            setTxDescription('');
+            const txData = await api.getCashTransactions(session.id);
+            setTransactions(txData);
+        } catch (error: any) {
+            alert(error.message || 'Failed to add transaction');
+        }
+    };
+
+    const totalCashIn = transactions.filter(t => parseFloat(t.amount) > 0).reduce((sum, t) => sum + parseFloat(t.amount), 0);
+    const totalCashOut = transactions.filter(t => parseFloat(t.amount) < 0).reduce((sum, t) => sum + Math.abs(parseFloat(t.amount)), 0);
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center h-screen bg-[#f3f4f6]">
+                <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Loading...</p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="min-h-screen bg-[#f3f4f6] p-6 font-sans text-gray-900">
+            <div className="max-w-4xl mx-auto space-y-6">
+                {/* Header */}
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-2xl font-black tracking-tight">Cashier Session</h1>
+                        <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mt-0.5">Daily register management</p>
+                    </div>
+                    {!session ? (
+                        <button
+                            onClick={() => setShowOpenModal(true)}
+                            className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-2xl font-black text-sm uppercase tracking-widest shadow-lg flex items-center space-x-2 transition-all hover:-translate-y-0.5"
+                        >
+                            <Clock className="w-5 h-5" />
+                            <span>Open Shift</span>
+                        </button>
+                    ) : (
+                        <button
+                            onClick={() => setShowCloseModal(true)}
+                            className="bg-rose-600 hover:bg-rose-700 text-white px-6 py-3 rounded-2xl font-black text-sm uppercase tracking-widest shadow-lg flex items-center space-x-2 transition-all hover:-translate-y-0.5"
+                        >
+                            <Clock className="w-5 h-5" />
+                            <span>Close Shift</span>
+                        </button>
+                    )}
+                </div>
+
+                {/* Session Status */}
+                {session ? (
+                    <>
+                        <div className="bg-white rounded-3xl shadow-sm p-6 border border-green-100">
+                            <div className="flex items-center space-x-3 mb-4">
+                                <div className="p-2 bg-green-50 rounded-xl text-green-600">
+                                    <CheckCircle className="w-6 h-6" />
+                                </div>
+                                <div>
+                                    <h2 className="text-lg font-black tracking-tight">Session Active</h2>
+                                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+                                        Opened: {new Date(session.opened_at).toLocaleString()}
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-3 gap-4">
+                                <div className="bg-gray-50 p-4 rounded-2xl">
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1">Opening Cash</span>
+                                    <span className="text-xl font-black text-gray-900">${parseFloat(session.opening_cash).toFixed(2)}</span>
+                                </div>
+                                <div className="bg-green-50 p-4 rounded-2xl">
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-green-500 block mb-1">Cash In</span>
+                                    <span className="text-xl font-black text-green-600">${totalCashIn.toFixed(2)}</span>
+                                </div>
+                                <div className="bg-rose-50 p-4 rounded-2xl">
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-rose-400 block mb-1">Cash Out</span>
+                                    <span className="text-xl font-black text-rose-600">${totalCashOut.toFixed(2)}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Add Cash Transaction */}
+                        <div className="flex justify-end">
+                            <button
+                                onClick={() => setShowTxModal(true)}
+                                className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest shadow-md flex items-center space-x-2 transition-all"
+                            >
+                                <DollarSign className="w-4 h-4" />
+                                <span>Record Cash In/Out</span>
+                            </button>
+                        </div>
+
+                        {/* Transactions List */}
+                        <div className="bg-white rounded-3xl shadow-sm overflow-hidden">
+                            <div className="p-6 border-b border-gray-100">
+                                <h3 className="text-lg font-black tracking-tight">Cash Transactions</h3>
+                            </div>
+                            {transactions.length === 0 ? (
+                                <div className="p-8 text-center text-gray-300">
+                                    <DollarSign className="w-12 h-12 mx-auto opacity-20 mb-2" />
+                                    <p className="text-xs font-black uppercase tracking-widest">No transactions yet</p>
+                                </div>
+                            ) : (
+                                <div className="divide-y divide-gray-50">
+                                    {transactions.map((tx) => (
+                                        <div key={tx.id} className="p-4 flex items-center justify-between hover:bg-gray-50/50 transition-colors">
+                                            <div className="flex items-center space-x-3">
+                                                {parseFloat(tx.amount) > 0 ? (
+                                                    <div className="p-2 bg-green-50 rounded-xl text-green-600">
+                                                        <ArrowDownCircle className="w-5 h-5" />
+                                                    </div>
+                                                ) : (
+                                                    <div className="p-2 bg-rose-50 rounded-xl text-rose-600">
+                                                        <ArrowUpCircle className="w-5 h-5" />
+                                                    </div>
+                                                )}
+                                                <div>
+                                                    <span className="text-sm font-black text-gray-900 block">{tx.type}</span>
+                                                    <span className="text-xs text-gray-400">{tx.description || '—'}</span>
+                                                </div>
+                                            </div>
+                                            <div className="text-right">
+                                                <span className={`text-sm font-black ${parseFloat(tx.amount) > 0 ? 'text-green-600' : 'text-rose-600'}`}>
+                                                    {parseFloat(tx.amount) > 0 ? '+' : ''}${parseFloat(tx.amount).toFixed(2)}
+                                                </span>
+                                                <span className="text-[10px] text-gray-400 block">{new Date(tx.created_at).toLocaleTimeString()}</span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </>
+                ) : (
+                    <div className="bg-white rounded-3xl shadow-sm p-12 text-center">
+                        <AlertCircle className="w-16 h-16 mx-auto text-gray-200 mb-4" />
+                        <h2 className="text-lg font-black tracking-tight text-gray-400">No Active Session</h2>
+                        <p className="text-xs font-bold text-gray-300 uppercase tracking-widest mt-1">Open a shift to start tracking cash</p>
+                    </div>
+                )}
+            </div>
+
+            {/* Open Session Modal */}
+            {showOpenModal && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
+                    <div className="bg-white w-[420px] rounded-3xl shadow-2xl overflow-hidden">
+                        <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+                            <h2 className="text-xl font-black tracking-tight">Open Shift</h2>
+                            <button onClick={() => setShowOpenModal(false)} className="p-2 hover:bg-white rounded-xl text-gray-400 hover:text-gray-900 transition-all">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <div className="p-6 space-y-4">
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">Opening Cash Amount</label>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    value={openingCash || ''}
+                                    onChange={(e) => setOpeningCash(parseFloat(e.target.value) || 0)}
+                                    className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 font-black text-gray-900 focus:ring-2 focus:ring-green-500/20 focus:bg-white transition-all shadow-sm"
+                                    placeholder="0.00"
+                                />
+                            </div>
+                        </div>
+                        <div className="p-6 bg-gray-50 border-t border-gray-100">
+                            <button
+                                onClick={handleOpenSession}
+                                className="w-full py-3 rounded-2xl font-black text-sm uppercase tracking-widest bg-green-600 hover:bg-green-700 text-white shadow-lg transition-all"
+                            >
+                                Open Shift
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Close Session Modal */}
+            {showCloseModal && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
+                    <div className="bg-white w-[420px] rounded-3xl shadow-2xl overflow-hidden">
+                        <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+                            <h2 className="text-xl font-black tracking-tight">Close Shift</h2>
+                            <button onClick={() => setShowCloseModal(false)} className="p-2 hover:bg-white rounded-xl text-gray-400 hover:text-gray-900 transition-all">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <div className="p-6 space-y-4">
+                            <div className="bg-blue-50 p-4 rounded-2xl border border-blue-100">
+                                <span className="text-[10px] font-black uppercase tracking-widest text-blue-400 block mb-1">Expected Cash</span>
+                                <span className="text-2xl font-black text-blue-600">
+                                    ${(parseFloat(session?.opening_cash || 0) + totalCashIn - totalCashOut).toFixed(2)}
+                                </span>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">Actual Closing Cash</label>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    value={closingCash || ''}
+                                    onChange={(e) => setClosingCash(parseFloat(e.target.value) || 0)}
+                                    className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 font-black text-gray-900 focus:ring-2 focus:ring-rose-500/20 focus:bg-white transition-all shadow-sm"
+                                    placeholder="0.00"
+                                />
+                            </div>
+                            {closingCash > 0 && (
+                                <div className={`p-3 rounded-2xl ${Math.abs(closingCash - (parseFloat(session?.opening_cash || 0) + totalCashIn - totalCashOut)) < 0.01 ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-600'}`}>
+                                    <span className="text-[10px] font-black uppercase tracking-widest block mb-1">Difference</span>
+                                    <span className="text-lg font-black">
+                                        ${(closingCash - (parseFloat(session?.opening_cash || 0) + totalCashIn - totalCashOut)).toFixed(2)}
+                                    </span>
+                                </div>
+                            )}
+                        </div>
+                        <div className="p-6 bg-gray-50 border-t border-gray-100">
+                            <button
+                                onClick={handleCloseSession}
+                                className="w-full py-3 rounded-2xl font-black text-sm uppercase tracking-widest bg-rose-600 hover:bg-rose-700 text-white shadow-lg transition-all"
+                            >
+                                Close Shift
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Cash Transaction Modal */}
+            {showTxModal && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
+                    <div className="bg-white w-[420px] rounded-3xl shadow-2xl overflow-hidden">
+                        <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+                            <h2 className="text-xl font-black tracking-tight">Cash In/Out</h2>
+                            <button onClick={() => setShowTxModal(false)} className="p-2 hover:bg-white rounded-xl text-gray-400 hover:text-gray-900 transition-all">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <div className="p-6 space-y-4">
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">Type</label>
+                                <select
+                                    value={txType}
+                                    onChange={(e) => setTxType(e.target.value)}
+                                    className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 font-bold text-gray-900 focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all shadow-sm"
+                                >
+                                    <option value="DROP">Cash Drop (In)</option>
+                                    <option value="LOAN">Cash Loan (In)</option>
+                                    <option value="PAYOUT">Payout (Out)</option>
+                                    <option value="OTHER">Other</option>
+                                </select>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">Amount (positive = in, negative = out)</label>
+                                <input
+                                    type="number"
+                                    value={txAmount || ''}
+                                    onChange={(e) => setTxAmount(parseFloat(e.target.value) || 0)}
+                                    className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 font-black text-gray-900 focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all shadow-sm"
+                                    placeholder="0.00"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">Description (optional)</label>
+                                <input
+                                    type="text"
+                                    value={txDescription}
+                                    onChange={(e) => setTxDescription(e.target.value)}
+                                    className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 font-medium text-gray-900 focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all shadow-sm"
+                                    placeholder="e.g. Change for register"
+                                />
+                            </div>
+                        </div>
+                        <div className="p-6 bg-gray-50 border-t border-gray-100">
+                            <button
+                                onClick={handleAddTransaction}
+                                disabled={txAmount === 0}
+                                className="w-full py-3 rounded-2xl font-black text-sm uppercase tracking-widest bg-blue-600 hover:bg-blue-700 text-white shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Record Transaction
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}

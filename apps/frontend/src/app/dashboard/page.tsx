@@ -76,6 +76,8 @@ export default function DashboardPage() {
                         <NavItem href="/dashboard/quotes" icon={<FileText />} label="Quotes" />
                         <NavItem href="/dashboard/orders" icon={<ClipboardList />} label="Orders" />
                         <NavItem href="/dashboard/returns" icon={<ArrowLeftRight />} label="Returns" />
+                        <NavItem href="/dashboard/sales" icon={<TrendingUp />} label="Sales History" />
+                        <NavItem href="/dashboard/cashier-sessions" icon={<Clock />} label="Cashier Sessions" />
                         <div className="pt-10 pb-4">
                             <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest pl-3">Management</span>
                         </div>

@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { CreateSaleDto } from './sale.dto';
 
@@ -21,6 +21,7 @@ export class SalesService {
                     total_amount: dto.totalAmount,
                     amount_paid: dto.amountPaid,
                     status: 'COMPLETED',
+                    note: dto.note,
                     payments: dto.payments ? {
                         create: dto.payments.map(p => ({
                             payment_method: p.paymentMethod,
@@ -80,6 +81,43 @@ export class SalesService {
                 payments: true
             },
             orderBy: { created_at: 'desc' },
+        });
+    }
+
+    async findOne(tenantId: string, id: string) {
+        const sale = await this.db.sale.findFirst({
+            where: { id, tenant_id: tenantId },
+            include: {
+                items: { include: { product: true } },
+                payments: true
+            },
+        });
+
+        if (!sale) {
+            throw new NotFoundException('Sale not found');
+        }
+
+        return sale;
+    }
+
+    async update(tenantId: string, id: string, dto: Partial<CreateSaleDto>) {
+        // First, check if the sale exists and belongs to the tenant
+        const sale = await this.db.sale.findFirst({
+            where: { id, tenant_id: tenantId },
+        });
+
+        if (!sale) {
+            throw new NotFoundException('Sale not found');
+        }
+
+        // We only allow updating the note for now.
+        const { note } = dto;
+
+        return this.db.sale.update({
+            where: { id },
+            data: {
+                note: note,
+            },
         });
     }
 }
