@@ -34,6 +34,8 @@ interface NavChild {
     href: string;
     icon: LucideIcon;
     label: string;
+    /** If true, renders as a non-clickable section header */
+    section?: boolean;
 }
 
 interface NavModule {
@@ -60,13 +62,14 @@ const MODULES: NavModule[] = [
         label: 'Sales',
         children: [
             { href: '/dashboard/pos',              icon: ShoppingCart,    label: 'POS' },
+            { href: '/dashboard/sales',            icon: TrendingUp,      label: 'Sales' },
+            { href: '/dashboard/returns',          icon: ArrowLeftRight,  label: 'Sales Returns' },
+            { href: '/dashboard/orders',           icon: ClipboardList,   label: 'Sales Orders' },
+            { href: '/dashboard/quotes',           icon: FileText,        label: 'Sales Quotations' },
+            { href: '#setup',                      icon: Settings,        label: 'Setup', section: true },
             { href: '/dashboard/customers',        icon: Users,           label: 'Customers' },
             { href: '/dashboard/customer-groups',  icon: FolderTree,      label: 'Customer Groups' },
             { href: '/dashboard/territories',      icon: MapPin,          label: 'Territories' },
-            { href: '/dashboard/quotes',           icon: FileText,        label: 'Quotations' },
-            { href: '/dashboard/orders',           icon: ClipboardList,   label: 'Sales Orders' },
-            { href: '/dashboard/returns',          icon: ArrowLeftRight,  label: 'Returns' },
-            { href: '/dashboard/sales',            icon: TrendingUp,      label: 'Sales History' },
             { href: '/dashboard/cashier-sessions', icon: Clock,           label: 'Cashier Sessions' },
         ],
     },
@@ -264,7 +267,15 @@ export default function Sidebar() {
                             {/* Children */}
                             {!collapsed && groupOpen && hasChildren && (
                                 <div className="mt-0.5 space-y-0.5">
-                                    {mod.children!.map(({ href, icon: ChildIcon, label }) => {
+                                    {mod.children!.map(({ href, icon: ChildIcon, label, section }) => {
+                                        if (section) {
+                                            return (
+                                                <div key={href} className="flex items-center ml-4 px-3 pt-3 pb-1">
+                                                    <ChildIcon className="flex-shrink-0 w-3.5 h-3.5 text-gray-300" />
+                                                    <span className="ml-2 text-[10px] font-black uppercase tracking-widest text-gray-300">{label}</span>
+                                                </div>
+                                            );
+                                        }
                                         const active = isActive(href);
                                         return (
                                             <Link key={href} href={href} className={childLinkCls(active)}>

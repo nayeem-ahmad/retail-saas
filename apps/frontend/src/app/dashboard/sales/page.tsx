@@ -1,14 +1,36 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Receipt, Search, Eye, ChevronRight } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { Receipt, Eye, Edit2, Plus } from 'lucide-react';
 import { api } from '../../../lib/api';
 import Link from 'next/link';
+import { createColumnHelper, type ColumnDef } from '@tanstack/react-table';
+import { DataTable } from '@/components/data-table';
 
-export default function SalesHistoryPage() {
-    const [sales, setSales] = useState<any[]>([]);
+interface Sale {
+    id: string;
+    serial_number: string;
+    created_at: string;
+    items: any[];
+    total_amount: string;
+    amount_paid: string;
+    status: string;
+    payments: { payment_method: string; amount: string }[];
+    customer?: { name: string };
+    note?: string;
+}
+
+const statusColors: Record<string, string> = {
+    COMPLETED: 'bg-green-50 text-green-700 border-green-200',
+    REFUNDED: 'bg-rose-50 text-rose-700 border-rose-200',
+    PARTIAL_REFUND: 'bg-amber-50 text-amber-700 border-amber-200',
+};
+
+const columnHelper = createColumnHelper<Sale>();
+
+export default function SalesPage() {
+    const [sales, setSales] = useState<Sale[]>([]);
     const [loading, setLoading] = useState(true);
-    const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
         loadSales();
@@ -25,113 +47,180 @@ export default function SalesHistoryPage() {
         }
     };
 
-    const filteredSales = sales.filter(s =>
-        s.serial_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        s.customer?.name?.toLowerCase().includes(searchQuery.toLowerCase())
+    const columns: ColumnDef<Sale, any>[] = useMemo(
+        () => [
+            columnHelper.accessor('serial_number', {
+                header: 'Serial #',
+                cell: (info) => (
+                    <span className="text-sm font-black text-gray-900">{info.getValue()}</span>
+                ),
+                size: 140,
+            }),
+            columnHelper.accessor('created_at', {
+                header: 'Date',
+                cell: (info) => {
+                    const d = new Date(info.getValue());
+                    return (
+                        <div>
+                            <span className="text-sm text-gray-600">{d.toLocaleDateString()}</span>
+                            <span className="text-xs text-gray-400 block">{d.toLocaleTimeString()}</span>
+                        </div>
+                    );
+                },
+                sortingFn: 'datetime',
+                size: 150,
+            }),
+            columnHelper.accessor((row) => row.customer?.name ?? '', {
+                id: 'customer',
+                header: 'Customer',
+                cell: (info) => (
+                    <span className="text-sm text-gray-700 font-medium">
+                        {info.getValue() || <span className="text-gray-300">Walk-in</span>}
+                    </span>
+                ),
+                size: 150,
+            }),
+            columnHelper.accessor((row) => row.items?.length ?? 0, {
+                id: 'item_count',
+                header: 'Items',
+                cell: (info) => (
+                    <span className="text-sm font-bold text-gray-700">{info.getValue()} items</span>
+                ),
+                size: 80,
+            }),
+            columnHelper.accessor('total_amount', {
+                header: 'Total',
+                cell: (info) => (
+                    <span className="text-sm font-black text-blue-600">
+                        ${parseFloat(info.getValue()).toFixed(2)}
+                    </span>
+                ),
+                sortingFn: (a, b) =>
+                    parseFloat(a.getValue('total_amount')) - parseFloat(b.getValue('total_amount')),
+                size: 110,
+            }),
+            columnHelper.accessor('amount_paid', {
+                header: 'Paid',
+                cell: (info) => (
+                    <span className="text-sm font-bold text-gray-700">
+                        ${parseFloat(info.getValue()).toFixed(2)}
+                    </span>
+                ),
+                sortingFn: (a, b) =>
+                    parseFloat(a.getValue('amount_paid')) - parseFloat(b.getValue('amount_paid')),
+                size: 110,
+            }),
+            columnHelper.accessor('status', {
+                header: 'Status',
+                cell: (info) => {
+                    const status = info.getValue();
+                    return (
+                        <span
+                            className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${
+                                statusColors[status] ?? 'bg-gray-50 text-gray-700 border-gray-200'
+                            }`}
+                        >
+                            {status}
+                        </span>
+                    );
+                },
+                size: 130,
+            }),
+            columnHelper.accessor(
+                (row) => row.payments?.map((p) => p.payment_method).join(', ') ?? '',
+                {
+                    id: 'payments',
+                    header: 'Payments',
+                    cell: (info) => {
+                        const row = info.row.original;
+                        return (
+                            <div className="flex flex-wrap gap-1">
+                                {row.payments?.map((p, i) => (
+                                    <span
+                                        key={i}
+                                        className="bg-gray-100 px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider text-gray-500"
+                                    >
+                                        {p.payment_method}
+                                    </span>
+                                ))}
+                            </div>
+                        );
+                    },
+                    size: 150,
+                },
+            ),
+            columnHelper.display({
+                id: 'actions',
+                header: 'Actions',
+                cell: (info) => (
+                    <div className="flex items-center justify-end space-x-1">
+                        <Link
+                            href={`/dashboard/sales/${info.row.original.id}`}
+                            className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors"
+                            title="View"
+                        >
+                            <Eye className="w-4 h-4" />
+                        </Link>
+                        <Link
+                            href={`/dashboard/sales/${info.row.original.id}?edit=true`}
+                            className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
+                            title="Edit"
+                        >
+                            <Edit2 className="w-4 h-4" />
+                        </Link>
+                    </div>
+                ),
+                enableSorting: false,
+                enableColumnFilter: false,
+                enableResizing: false,
+                size: 90,
+            }),
+        ],
+        [],
     );
 
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case 'COMPLETED': return 'bg-green-50 text-green-700 border-green-200';
-            case 'REFUNDED': return 'bg-rose-50 text-rose-700 border-rose-200';
-            case 'PARTIAL_REFUND': return 'bg-amber-50 text-amber-700 border-amber-200';
-            default: return 'bg-gray-50 text-gray-700 border-gray-200';
-        }
-    };
+    const filterPresets = useMemo(
+        () => [
+            { label: 'Completed', filters: [{ id: 'status', value: 'COMPLETED' }] },
+            { label: 'Refunded', filters: [{ id: 'status', value: 'REFUNDED' }] },
+            { label: 'Partial Refund', filters: [{ id: 'status', value: 'PARTIAL_REFUND' }] },
+        ],
+        [],
+    );
 
     return (
         <div className="overflow-y-auto h-full bg-[#f3f4f6] p-6 font-sans text-gray-900">
-            <div className="max-w-6xl mx-auto space-y-6">
+            <div className="max-w-[1400px] mx-auto space-y-6">
                 {/* Header */}
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-black tracking-tight">Sales History</h1>
-                        <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mt-0.5">All completed transactions</p>
+                        <h1 className="text-2xl font-black tracking-tight">Sales</h1>
+                        <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mt-0.5">
+                            All transactions
+                        </p>
                     </div>
-                    <div className="relative w-72">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-                        <input
-                            type="text"
-                            placeholder="Search by serial or customer..."
-                            className="w-full bg-white border-none rounded-xl py-2.5 pl-10 pr-4 text-sm shadow-sm focus:ring-2 focus:ring-blue-500/10 transition-all font-medium"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
-                    </div>
+                    <Link
+                        href="/dashboard/pos"
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl font-bold text-sm flex items-center shadow-lg shadow-blue-200 transition-all hover:-translate-y-0.5 active:translate-y-0"
+                    >
+                        <Plus className="w-4 h-4 mr-2" />
+                        New Sale
+                    </Link>
                 </div>
 
-                {/* Sales Table */}
-                <div className="bg-white rounded-3xl shadow-sm overflow-hidden">
-                    {loading ? (
-                        <div className="p-12 text-center text-gray-400 font-bold uppercase tracking-widest text-xs">Loading sales...</div>
-                    ) : filteredSales.length === 0 ? (
-                        <div className="p-12 text-center">
-                            <Receipt className="w-16 h-16 mx-auto text-gray-200 mb-4" />
-                            <p className="text-xs font-black uppercase tracking-widest text-gray-300">No sales found</p>
-                        </div>
-                    ) : (
-                        <table className="w-full">
-                            <thead>
-                                <tr className="border-b border-gray-100">
-                                    <th className="text-left p-4 text-[10px] font-black uppercase tracking-widest text-gray-400">Serial #</th>
-                                    <th className="text-left p-4 text-[10px] font-black uppercase tracking-widest text-gray-400">Date</th>
-                                    <th className="text-left p-4 text-[10px] font-black uppercase tracking-widest text-gray-400">Items</th>
-                                    <th className="text-left p-4 text-[10px] font-black uppercase tracking-widest text-gray-400">Total</th>
-                                    <th className="text-left p-4 text-[10px] font-black uppercase tracking-widest text-gray-400">Paid</th>
-                                    <th className="text-left p-4 text-[10px] font-black uppercase tracking-widest text-gray-400">Status</th>
-                                    <th className="text-left p-4 text-[10px] font-black uppercase tracking-widest text-gray-400">Payments</th>
-                                    <th className="text-right p-4 text-[10px] font-black uppercase tracking-widest text-gray-400">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-50">
-                                {filteredSales.map((sale) => (
-                                    <tr key={sale.id} className="hover:bg-gray-50/50 transition-colors">
-                                        <td className="p-4">
-                                            <span className="text-sm font-black text-gray-900">{sale.serial_number}</span>
-                                        </td>
-                                        <td className="p-4">
-                                            <span className="text-sm text-gray-600">{new Date(sale.created_at).toLocaleDateString()}</span>
-                                            <span className="text-xs text-gray-400 block">{new Date(sale.created_at).toLocaleTimeString()}</span>
-                                        </td>
-                                        <td className="p-4">
-                                            <span className="text-sm font-bold text-gray-700">{sale.items?.length || 0} items</span>
-                                        </td>
-                                        <td className="p-4">
-                                            <span className="text-sm font-black text-blue-600">${parseFloat(sale.total_amount).toFixed(2)}</span>
-                                        </td>
-                                        <td className="p-4">
-                                            <span className="text-sm font-bold text-gray-700">${parseFloat(sale.amount_paid).toFixed(2)}</span>
-                                        </td>
-                                        <td className="p-4">
-                                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${getStatusColor(sale.status)}`}>
-                                                {sale.status}
-                                            </span>
-                                        </td>
-                                        <td className="p-4">
-                                            <div className="flex flex-wrap gap-1">
-                                                {sale.payments?.map((p: any, i: number) => (
-                                                    <span key={i} className="bg-gray-100 px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider text-gray-500">
-                                                        {p.payment_method}
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        </td>
-                                        <td className="p-4 text-right">
-                                            <Link
-                                                href={`/dashboard/sales/${sale.id}`}
-                                                className="inline-flex items-center space-x-1 text-blue-600 hover:text-blue-800 font-bold text-xs uppercase tracking-widest transition-colors"
-                                            >
-                                                <Eye className="w-4 h-4" />
-                                                <span>View</span>
-                                                <ChevronRight className="w-3 h-3" />
-                                            </Link>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    )}
-                </div>
+                {/* DataTable */}
+                <DataTable<Sale>
+                    tableId="sales"
+                    columns={columns}
+                    data={sales}
+                    title="Sales"
+                    isLoading={loading}
+                    emptyMessage="No sales found"
+                    emptyIcon={<Receipt className="w-16 h-16 text-gray-200" />}
+                    searchPlaceholder="Search by serial, customer, status..."
+                    filterPresets={filterPresets}
+                    enableRowSelection
+                />
             </div>
         </div>
     );
