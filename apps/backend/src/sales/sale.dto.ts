@@ -18,3 +18,22 @@ export class CreateSaleDto {
     payments?: CreatePaymentDto[];
     note?: string;
 }
+
+export class UpdateSaleItemDto {
+    productId: string;
+    quantity: number;
+    priceAtSale: number;
+}
+
+export class UpdatePaymentDto {
+    paymentMethod: string;
+    amount: number;
+}
+
+export class UpdateSaleDto {
+    customerId?: string | null;
+    status?: string;
+    note?: string;
+    items?: UpdateSaleItemDto[];
+    payments?: UpdatePaymentDto[];
+}

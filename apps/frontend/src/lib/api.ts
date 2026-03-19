@@ -109,6 +109,14 @@ export const api = {
         body: JSON.stringify(data),
         headers: { 'Content-Type': 'application/json' },
     }),
+    deleteReturn: (id: string) => fetchWithAuth(`/sales-returns/${id}`, {
+        method: 'DELETE',
+    }),
+    updateReturn: (id: string, data: any) => fetchWithAuth(`/sales-returns/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+    }),
     getOrders: () => fetchWithAuth('/sales-orders'),
     getOrder: (id: string) => fetchWithAuth(`/sales-orders/${id}`),
     createOrder: (data: any) => fetchWithAuth('/sales-orders', {

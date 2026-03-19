@@ -22,3 +22,24 @@ export class CreateSalesReturnDto {
     @IsString()
     reason?: string;
 }
+
+export class UpdateReturnItemDto {
+    @IsString()
+    saleItemId: string;
+
+    @IsString()
+    productId: string;
+
+    @IsNumber()
+    quantity: number;
+}
+
+export class UpdateSalesReturnDto {
+    @IsOptional()
+    @IsString()
+    reason?: string;
+
+    @IsOptional()
+    @IsArray()
+    items?: UpdateReturnItemDto[];
+}

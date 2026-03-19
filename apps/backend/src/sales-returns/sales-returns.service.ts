@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
-import { CreateSalesReturnDto } from './sales-returns.dto';
+import { CreateSalesReturnDto, UpdateSalesReturnDto } from './sales-returns.dto';
 
 @Injectable()
 export class SalesReturnsService {
@@ -91,7 +91,146 @@ export class SalesReturnsService {
     async findOne(tenantId: string, id: string) {
         return this.db.salesReturn.findFirst({
             where: { id, tenant_id: tenantId },
-            include: { sale: true, items: { include: { product: true } } }
+            include: {
+                sale: { include: { items: { include: { product: true, returns: true } } } },
+                items: { include: { product: true } },
+            }
+        });
+    }
+
+    async update(tenantId: string, id: string, dto: UpdateSalesReturnDto) {
+        return this.db.$transaction(async (tx) => {
+            const existing = await tx.salesReturn.findFirst({
+                where: { id, tenant_id: tenantId },
+                include: { items: true, sale: { include: { items: { include: { returns: true } } } } },
+            });
+            if (!existing) throw new BadRequestException('Return not found');
+
+            // Update reason
+            const updateData: any = {};
+            if (dto.reason !== undefined) updateData.reason = dto.reason;
+
+            // If items are provided, recalculate everything
+            if (dto.items && dto.items.length > 0) {
+                // 1. Reverse old stock increments
+                for (const oldItem of existing.items) {
+                    await tx.productStock.updateMany({
+                        where: { product_id: oldItem.product_id, tenant_id: tenantId },
+                        data: { quantity: { decrement: oldItem.quantity } },
+                    });
+                }
+
+                // 2. Reverse old customer total_spent decrement
+                if (existing.sale.customer_id) {
+                    await tx.customer.update({
+                        where: { id: existing.sale.customer_id },
+                        data: { total_spent: { increment: Number(existing.total_refund) } },
+                    });
+                }
+
+                // 3. Validate new items and calculate new total
+                let newTotalRefund = 0;
+                const newItemData = [];
+
+                for (const newItem of dto.items) {
+                    if (newItem.quantity <= 0) continue;
+
+                    const originalSaleItem = existing.sale.items.find(
+                        (si: any) => si.id === newItem.saleItemId,
+                    );
+                    if (!originalSaleItem) {
+                        throw new BadRequestException(`Sale item ${newItem.saleItemId} not found.`);
+                    }
+
+                    // Check available quantity (excluding THIS return's old items)
+                    const otherReturns = originalSaleItem.returns.filter(
+                        (r: any) => r.return_id !== id,
+                    );
+                    const previouslyReturned = otherReturns.reduce(
+                        (sum: number, r: any) => sum + r.quantity,
+                        0,
+                    );
+                    const availableToReturn = originalSaleItem.quantity - previouslyReturned;
+
+                    if (newItem.quantity > availableToReturn) {
+                        throw new BadRequestException(
+                            `Cannot return ${newItem.quantity} of ${originalSaleItem.product_id}. Only ${availableToReturn} available.`,
+                        );
+                    }
+
+                    const refundAmount = Number(originalSaleItem.price_at_sale) * newItem.quantity;
+                    newTotalRefund += refundAmount;
+
+                    newItemData.push({
+                        sale_item_id: newItem.saleItemId,
+                        product_id: newItem.productId,
+                        quantity: newItem.quantity,
+                        refund_amount: refundAmount,
+                    });
+
+                    // 4. Apply new stock increments
+                    await tx.productStock.updateMany({
+                        where: { product_id: newItem.productId, tenant_id: tenantId },
+                        data: { quantity: { increment: newItem.quantity } },
+                    });
+                }
+
+                // 5. Delete old items and create new ones
+                await tx.salesReturnItem.deleteMany({ where: { return_id: id } });
+
+                updateData.total_refund = newTotalRefund;
+
+                await tx.salesReturn.update({
+                    where: { id },
+                    data: {
+                        ...updateData,
+                        items: { create: newItemData },
+                    },
+                });
+
+                // 6. Re-apply customer total_spent decrement
+                if (existing.sale.customer_id) {
+                    await tx.customer.update({
+                        where: { id: existing.sale.customer_id },
+                        data: { total_spent: { decrement: newTotalRefund } },
+                    });
+                }
+            } else {
+                // Only updating reason
+                await tx.salesReturn.update({
+                    where: { id },
+                    data: updateData,
+                });
+            }
+
+            return tx.salesReturn.findFirst({
+                where: { id, tenant_id: tenantId },
+                include: { sale: true, items: { include: { product: true } } },
+            });
+        });
+    }
+
+    async remove(tenantId: string, id: string) {
+        return this.db.$transaction(async (tx) => {
+            const ret = await tx.salesReturn.findFirst({
+                where: { id, tenant_id: tenantId },
+                include: { items: true },
+            });
+            if (!ret) throw new BadRequestException('Return not found');
+
+            // Reverse stock increments
+            for (const item of ret.items) {
+                await tx.productStock.updateMany({
+                    where: { product_id: item.product_id, tenant_id: tenantId },
+                    data: { quantity: { decrement: item.quantity } },
+                });
+            }
+
+            // Delete return items then the return
+            await tx.salesReturnItem.deleteMany({ where: { sales_return_id: id } });
+            await tx.salesReturn.deleteMany({ where: { id, tenant_id: tenantId } });
+
+            return { deleted: true };
         });
     }
 }
