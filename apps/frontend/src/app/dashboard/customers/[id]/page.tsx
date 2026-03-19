@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { api } from '../../../../lib/api';
-import { ArrowLeft, User, Phone, Mail, ShoppingBag } from 'lucide-react';
+import { ArrowLeft, User, Phone, Mail, ShoppingBag, CreditCard, MapPin, Building2, FolderTree, Map } from 'lucide-react';
 
 export default function CustomerProfile() {
     const { id } = useParams();
@@ -29,19 +29,45 @@ export default function CustomerProfile() {
     if (loading) return <div className="p-8 font-black uppercase tracking-widest text-gray-400">Loading profile...</div>;
     if (!customer) return <div className="p-8 font-black text-rose-500 uppercase">Customer not found.</div>;
 
+    const creditUtilization = customer.credit_limit && Number(customer.credit_limit) > 0
+        ? ((Number(customer.total_spent) / Number(customer.credit_limit)) * 100).toFixed(1)
+        : null;
+
+    // Compute top purchased items from sales data
+    const itemMap: Record<string, { name: string; totalQty: number; totalValue: number }> = {};
+    customer.sales?.forEach((sale: any) => {
+        sale.items?.forEach((item: any) => {
+            const name = item.product?.name || 'Unknown';
+            const existing = itemMap[name] || { name, totalQty: 0, totalValue: 0 };
+            existing.totalQty += item.quantity;
+            existing.totalValue += Number(item.price_at_sale) * item.quantity;
+            itemMap[name] = existing;
+        });
+    });
+    const topItems = Object.values(itemMap).sort((a, b) => b.totalQty - a.totalQty).slice(0, 5);
+
     return (
         <div className="overflow-y-auto h-full p-8 bg-[#f9fafb] space-y-8">
             <button onClick={() => router.back()} className="flex items-center text-sm font-bold text-gray-500 hover:text-gray-900 transition-colors">
                 <ArrowLeft className="w-4 h-4 mr-2" /> Back to Customers
             </button>
 
+            {/* Profile Header */}
             <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 flex items-start space-x-6">
-                <div className="w-20 h-20 bg-blue-600 rounded-2xl shadow-xl shadow-blue-500/20 flex items-center justify-center text-white font-black text-3xl uppercase">
-                    {customer.name.substring(0,2)}
+                <div className="w-20 h-20 bg-blue-600 rounded-2xl shadow-xl shadow-blue-500/20 flex items-center justify-center text-white font-black text-3xl uppercase overflow-hidden">
+                    {customer.profile_pic_url
+                        ? <img src={customer.profile_pic_url} alt={customer.name} className="w-full h-full object-cover" />
+                        : customer.name.substring(0,2)}
                 </div>
                 <div className="flex-1">
-                    <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-3">
                         <h1 className="text-3xl font-black tracking-tight">{customer.name}</h1>
+                        <span className="font-mono text-xs text-gray-400 bg-gray-50 px-2 py-1 rounded">{customer.customer_code}</span>
+                        <span className={`px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-tighter ${
+                            customer.customer_type === 'ORGANIZATION' ? 'bg-purple-50 text-purple-600' : 'bg-gray-100 text-gray-600'
+                        }`}>
+                            {customer.customer_type || 'Individual'}
+                        </span>
                         <span className={`px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-tighter ${
                             customer.segment_category === 'VIP' ? 'bg-emerald-50 text-emerald-600' :
                             customer.segment_category === 'At-Risk' ? 'bg-rose-50 text-rose-600' :
@@ -50,20 +76,68 @@ export default function CustomerProfile() {
                             {customer.segment_category}
                         </span>
                     </div>
-                    <div className="flex space-x-6 mt-4">
+                    <div className="flex flex-wrap gap-x-6 gap-y-2 mt-4">
                         <div className="flex items-center text-sm text-gray-600 font-medium"><Phone className="w-4 h-4 mr-2 text-gray-400" /> {customer.phone}</div>
                         {customer.email && <div className="flex items-center text-sm text-gray-600 font-medium"><Mail className="w-4 h-4 mr-2 text-gray-400" /> {customer.email}</div>}
+                        {customer.address && <div className="flex items-center text-sm text-gray-600 font-medium"><MapPin className="w-4 h-4 mr-2 text-gray-400" /> {customer.address}</div>}
                     </div>
                 </div>
                 <div className="text-right">
                     <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Lifetime Value</p>
-                    <p className="text-4xl font-black text-blue-600">${Number(customer.total_spent).toFixed(2)}</p>
+                    <p className="text-4xl font-black text-blue-600">৳{Number(customer.total_spent).toFixed(2)}</p>
                 </div>
             </div>
 
+            {/* Info Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <InfoCard label="Customer Group" value={customer.customerGroup?.name || '—'} icon={<FolderTree className="w-5 h-5 text-blue-600" />} />
+                <InfoCard label="Territory" value={customer.territory?.name || '—'} icon={<Map className="w-5 h-5 text-emerald-600" />} />
+                <InfoCard label="Credit Limit" value={customer.credit_limit ? `৳${Number(customer.credit_limit).toLocaleString()}` : '—'} icon={<CreditCard className="w-5 h-5 text-amber-600" />} />
+                <InfoCard label="Default Discount" value={customer.default_discount_pct ? `${Number(customer.default_discount_pct)}%` : '—'} icon={<Building2 className="w-5 h-5 text-purple-600" />} />
+            </div>
+
+            {/* Credit Utilization */}
+            {creditUtilization && (
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <p className="text-xs font-black uppercase tracking-widest text-gray-400 mb-3">Credit Utilization</p>
+                    <div className="flex items-center space-x-4">
+                        <div className="flex-1 bg-gray-100 rounded-full h-3 overflow-hidden">
+                            <div className={`h-full rounded-full transition-all ${Number(creditUtilization) > 80 ? 'bg-rose-500' : Number(creditUtilization) > 50 ? 'bg-amber-500' : 'bg-emerald-500'}`}
+                                style={{ width: `${Math.min(Number(creditUtilization), 100)}%` }} />
+                        </div>
+                        <span className="font-black text-sm">{creditUtilization}%</span>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2 font-medium">
+                        ৳{Number(customer.total_spent).toLocaleString()} of ৳{Number(customer.credit_limit).toLocaleString()} used
+                    </p>
+                </div>
+            )}
+
+            {/* Top Purchased Items */}
+            {topItems.length > 0 && (
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <p className="text-xs font-black uppercase tracking-widest text-gray-400 mb-4">Top Purchased Items</p>
+                    <div className="space-y-3">
+                        {topItems.map((item, i) => (
+                            <div key={item.name} className="flex items-center justify-between">
+                                <div className="flex items-center space-x-3">
+                                    <span className="w-6 h-6 rounded-full bg-blue-50 text-blue-600 text-xs font-black flex items-center justify-center">{i + 1}</span>
+                                    <span className="font-bold text-sm">{item.name}</span>
+                                </div>
+                                <div className="flex items-center space-x-4">
+                                    <span className="text-xs text-gray-500 font-medium">{item.totalQty} units</span>
+                                    <span className="font-black text-sm">৳{item.totalValue.toFixed(2)}</span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Receipt History */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
                 <div className="p-6 border-b border-gray-100">
-                    <h2 className="text-lg font-black flex items-center"><ShoppingBag className="w-5 h-5 mr-2 text-blue-600" /> Receipt History</h2>
+                    <h2 className="text-lg font-black flex items-center"><ShoppingBag className="w-5 h-5 mr-2 text-blue-600" /> Purchase History</h2>
                 </div>
                 <div className="divide-y divide-gray-50">
                     {customer.sales?.length === 0 ? (
@@ -77,7 +151,7 @@ export default function CustomerProfile() {
                                         <p className="text-xs text-gray-500 font-medium">{new Date(sale.created_at).toLocaleString()}</p>
                                     </div>
                                     <div className="text-right">
-                                        <p className="font-black">${Number(sale.amount_paid).toFixed(2)}</p>
+                                        <p className="font-black">৳{Number(sale.amount_paid).toFixed(2)}</p>
                                         <p className={`text-[10px] font-black uppercase tracking-widest ${sale.status === 'COMPLETED' ? 'text-emerald-500' : 'text-gray-400'}`}>{sale.status}</p>
                                     </div>
                                 </div>
@@ -85,7 +159,7 @@ export default function CustomerProfile() {
                                     {sale.items.map((item: any) => (
                                         <div key={item.id} className="flex justify-between text-sm">
                                             <span className="font-medium text-gray-700">{item.quantity}x {item.product?.name || 'Unknown Item'}</span>
-                                            <span className="font-bold text-gray-900">${(Number(item.price_at_sale) * item.quantity).toFixed(2)}</span>
+                                            <span className="font-bold text-gray-900">৳{(Number(item.price_at_sale) * item.quantity).toFixed(2)}</span>
                                         </div>
                                     ))}
                                 </div>
@@ -93,6 +167,18 @@ export default function CustomerProfile() {
                         ))
                     )}
                 </div>
+            </div>
+        </div>
+    );
+}
+
+function InfoCard({ label, value, icon }: { label: string; value: string; icon: React.ReactNode }) {
+    return (
+        <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center space-x-4">
+            <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center">{icon}</div>
+            <div>
+                <p className="text-gray-500 font-bold text-[10px] uppercase tracking-widest">{label}</p>
+                <h3 className="text-lg font-black tracking-tight">{value}</h3>
             </div>
         </div>
     );

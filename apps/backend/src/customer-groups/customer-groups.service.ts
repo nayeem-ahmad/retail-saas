@@ -1,0 +1,66 @@
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { DatabaseService } from '../database/database.service';
+import { CreateCustomerGroupDto, UpdateCustomerGroupDto } from './customer-group.dto';
+
+@Injectable()
+export class CustomerGroupsService {
+    constructor(private db: DatabaseService) {}
+
+    async create(tenantId: string, dto: CreateCustomerGroupDto) {
+        const existing = await this.db.customerGroup.findUnique({
+            where: { tenant_id_name: { tenant_id: tenantId, name: dto.name } },
+        });
+        if (existing) {
+            throw new BadRequestException('A customer group with this name already exists.');
+        }
+
+        return this.db.customerGroup.create({
+            data: { tenant_id: tenantId, ...dto },
+        });
+    }
+
+    async findAll(tenantId: string) {
+        return this.db.customerGroup.findMany({
+            where: { tenant_id: tenantId },
+            include: { _count: { select: { customers: true } } },
+            orderBy: { name: 'asc' },
+        });
+    }
+
+    async findOne(tenantId: string, id: string) {
+        const group = await this.db.customerGroup.findFirst({
+            where: { id, tenant_id: tenantId },
+            include: { _count: { select: { customers: true } } },
+        });
+        if (!group) throw new NotFoundException('Customer group not found');
+        return group;
+    }
+
+    async update(tenantId: string, id: string, dto: UpdateCustomerGroupDto) {
+        await this.findOne(tenantId, id);
+
+        if (dto.name) {
+            const duplicate = await this.db.customerGroup.findFirst({
+                where: { tenant_id: tenantId, name: dto.name, NOT: { id } },
+            });
+            if (duplicate) {
+                throw new BadRequestException('A customer group with this name already exists.');
+            }
+        }
+
+        return this.db.customerGroup.update({
+            where: { id },
+            data: dto,
+        });
+    }
+
+    async remove(tenantId: string, id: string) {
+        const group = await this.findOne(tenantId, id);
+        if ((group as any)._count.customers > 0) {
+            throw new BadRequestException(
+                'Cannot delete this group — it has associated customers. Reassign them first.',
+            );
+        }
+        return this.db.customerGroup.delete({ where: { id } });
+    }
+}

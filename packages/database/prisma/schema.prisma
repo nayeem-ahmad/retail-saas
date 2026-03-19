@@ -21,6 +21,11 @@ enum SubscriptionStatus {
   TRIALING
 }
 
+enum CustomerType {
+  INDIVIDUAL
+  ORGANIZATION
+}
+
 model User {
   id            String       @id @default(uuid())
   email         String       @unique
@@ -54,6 +59,8 @@ model Tenant {
   salesOrders SalesOrder[]
   quotations Quotation[]
   customers  Customer[]
+  customerGroups CustomerGroup[]
+  territories    Territory[]
   cashierSessions CashierSession[]
   cashTransactions CashTransaction[]
 }
@@ -144,23 +151,67 @@ model Sale {
 }
 
 model Customer {
-  id               String   @id @default(uuid())
-  tenant_id        String
-  name             String
-  phone            String
-  email            String?
-  address          String?
-  total_spent      Decimal  @default(0) @db.Decimal(12, 2)
-  segment_category String   @default("Regular")
-  created_at       DateTime @default(now())
+  id                   String        @id @default(uuid())
+  tenant_id            String
+  customer_code        String
+  name                 String
+  phone                String
+  email                String?
+  address              String?
+  profile_pic_url      String?
+  customer_type        CustomerType  @default(INDIVIDUAL)
+  customer_group_id    String?
+  territory_id         String?
+  credit_limit         Decimal?      @db.Decimal(12, 2)
+  default_discount_pct Decimal?      @db.Decimal(5, 2)
+  total_spent          Decimal       @default(0) @db.Decimal(12, 2)
+  segment_category     String        @default("Regular")
+  created_at           DateTime      @default(now())
 
   // Relations
-  tenant           Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  tenant           Tenant         @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  customerGroup    CustomerGroup? @relation(fields: [customer_group_id], references: [id])
+  territory        Territory?     @relation(fields: [territory_id], references: [id])
   sales            Sale[]
   salesOrders      SalesOrder[]
   quotations       Quotation[]
 
   @@unique([tenant_id, phone])
+  @@unique([tenant_id, customer_code])
+}
+
+model CustomerGroup {
+  id                   String   @id @default(uuid())
+  tenant_id            String
+  name                 String
+  description          String?
+  default_discount_pct Decimal? @db.Decimal(5, 2)
+  created_at           DateTime @default(now())
+  updated_at           DateTime @updatedAt
+
+  // Relations
+  tenant    Tenant     @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  customers Customer[]
+
+  @@unique([tenant_id, name])
+}
+
+model Territory {
+  id          String   @id @default(uuid())
+  tenant_id   String
+  name        String
+  parent_id   String?
+  description String?
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  // Relations
+  tenant    Tenant      @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  parent    Territory?  @relation("TerritoryHierarchy", fields: [parent_id], references: [id])
+  children  Territory[] @relation("TerritoryHierarchy")
+  customers Customer[]
+
+  @@unique([tenant_id, name, parent_id])
 }
 
 model PaymentRecord {

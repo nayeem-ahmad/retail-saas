@@ -58,11 +58,49 @@ export const api = {
     }),
     getSales: () => fetchWithAuth('/sales'),
     getCustomers: () => fetchWithAuth('/customers'),
-    getCustomer: (id: string) => fetchWithAuth(`/customers/${id}/history`),
+    getCustomer: (id: string) => fetchWithAuth(`/customers/${id}`),
+    getCustomerHistory: (id: string) => fetchWithAuth(`/customers/${id}/history`),
     createCustomer: (data: any) => fetchWithAuth('/customers', {
         method: 'POST',
         body: JSON.stringify(data),
         headers: { 'Content-Type': 'application/json' },
+    }),
+    updateCustomer: (id: string, data: any) => fetchWithAuth(`/customers/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+    }),
+    // Customer Groups
+    getCustomerGroups: () => fetchWithAuth('/customer-groups'),
+    getCustomerGroup: (id: string) => fetchWithAuth(`/customer-groups/${id}`),
+    createCustomerGroup: (data: any) => fetchWithAuth('/customer-groups', {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+    }),
+    updateCustomerGroup: (id: string, data: any) => fetchWithAuth(`/customer-groups/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+    }),
+    deleteCustomerGroup: (id: string) => fetchWithAuth(`/customer-groups/${id}`, {
+        method: 'DELETE',
+    }),
+    // Territories
+    getTerritories: () => fetchWithAuth('/territories'),
+    getTerritory: (id: string) => fetchWithAuth(`/territories/${id}`),
+    createTerritory: (data: any) => fetchWithAuth('/territories', {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+    }),
+    updateTerritory: (id: string, data: any) => fetchWithAuth(`/territories/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+    }),
+    deleteTerritory: (id: string) => fetchWithAuth(`/territories/${id}`, {
+        method: 'DELETE',
     }),
     getReturns: () => fetchWithAuth('/sales-returns'),
     getReturn: (id: string) => fetchWithAuth(`/sales-returns/${id}`),

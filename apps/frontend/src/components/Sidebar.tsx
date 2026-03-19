@@ -21,6 +21,8 @@ import {
     ShoppingBag,
     Truck,
     Calculator,
+    FolderTree,
+    MapPin,
     type LucideIcon,
 } from 'lucide-react';
 
@@ -59,6 +61,8 @@ const MODULES: NavModule[] = [
         children: [
             { href: '/dashboard/pos',              icon: ShoppingCart,    label: 'POS' },
             { href: '/dashboard/customers',        icon: Users,           label: 'Customers' },
+            { href: '/dashboard/customer-groups',  icon: FolderTree,      label: 'Customer Groups' },
+            { href: '/dashboard/territories',      icon: MapPin,          label: 'Territories' },
             { href: '/dashboard/quotes',           icon: FileText,        label: 'Quotations' },
             { href: '/dashboard/orders',           icon: ClipboardList,   label: 'Sales Orders' },
             { href: '/dashboard/returns',          icon: ArrowLeftRight,  label: 'Returns' },

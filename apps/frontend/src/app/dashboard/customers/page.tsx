@@ -36,7 +36,8 @@ export default function CustomersPage() {
 
     const filtered = customers.filter(c => 
         c.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-        c.phone.includes(searchQuery)
+        c.phone.includes(searchQuery) ||
+        c.customer_code?.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     return (
@@ -61,7 +62,7 @@ export default function CustomersPage() {
                 <SummaryCard title="Total Customers" value={customers.length.toString()} icon={<Users className="text-blue-600" />} color="blue" />
                 <SummaryCard title="VIP Segment" value={customers.filter(c => c.segment_category === 'VIP').length.toString()} icon={<Star className="text-emerald-600" />} color="emerald" />
                 <SummaryCard title="At-Risk" value={customers.filter(c => c.segment_category === 'At-Risk').length.toString()} icon={<AlertCircle className="text-rose-600" />} color="rose" />
-                <SummaryCard title="Avg Spent" value={`$${(customers.reduce((sum, c) => sum + Number(c.total_spent), 0) / (customers.length || 1)).toFixed(0)}`} icon={<ArrowUpRight className="text-amber-600" />} color="amber" />
+                <SummaryCard title="Avg Spent" value={`৳${(customers.reduce((sum, c) => sum + Number(c.total_spent), 0) / (customers.length || 1)).toFixed(0)}`} icon={<ArrowUpRight className="text-amber-600" />} color="amber" />
             </div>
 
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
@@ -70,7 +71,7 @@ export default function CustomersPage() {
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
                         <input
                             type="text"
-                            placeholder="Search by name, phone..."
+                            placeholder="Search by name, phone, code..."
                             value={searchQuery}
                             onChange={e => setSearchQuery(e.target.value)}
                             className="bg-gray-50 border-none rounded-lg py-2 pl-10 pr-4 text-sm w-full focus:ring-2 focus:ring-blue-500/10 transition-all"
@@ -82,8 +83,11 @@ export default function CustomersPage() {
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-gray-50/50 text-[10px] uppercase font-black tracking-widest text-gray-400">
+                                <th className="px-6 py-4">Code</th>
                                 <th className="px-6 py-4">Customer</th>
-                                <th className="px-6 py-4">Phone</th>
+                                <th className="px-6 py-4">Type</th>
+                                <th className="px-6 py-4">Group</th>
+                                <th className="px-6 py-4">Territory</th>
                                 <th className="px-6 py-4">Total Spent</th>
                                 <th className="px-6 py-4">Segment</th>
                                 <th className="px-6 py-4 text-right">Registered</th>
@@ -91,22 +95,29 @@ export default function CustomersPage() {
                         </thead>
                         <tbody className="divide-y divide-gray-50">
                             {loading ? (
-                                <tr><td colSpan={5} className="px-6 py-12 text-center text-gray-400 font-medium">Loading customers...</td></tr>
+                                <tr><td colSpan={8} className="px-6 py-12 text-center text-gray-400 font-medium">Loading customers...</td></tr>
                             ) : filtered.length === 0 ? (
-                                <tr><td colSpan={5} className="px-6 py-12 text-center text-gray-400 font-medium">No customers found.</td></tr>
+                                <tr><td colSpan={8} className="px-6 py-12 text-center text-gray-400 font-medium">No customers found.</td></tr>
                             ) : filtered.map((customer) => (
                                 <tr key={customer.id} onClick={() => router.push(`/dashboard/customers/${customer.id}`)} className="hover:bg-gray-50/50 transition-colors group cursor-pointer">
+                                    <td className="px-6 py-4 font-mono text-xs text-gray-500">{customer.customer_code}</td>
                                     <td className="px-6 py-4">
                                         <div className="flex items-center space-x-3">
                                             <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600 font-black text-xs uppercase">{customer.name.substring(0,2)}</div>
                                             <div>
                                                 <span className="font-bold text-sm text-gray-900 block">{customer.name}</span>
-                                                <span className="text-xs text-gray-500">{customer.email || 'No email'}</span>
+                                                <span className="text-xs text-gray-500">{customer.phone}</span>
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4 font-mono text-sm text-gray-600">{customer.phone}</td>
-                                    <td className="px-6 py-4 font-black">${Number(customer.total_spent).toFixed(2)}</td>
+                                    <td className="px-6 py-4">
+                                        <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${customer.customer_type === 'ORGANIZATION' ? 'bg-purple-50 text-purple-600' : 'bg-gray-100 text-gray-600'}`}>
+                                            {customer.customer_type || 'Individual'}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4 text-sm text-gray-600">{customer.customerGroup?.name || '—'}</td>
+                                    <td className="px-6 py-4 text-sm text-gray-600">{customer.territory?.name || '—'}</td>
+                                    <td className="px-6 py-4 font-black">৳{Number(customer.total_spent).toFixed(2)}</td>
                                     <td className="px-6 py-4">
                                         <span className={`px-2 py-1 rounded text-[10px] font-black uppercase tracking-tighter ${
                                             customer.segment_category === 'VIP' ? 'bg-emerald-50 text-emerald-600' :

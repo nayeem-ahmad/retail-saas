@@ -103,33 +103,87 @@ async function main() {
         }
     }
 
+    // ── 5b. Customer Groups ─────────────────────────────────────────────────
+    const groupDefs = [
+        { name: 'Retail',    description: 'Walk-in retail customers',    default_discount_pct: 0 },
+        { name: 'Wholesale', description: 'Bulk buyers with discounts',  default_discount_pct: 10 },
+        { name: 'VIP Members', description: 'Premium loyalty members',   default_discount_pct: 15 },
+    ];
+
+    const groups: any[] = [];
+    for (const def of groupDefs) {
+        const g = await prisma.customerGroup.upsert({
+            where: { tenant_id_name: { tenant_id: tenant.id, name: def.name } },
+            update: {},
+            create: { tenant_id: tenant.id, ...def },
+        });
+        groups.push(g);
+    }
+
+    // ── 5c. Territories ──────────────────────────────────────────────────────
+    const findOrCreateTerritory = async (name: string, parentId?: string, description?: string) => {
+        const existing = await prisma.territory.findFirst({
+            where: { tenant_id: tenant.id, name, parent_id: parentId ?? null },
+        });
+        if (existing) return existing;
+        return prisma.territory.create({
+            data: { tenant_id: tenant.id, name, parent_id: parentId ?? undefined, description },
+        });
+    };
+
+    const dhakaRoot = await findOrCreateTerritory('Dhaka', undefined, 'Dhaka Division');
+    const chittagongRoot = await findOrCreateTerritory('Chittagong', undefined, 'Chittagong Division');
+
+    const subTerritoryDefs = [
+        { name: 'Gulshan',    parent_id: dhakaRoot.id },
+        { name: 'Dhanmondi',  parent_id: dhakaRoot.id },
+        { name: 'Mirpur',     parent_id: dhakaRoot.id },
+        { name: 'Uttara',     parent_id: dhakaRoot.id },
+        { name: 'Banani',     parent_id: dhakaRoot.id },
+    ];
+
+    const subTerritories: any[] = [];
+    for (const def of subTerritoryDefs) {
+        const t = await findOrCreateTerritory(def.name, def.parent_id);
+        subTerritories.push(t);
+    }
+
     // ── 6. Customers ─────────────────────────────────────────────────────────
     const customerDefs = [
-        { name: 'Rahim Chowdhury',  phone: '+8801711000001', email: 'rahim@gmail.com',    address: 'Mirpur-10, Dhaka' },
-        { name: 'Fatema Begum',     phone: '+8801812000002', email: 'fatema@yahoo.com',   address: 'Dhanmondi, Dhaka' },
-        { name: 'Karim Hossain',    phone: '+8801913000003', email: null,                  address: 'Uttara, Dhaka' },
-        { name: 'Sabina Akter',     phone: '+8801714000004', email: 'sabina@gmail.com',   address: 'Mohakhali, Dhaka' },
-        { name: 'Jahangir Alam',    phone: '+8801815000005', email: null,                  address: 'Tejgaon, Dhaka' },
-        { name: 'Nasrin Sultana',   phone: '+8801916000006', email: 'nasrin@hotmail.com', address: 'Banani, Dhaka' },
-        { name: 'Mizanur Rahman',   phone: '+8801717000007', email: null,                  address: 'Bashundhara, Dhaka' },
-        { name: 'Roksana Parvin',   phone: '+8801818000008', email: 'roksana@gmail.com',  address: 'Gulshan, Dhaka' },
-        { name: 'Motiur Rahman',    phone: '+8801919000009', email: null,                  address: 'Wari, Dhaka' },
-        { name: 'Taslima Khanam',   phone: '+8801720000010', email: 'taslima@gmail.com',  address: 'Shyamoli, Dhaka' },
-        { name: 'Anwar Hossain',    phone: '+8801821000011', email: null,                  address: 'Rampura, Dhaka' },
-        { name: 'Halima Khatun',    phone: '+8801922000012', email: 'halima@gmail.com',   address: 'Khilgaon, Dhaka' },
+        { name: 'Rahim Chowdhury',  phone: '+8801711000001', email: 'rahim@gmail.com',    address: 'Mirpur-10, Dhaka',    code: 'CUST-00001', group: groups[0], territory: subTerritories[2], type: 'INDIVIDUAL' as const },
+        { name: 'Fatema Begum',     phone: '+8801812000002', email: 'fatema@yahoo.com',   address: 'Dhanmondi, Dhaka',    code: 'CUST-00002', group: groups[0], territory: subTerritories[1], type: 'INDIVIDUAL' as const },
+        { name: 'Karim Hossain',    phone: '+8801913000003', email: null,                  address: 'Uttara, Dhaka',       code: 'CUST-00003', group: groups[1], territory: subTerritories[3], type: 'INDIVIDUAL' as const },
+        { name: 'Sabina Akter',     phone: '+8801714000004', email: 'sabina@gmail.com',   address: 'Mohakhali, Dhaka',    code: 'CUST-00004', group: groups[0], territory: subTerritories[4], type: 'INDIVIDUAL' as const },
+        { name: 'Jahangir Alam',    phone: '+8801815000005', email: null,                  address: 'Tejgaon, Dhaka',      code: 'CUST-00005', group: groups[1], territory: subTerritories[1], type: 'ORGANIZATION' as const },
+        { name: 'Nasrin Sultana',   phone: '+8801916000006', email: 'nasrin@hotmail.com', address: 'Banani, Dhaka',       code: 'CUST-00006', group: groups[2], territory: subTerritories[4], type: 'INDIVIDUAL' as const },
+        { name: 'Mizanur Rahman',   phone: '+8801717000007', email: null,                  address: 'Bashundhara, Dhaka',  code: 'CUST-00007', group: groups[1], territory: subTerritories[3], type: 'ORGANIZATION' as const },
+        { name: 'Roksana Parvin',   phone: '+8801818000008', email: 'roksana@gmail.com',  address: 'Gulshan, Dhaka',      code: 'CUST-00008', group: groups[2], territory: subTerritories[0], type: 'INDIVIDUAL' as const },
+        { name: 'Motiur Rahman',    phone: '+8801919000009', email: null,                  address: 'Wari, Dhaka',         code: 'CUST-00009', group: groups[0], territory: subTerritories[2], type: 'INDIVIDUAL' as const },
+        { name: 'Taslima Khanam',   phone: '+8801720000010', email: 'taslima@gmail.com',  address: 'Shyamoli, Dhaka',     code: 'CUST-00010', group: groups[2], territory: subTerritories[1], type: 'INDIVIDUAL' as const },
+        { name: 'Anwar Hossain',    phone: '+8801821000011', email: null,                  address: 'Rampura, Dhaka',      code: 'CUST-00011', group: groups[0], territory: subTerritories[2], type: 'INDIVIDUAL' as const },
+        { name: 'Halima Khatun',    phone: '+8801922000012', email: 'halima@gmail.com',   address: 'Khilgaon, Dhaka',     code: 'CUST-00012', group: groups[0], territory: subTerritories[1], type: 'INDIVIDUAL' as const },
     ];
 
     const customers: any[] = [];
     for (const def of customerDefs) {
         const c = await prisma.customer.upsert({
             where: { tenant_id_phone: { tenant_id: tenant.id, phone: def.phone } },
-            update: {},
+            update: {
+                customer_code: def.code,
+                customer_type: def.type,
+                customer_group_id: def.group.id,
+                territory_id: def.territory.id,
+            },
             create: {
                 tenant_id: tenant.id,
+                customer_code: def.code,
                 name: def.name,
                 phone: def.phone,
                 email: def.email ?? undefined,
                 address: def.address,
+                customer_type: def.type,
+                customer_group_id: def.group.id,
+                territory_id: def.territory.id,
             },
         });
         customers.push(c);
@@ -265,18 +319,22 @@ async function main() {
     }
 
     // ── 8. Summary ───────────────────────────────────────────────────────────
-    const productCount  = await prisma.product.count({ where: { tenant_id: tenant.id } });
-    const customerCount = await prisma.customer.count({ where: { tenant_id: tenant.id } });
-    const saleCount     = await prisma.sale.count({ where: { tenant_id: tenant.id } });
+    const productCount    = await prisma.product.count({ where: { tenant_id: tenant.id } });
+    const customerCount   = await prisma.customer.count({ where: { tenant_id: tenant.id } });
+    const saleCount       = await prisma.sale.count({ where: { tenant_id: tenant.id } });
+    const groupCount      = await prisma.customerGroup.count({ where: { tenant_id: tenant.id } });
+    const territoryCount  = await prisma.territory.count({ where: { tenant_id: tenant.id } });
 
     console.log('\n✅  Seed complete');
     console.log('─────────────────────────────────────');
-    console.log(`👤  Users:     admin / manager / cashier  (password: password123)`);
-    console.log(`🏪  Tenant:    ${tenant.name}`);
-    console.log(`🏬  Store:     ${store.name}`);
-    console.log(`📦  Products:  ${productCount}`);
-    console.log(`👥  Customers: ${customerCount}`);
-    console.log(`🧾  Sales:     ${saleCount}`);
+    console.log(`👤  Users:           admin / manager / cashier  (password: password123)`);
+    console.log(`🏪  Tenant:          ${tenant.name}`);
+    console.log(`🏬  Store:           ${store.name}`);
+    console.log(`📦  Products:        ${productCount}`);
+    console.log(`👥  Customers:       ${customerCount}`);
+    console.log(`📂  Customer Groups: ${groupCount}`);
+    console.log(`🗺️   Territories:     ${territoryCount}`);
+    console.log(`🧾  Sales:           ${saleCount}`);
     console.log('─────────────────────────────────────');
     console.log('Login → http://localhost:3000');
     console.log('Email: admin@retailsaas.com  |  Password: password123');
