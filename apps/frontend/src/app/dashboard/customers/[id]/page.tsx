@@ -30,7 +30,7 @@ export default function CustomerProfile() {
     if (!customer) return <div className="p-8 font-black text-rose-500 uppercase">Customer not found.</div>;
 
     return (
-        <div className="flex-1 overflow-y-auto p-8 bg-[#f9fafb] min-h-screen space-y-8">
+        <div className="overflow-y-auto h-full p-8 bg-[#f9fafb] space-y-8">
             <button onClick={() => router.back()} className="flex items-center text-sm font-bold text-gray-500 hover:text-gray-900 transition-colors">
                 <ArrowLeft className="w-4 h-4 mr-2" /> Back to Customers
             </button>

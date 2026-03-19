@@ -84,7 +84,7 @@ export default function SaleDetailPage() {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center h-screen bg-[#f3f4f6]">
+            <div className="flex items-center justify-center h-full bg-[#f3f4f6]">
                 <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Loading sale...</p>
             </div>
         );
@@ -92,14 +92,14 @@ export default function SaleDetailPage() {
 
     if (!sale) {
         return (
-            <div className="flex items-center justify-center h-screen bg-[#f3f4f6]">
+            <div className="flex items-center justify-center h-full bg-[#f3f4f6]">
                 <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Sale not found</p>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-[#f3f4f6] p-6 font-sans text-gray-900">
+        <div className="overflow-y-auto h-full bg-[#f3f4f6] p-6 font-sans text-gray-900">
             <div className="max-w-4xl mx-auto space-y-6">
                 {/* Header */}
                 <div className="flex items-center justify-between">

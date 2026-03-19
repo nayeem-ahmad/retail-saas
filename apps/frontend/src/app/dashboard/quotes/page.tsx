@@ -38,7 +38,7 @@ export default function QuotesPage() {
     };
 
     return (
-        <div className="flex-1 overflow-y-auto p-8 bg-[#f9fafb] min-h-screen">
+        <div className="overflow-y-auto h-full p-8 bg-[#f9fafb]">
             <div className="flex justify-between items-center mb-8">
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight">Quotations</h1>

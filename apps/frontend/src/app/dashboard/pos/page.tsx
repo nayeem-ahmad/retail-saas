@@ -107,7 +107,7 @@ export default function POSPage() {
     );
 
     return (
-        <div className="flex h-screen bg-[#f3f4f6] font-sans text-gray-900 overflow-hidden">
+        <div className="flex h-full bg-[#f3f4f6] font-sans text-gray-900 overflow-hidden">
             {/* Left Section: Product Selection */}
             <div className="flex-1 flex flex-col p-6 space-y-6 overflow-hidden">
                 <div className="flex items-center justify-between">

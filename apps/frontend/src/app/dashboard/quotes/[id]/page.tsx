@@ -65,7 +65,7 @@ export default function QuoteDetailsPage() {
     const totalAmount = Number(quote.total_amount);
 
     return (
-        <div className="flex-1 overflow-y-auto bg-[#f9fafb] min-h-screen">
+        <div className="overflow-y-auto h-full bg-[#f9fafb]">
             {/* Header */}
             <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
                 <div className="px-8 py-6">
