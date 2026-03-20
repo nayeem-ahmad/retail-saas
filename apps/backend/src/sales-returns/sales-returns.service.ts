@@ -227,7 +227,7 @@ export class SalesReturnsService {
             }
 
             // Delete return items then the return
-            await tx.salesReturnItem.deleteMany({ where: { sales_return_id: id } });
+            await tx.salesReturnItem.deleteMany({ where: { return_id: id } });
             await tx.salesReturn.deleteMany({ where: { id, tenant_id: tenantId } });
 
             return { deleted: true };

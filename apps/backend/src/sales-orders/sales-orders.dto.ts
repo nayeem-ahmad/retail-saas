@@ -33,6 +33,27 @@ export class CreateSalesOrderDto {
     deliveryDate?: Date;
 }
 
+export class UpdateSalesOrderDto {
+    @IsOptional()
+    @IsString()
+    customerId?: string;
+
+    @IsOptional()
+    @IsString()
+    status?: string;
+
+    @IsOptional()
+    deliveryDate?: Date;
+
+    @IsOptional()
+    @IsArray()
+    items?: CreateSalesOrderItemDto[];
+
+    @IsOptional()
+    @IsNumber()
+    totalAmount?: number;
+}
+
 export class UpdateOrderStatusDto {
     @IsString()
     status: string;
