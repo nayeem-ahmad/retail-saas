@@ -1,13 +1,26 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { api } from '../../../lib/api';
-import { Plus, MapPin, Pencil, Trash2, X, Users, ChevronRight } from 'lucide-react';
+import { Plus, MapPin, Pencil, Trash2, X } from 'lucide-react';
+import { createColumnHelper, type ColumnDef } from '@tanstack/react-table';
+import { DataTable } from '@/components/data-table';
+
+interface Territory {
+    id: string;
+    name: string;
+    parent_id?: string | null;
+    parent?: { id: string; name: string } | null;
+    description?: string | null;
+    _count?: { customers?: number };
+}
+
+const columnHelper = createColumnHelper<Territory>();
 
 export default function TerritoriesPage() {
-    const [territories, setTerritories] = useState<any[]>([]);
+    const [territories, setTerritories] = useState<Territory[]>([]);
     const [loading, setLoading] = useState(true);
-    const [editingTerritory, setEditingTerritory] = useState<any>(null);
+    const [editingTerritory, setEditingTerritory] = useState<Territory | null>(null);
     const [isFormOpen, setIsFormOpen] = useState(false);
 
     useEffect(() => { loadTerritories(); }, []);
@@ -54,91 +67,162 @@ export default function TerritoriesPage() {
         setIsFormOpen(true);
     };
 
-    // Organize into a tree structure for display
-    const rootTerritories = territories.filter(t => !t.parent_id);
-    const childrenOf = (parentId: string) => territories.filter(t => t.parent_id === parentId);
+    const childrenCountByParent = useMemo(() => {
+        const counts: Record<string, number> = {};
+        territories.forEach((territory) => {
+            if (territory.parent_id) {
+                counts[territory.parent_id] = (counts[territory.parent_id] || 0) + 1;
+            }
+        });
+        return counts;
+    }, [territories]);
+
+    const depthById = useMemo(() => {
+        const territoryMap = new Map(territories.map((territory) => [territory.id, territory]));
+        const result: Record<string, number> = {};
+
+        const getDepth = (territory: Territory): number => {
+            if (!territory.parent_id) return 0;
+            if (result[territory.id] !== undefined) return result[territory.id];
+
+            const parent = territoryMap.get(territory.parent_id);
+            const depth = parent ? getDepth(parent) + 1 : 0;
+            result[territory.id] = depth;
+            return depth;
+        };
+
+        territories.forEach((territory) => {
+            result[territory.id] = getDepth(territory);
+        });
+
+        return result;
+    }, [territories]);
+
+    const columns: ColumnDef<Territory, any>[] = useMemo(
+        () => [
+            columnHelper.accessor('name', {
+                header: 'Territory',
+                cell: (info) => {
+                    const territory = info.row.original;
+                    const depth = depthById[territory.id] || 0;
+                    return (
+                        <div className="flex items-center" style={{ paddingLeft: `${depth * 16}px` }}>
+                            <div className="mr-3 flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+                                <MapPin className="w-4 h-4" />
+                            </div>
+                            <div>
+                                <span className="block text-sm font-black text-gray-900">{territory.name}</span>
+                                <span className="block text-xs text-gray-400">{territory.description || 'No description'}</span>
+                            </div>
+                        </div>
+                    );
+                },
+                size: 280,
+            }),
+            columnHelper.accessor((row) => row.parent?.name ?? '', {
+                id: 'parent',
+                header: 'Parent',
+                cell: (info) => (
+                    <span className="text-sm font-medium text-gray-700">{info.getValue() || 'Root'}</span>
+                ),
+                size: 160,
+            }),
+            columnHelper.accessor((row) => depthById[row.id] || 0, {
+                id: 'level',
+                header: 'Level',
+                cell: (info) => (
+                    <span className="text-sm font-bold text-gray-700">L{Number(info.getValue()) + 1}</span>
+                ),
+                sortingFn: (a, b) => Number(a.getValue('level')) - Number(b.getValue('level')),
+                size: 90,
+            }),
+            columnHelper.accessor((row) => row._count?.customers ?? 0, {
+                id: 'customers',
+                header: 'Customers',
+                cell: (info) => (
+                    <span className="text-sm font-bold text-gray-700">{info.getValue()}</span>
+                ),
+                sortingFn: (a, b) => Number(a.getValue('customers')) - Number(b.getValue('customers')),
+                size: 110,
+            }),
+            columnHelper.accessor((row) => childrenCountByParent[row.id] || 0, {
+                id: 'children',
+                header: 'Sub Territories',
+                cell: (info) => (
+                    <span className="text-sm font-bold text-gray-700">{info.getValue()}</span>
+                ),
+                sortingFn: (a, b) => Number(a.getValue('children')) - Number(b.getValue('children')),
+                size: 130,
+            }),
+            columnHelper.display({
+                id: 'actions',
+                header: 'Actions',
+                cell: (info) => {
+                    const territory = info.row.original;
+                    return (
+                        <div className="flex items-center justify-end space-x-1">
+                            <button
+                                onClick={() => openEdit(territory)}
+                                className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
+                                title="Edit"
+                            >
+                                <Pencil className="w-4 h-4" />
+                            </button>
+                            <button
+                                onClick={() => handleDelete(territory.id)}
+                                className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 transition-colors"
+                                title="Delete"
+                            >
+                                <Trash2 className="w-4 h-4" />
+                            </button>
+                        </div>
+                    );
+                },
+                enableSorting: false,
+                enableColumnFilter: false,
+                enableResizing: false,
+                size: 110,
+            }),
+        ],
+        [childrenCountByParent, depthById],
+    );
 
     return (
-        <div className="overflow-y-auto h-full p-8 bg-[#f9fafb]">
-            <div className="flex justify-between items-center mb-8">
-                <div>
-                    <h1 className="text-2xl font-bold tracking-tight">Territories</h1>
-                    <p className="text-gray-500 text-sm mt-1 uppercase font-medium tracking-wide">Geographic hierarchy for customers</p>
-                </div>
-                <button onClick={openCreate} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl font-bold text-sm flex items-center shadow-lg shadow-blue-200 transition-all hover:-translate-y-0.5">
-                    <Plus className="w-4 h-4 mr-2" /> New Territory
-                </button>
-            </div>
-
-            {isFormOpen && (
-                <TerritoryForm
-                    territory={editingTerritory}
-                    territories={territories}
-                    onSave={handleSave}
-                    onCancel={() => { setIsFormOpen(false); setEditingTerritory(null); }}
-                />
-            )}
-
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                {loading ? (
-                    <p className="text-center text-gray-400 font-bold uppercase tracking-widest text-xs py-12">Loading...</p>
-                ) : territories.length === 0 ? (
-                    <p className="text-center text-gray-400 font-bold uppercase tracking-widest text-xs py-12">No territories yet. Create one!</p>
-                ) : (
-                    <div className="divide-y divide-gray-50">
-                        {rootTerritories.map(territory => (
-                            <TerritoryRow key={territory.id} territory={territory} depth={0} childrenOf={childrenOf} onEdit={openEdit} onDelete={handleDelete} />
-                        ))}
+        <div className="overflow-y-auto h-full bg-[#f3f4f6] p-6 font-sans text-gray-900">
+            <div className="max-w-[1400px] mx-auto space-y-6">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-2xl font-black tracking-tight">Territories</h1>
+                        <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mt-0.5">
+                            Manage the customer geography hierarchy
+                        </p>
                     </div>
+                    <button onClick={openCreate} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl font-bold text-sm flex items-center shadow-lg shadow-blue-200 transition-all hover:-translate-y-0.5 active:translate-y-0">
+                        <Plus className="w-4 h-4 mr-2" /> New Territory
+                    </button>
+                </div>
+
+                {isFormOpen && (
+                    <TerritoryForm
+                        territory={editingTerritory}
+                        territories={territories}
+                        onSave={handleSave}
+                        onCancel={() => { setIsFormOpen(false); setEditingTerritory(null); }}
+                    />
                 )}
+
+                <DataTable<Territory>
+                    tableId="territories"
+                    columns={columns}
+                    data={territories}
+                    title="Territories"
+                    isLoading={loading}
+                    emptyMessage="No territories found"
+                    emptyIcon={<MapPin className="w-16 h-16 text-gray-200" />}
+                    searchPlaceholder="Search by territory or parent..."
+                />
             </div>
         </div>
-    );
-}
-
-function TerritoryRow({ territory, depth, childrenOf, onEdit, onDelete }: {
-    territory: any; depth: number; childrenOf: (id: string) => any[]; onEdit: (t: any) => void; onDelete: (id: string) => void;
-}) {
-    const children = childrenOf(territory.id);
-    const [expanded, setExpanded] = useState(true);
-
-    return (
-        <>
-            <div className="flex items-center px-6 py-4 hover:bg-gray-50/50 transition-colors" style={{ paddingLeft: `${24 + depth * 28}px` }}>
-                {children.length > 0 ? (
-                    <button onClick={() => setExpanded(!expanded)} className="mr-2 p-0.5 hover:bg-gray-100 rounded text-gray-400">
-                        <ChevronRight className={`w-4 h-4 transition-transform ${expanded ? 'rotate-90' : ''}`} />
-                    </button>
-                ) : (
-                    <span className="w-5 mr-2" />
-                )}
-                <div className="w-8 h-8 bg-emerald-50 rounded-lg flex items-center justify-center mr-3">
-                    <MapPin className="w-4 h-4 text-emerald-600" />
-                </div>
-                <div className="flex-1">
-                    <span className="font-black text-sm">{territory.name}</span>
-                    {territory.description && <span className="text-xs text-gray-400 ml-2">{territory.description}</span>}
-                </div>
-                <div className="flex items-center space-x-4">
-                    <div className="flex items-center text-gray-500 text-xs">
-                        <Users className="w-3.5 h-3.5 mr-1" />
-                        <span className="font-bold">{territory._count?.customers ?? 0}</span>
-                    </div>
-                    {children.length > 0 && (
-                        <span className="text-xs text-gray-400 font-medium">{children.length} sub</span>
-                    )}
-                    <button onClick={() => onEdit(territory)} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors text-gray-400 hover:text-gray-600">
-                        <Pencil className="w-3.5 h-3.5" />
-                    </button>
-                    <button onClick={() => onDelete(territory.id)} className="p-1.5 hover:bg-red-50 rounded-lg transition-colors text-gray-400 hover:text-red-600">
-                        <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                </div>
-            </div>
-            {expanded && children.map(child => (
-                <TerritoryRow key={child.id} territory={child} depth={depth + 1} childrenOf={childrenOf} onEdit={onEdit} onDelete={onDelete} />
-            ))}
-        </>
     );
 }
 

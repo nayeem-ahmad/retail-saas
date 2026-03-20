@@ -1,13 +1,25 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { api } from '../../../lib/api';
-import { Plus, FolderTree, Pencil, Trash2, X, Users } from 'lucide-react';
+import { Plus, FolderTree, Pencil, Trash2, X } from 'lucide-react';
+import { createColumnHelper, type ColumnDef } from '@tanstack/react-table';
+import { DataTable } from '@/components/data-table';
+
+interface CustomerGroup {
+    id: string;
+    name: string;
+    description?: string | null;
+    default_discount_pct?: string | number | null;
+    _count?: { customers?: number };
+}
+
+const columnHelper = createColumnHelper<CustomerGroup>();
 
 export default function CustomerGroupsPage() {
-    const [groups, setGroups] = useState<any[]>([]);
+    const [groups, setGroups] = useState<CustomerGroup[]>([]);
     const [loading, setLoading] = useState(true);
-    const [editingGroup, setEditingGroup] = useState<any>(null);
+    const [editingGroup, setEditingGroup] = useState<CustomerGroup | null>(null);
     const [isFormOpen, setIsFormOpen] = useState(false);
 
     useEffect(() => { loadGroups(); }, []);
@@ -54,64 +66,111 @@ export default function CustomerGroupsPage() {
         setIsFormOpen(true);
     };
 
+    const columns: ColumnDef<CustomerGroup, any>[] = useMemo(
+        () => [
+            columnHelper.accessor('name', {
+                header: 'Group',
+                cell: (info) => {
+                    const group = info.row.original;
+                    return (
+                        <div>
+                            <span className="block text-sm font-black text-gray-900">{group.name}</span>
+                            <span className="block text-xs text-gray-400">{group.description || 'No description'}</span>
+                        </div>
+                    );
+                },
+                size: 240,
+            }),
+            columnHelper.accessor((row) => row._count?.customers ?? 0, {
+                id: 'customers',
+                header: 'Customers',
+                cell: (info) => (
+                    <span className="text-sm font-bold text-gray-700">{info.getValue()}</span>
+                ),
+                sortingFn: (a, b) => Number(a.getValue('customers')) - Number(b.getValue('customers')),
+                size: 110,
+            }),
+            columnHelper.accessor('default_discount_pct', {
+                header: 'Default Discount',
+                cell: (info) => {
+                    const value = Number(info.getValue() || 0);
+                    return value > 0 ? (
+                        <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border bg-emerald-50 text-emerald-700 border-emerald-200">
+                            {value}%
+                        </span>
+                    ) : (
+                        <span className="text-sm text-gray-400">None</span>
+                    );
+                },
+                sortingFn: (a, b) => Number(a.getValue('default_discount_pct') || 0) - Number(b.getValue('default_discount_pct') || 0),
+                size: 140,
+            }),
+            columnHelper.display({
+                id: 'actions',
+                header: 'Actions',
+                cell: (info) => {
+                    const group = info.row.original;
+                    return (
+                        <div className="flex items-center justify-end space-x-1">
+                            <button
+                                onClick={() => openEdit(group)}
+                                className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
+                                title="Edit"
+                            >
+                                <Pencil className="w-4 h-4" />
+                            </button>
+                            <button
+                                onClick={() => handleDelete(group.id)}
+                                className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 transition-colors"
+                                title="Delete"
+                            >
+                                <Trash2 className="w-4 h-4" />
+                            </button>
+                        </div>
+                    );
+                },
+                enableSorting: false,
+                enableColumnFilter: false,
+                enableResizing: false,
+                size: 110,
+            }),
+        ],
+        [editingGroup],
+    );
+
     return (
-        <div className="overflow-y-auto h-full p-8 bg-[#f9fafb]">
-            <div className="flex justify-between items-center mb-8">
-                <div>
-                    <h1 className="text-2xl font-bold tracking-tight">Customer Groups</h1>
-                    <p className="text-gray-500 text-sm mt-1 uppercase font-medium tracking-wide">Organize customers by group</p>
-                </div>
-                <button onClick={openCreate} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl font-bold text-sm flex items-center shadow-lg shadow-blue-200 transition-all hover:-translate-y-0.5">
-                    <Plus className="w-4 h-4 mr-2" /> New Group
-                </button>
-            </div>
-
-            {isFormOpen && (
-                <GroupForm
-                    group={editingGroup}
-                    onSave={handleSave}
-                    onCancel={() => { setIsFormOpen(false); setEditingGroup(null); }}
-                />
-            )}
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {loading ? (
-                    <p className="col-span-full text-center text-gray-400 font-bold uppercase tracking-widest text-xs py-12">Loading...</p>
-                ) : groups.length === 0 ? (
-                    <p className="col-span-full text-center text-gray-400 font-bold uppercase tracking-widest text-xs py-12">No groups yet. Create one!</p>
-                ) : groups.map(group => (
-                    <div key={group.id} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                        <div className="flex items-start justify-between mb-4">
-                            <div className="flex items-center space-x-3">
-                                <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
-                                    <FolderTree className="w-5 h-5 text-blue-600" />
-                                </div>
-                                <div>
-                                    <h3 className="font-black text-sm">{group.name}</h3>
-                                    {group.description && <p className="text-xs text-gray-500 mt-0.5">{group.description}</p>}
-                                </div>
-                            </div>
-                            <div className="flex space-x-1">
-                                <button onClick={() => openEdit(group)} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors text-gray-400 hover:text-gray-600">
-                                    <Pencil className="w-4 h-4" />
-                                </button>
-                                <button onClick={() => handleDelete(group.id)} className="p-1.5 hover:bg-red-50 rounded-lg transition-colors text-gray-400 hover:text-red-600">
-                                    <Trash2 className="w-4 h-4" />
-                                </button>
-                            </div>
-                        </div>
-                        <div className="flex items-center justify-between text-sm">
-                            <div className="flex items-center text-gray-500">
-                                <Users className="w-4 h-4 mr-1" />
-                                <span className="font-bold">{group._count?.customers ?? 0}</span>
-                                <span className="ml-1 text-xs">customers</span>
-                            </div>
-                            {group.default_discount_pct && Number(group.default_discount_pct) > 0 && (
-                                <span className="text-xs font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">{Number(group.default_discount_pct)}% discount</span>
-                            )}
-                        </div>
+        <div className="overflow-y-auto h-full bg-[#f3f4f6] p-6 font-sans text-gray-900">
+            <div className="max-w-[1400px] mx-auto space-y-6">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-2xl font-black tracking-tight">Customer Groups</h1>
+                        <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mt-0.5">
+                            Organize customers with reusable pricing rules
+                        </p>
                     </div>
-                ))}
+                    <button onClick={openCreate} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl font-bold text-sm flex items-center shadow-lg shadow-blue-200 transition-all hover:-translate-y-0.5 active:translate-y-0">
+                        <Plus className="w-4 h-4 mr-2" /> New Group
+                    </button>
+                </div>
+
+                {isFormOpen && (
+                    <GroupForm
+                        group={editingGroup}
+                        onSave={handleSave}
+                        onCancel={() => { setIsFormOpen(false); setEditingGroup(null); }}
+                    />
+                )}
+
+                <DataTable<CustomerGroup>
+                    tableId="customer-groups"
+                    columns={columns}
+                    data={groups}
+                    title="Customer Groups"
+                    isLoading={loading}
+                    emptyMessage="No customer groups found"
+                    emptyIcon={<FolderTree className="w-16 h-16 text-gray-200" />}
+                    searchPlaceholder="Search by group name..."
+                />
             </div>
         </div>
     );
