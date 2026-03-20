@@ -1,21 +1,63 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Package, DollarSign, FileText, Share2, ClipboardList, PlusCircle, Printer } from 'lucide-react';
+import { ArrowLeft, Package, FileText, ClipboardList, PlusCircle, Printer, Pencil, Save, X, Search, Trash2 } from 'lucide-react';
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { api } from '../../../../lib/api';
+
+interface EditQuoteItem {
+    productId: string;
+    productName: string;
+    sku: string;
+    quantity: number;
+    unitPrice: number;
+}
 
 export default function QuoteDetailsPage() {
     const { id } = useParams();
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [quote, setQuote] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState(false);
+    const [saving, setSaving] = useState(false);
+    const isEditMode = searchParams.get('edit') === 'true';
+
+    const [customers, setCustomers] = useState<any[]>([]);
+    const [products, setProducts] = useState<any[]>([]);
+    const [editCustomerId, setEditCustomerId] = useState<string>('');
+    const [editValidUntil, setEditValidUntil] = useState('');
+    const [editNotes, setEditNotes] = useState('');
+    const [editItems, setEditItems] = useState<EditQuoteItem[]>([]);
+    const [productSearch, setProductSearch] = useState('');
+    const [showProductDropdown, setShowProductDropdown] = useState(false);
 
     useEffect(() => {
         loadQuote();
     }, [id]);
+
+    useEffect(() => {
+        if (isEditMode) {
+            api.getCustomers().then(setCustomers).catch(() => {});
+            api.getProducts().then(setProducts).catch(() => {});
+        }
+    }, [isEditMode]);
+
+    useEffect(() => {
+        if (isEditMode && quote) {
+            setEditCustomerId(quote.customer_id || '');
+            setEditValidUntil(quote.valid_until ? new Date(quote.valid_until).toISOString().slice(0, 10) : '');
+            setEditNotes(quote.notes || '');
+            setEditItems((quote.items || []).map((item: any) => ({
+                productId: item.product_id,
+                productName: item.product?.name || 'Item',
+                sku: item.product?.sku || '',
+                quantity: item.quantity,
+                unitPrice: Number(item.unit_price),
+            })));
+        }
+    }, [isEditMode, quote]);
 
     const loadQuote = async () => {
         try {
@@ -25,6 +67,86 @@ export default function QuoteDetailsPage() {
             console.error('Failed to load quote', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const filteredProducts = products.filter((product) =>
+        product.name?.toLowerCase().includes(productSearch.toLowerCase()) ||
+        product.sku?.toLowerCase().includes(productSearch.toLowerCase()),
+    ).slice(0, 8);
+
+    const addItem = (product: any) => {
+        const existing = editItems.find((item) => item.productId === product.id);
+        if (existing) {
+            setEditItems(editItems.map((item) => (
+                item.productId === product.id ? { ...item, quantity: item.quantity + 1 } : item
+            )));
+        } else {
+            setEditItems([
+                ...editItems,
+                {
+                    productId: product.id,
+                    productName: product.name,
+                    sku: product.sku || '',
+                    quantity: 1,
+                    unitPrice: parseFloat(product.price),
+                },
+            ]);
+        }
+        setProductSearch('');
+        setShowProductDropdown(false);
+    };
+
+    const updateItem = (index: number, field: 'quantity' | 'unitPrice', value: number) => {
+        setEditItems(editItems.map((item, itemIndex) => (
+            itemIndex === index ? { ...item, [field]: value } : item
+        )));
+    };
+
+    const removeItem = (index: number) => {
+        setEditItems(editItems.filter((_, itemIndex) => itemIndex !== index));
+    };
+
+    const editTotalAmount = editItems.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
+
+    const handleSave = async () => {
+        if (!quote || editItems.length === 0) return;
+
+        setSaving(true);
+        try {
+            await api.updateQuotation(quote.id, {
+                customerId: editCustomerId || undefined,
+                validUntil: editValidUntil || undefined,
+                notes: editNotes || undefined,
+                items: editItems.map((item) => ({
+                    productId: item.productId,
+                    quantity: item.quantity,
+                    unitPrice: item.unitPrice,
+                })),
+                totalAmount: editTotalAmount,
+            });
+            await loadQuote();
+            router.push(`/dashboard/quotes/${quote.id}`);
+        } catch (error) {
+            console.error('Failed to save quotation', error);
+            alert('Failed to save quotation. Please review your changes and try again.');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!quote) return;
+        if (!window.confirm('Are you sure you want to delete this quotation?')) return;
+
+        setActionLoading(true);
+        try {
+            await api.deleteQuotation(quote.id);
+            router.push('/dashboard/quotes');
+        } catch (error: any) {
+            alert(error.message || 'Failed to delete quotation');
+        } finally {
+            setActionLoading(false);
         }
     };
 
@@ -66,6 +188,36 @@ export default function QuoteDetailsPage() {
 
     return (
         <div className="overflow-y-auto h-full bg-[#f9fafb]">
+            {isEditMode && (
+                <div className="px-8 pt-6">
+                    <div className="bg-amber-50 border border-amber-200 rounded-2xl px-5 py-3 flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                            <Pencil className="w-4 h-4 text-amber-600" />
+                            <span className="text-sm font-bold text-amber-800">
+                                Edit Mode — Update customer, validity, notes, and quoted items
+                            </span>
+                        </div>
+                        <div className="flex items-center space-x-3">
+                            <button
+                                onClick={handleSave}
+                                disabled={saving || editItems.length === 0}
+                                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-lg font-bold text-xs uppercase tracking-widest shadow-sm flex items-center space-x-1.5 transition-all disabled:opacity-50"
+                            >
+                                <Save className="w-3.5 h-3.5" />
+                                <span>{saving ? 'Saving...' : 'Save Changes'}</span>
+                            </button>
+                            <button
+                                onClick={() => router.push(`/dashboard/quotes/${quote.id}`)}
+                                className="text-xs font-bold uppercase tracking-widest text-amber-600 hover:text-amber-800 transition-colors flex items-center space-x-1"
+                            >
+                                <X className="w-3.5 h-3.5" />
+                                <span>Cancel</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Header */}
             <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
                 <div className="px-8 py-6">
@@ -91,10 +243,25 @@ export default function QuoteDetailsPage() {
                             </div>
                         </div>
                         
-                        <div className="flex space-x-3">
+                        <div className="flex flex-wrap gap-3 justify-end">
                             <button onClick={() => window.print()} className="bg-white border border-gray-200 text-gray-900 px-4 py-2.5 rounded-xl font-bold text-sm flex items-center hover:bg-gray-50 shadow-sm transition-all">
                                 <Printer className="w-4 h-4 mr-2 text-gray-400" />
                                 Print PDF
+                            </button>
+                            <button
+                                onClick={() => router.push(`/dashboard/quotes/${quote.id}?edit=true`)}
+                                className="bg-white border border-gray-200 text-gray-900 px-4 py-2.5 rounded-xl font-bold text-sm flex items-center hover:bg-gray-50 shadow-sm transition-all"
+                            >
+                                <Pencil className="w-4 h-4 mr-2 text-gray-400" />
+                                Edit
+                            </button>
+                            <button
+                                onClick={handleDelete}
+                                disabled={actionLoading}
+                                className="bg-red-50 border border-red-100 text-red-600 px-4 py-2.5 rounded-xl font-bold text-sm flex items-center hover:bg-red-100 transition-all disabled:opacity-50"
+                            >
+                                <Trash2 className="w-4 h-4 mr-2" />
+                                Delete
                             </button>
                             {quote.status !== 'REVISED' && quote.status !== 'CONVERTED' && (
                                 <button onClick={handleRevise} disabled={actionLoading} className="bg-amber-100 text-amber-700 px-4 py-2.5 rounded-xl font-bold text-sm flex items-center hover:bg-amber-200 transition-all">
@@ -120,30 +287,154 @@ export default function QuoteDetailsPage() {
                             <div className="p-6 border-b border-gray-100 print:px-0">
                                 <h2 className="font-bold tracking-tight">Proposed Items</h2>
                             </div>
-                            <div className="divide-y divide-gray-50">
-                                {quote.items.map((item: any) => (
-                                    <div key={item.id} className="p-6 flex items-center justify-between print:px-0">
-                                        <div className="flex items-center space-x-4">
-                                            <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center">
-                                                <Package className="w-5 h-5 text-gray-400" />
+                            {isEditMode ? (
+                                <div className="p-6 space-y-6 print:hidden">
+                                    <div>
+                                        <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block mb-2">Add Products</label>
+                                        <div className="relative">
+                                            <div className="flex items-center space-x-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5">
+                                                <Search className="w-4 h-4 text-gray-400" />
+                                                <input
+                                                    type="text"
+                                                    placeholder="Search products by name or SKU..."
+                                                    value={productSearch}
+                                                    onChange={(e) => {
+                                                        setProductSearch(e.target.value);
+                                                        setShowProductDropdown(true);
+                                                    }}
+                                                    onFocus={() => setShowProductDropdown(true)}
+                                                    className="flex-1 bg-transparent text-sm font-medium outline-none"
+                                                />
                                             </div>
-                                            <div>
-                                                <p className="font-bold text-sm tracking-tight">{item.product?.name || 'Item'}</p>
-                                                <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-0.5">Qty {item.quantity}</p>
-                                            </div>
-                                        </div>
-                                        <div className="text-right">
-                                            <p className="font-black">${(Number(item.unit_price) * item.quantity).toFixed(2)}</p>
-                                            <p className="text-[10px] text-gray-400 font-bold tracking-widest uppercase">${Number(item.unit_price).toFixed(2)}/ea</p>
+                                            {showProductDropdown && productSearch.length > 0 && filteredProducts.length > 0 && (
+                                                <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                                                    {filteredProducts.map((product) => (
+                                                        <button
+                                                            key={product.id}
+                                                            onClick={() => addItem(product)}
+                                                            className="w-full text-left px-4 py-3 hover:bg-blue-50 flex items-center justify-between transition-colors"
+                                                        >
+                                                            <div>
+                                                                <span className="text-sm font-bold">{product.name}</span>
+                                                                <span className="text-xs text-gray-400 ml-2">{product.sku}</span>
+                                                            </div>
+                                                            <span className="text-sm font-bold text-blue-600">${parseFloat(product.price).toFixed(2)}</span>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
-                                ))}
-                            </div>
+
+                                    <table className="w-full">
+                                        <thead>
+                                            <tr className="border-b border-gray-100">
+                                                <th className="text-left pb-2 text-[10px] font-black uppercase tracking-widest text-gray-400">Product</th>
+                                                <th className="text-center pb-2 text-[10px] font-black uppercase tracking-widest text-gray-400 w-24">Qty</th>
+                                                <th className="text-right pb-2 text-[10px] font-black uppercase tracking-widest text-gray-400 w-32">Unit Price</th>
+                                                <th className="text-right pb-2 text-[10px] font-black uppercase tracking-widest text-gray-400 w-28">Subtotal</th>
+                                                <th className="w-10"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-50">
+                                            {editItems.map((item, index) => (
+                                                <tr key={`${item.productId}-${index}`}>
+                                                    <td className="py-3">
+                                                        <span className="text-sm font-bold">{item.productName}</span>
+                                                        <span className="text-xs text-gray-400 ml-2">{item.sku}</span>
+                                                    </td>
+                                                    <td className="py-3">
+                                                        <input
+                                                            type="number"
+                                                            min={1}
+                                                            value={item.quantity}
+                                                            onChange={(e) => updateItem(index, 'quantity', Math.max(1, parseInt(e.target.value, 10) || 1))}
+                                                            className="w-full text-center bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 text-sm font-bold focus:ring-2 focus:ring-blue-500/20"
+                                                        />
+                                                    </td>
+                                                    <td className="py-3">
+                                                        <input
+                                                            type="number"
+                                                            min={0}
+                                                            step={0.01}
+                                                            value={item.unitPrice}
+                                                            onChange={(e) => updateItem(index, 'unitPrice', parseFloat(e.target.value) || 0)}
+                                                            className="w-full text-right bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 text-sm font-bold focus:ring-2 focus:ring-blue-500/20"
+                                                        />
+                                                    </td>
+                                                    <td className="py-3 text-right text-sm font-black text-blue-600">
+                                                        ${(item.quantity * item.unitPrice).toFixed(2)}
+                                                    </td>
+                                                    <td className="py-3 text-center">
+                                                        <button onClick={() => removeItem(index)} className="p-1 text-gray-300 hover:text-red-500 transition-colors">
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            ) : (
+                                <div className="divide-y divide-gray-50">
+                                    {quote.items.map((item: any) => (
+                                        <div key={item.id} className="p-6 flex items-center justify-between print:px-0">
+                                            <div className="flex items-center space-x-4">
+                                                <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center">
+                                                    <Package className="w-5 h-5 text-gray-400" />
+                                                </div>
+                                                <div>
+                                                    <p className="font-bold text-sm tracking-tight">{item.product?.name || 'Item'}</p>
+                                                    <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-0.5">Qty {item.quantity}</p>
+                                                </div>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="font-black">${(Number(item.unit_price) * item.quantity).toFixed(2)}</p>
+                                                <p className="text-[10px] text-gray-400 font-bold tracking-widest uppercase">${Number(item.unit_price).toFixed(2)}/ea</p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
 
                         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 print:shadow-none print:border-none print:px-0">
                             <h2 className="font-bold tracking-tight mb-4">Target Account</h2>
-                            {quote.customer ? (
+                            {isEditMode ? (
+                                <div className="space-y-4 print:hidden">
+                                    <div>
+                                        <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block mb-2">Customer</label>
+                                        <select
+                                            value={editCustomerId}
+                                            onChange={(e) => setEditCustomerId(e.target.value)}
+                                            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-bold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-300"
+                                        >
+                                            <option value="">Walk-in Customer</option>
+                                            {customers.map((customer: any) => (
+                                                <option key={customer.id} value={customer.id}>{customer.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block mb-2">Valid Until</label>
+                                        <input
+                                            type="date"
+                                            value={editValidUntil}
+                                            onChange={(e) => setEditValidUntil(e.target.value)}
+                                            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-bold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-300"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block mb-2">Notes</label>
+                                        <textarea
+                                            value={editNotes}
+                                            onChange={(e) => setEditNotes(e.target.value)}
+                                            rows={4}
+                                            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-300 resize-none"
+                                        />
+                                    </div>
+                                </div>
+                            ) : quote.customer ? (
                                 <div className="bg-purple-50 border border-purple-100 rounded-xl p-4">
                                     <p className="font-black text-lg text-purple-900">{quote.customer.name}</p>
                                     <p className="text-sm font-bold text-purple-600 uppercase tracking-widest mt-1">{quote.customer.phone}</p>
@@ -153,7 +444,7 @@ export default function QuoteDetailsPage() {
                             )}
                         </div>
                         
-                        {quote.notes && (
+                        {!isEditMode && quote.notes && (
                             <div className="bg-yellow-50 text-yellow-800 p-6 rounded-2xl text-sm font-medium italic">
                                 "{quote.notes}"
                             </div>
@@ -168,7 +459,7 @@ export default function QuoteDetailsPage() {
                             <div className="p-6 space-y-4">
                                 <div className="pt-2 flex justify-between items-center text-gray-900">
                                     <span className="text-xs font-bold uppercase tracking-widest text-gray-400">Grand Total</span>
-                                    <span className="font-black text-3xl tracking-tight">${totalAmount.toFixed(2)}</span>
+                                    <span className="font-black text-3xl tracking-tight">${(isEditMode ? editTotalAmount : totalAmount).toFixed(2)}</span>
                                 </div>
                             </div>
                         </div>

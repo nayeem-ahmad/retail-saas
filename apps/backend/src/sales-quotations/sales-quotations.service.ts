@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
-import { CreateQuotationDto, UpdateQuotationStatusDto } from './sales-quotations.dto';
+import { CreateQuotationDto, UpdateQuotationDto, UpdateQuotationStatusDto } from './sales-quotations.dto';
 import { SalesOrdersService } from '../sales-orders/sales-orders.service';
 
 @Injectable()
@@ -112,6 +112,69 @@ export class SalesQuotationsService {
         return newOrder;
     }
 
+    async update(tenantId: string, id: string, dto: UpdateQuotationDto) {
+        return this.db.$transaction(async (tx) => {
+            const existing = await tx.quotation.findFirst({
+                where: { id, tenant_id: tenantId },
+                include: { items: true, customer: true },
+            });
+
+            if (!existing) {
+                throw new BadRequestException('Quotation not found');
+            }
+
+            if (existing.status === 'CONVERTED' || existing.status === 'REVISED') {
+                throw new BadRequestException('Cannot edit this quotation');
+            }
+
+            const updateData: Record<string, unknown> = {};
+
+            if (dto.customerId !== undefined) {
+                updateData.customer_id = dto.customerId || null;
+            }
+
+            if (dto.notes !== undefined) {
+                updateData.notes = dto.notes || null;
+            }
+
+            if (dto.validUntil !== undefined) {
+                updateData.valid_until = dto.validUntil ? new Date(dto.validUntil) : null;
+            }
+
+            if (dto.items && dto.items.length > 0) {
+                const totalAmount = dto.totalAmount ?? dto.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
+
+                await tx.quotationItem.deleteMany({ where: { quotation_id: id } });
+
+                return tx.quotation.update({
+                    where: { id },
+                    data: {
+                        ...updateData,
+                        total_amount: totalAmount,
+                        items: {
+                            create: dto.items.map((item) => ({
+                                product_id: item.productId,
+                                quantity: item.quantity,
+                                unit_price: item.unitPrice,
+                            })),
+                        },
+                    },
+                    include: { customer: true, items: { include: { product: true } } },
+                });
+            }
+
+            if (dto.totalAmount !== undefined) {
+                updateData.total_amount = dto.totalAmount;
+            }
+
+            return tx.quotation.update({
+                where: { id },
+                data: updateData,
+                include: { customer: true, items: { include: { product: true } } },
+            });
+        });
+    }
+
     async updateStatus(tenantId: string, id: string, dto: UpdateQuotationStatusDto) {
         return this.db.quotation.update({
             where: { id, tenant_id: tenantId },
@@ -131,6 +194,27 @@ export class SalesQuotationsService {
         return this.db.quotation.findFirst({
             where: { id, tenant_id: tenantId },
             include: { customer: true, items: { include: { product: true } } }
+        });
+    }
+
+    async remove(tenantId: string, id: string) {
+        return this.db.$transaction(async (tx) => {
+            const quote = await tx.quotation.findFirst({
+                where: { id, tenant_id: tenantId },
+            });
+
+            if (!quote) {
+                throw new BadRequestException('Quotation not found');
+            }
+
+            if (quote.status === 'CONVERTED') {
+                throw new BadRequestException('Cannot delete a converted quotation');
+            }
+
+            await tx.quotationItem.deleteMany({ where: { quotation_id: id } });
+            await tx.quotation.deleteMany({ where: { id, tenant_id: tenantId } });
+
+            return { deleted: true };
         });
     }
 }

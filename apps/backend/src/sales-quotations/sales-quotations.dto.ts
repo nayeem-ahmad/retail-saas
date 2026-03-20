@@ -34,6 +34,28 @@ export class CreateQuotationDto {
     notes?: string;
 }
 
+export class UpdateQuotationDto {
+    @IsOptional()
+    @IsString()
+    customerId?: string;
+
+    @IsOptional()
+    @IsArray()
+    items?: CreateQuotationItemDto[];
+
+    @IsOptional()
+    @IsNumber()
+    totalAmount?: number;
+
+    @IsOptional()
+    @IsDateString()
+    validUntil?: string;
+
+    @IsOptional()
+    @IsString()
+    notes?: string;
+}
+
 export class UpdateQuotationStatusDto {
     @IsString()
     status: string;

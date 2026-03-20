@@ -1,13 +1,42 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { FileText, Plus, Search, ChevronRight } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { FileText, Plus, Eye, Edit2, Printer, Trash2 } from 'lucide-react';
 import { api } from '../../../lib/api';
 import Link from 'next/link';
+import { createColumnHelper, type ColumnDef } from '@tanstack/react-table';
+import { DataTable } from '@/components/data-table';
+import CreateQuotationModal from './CreateQuotationModal';
+
+interface Quotation {
+    id: string;
+    quote_number: string;
+    created_at: string;
+    valid_until?: string | null;
+    total_amount: string;
+    status: string;
+    version: number;
+    notes?: string | null;
+    items: any[];
+    customer?: { name: string; phone?: string };
+}
+
+const statusColors: Record<string, string> = {
+    DRAFT: 'bg-gray-50 text-gray-600 border-gray-200',
+    SENT: 'bg-blue-50 text-blue-700 border-blue-200',
+    ACCEPTED: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    REJECTED: 'bg-red-50 text-red-700 border-red-200',
+    CONVERTED: 'bg-violet-50 text-violet-700 border-violet-200',
+    REVISED: 'bg-amber-50 text-amber-700 border-amber-200',
+    EXPIRED: 'bg-gray-100 text-gray-500 border-gray-200',
+};
+
+const columnHelper = createColumnHelper<Quotation>();
 
 export default function QuotesPage() {
-    const [quotes, setQuotes] = useState<any[]>([]);
+    const [quotes, setQuotes] = useState<Quotation[]>([]);
     const [loading, setLoading] = useState(true);
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
     useEffect(() => {
         loadQuotes();
@@ -24,87 +53,221 @@ export default function QuotesPage() {
         }
     };
 
-    const StatusBadge = ({ status }: { status: string }) => {
-        const styles: any = {
-            DRAFT: 'bg-gray-100 text-gray-600',
-            SENT: 'bg-blue-100 text-blue-700',
-            ACCEPTED: 'bg-emerald-100 text-emerald-700',
-            REJECTED: 'bg-red-100 text-red-700',
-            CONVERTED: 'bg-purple-100 text-purple-700',
-            REVISED: 'bg-amber-100 text-amber-700',
-            EXPIRED: 'bg-gray-200 text-gray-500'
-        };
-        return <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${styles[status]}`}>{status}</span>;
+    const handleDelete = async (id: string) => {
+        if (!window.confirm('Are you sure you want to delete this quotation?')) return;
+        try {
+            await api.deleteQuotation(id);
+            setQuotes((prev) => prev.filter((quote) => quote.id !== id));
+        } catch (error: any) {
+            alert(error.message || 'Failed to delete quotation');
+        }
     };
 
-    return (
-        <div className="overflow-y-auto h-full p-8 bg-[#f9fafb]">
-            <div className="flex justify-between items-center mb-8">
-                <div>
-                    <h1 className="text-2xl font-bold tracking-tight">Quotations</h1>
-                    <p className="text-gray-500 text-sm mt-1 uppercase font-medium tracking-wide">Build estimates and track expirations</p>
-                </div>
-            </div>
+    const handlePrint = (quote: Quotation) => {
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) return;
 
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-                    <div className="relative w-96">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-                        <input type="text" placeholder="Search quotes..." className="bg-gray-50 border-none rounded-lg py-2 pl-10 pr-4 text-sm w-full focus:ring-2 focus:ring-gray-200 transition-all" />
+        printWindow.document.write(`
+            <html>
+            <head>
+                <title>Quotation ${quote.quote_number}</title>
+                <style>
+                    body { font-family: Arial, sans-serif; padding: 20px; color: #111; }
+                    h1 { font-size: 24px; margin-bottom: 4px; }
+                    .subtitle { color: #666; font-size: 12px; margin-bottom: 20px; }
+                    table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+                    th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid #eee; }
+                    th { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #999; }
+                    .total-row { font-weight: bold; border-top: 2px solid #333; }
+                    .footer { margin-top: 40px; text-align: center; color: #999; font-size: 11px; }
+                </style>
+            </head>
+            <body>
+                <h1>${quote.quote_number} (v${quote.version})</h1>
+                <div class="subtitle">Created: ${new Date(quote.created_at).toLocaleString()} | Status: ${quote.status} | Valid Until: ${quote.valid_until ? new Date(quote.valid_until).toLocaleDateString() : 'Open'}</div>
+                <p><strong>Customer:</strong> ${quote.customer?.name || 'Walk-in'}</p>
+                <table>
+                    <thead><tr><th>Product</th><th>Qty</th><th>Unit Price</th><th>Subtotal</th></tr></thead>
+                    <tbody>
+                        ${quote.items.map((item: any) => `<tr><td>${item.product?.name || 'Item'}</td><td>${item.quantity}</td><td>$${Number(item.unit_price).toFixed(2)}</td><td>$${(item.quantity * Number(item.unit_price)).toFixed(2)}</td></tr>`).join('')}
+                        <tr class="total-row"><td colspan="3">Total</td><td>$${Number(quote.total_amount).toFixed(2)}</td></tr>
+                    </tbody>
+                </table>
+                ${quote.notes ? `<p><strong>Notes:</strong> ${quote.notes}</p>` : ''}
+                <div class="footer">Sales Quotation</div>
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
+        printWindow.print();
+    };
+
+    const columns: ColumnDef<Quotation, any>[] = useMemo(
+        () => [
+            columnHelper.accessor('quote_number', {
+                header: 'Quote #',
+                cell: (info) => (
+                    <div>
+                        <span className="text-sm font-black text-gray-900">{info.getValue()}</span>
+                        <span className="ml-2 inline-flex rounded-md bg-gray-100 px-2 py-0.5 text-[10px] font-black uppercase tracking-widest text-gray-500">
+                            v{info.row.original.version}
+                        </span>
                     </div>
+                ),
+                size: 180,
+            }),
+            columnHelper.accessor('created_at', {
+                header: 'Date',
+                cell: (info) => {
+                    const date = new Date(info.getValue());
+                    return (
+                        <div>
+                            <span className="text-sm text-gray-600">{date.toLocaleDateString()}</span>
+                            <span className="text-xs text-gray-400 block">{date.toLocaleTimeString()}</span>
+                        </div>
+                    );
+                },
+                sortingFn: 'datetime',
+                size: 150,
+            }),
+            columnHelper.accessor((row) => row.customer?.name ?? '', {
+                id: 'customer',
+                header: 'Customer',
+                cell: (info) => (
+                    <div>
+                        <span className="text-sm text-gray-700 font-medium">
+                            {info.getValue() || <span className="text-gray-300">Walk-in</span>}
+                        </span>
+                        <span className="block text-xs text-gray-400">{info.row.original.customer?.phone || 'No phone'}</span>
+                    </div>
+                ),
+                size: 160,
+            }),
+            columnHelper.accessor((row) => row.items?.length ?? 0, {
+                id: 'items',
+                header: 'Items',
+                cell: (info) => <span className="text-sm font-bold text-gray-700">{info.getValue()} items</span>,
+                size: 90,
+            }),
+            columnHelper.accessor('valid_until', {
+                header: 'Valid Until',
+                cell: (info) => (
+                    <span className="text-sm font-medium text-gray-600">
+                        {info.getValue() ? new Date(info.getValue() as string).toLocaleDateString() : 'Open'}
+                    </span>
+                ),
+                size: 130,
+            }),
+            columnHelper.accessor('total_amount', {
+                header: 'Total',
+                cell: (info) => (
+                    <span className="text-sm font-black text-blue-600">${parseFloat(info.getValue()).toFixed(2)}</span>
+                ),
+                sortingFn: (a, b) => parseFloat(a.getValue('total_amount')) - parseFloat(b.getValue('total_amount')),
+                size: 110,
+            }),
+            columnHelper.accessor('status', {
+                header: 'Status',
+                cell: (info) => {
+                    const status = info.getValue();
+                    return (
+                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${statusColors[status] ?? 'bg-gray-50 text-gray-700 border-gray-200'}`}>
+                            {status}
+                        </span>
+                    );
+                },
+                size: 130,
+            }),
+            columnHelper.display({
+                id: 'actions',
+                header: 'Actions',
+                cell: (info) => {
+                    const quote = info.row.original;
+                    return (
+                        <div className="flex items-center justify-end space-x-1">
+                            <Link
+                                href={`/dashboard/quotes/${quote.id}`}
+                                className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors"
+                                title="View"
+                            >
+                                <Eye className="w-4 h-4" />
+                            </Link>
+                            <Link
+                                href={`/dashboard/quotes/${quote.id}?edit=true`}
+                                className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
+                                title="Edit"
+                            >
+                                <Edit2 className="w-4 h-4" />
+                            </Link>
+                            <button
+                                onClick={() => handlePrint(quote)}
+                                className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
+                                title="Print"
+                            >
+                                <Printer className="w-4 h-4" />
+                            </button>
+                            <button
+                                onClick={() => handleDelete(quote.id)}
+                                className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 transition-colors"
+                                title="Delete"
+                            >
+                                <Trash2 className="w-4 h-4" />
+                            </button>
+                        </div>
+                    );
+                },
+                enableSorting: false,
+                enableColumnFilter: false,
+                enableResizing: false,
+                size: 170,
+            }),
+        ],
+        [quotes],
+    );
+
+    const filterPresets = useMemo(
+        () => [
+            { label: 'Draft', filters: [{ id: 'status', value: 'DRAFT' }] },
+            { label: 'Sent', filters: [{ id: 'status', value: 'SENT' }] },
+            { label: 'Accepted', filters: [{ id: 'status', value: 'ACCEPTED' }] },
+            { label: 'Converted', filters: [{ id: 'status', value: 'CONVERTED' }] },
+        ],
+        [],
+    );
+
+    return (
+        <div className="overflow-y-auto h-full bg-[#f3f4f6] p-6 font-sans text-gray-900">
+            <div className="max-w-[1400px] mx-auto space-y-6">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-2xl font-black tracking-tight">Sales Quotations</h1>
+                        <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mt-0.5">
+                            Build estimates and track expirations
+                        </p>
+                    </div>
+                    <button
+                        onClick={() => setIsModalOpen(true)}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl font-bold text-sm flex items-center shadow-lg shadow-blue-200 transition-all hover:-translate-y-0.5 active:translate-y-0"
+                    >
+                        <Plus className="w-4 h-4 mr-2" />
+                        New Quotation
+                    </button>
                 </div>
 
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                        <thead>
-                            <tr className="bg-gray-50/50 text-[10px] uppercase font-black tracking-widest text-gray-400">
-                                <th className="px-6 py-4">Quote Details</th>
-                                <th className="px-6 py-4">Target Customer</th>
-                                <th className="px-6 py-4">Amount</th>
-                                <th className="px-6 py-4">Status</th>
-                                <th className="px-6 py-4 text-right">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-50">
-                            {loading ? (
-                                <tr><td colSpan={5} className="px-6 py-12 text-center text-gray-400 font-medium">Loading records...</td></tr>
-                            ) : quotes.length === 0 ? (
-                                <tr><td colSpan={5} className="px-6 py-12 text-center text-gray-400 font-medium">No quotations found.</td></tr>
-                            ) : quotes.map((quote: any) => (
-                                <tr key={quote.id} className={`transition-colors group ${quote.status === 'REVISED' ? 'opacity-50 hover:opacity-100' : 'hover:bg-gray-50/50'}`}>
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center space-x-3">
-                                            <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center border border-purple-100">
-                                                <FileText className="w-5 h-5"/>
-                                            </div>
-                                            <div>
-                                                <span className="font-bold text-sm text-gray-900 block">{quote.quote_number} <span className="text-[10px] text-gray-400 uppercase tracking-widest ml-1 bg-gray-100 px-1 py-0.5 rounded">v{quote.version}</span></span>
-                                                <span className="text-xs text-gray-400 font-medium">Expires: {quote.valid_until ? new Date(quote.valid_until).toLocaleDateString() : 'Never'}</span>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <span className="font-bold text-sm block">{quote.customer?.name || 'Walk-in'}</span>
-                                        <span className="text-xs text-gray-500 font-medium">{quote.customer?.phone || '-'}</span>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <span className="font-black text-sm text-gray-900">${Number(quote.total_amount).toFixed(2)}</span>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <StatusBadge status={quote.status} />
-                                    </td>
-                                    <td className="px-6 py-4 text-right">
-                                        <Link href={`/dashboard/quotes/${quote.id}`}>
-                                            <button className="p-2 hover:bg-white rounded-lg text-gray-400 hover:text-gray-900 transition-colors hover:shadow-sm border border-transparent hover:border-gray-200">
-                                                <ChevronRight className="w-5 h-5" />
-                                            </button>
-                                        </Link>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+                <CreateQuotationModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSuccess={loadQuotes} />
+
+                <DataTable<Quotation>
+                    tableId="sales-quotations"
+                    columns={columns}
+                    data={quotes}
+                    title="Sales Quotations"
+                    isLoading={loading}
+                    emptyMessage="No quotations found"
+                    emptyIcon={<FileText className="w-16 h-16 text-gray-200" />}
+                    searchPlaceholder="Search by quote #, customer, status..."
+                    filterPresets={filterPresets}
+                    enableRowSelection
+                />
             </div>
         </div>
     );

@@ -124,6 +124,14 @@ export const api = {
         body: JSON.stringify(data),
         headers: { 'Content-Type': 'application/json' },
     }),
+    updateOrder: (id: string, data: any) => fetchWithAuth(`/sales-orders/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+    }),
+    deleteOrder: (id: string) => fetchWithAuth(`/sales-orders/${id}`, {
+        method: 'DELETE',
+    }),
     updateOrderStatus: (id: string, status: string) => fetchWithAuth(`/sales-orders/${id}/status`, {
         method: 'PATCH',
         body: JSON.stringify({ status }),
@@ -140,6 +148,14 @@ export const api = {
         method: 'POST',
         body: JSON.stringify(data),
         headers: { 'Content-Type': 'application/json' },
+    }),
+    updateQuotation: (id: string, data: any) => fetchWithAuth(`/sales-quotations/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+    }),
+    deleteQuotation: (id: string) => fetchWithAuth(`/sales-quotations/${id}`, {
+        method: 'DELETE',
     }),
     reviseQuotation: (id: string) => fetchWithAuth(`/sales-quotations/${id}/revise`, {
         method: 'POST',

@@ -17,8 +17,12 @@ describe('SalesQuotationsService', () => {
         findUnique: jest.fn(),
         update: jest.fn(),
         findMany: jest.fn(),
-        findFirst: jest.fn()
-      }
+        findFirst: jest.fn(),
+        deleteMany: jest.fn(),
+      },
+      quotationItem: {
+        deleteMany: jest.fn(),
+      },
     };
 
     ordersService = {
@@ -127,5 +131,47 @@ describe('SalesQuotationsService', () => {
     const res = await service.updateStatus('tenant-1', 'q-1', { status: 'SENT' });
     expect(db.quotation.update).toHaveBeenCalled();
     expect(res.status).toEqual('SENT');
+  });
+
+  it('update() should replace quote items and persist totals', async () => {
+    db.quotation.findFirst.mockResolvedValue({
+      id: 'q-1',
+      status: 'DRAFT',
+      items: [{ id: 'qi-1' }],
+    });
+    db.quotation.update.mockResolvedValue({ id: 'q-1', total_amount: 220 });
+
+    const res = await service.update('tenant-1', 'q-1', {
+      customerId: 'cust-1',
+      notes: 'Updated',
+      items: [{ productId: 'prod-1', quantity: 2, unitPrice: 110 }],
+    });
+
+    expect(db.quotationItem.deleteMany).toHaveBeenCalledWith({ where: { quotation_id: 'q-1' } });
+    expect(db.quotation.update).toHaveBeenCalledWith(expect.objectContaining({
+      where: { id: 'q-1' },
+      data: expect.objectContaining({
+        customer_id: 'cust-1',
+        notes: 'Updated',
+        total_amount: 220,
+      }),
+    }));
+    expect(res.id).toEqual('q-1');
+  });
+
+  it('remove() should delete draft quotations', async () => {
+    db.quotation.findFirst.mockResolvedValue({ id: 'q-1', status: 'DRAFT' });
+
+    const res = await service.remove('tenant-1', 'q-1');
+
+    expect(db.quotationItem.deleteMany).toHaveBeenCalledWith({ where: { quotation_id: 'q-1' } });
+    expect(db.quotation.deleteMany).toHaveBeenCalledWith({ where: { id: 'q-1', tenant_id: 'tenant-1' } });
+    expect(res).toEqual({ deleted: true });
+  });
+
+  it('remove() should reject converted quotations', async () => {
+    db.quotation.findFirst.mockResolvedValue({ id: 'q-1', status: 'CONVERTED' });
+
+    await expect(service.remove('tenant-1', 'q-1')).rejects.toThrow(BadRequestException);
   });
 });
