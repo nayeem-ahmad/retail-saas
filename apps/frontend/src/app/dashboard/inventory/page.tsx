@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { Package, Plus, Trash2 } from 'lucide-react';
+import { Package, Plus, ShoppingBasket, Trash2 } from 'lucide-react';
 import { api } from '../../../lib/api';
 import AddProductModal from './AddProductModal';
 import { createColumnHelper, type ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table';
+import CreatePurchaseModal from '../purchases/CreatePurchaseModal';
 
 interface Product {
     id: string;
@@ -22,6 +23,8 @@ export default function InventoryPage() {
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false);
+    const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
     useEffect(() => {
         loadProducts();
@@ -57,6 +60,11 @@ export default function InventoryPage() {
         } catch (error: any) {
             alert(error.message || 'Failed to delete product');
         }
+    };
+
+    const openAddStock = (product: Product) => {
+        setSelectedProduct(product);
+        setIsPurchaseModalOpen(true);
     };
 
     const columns: ColumnDef<Product, any>[] = useMemo(
@@ -155,6 +163,13 @@ export default function InventoryPage() {
                 cell: (info) => (
                     <div className="flex items-center justify-end space-x-1">
                         <button
+                            onClick={() => openAddStock(info.row.original)}
+                            className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors"
+                            title="Add Stock"
+                        >
+                            <ShoppingBasket className="w-4 h-4" />
+                        </button>
+                        <button
                             onClick={() => handleDelete(info.row.original.id)}
                             className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 transition-colors"
                             title="Delete"
@@ -204,6 +219,25 @@ export default function InventoryPage() {
                     isOpen={isModalOpen}
                     onClose={() => setIsModalOpen(false)}
                     onAdd={handleAddProduct}
+                />
+
+                <CreatePurchaseModal
+                    isOpen={isPurchaseModalOpen}
+                    onClose={() => {
+                        setIsPurchaseModalOpen(false);
+                        setSelectedProduct(null);
+                    }}
+                    onSuccess={loadProducts}
+                    initialProduct={
+                        selectedProduct
+                            ? {
+                                  id: selectedProduct.id,
+                                  name: selectedProduct.name,
+                                  sku: selectedProduct.sku || '',
+                                  price: Number(selectedProduct.price || 0),
+                              }
+                            : undefined
+                    }
                 />
 
                 <DataTable<Product>

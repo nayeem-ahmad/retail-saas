@@ -40,6 +40,29 @@ export interface ApiError {
   };
 }
 
+export enum AccountType {
+  ASSET = "asset",
+  LIABILITY = "liability",
+  EQUITY = "equity",
+  REVENUE = "revenue",
+  EXPENSE = "expense",
+}
+
+export enum AccountCategory {
+  CASH = "cash",
+  BANK = "bank",
+  GENERAL = "general",
+}
+
+export enum VoucherType {
+  CASH_PAYMENT = "cash_payment",
+  CASH_RECEIVE = "cash_receive",
+  BANK_PAYMENT = "bank_payment",
+  BANK_RECEIVE = "bank_receive",
+  FUND_TRANSFER = "fund_transfer",
+  JOURNAL = "journal",
+}
+
 // --- VALIDATION SCHEMAS ---
 
 export const SignupSchema = z.object({
@@ -69,6 +92,71 @@ export interface ProductStock {
   product_id: string;
   warehouse_id: string;
   quantity: number;
+}
+
+export interface Supplier {
+  id: string;
+  tenant_id: string;
+  name: string;
+  phone?: string | null;
+  email?: string | null;
+  address?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PurchaseItem {
+  id: string;
+  purchase_id: string;
+  product_id: string;
+  quantity: number;
+  unit_cost: number;
+  line_total: number;
+}
+
+export interface Purchase {
+  id: string;
+  tenant_id: string;
+  store_id: string;
+  supplier_id?: string | null;
+  purchase_number: string;
+  subtotal_amount: number;
+  tax_amount: number;
+  discount_amount: number;
+  freight_amount: number;
+  total_amount: number;
+  notes?: string | null;
+  created_at: string;
+  items: PurchaseItem[];
+  supplier?: Supplier | null;
+}
+
+export interface PurchaseReturnItem {
+  id: string;
+  return_id: string;
+  purchase_item_id: string;
+  product_id: string;
+  quantity: number;
+  unit_cost: number;
+  line_total: number;
+}
+
+export interface PurchaseReturn {
+  id: string;
+  tenant_id: string;
+  store_id: string;
+  purchase_id: string;
+  supplier_id?: string | null;
+  return_number: string;
+  reference_number?: string | null;
+  total_amount: number;
+  notes?: string | null;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  items: PurchaseReturnItem[];
+  supplier?: Supplier | null;
+  purchase?: Purchase | null;
 }
 
 export const ProductSchema = z.object({

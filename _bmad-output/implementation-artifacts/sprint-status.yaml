@@ -19,6 +19,13 @@ development_status:
   10-2-pos-ui: done
   10-3-atomic-sale: done
   10-4-advanced-payments: done
+  20-1-purchase-entry-ui: review
+  20-2-supplier-selection-add: review
+  20-3-transactional-inventory-updates: review
+  21-1-purchase-return-api: review
+  21-2-purchase-return-validation-inventory-reversal: review
+  21-3-purchase-returns-list-create-ui: review
+  21-4-purchase-return-detail-edit-print: review
   80-1-customer-crud: review
   80-2-segment-logic: ready-for-dev
   80-3-purchase-history: ready-for-dev
@@ -29,6 +36,8 @@ epic_status:
   epic-01: done
   epic-02: review
   epic-10: done
+  epic-20: review
+  epic-21: review
   epic-80: review
 
 metadata:

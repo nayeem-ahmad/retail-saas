@@ -12,15 +12,22 @@ describe('SalesService', () => {
     tx = {
       sale: {
         create: jest.fn(),
+        findFirst: jest.fn(),
+        update: jest.fn(),
       },
       saleItem: {
         create: jest.fn(),
+        deleteMany: jest.fn(),
       },
       productStock: {
         updateMany: jest.fn(),
       },
       customer: {
         update: jest.fn(),
+      },
+      paymentRecord: {
+        deleteMany: jest.fn(),
+        create: jest.fn(),
       },
     };
 
@@ -216,20 +223,24 @@ describe('SalesService', () => {
 
   describe('update()', () => {
     it('should update a sale note', async () => {
-      db.sale.findFirst.mockResolvedValue({ id: 's1' });
-      db.sale.update.mockResolvedValue({ id: 's1', note: 'Updated note' });
+      tx.sale.findFirst.mockResolvedValue({ id: 's1', items: [], payments: [], total_amount: 20, customer_id: null });
+      tx.sale.update.mockResolvedValue({ id: 's1', note: 'Updated note' });
 
       const result = await service.update('tenant-1', 's1', { note: 'Updated note' });
 
-      expect(db.sale.update).toHaveBeenCalledWith({
+      expect(tx.sale.update).toHaveBeenCalledWith({
         where: { id: 's1' },
-        data: { note: 'Updated note' },
+        data: expect.objectContaining({ note: 'Updated note' }),
+        include: {
+          items: { include: { product: true } },
+          payments: true,
+        },
       });
       expect(result).toBeDefined();
     });
 
     it('should throw NotFoundException when sale to update is not found', async () => {
-      db.sale.findFirst.mockResolvedValue(null);
+      tx.sale.findFirst.mockResolvedValue(null);
 
       await expect(service.update('tenant-1', 'bad-id', { note: 'x' })).rejects.toThrow(NotFoundException);
     });

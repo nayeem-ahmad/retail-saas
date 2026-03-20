@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { bootstrapDefaultAccountingForTenant } from './bootstrap-accounting';
 
 const prisma = new PrismaClient();
 
@@ -57,6 +58,8 @@ async function main() {
             data: { tenant_id: tenant.id, name: 'Gulshan Branch', address: '12 Gulshan Ave, Dhaka 1212' },
         });
     }
+
+    await bootstrapDefaultAccountingForTenant(prisma, tenant.id);
 
     // ── 5. Products ──────────────────────────────────────────────────────────
     const productDefs = [

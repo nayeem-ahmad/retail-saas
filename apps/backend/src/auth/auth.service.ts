@@ -1,6 +1,7 @@
 import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { JwtService } from '@nestjs/jwt';
+import { bootstrapDefaultAccountingForTenant } from '@retail-saas/database';
 import * as bcrypt from 'bcrypt';
 import { SignupDto, LoginDto } from './auth.dto';
 
@@ -120,6 +121,8 @@ export class AuthService {
                     address: dto.address,
                 },
             });
+
+            await bootstrapDefaultAccountingForTenant(tx, tenant.id);
 
             return { tenant, store };
         });

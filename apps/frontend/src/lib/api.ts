@@ -22,7 +22,22 @@ export async function fetchWithAuth(endpoint: string, options: RequestInit = {})
     });
 
     if (!response.ok) {
-        throw new Error(`API error: ${response.statusText}`);
+        let message = `API error: ${response.statusText}`;
+
+        try {
+            const errorBody = await response.json();
+            const apiMessage = Array.isArray(errorBody?.message)
+                ? errorBody.message.join(', ')
+                : errorBody?.message || errorBody?.error;
+
+            if (apiMessage) {
+                message = apiMessage;
+            }
+        } catch {
+            // Fall back to the response status text when no JSON error payload is available.
+        }
+
+        throw new Error(message);
     }
 
     return response.json();
@@ -102,6 +117,71 @@ export const api = {
     deleteTerritory: (id: string) => fetchWithAuth(`/territories/${id}`, {
         method: 'DELETE',
     }),
+    // Accounting
+    getAccountingOverview: () => fetchWithAuth('/accounting'),
+    getAccountGroups: () => fetchWithAuth('/accounting/account-groups'),
+    createAccountGroup: (data: any) => fetchWithAuth('/accounting/account-groups', {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+    }),
+    getAccountSubgroups: (params?: { groupId?: string }) => {
+        const query = new URLSearchParams();
+        if (params?.groupId) query.set('groupId', params.groupId);
+        return fetchWithAuth(`/accounting/account-subgroups${query.toString() ? `?${query.toString()}` : ''}`);
+    },
+    createAccountSubgroup: (data: any) => fetchWithAuth('/accounting/account-subgroups', {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+    }),
+    getAccounts: (params?: { search?: string; groupId?: string; type?: string; category?: string }) => {
+        const query = new URLSearchParams();
+        if (params?.search) query.set('search', params.search);
+        if (params?.groupId) query.set('groupId', params.groupId);
+        if (params?.type) query.set('type', params.type);
+        if (params?.category) query.set('category', params.category);
+        return fetchWithAuth(`/accounting/accounts${query.toString() ? `?${query.toString()}` : ''}`);
+    },
+    createAccount: (data: any) => fetchWithAuth('/accounting/accounts', {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+    }),
+    getVoucherNumberPreview: (voucherType: string) => fetchWithAuth(`/accounting/vouchers/next-number?voucherType=${encodeURIComponent(voucherType)}`),
+    getVouchers: (params?: { voucherType?: string; from?: string; to?: string; page?: number; limit?: number }) => {
+        const query = new URLSearchParams();
+        if (params?.voucherType) query.set('voucherType', params.voucherType);
+        if (params?.from) query.set('from', params.from);
+        if (params?.to) query.set('to', params.to);
+        if (params?.page) query.set('page', String(params.page));
+        if (params?.limit) query.set('limit', String(params.limit));
+        return fetchWithAuth(`/accounting/vouchers${query.toString() ? `?${query.toString()}` : ''}`);
+    },
+    getVoucher: (id: string) => fetchWithAuth(`/accounting/vouchers/${id}`),
+    getLedger: (accountId: string, params?: { from?: string; to?: string }) => {
+        const query = new URLSearchParams();
+        if (params?.from) query.set('from', params.from);
+        if (params?.to) query.set('to', params.to);
+        return fetchWithAuth(`/accounting/reports/ledger/${accountId}${query.toString() ? `?${query.toString()}` : ''}`);
+    },
+    getFinancialKpis: (params?: { from?: string; to?: string }) => {
+        const query = new URLSearchParams();
+        if (params?.from) query.set('from', params.from);
+        if (params?.to) query.set('to', params.to);
+        return fetchWithAuth(`/accounting/dashboard/kpis${query.toString() ? `?${query.toString()}` : ''}`);
+    },
+    getFinancialTrends: (params?: { from?: string; to?: string }) => {
+        const query = new URLSearchParams();
+        if (params?.from) query.set('from', params.from);
+        if (params?.to) query.set('to', params.to);
+        return fetchWithAuth(`/accounting/dashboard/trends${query.toString() ? `?${query.toString()}` : ''}`);
+    },
+    createVoucher: (data: any) => fetchWithAuth('/accounting/vouchers', {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+    }),
     getReturns: () => fetchWithAuth('/sales-returns'),
     getReturn: (id: string) => fetchWithAuth(`/sales-returns/${id}`),
     createReturn: (data: any) => fetchWithAuth('/sales-returns', {
@@ -141,6 +221,34 @@ export const api = {
         method: 'POST',
         body: JSON.stringify(data),
         headers: { 'Content-Type': 'application/json' },
+    }),
+    getSuppliers: () => fetchWithAuth('/suppliers'),
+    createSupplier: (data: any) => fetchWithAuth('/suppliers', {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+    }),
+    getPurchases: () => fetchWithAuth('/purchases'),
+    getPurchase: (id: string) => fetchWithAuth(`/purchases/${id}`),
+    createPurchase: (data: any) => fetchWithAuth('/purchases', {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+    }),
+    getPurchaseReturns: () => fetchWithAuth('/purchase-returns'),
+    getPurchaseReturn: (id: string) => fetchWithAuth(`/purchase-returns/${id}`),
+    createPurchaseReturn: (data: any) => fetchWithAuth('/purchase-returns', {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+    }),
+    updatePurchaseReturn: (id: string, data: any) => fetchWithAuth(`/purchase-returns/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+    }),
+    deletePurchaseReturn: (id: string) => fetchWithAuth(`/purchase-returns/${id}`, {
+        method: 'DELETE',
     }),
     getQuotations: () => fetchWithAuth('/sales-quotations'),
     getQuotation: (id: string) => fetchWithAuth(`/sales-quotations/${id}`),

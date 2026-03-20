@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { CustomersService } from './customers.service';
 import { DatabaseService } from '../database/database.service';
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 
 describe('CustomersService', () => {
   let service: CustomersService;
@@ -57,6 +57,6 @@ describe('CustomersService', () => {
 
   it('findOne() should throw if not found', async () => {
     db.customer.findFirst.mockResolvedValue(null);
-    await expect(service.findOne('t1', 'fake')).rejects.toThrow(BadRequestException);
+    await expect(service.findOne('t1', 'fake')).rejects.toThrow(NotFoundException);
   });
 });

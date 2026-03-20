@@ -16,6 +16,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }, []);
 
     const isDashboardHome = pathname === '/dashboard';
+    const primaryRole = user?.tenants?.[0]?.role;
+    const canAccessAccounting = primaryRole === 'OWNER' || primaryRole === 'MANAGER';
 
     // Build a human-readable page title from the path
     const pageTitle = (() => {
@@ -33,7 +35,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
     return (
         <div className="flex h-screen bg-[#f9fafb] font-sans text-[#111827]">
-            <Sidebar />
+            <Sidebar canAccessAccounting={canAccessAccounting} />
 
             <div className="flex-1 flex flex-col overflow-hidden">
                 {/* Top header */}

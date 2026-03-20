@@ -11,6 +11,10 @@ import { SalesReturnsModule } from './sales-returns/sales-returns.module';
 import { SalesOrdersModule } from './sales-orders/sales-orders.module';
 import { SalesQuotationsModule } from './sales-quotations/sales-quotations.module';
 import { CashierSessionsModule } from './cashier-sessions/cashier-sessions.module';
+import { SuppliersModule } from './suppliers/suppliers.module';
+import { PurchasesModule } from './purchases/purchases.module';
+import { PurchaseReturnsModule } from './purchase-returns/purchase-returns.module';
+import { AccountingModule } from './accounting/accounting.module';
 import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
@@ -27,6 +31,10 @@ import { ScheduleModule } from '@nestjs/schedule';
         SalesOrdersModule,
         SalesQuotationsModule,
         CashierSessionsModule,
+        SuppliersModule,
+        PurchasesModule,
+        PurchaseReturnsModule,
+        AccountingModule,
         ScheduleModule.forRoot()
     ],
     controllers: [],

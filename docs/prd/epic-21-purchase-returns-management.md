@@ -1,4 +1,4 @@
-# Epic 20: Purchase Returns Management
+# Epic 21: Purchase Returns Management
 
 ### Epic Goal
 This epic will introduce a system for managing purchase returns to suppliers. This ensures accurate inventory tracking and correct financial accounting for goods returned to vendors.
@@ -20,11 +20,17 @@ This epic will introduce a system for managing purchase returns to suppliers. Th
 
 ### Stories
 
-1.  **Story 1: Implement Purchase Return API**
-    *   **Description:** Create the database tables (`PurchaseReturn`, `PurchaseReturnItem`) and backend API endpoint (`POST /api/purchase-returns`) to process returns to suppliers.
+1. **Story 1: Purchase Return Schema & API Foundation**
+    * **Description:** Create the database tables (`PurchaseReturn`, `PurchaseReturnItem`) and baseline CRUD endpoints required to create, list, view, update, and delete supplier returns.
 
-2.  **Story 2: Develop Purchase Returns Management UI**
-    *   **Description:** Build the user interface components that allow managers to initiate, view, and manage returns to suppliers.
+2. **Story 2: Purchase Return Validation & Inventory Reversal**
+    * **Description:** Add quantity validation, stock-availability guards, transactional stock decrement behavior, and test coverage for create, update, and delete flows.
+
+3. **Story 3: Purchase Returns List & Creation UI**
+    * **Description:** Build the dashboard module, list page, and purchase lookup workflow used to initiate supplier returns from original purchases.
+
+4. **Story 4: Purchase Return Detail, Edit & Print Workflow**
+    * **Description:** Build the detail view, edit mode, delete flow, and print-friendly supplier return document experience.
 
 ### Compatibility Requirements
 - [X] Existing APIs remain unchanged.

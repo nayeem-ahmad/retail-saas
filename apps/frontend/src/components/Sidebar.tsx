@@ -11,6 +11,7 @@ import {
     FileText,
     ClipboardList,
     ArrowLeftRight,
+    Undo2,
     TrendingUp,
     Clock,
     Settings,
@@ -77,13 +78,22 @@ const MODULES: NavModule[] = [
         key: 'purchase',
         icon: Truck,
         label: 'Purchase',
-        soon: true,
+        children: [
+            { href: '/dashboard/purchases', icon: ClipboardList, label: 'Purchases' },
+            { href: '/dashboard/purchase-returns', icon: Undo2, label: 'Purchase Returns' },
+        ],
     },
     {
         key: 'accounting',
         icon: Calculator,
         label: 'Accounting',
-        soon: true,
+        children: [
+            { href: '/dashboard/accounting', icon: Calculator, label: 'Overview' },
+            { href: '/dashboard/accounting/coa', icon: FolderTree, label: 'Chart of Accounts' },
+            { href: '/dashboard/accounting/vouchers', icon: FileText, label: 'Voucher Entry' },
+            { href: '/dashboard/accounting/journal', icon: ClipboardList, label: 'Journal' },
+            { href: '/dashboard/accounting/ledger', icon: ClipboardList, label: 'Ledger' },
+        ],
     },
     {
         key: 'inventory',
@@ -103,10 +113,13 @@ const MODULES: NavModule[] = [
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
 
-export default function Sidebar() {
+export default function Sidebar({ canAccessAccounting = true }: { canAccessAccounting?: boolean }) {
     const pathname = usePathname();
     const [collapsed, setCollapsed] = useState(false);
     const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
+    const modules = canAccessAccounting
+        ? MODULES
+        : MODULES.filter((module) => module.key !== 'accounting');
 
     useEffect(() => {
         const saved = localStorage.getItem('sidebar-collapsed');
@@ -121,7 +134,7 @@ export default function Sidebar() {
 
     // auto-expand the group that contains the current page
     useEffect(() => {
-        for (const mod of MODULES) {
+        for (const mod of modules) {
             if (mod.children?.some((c) => pathname.startsWith(c.href))) {
                 setOpenGroups((prev) => {
                     if (prev[mod.key]) return prev;
@@ -131,7 +144,7 @@ export default function Sidebar() {
                 });
             }
         }
-    }, [pathname]);
+    }, [canAccessAccounting, pathname]);
 
     const toggleSidebar = () => {
         setCollapsed((prev) => {
@@ -189,7 +202,7 @@ export default function Sidebar() {
 
             {/* Navigation */}
             <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-1">
-                {MODULES.map((mod) => {
+                {modules.map((mod) => {
                     const Icon = mod.icon;
                     const hasChildren = !!mod.children?.length;
                     const groupOpen = openGroups[mod.key] ?? false;
@@ -211,7 +224,7 @@ export default function Sidebar() {
                         );
                     }
 
-                    /* --- "Coming soon" placeholder (Purchase, Accounting) --- */
+                    /* --- "Coming soon" placeholder --- */
                     if (mod.soon) {
                         return (
                             <div
