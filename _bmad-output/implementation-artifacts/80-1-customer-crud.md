@@ -11,16 +11,16 @@ so that I can maintain a structured, segmented customer database to drive sales 
 ## Acceptance Criteria
 
 1.  A "Customers" menu item and dashboard screen exists. [x]
-2.  A user can create a new customer with all required and optional fields (see Data Model below). [ ]
-3.  **Customer Code** is auto-generated on create (e.g. `CUST-00001`), editable by user, but must remain unique per tenant. [ ]
-4.  **Customer Type** is selectable: `Individual` or `Organization`. [ ]
-5.  **Customer Group** is an optional FK reference to the `CustomerGroup` entity (managed via Story 80.4). [ ]
-6.  **Territory** is an optional FK reference to the `Territory` entity (managed via Story 80.5). [ ]
-7.  **Credit Limit** and **Default Discount %** are optional decimal fields. [ ]
-8.  **Profile Picture** can be uploaded (stored as a URL string). [ ]
+2.  A user can create a new customer with all required and optional fields (see Data Model below). [x]
+3.  **Customer Code** is auto-generated on create (e.g. `CUST-00001`), editable by user, but must remain unique per tenant. [x]
+4.  **Customer Type** is selectable: `Individual` or `Organization`. [x]
+5.  **Customer Group** is an optional FK reference to the `CustomerGroup` entity (managed via Story 80.4). [x]
+6.  **Territory** is an optional FK reference to the `Territory` entity (managed via Story 80.5). [x]
+7.  **Credit Limit** and **Default Discount %** are optional decimal fields. [x]
+8.  **Profile Picture** can be uploaded (stored as a URL string). [x]
 9.  The backend validates Phone uniqueness per tenant. [x]
-10. The backend validates Customer Code uniqueness per tenant. [ ]
-11. The `Customer` model is linked to `Tenant`, and optionally to `CustomerGroup` and `Territory`. [ ]
+10. The backend validates Customer Code uniqueness per tenant. [x]
+11. The `Customer` model is linked to `Tenant`, and optionally to `CustomerGroup` and `Territory`. [x]
 12. The `Sale` model is optionally associated with a `Customer`. [x]
 
 ## Data Model Changes
@@ -52,30 +52,30 @@ so that I can maintain a structured, segmented customer database to drive sales 
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Database Schema Update
-  - [ ] Add `CustomerType` enum (`INDIVIDUAL`, `ORGANIZATION`) to Prisma schema.
-  - [ ] Add new columns to `Customer` model: `customer_code`, `profile_pic_url`, `customer_type`, `customer_group_id`, `territory_id`, `credit_limit`, `default_discount_pct`.
-  - [ ] Add relations to `CustomerGroup` and `Territory` (created in Stories 80.4 & 80.5).
-  - [ ] Add `@@unique([tenant_id, customer_code])` constraint.
-  - [ ] Generate and run Prisma migration.
+- [x] Task 1: Database Schema Update
+  - [x] Add `CustomerType` enum (`INDIVIDUAL`, `ORGANIZATION`) to Prisma schema.
+  - [x] Add new columns to `Customer` model: `customer_code`, `profile_pic_url`, `customer_type`, `customer_group_id`, `territory_id`, `credit_limit`, `default_discount_pct`.
+  - [x] Add relations to `CustomerGroup` and `Territory` (created in Stories 80.4 & 80.5).
+  - [x] Add `@@unique([tenant_id, customer_code])` constraint.
+  - [x] Generate and run Prisma migration.
 
-- [ ] Task 2: Auto-generation Service Logic
-  - [ ] Implement `generateCustomerCode(tenantId)` in the service — queries the last code for the tenant and increments. Format: `CUST-00001`.
-  - [ ] On create: if `customer_code` not supplied, auto-generate. If supplied, validate uniqueness.
+- [x] Task 2: Auto-generation Service Logic
+  - [x] Implement `generateCustomerCode(tenantId)` in the service — queries the last code for the tenant and increments. Format: `CUST-00001`.
+  - [x] On create: if `customer_code` not supplied, auto-generate. If supplied, validate uniqueness.
 
-- [ ] Task 3: Backend API Updates
-  - [ ] Expand `CreateCustomerDto` with new fields (customer_code optional, customer_type, customer_group_id, territory_id, credit_limit, default_discount_pct, profile_pic_url).
-  - [ ] Add `UpdateCustomerDto` (partial of CreateCustomerDto).
-  - [ ] Add `PATCH /customers/:id` endpoint.
-  - [ ] Update `findAll` to include `customerGroup` and `territory` relations in response.
-  - [ ] Update `findOne` to include `customerGroup` and `territory` relations.
+- [x] Task 3: Backend API Updates
+  - [x] Expand `CreateCustomerDto` with new fields (customer_code optional, customer_type, customer_group_id, territory_id, credit_limit, default_discount_pct, profile_pic_url).
+  - [x] Add `UpdateCustomerDto` (partial of CreateCustomerDto).
+  - [x] Add `PATCH /customers/:id` endpoint.
+  - [x] Update `findAll` to include `customerGroup` and `territory` relations in response.
+  - [x] Update `findOne` to include `customerGroup` and `territory` relations.
 
-- [ ] Task 4: Frontend UI Updates
-  - [ ] Update "New Customer" modal: add fields for Customer Type (radio/select), Customer Group (dropdown from API), Territory (dropdown from API), Credit Limit, Default Discount %, Profile Picture upload.
-  - [ ] Customer Code shown as auto-filled input (editable).
+- [x] Task 4: Frontend UI Updates
+  - [x] Update "New Customer" modal: add fields for Customer Type (radio/select), Customer Group (dropdown from API), Territory (dropdown from API), Credit Limit, Default Discount %, Profile Picture upload.
+  - [x] Customer Code shown as auto-filled input (editable).
   - [x] Customer list table: show Code, Type, Group, Territory columns.
-  - [ ] Customer detail page: display all new fields.
-  - [ ] Add inline edit capability or an "Edit Customer" modal.
+  - [x] Customer detail page: display all new fields.
+  - [x] Add inline edit capability or an "Edit Customer" modal.
 
 ## Dev Notes
 
@@ -98,3 +98,27 @@ GPT-5.4
 - ✅ Standardized the Customers dashboard list onto the shared `DataTable` shell used by Sales.
 - ✅ The customer list now exposes code, type, group, territory, total spent, segment, and registration date in a searchable/sortable table.
 - ✅ Preserved the existing create-customer modal flow and direct navigation into the customer detail page from the list actions.
+- ✅ AddCustomerModal.tsx: Fully implemented with all required fields (Customer Type, Group, Territory, Credit Limit, Discount %, Profile Picture URL).
+- ✅ Backend Service: `generateCustomerCode()` auto-generates CUST-NNNNN format with uniqueness validation.
+- ✅ Backend DTOs: CreateCustomerDto and UpdateCustomerDto support all new fields with proper validation.
+- ✅ Backend Endpoints: POST, GET, GET/:id, PATCH/:id all implemented with tenant isolation and relationship loading.
+- ✅ Frontend Detail Page: Customer profile displays all fields including credit utilization, top purchased items, and transaction history.
+- ✅ Database Schema: `CustomerType` enum, all new columns, relationships, and unique constraints fully implemented in Prisma.
+
+### File List
+
+- packages/database/prisma/schema.prisma
+- packages/shared-types/index.ts
+- apps/backend/src/customers/customers.module.ts
+- apps/backend/src/customers/customers.controller.ts
+- apps/backend/src/customers/customers.service.ts
+- apps/backend/src/customers/customer.dto.ts
+- apps/backend/src/customers/customers.service.spec.ts
+- apps/frontend/src/lib/api.ts
+- apps/frontend/src/app/dashboard/customers/AddCustomerModal.tsx
+- apps/frontend/src/app/dashboard/customers/page.tsx
+- apps/frontend/src/app/dashboard/customers/[id]/page.tsx
+
+### Change Log
+
+- 2026-03-22: Verified all ACs implemented and tasks completed. Updated documentation to accurately reflect full implementation status.
