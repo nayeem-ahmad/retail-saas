@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { DatabaseService } from '../database/database.service';
 import { applyInventoryMovement, assertWarehouseBelongsToTenant } from '../database/inventory.utils';
 import { CreateStockTakeSessionDto, UpdateStockTakeCountsDto, UpdateStockTakeStatusDto } from './stock-takes.dto';
+import { autoPostFromRules } from '../accounting/posting.utils';
 
 @Injectable()
 export class StockTakesService {
@@ -142,6 +143,7 @@ export class StockTakesService {
                 throw new BadRequestException('Large discrepancies require review before posting.');
             }
 
+            let adjustmentAmount = 0;
             for (const line of session.lines) {
                 if (line.counted_quantity === null || line.counted_quantity === undefined) {
                     continue;
@@ -150,6 +152,7 @@ export class StockTakesService {
                 if (variance === 0) {
                     continue;
                 }
+                adjustmentAmount += Math.abs(variance) * Number(line.product?.price ?? 0);
                 await applyInventoryMovement(tx, {
                     tenantId,
                     productId: line.product_id,
@@ -171,7 +174,28 @@ export class StockTakesService {
                 where: { id, tenant_id: tenantId },
                 include: this.sessionInclude(),
             });
-            return this.decorateSession(refreshed, threshold);
+
+            const posting = await autoPostFromRules({
+                tx,
+                tenantId,
+                eventType: 'inventory_adjustment',
+                conditionKey: 'reason_type',
+                conditionValue: 'DISCREPANCY',
+                sourceModule: 'inventory',
+                sourceType: 'stock_take_adjustment',
+                sourceId: session.id,
+                amount: adjustmentAmount,
+                description: `Auto-posted stock take ${session.session_number}`,
+                referenceNumber: session.session_number,
+            });
+
+            return {
+                ...this.decorateSession(refreshed, threshold),
+                posting_status: posting.postingStatus,
+                voucher_id: posting.voucherId ?? null,
+                voucher_number: posting.voucherNumber ?? null,
+                voucher_type: posting.voucherType ?? null,
+            };
         });
     }
 

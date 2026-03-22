@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { DatabaseService } from '../database/database.service';
 import { CreatePurchaseDto } from './purchase.dto';
 import { applyInventoryMovement, resolveWarehouseId } from '../database/inventory.utils';
+import { autoPostFromRules } from '../accounting/posting.utils';
 
 @Injectable()
 export class PurchasesService {
@@ -107,7 +108,21 @@ export class PurchasesService {
                 });
             }
 
-            return tx.purchase.findFirst({
+            const posting = await autoPostFromRules({
+                tx,
+                tenantId,
+                eventType: 'purchase',
+                conditionKey: 'payment_mode',
+                conditionValue: 'credit',
+                sourceModule: 'purchases',
+                sourceType: 'purchase',
+                sourceId: purchase.id,
+                amount: Number(purchase.total_amount),
+                description: `Auto-posted purchase ${purchase.purchase_number}`,
+                referenceNumber: purchase.purchase_number,
+            });
+
+            const purchaseWithItems = await tx.purchase.findFirst({
                 where: { id: purchase.id, tenant_id: tenantId },
                 include: {
                     supplier: true,
@@ -116,11 +131,19 @@ export class PurchasesService {
                     },
                 },
             });
+
+            return {
+                ...purchaseWithItems,
+                posting_status: posting.postingStatus,
+                voucher_id: posting.voucherId ?? null,
+                voucher_number: posting.voucherNumber ?? null,
+                voucher_type: posting.voucherType ?? null,
+            };
         });
     }
 
     async findAll(tenantId: string) {
-        return this.db.purchase.findMany({
+        const purchases = await this.db.purchase.findMany({
             where: { tenant_id: tenantId },
             include: {
                 supplier: true,
@@ -129,6 +152,37 @@ export class PurchasesService {
                 },
             },
             orderBy: { created_at: 'desc' },
+        });
+
+        const purchaseIds = purchases.map((purchase) => purchase.id);
+        const vouchers = purchaseIds.length > 0
+            ? await this.db.voucher.findMany({
+                where: {
+                    tenant_id: tenantId,
+                    source_module: 'purchases',
+                    source_type: 'purchase',
+                    source_id: { in: purchaseIds },
+                },
+                select: {
+                    source_id: true,
+                    id: true,
+                    voucher_number: true,
+                    voucher_type: true,
+                },
+            })
+            : [];
+
+        const voucherByPurchaseId = new Map(vouchers.map((voucher) => [voucher.source_id, voucher]));
+
+        return purchases.map((purchase) => {
+            const voucher = voucherByPurchaseId.get(purchase.id);
+            return {
+                ...purchase,
+                posting_status: voucher ? 'posted' : 'skipped',
+                voucher_id: voucher?.id ?? null,
+                voucher_number: voucher?.voucher_number ?? null,
+                voucher_type: voucher?.voucher_type ?? null,
+            };
         });
     }
 
@@ -147,6 +201,26 @@ export class PurchasesService {
             throw new NotFoundException('Purchase not found');
         }
 
-        return purchase;
+        const voucher = await this.db.voucher.findFirst({
+            where: {
+                tenant_id: tenantId,
+                source_module: 'purchases',
+                source_type: 'purchase',
+                source_id: purchase.id,
+            },
+            select: {
+                id: true,
+                voucher_number: true,
+                voucher_type: true,
+            },
+        });
+
+        return {
+            ...purchase,
+            posting_status: voucher ? 'posted' : 'skipped',
+            voucher_id: voucher?.id ?? null,
+            voucher_number: voucher?.voucher_number ?? null,
+            voucher_type: voucher?.voucher_type ?? null,
+        };
     }
 }

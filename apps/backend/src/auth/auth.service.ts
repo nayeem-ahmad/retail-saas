@@ -34,12 +34,14 @@ export class AuthService {
                 },
             });
 
-            await this.provisionTenant(tx, createdUser.id, {
-                tenantName: dto.tenantName,
-                storeName: dto.storeName,
-                address: dto.address,
-                planCode: dto.planCode,
-            });
+            if (dto.tenantName?.trim() && dto.storeName?.trim()) {
+                await this.provisionTenant(tx, createdUser.id, {
+                    tenantName: dto.tenantName,
+                    storeName: dto.storeName,
+                    address: dto.address,
+                    planCode: dto.planCode,
+                });
+            }
 
             return createdUser;
         });
@@ -159,13 +161,13 @@ export class AuthService {
         };
     }
 
-    async setupStore(userId: string, dto: { name: string; address?: string }) {
+    async setupStore(userId: string, dto: { name: string; address?: string; planCode?: 'FREE' | 'BASIC' | 'STANDARD' | 'PREMIUM' }) {
         return this.db.$transaction(async (tx) =>
             this.provisionTenant(tx, userId, {
                 tenantName: dto.name,
                 storeName: dto.name,
                 address: dto.address,
-                planCode: 'FREE',
+                planCode: dto.planCode ?? 'FREE',
             }),
         );
     }

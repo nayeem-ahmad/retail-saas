@@ -6,10 +6,14 @@ import {
     IsNotEmpty,
     IsNumber,
     IsInt,
-    Min,
     IsOptional,
     IsString,
     ValidateNested,
+    IsBoolean,
+    IsUUID,
+    MaxLength,
+    Min,
+    Max,
 } from 'class-validator';
 import { AccountCategory, AccountType, VoucherType } from './accounting.constants';
 
@@ -187,4 +191,94 @@ export class FinancialTrendQueryDto {
     @IsOptional()
     @IsDateString()
     to?: string;
+}
+
+const POSTING_RULE_EVENT_TYPES = [
+    'sale',
+    'sale_return',
+    'purchase',
+    'purchase_return',
+    'inventory_adjustment',
+    'fund_movement',
+] as const;
+
+const POSTING_RULE_CONDITION_KEYS = [
+    'payment_mode',
+    'reason_type',
+    'transfer_scope',
+    'none',
+] as const;
+
+const POSTING_EVENT_STATUSES = ['pending', 'posted', 'failed', 'skipped'] as const;
+
+export class ListPostingRulesQueryDto {
+    @IsOptional()
+    @IsString()
+    @IsIn(POSTING_RULE_EVENT_TYPES)
+    eventType?: typeof POSTING_RULE_EVENT_TYPES[number];
+
+    @IsOptional()
+    @Type(() => Boolean)
+    @IsBoolean()
+    isActive?: boolean;
+}
+
+export class UpdatePostingRuleDto {
+    @IsUUID()
+    debitAccountId: string;
+
+    @IsUUID()
+    creditAccountId: string;
+
+    @IsString()
+    @IsIn(POSTING_RULE_CONDITION_KEYS)
+    conditionKey: typeof POSTING_RULE_CONDITION_KEYS[number];
+
+    @IsOptional()
+    @IsString()
+    @MaxLength(64)
+    conditionValue?: string;
+
+    @IsOptional()
+    @Type(() => Number)
+    @IsInt()
+    @Min(1)
+    @Max(1000)
+    priority?: number;
+
+    @IsOptional()
+    @Type(() => Boolean)
+    @IsBoolean()
+    isActive?: boolean;
+}
+
+export class ListPostingExceptionsQueryDto {
+    @IsOptional()
+    @IsString()
+    @IsIn(POSTING_EVENT_STATUSES)
+    status?: typeof POSTING_EVENT_STATUSES[number];
+
+    @IsOptional()
+    @IsString()
+    module?: string;
+
+    @IsOptional()
+    @IsDateString()
+    from?: string;
+
+    @IsOptional()
+    @IsDateString()
+    to?: string;
+
+    @IsOptional()
+    @Type(() => Number)
+    @IsInt()
+    @Min(1)
+    page?: number;
+
+    @IsOptional()
+    @Type(() => Number)
+    @IsInt()
+    @Min(1)
+    limit?: number;
 }

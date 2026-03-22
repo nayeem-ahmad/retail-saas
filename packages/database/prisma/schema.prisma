@@ -71,6 +71,29 @@ enum StorePermission {
   MANAGE_USER_STORE_ACCESS
 }
 
+enum PostingRuleEventType {
+  sale
+  sale_return
+  purchase
+  purchase_return
+  inventory_adjustment
+  fund_movement
+}
+
+enum PostingRuleConditionKey {
+  payment_mode
+  reason_type
+  transfer_scope
+  none
+}
+
+enum PostingEventStatus {
+  pending
+  posted
+  failed
+  skipped
+}
+
 model User {
   id            String       @id @default(uuid())
   email         String       @unique
@@ -134,6 +157,8 @@ model Tenant {
   userStorePermissions UserStorePermission[]
   productPrices     ProductPrice[]
   fundTransfers     FundTransfer[]
+  postingRules      PostingRule[]
+  postingEvents     PostingEvent[]
 }
 
 model TenantUser {
@@ -713,6 +738,8 @@ model Account {
   group       AccountGroup    @relation(fields: [group_id], references: [id])
   subgroup    AccountSubgroup? @relation(fields: [subgroup_id], references: [id])
   voucherDetails VoucherDetail[]
+  debitPostingRules PostingRule[] @relation("PostingRuleDebitAccount")
+  creditPostingRules PostingRule[] @relation("PostingRuleCreditAccount")
 
   @@unique([tenant_id, name])
   @@index([tenant_id])
@@ -721,6 +748,30 @@ model Account {
   @@index([tenant_id, type])
   @@index([tenant_id, category])
   @@map("accounts")
+}
+
+model PostingRule {
+  id                String                  @id @default(cuid())
+  tenant_id         String
+  event_type        PostingRuleEventType
+  condition_key     PostingRuleConditionKey @default(none)
+  condition_value   String?
+  debit_account_id  String
+  credit_account_id String
+  priority          Int                     @default(100)
+  is_active         Boolean                 @default(true)
+  created_at        DateTime                @default(now())
+  updated_at        DateTime                @updatedAt
+
+  tenant       Tenant  @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  debitAccount Account @relation("PostingRuleDebitAccount", fields: [debit_account_id], references: [id], onDelete: Restrict)
+  creditAccount Account @relation("PostingRuleCreditAccount", fields: [credit_account_id], references: [id], onDelete: Restrict)
+
+  @@index([tenant_id, event_type, is_active])
+  @@index([tenant_id, condition_key, condition_value])
+  @@index([tenant_id, debit_account_id])
+  @@index([tenant_id, credit_account_id])
+  @@map("posting_rules")
 }
 
 model VoucherSequence {
@@ -744,6 +795,10 @@ model Voucher {
   tenant_id        String
   voucher_number   String
   voucher_type     String
+  source_module    String?
+  source_type      String?
+  source_id        String?
+  idempotency_key  String?
   description      String?
   reference_number String?
   date             DateTime @default(now())
@@ -752,14 +807,41 @@ model Voucher {
 
   tenant           Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
   details          VoucherDetail[]
+  postingEvents    PostingEvent[]
   fundTransfersSource      FundTransfer[] @relation("FundTransferSourceVoucher")
   fundTransfersDestination FundTransfer[] @relation("FundTransferDestinationVoucher")
 
   @@unique([tenant_id, voucher_number])
   @@index([tenant_id])
   @@index([tenant_id, voucher_type])
+  @@index([tenant_id, source_module, source_type, source_id])
   @@index([date])
   @@map("vouchers")
+}
+
+model PostingEvent {
+  id               String            @id @default(cuid())
+  tenant_id        String
+  event_type       PostingRuleEventType
+  source_module    String
+  source_type      String
+  source_id        String
+  idempotency_key  String
+  status           PostingEventStatus @default(pending)
+  voucher_id       String?
+  attempt_count    Int               @default(0)
+  last_error       String?
+  last_attempt_at  DateTime?
+  created_at       DateTime          @default(now())
+  updated_at       DateTime          @updatedAt
+
+  tenant           Tenant            @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  voucher          Voucher?          @relation(fields: [voucher_id], references: [id], onDelete: SetNull)
+
+  @@unique([tenant_id, idempotency_key])
+  @@index([tenant_id, status, updated_at])
+  @@index([tenant_id, source_module, source_type, source_id])
+  @@map("posting_events")
 }
 
 model VoucherDetail {

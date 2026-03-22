@@ -181,4 +181,141 @@ export async function bootstrapDefaultAccountingForTenant(
             }
         }
     }
+
+    const accounts = await db.account.findMany({
+        where: { tenant_id: tenantId },
+        select: { id: true, name: true },
+    });
+
+    const accountByName = new Map(accounts.map((account) => [account.name, account.id]));
+    const cashId = accountByName.get('Cash in Hand');
+    const bankId = accountByName.get('Main Bank Account');
+    const salesRevenueId = accountByName.get('Sales Revenue');
+    const purchasePayableId = accountByName.get('Purchase Payable');
+    const expenseId = accountByName.get('General Operating Expense');
+
+    const defaultRules = [
+        {
+            event_type: 'sale',
+            condition_key: 'payment_mode',
+            condition_value: 'cash',
+            debit_account_id: cashId,
+            credit_account_id: salesRevenueId,
+            priority: 10,
+        },
+        {
+            event_type: 'sale',
+            condition_key: 'payment_mode',
+            condition_value: 'bank',
+            debit_account_id: bankId,
+            credit_account_id: salesRevenueId,
+            priority: 20,
+        },
+        {
+            event_type: 'sale_return',
+            condition_key: 'payment_mode',
+            condition_value: 'cash',
+            debit_account_id: salesRevenueId,
+            credit_account_id: cashId,
+            priority: 10,
+        },
+        {
+            event_type: 'sale_return',
+            condition_key: 'payment_mode',
+            condition_value: 'bank',
+            debit_account_id: salesRevenueId,
+            credit_account_id: bankId,
+            priority: 20,
+        },
+        {
+            event_type: 'purchase',
+            condition_key: 'payment_mode',
+            condition_value: 'cash',
+            debit_account_id: expenseId,
+            credit_account_id: cashId,
+            priority: 10,
+        },
+        {
+            event_type: 'purchase',
+            condition_key: 'payment_mode',
+            condition_value: 'bank',
+            debit_account_id: expenseId,
+            credit_account_id: bankId,
+            priority: 20,
+        },
+        {
+            event_type: 'purchase',
+            condition_key: 'payment_mode',
+            condition_value: 'credit',
+            debit_account_id: expenseId,
+            credit_account_id: purchasePayableId,
+            priority: 30,
+        },
+        {
+            event_type: 'purchase_return',
+            condition_key: 'none',
+            condition_value: null,
+            debit_account_id: purchasePayableId,
+            credit_account_id: expenseId,
+            priority: 100,
+        },
+        {
+            event_type: 'inventory_adjustment',
+            condition_key: 'none',
+            condition_value: null,
+            debit_account_id: expenseId,
+            credit_account_id: cashId,
+            priority: 100,
+        },
+        {
+            event_type: 'fund_movement',
+            condition_key: 'none',
+            condition_value: null,
+            debit_account_id: bankId,
+            credit_account_id: cashId,
+            priority: 100,
+        },
+    ];
+
+    for (const rule of defaultRules) {
+        if (!rule.debit_account_id || !rule.credit_account_id) {
+            continue;
+        }
+
+        const existingRule = await db.postingRule.findFirst({
+            where: {
+                tenant_id: tenantId,
+                event_type: rule.event_type,
+                condition_key: rule.condition_key,
+                condition_value: rule.condition_value,
+            },
+            select: { id: true },
+        });
+
+        if (existingRule) {
+            await db.postingRule.update({
+                where: { id: existingRule.id },
+                data: {
+                    debit_account_id: rule.debit_account_id,
+                    credit_account_id: rule.credit_account_id,
+                    priority: rule.priority,
+                    is_active: true,
+                },
+            });
+            continue;
+        }
+
+        await db.postingRule.create({
+            data: {
+                tenant_id: tenantId,
+                event_type: rule.event_type,
+                condition_key: rule.condition_key,
+                condition_value: rule.condition_value,
+                debit_account_id: rule.debit_account_id,
+                credit_account_id: rule.credit_account_id,
+                priority: rule.priority,
+                is_active: true,
+            },
+        });
+    }
 }

@@ -2,6 +2,17 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { PurchasesService } from './purchases.service';
+import { applyInventoryMovement, resolveWarehouseId } from '../database/inventory.utils';
+import { autoPostFromRules } from '../accounting/posting.utils';
+
+jest.mock('../database/inventory.utils', () => ({
+    applyInventoryMovement: jest.fn(),
+    resolveWarehouseId: jest.fn(),
+}));
+
+jest.mock('../accounting/posting.utils', () => ({
+    autoPostFromRules: jest.fn(),
+}));
 
 describe('PurchasesService', () => {
     let service: PurchasesService;
@@ -40,6 +51,10 @@ describe('PurchasesService', () => {
                 findMany: jest.fn(),
                 findFirst: jest.fn(),
             },
+            voucher: {
+                findMany: jest.fn(),
+                findFirst: jest.fn(),
+            },
         };
 
         const module: TestingModule = await Test.createTestingModule({
@@ -50,6 +65,14 @@ describe('PurchasesService', () => {
         }).compile();
 
         service = module.get<PurchasesService>(PurchasesService);
+        (resolveWarehouseId as jest.Mock).mockResolvedValue('wh-1');
+        (applyInventoryMovement as jest.Mock).mockResolvedValue(0);
+        (autoPostFromRules as jest.Mock).mockResolvedValue({
+            postingStatus: 'posted',
+            voucherId: 'voucher-1',
+            voucherNumber: 'CP-00001',
+            voucherType: 'cash_payment',
+        });
     });
 
     it('creates a purchase, persists line items, and increments stock atomically', async () => {
@@ -85,11 +108,19 @@ describe('PurchasesService', () => {
                 line_total: 34,
             },
         });
-        expect(tx.productStock.upsert).toHaveBeenCalledWith({
-            where: { product_id: 'prod-1' },
-            update: { quantity: { increment: 4 } },
-            create: { tenant_id: 'tenant-1', product_id: 'prod-1', quantity: 4 },
-        });
+        expect(applyInventoryMovement).toHaveBeenCalledWith(
+            tx,
+            expect.objectContaining({
+                tenantId: 'tenant-1',
+                productId: 'prod-1',
+                warehouseId: 'wh-1',
+                quantityDelta: 4,
+                movementType: 'PURCHASE_RECEIPT',
+                referenceType: 'PURCHASE',
+                referenceId: 'purchase-1',
+                unitCost: 8.5,
+            }),
+        );
         expect(tx.purchase.findFirst).toHaveBeenCalledWith({
             where: { id: 'purchase-1', tenant_id: 'tenant-1' },
             include: {

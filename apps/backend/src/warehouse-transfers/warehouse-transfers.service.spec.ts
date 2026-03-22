@@ -3,10 +3,15 @@ import { BadRequestException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { WarehouseTransfersService } from './warehouse-transfers.service';
 import { applyInventoryMovement, assertWarehouseBelongsToTenant } from '../database/inventory.utils';
+import { autoPostFromRules } from '../accounting/posting.utils';
 
 jest.mock('../database/inventory.utils', () => ({
     applyInventoryMovement: jest.fn(),
     assertWarehouseBelongsToTenant: jest.fn(),
+}));
+
+jest.mock('../accounting/posting.utils', () => ({
+    autoPostFromRules: jest.fn(),
 }));
 
 describe('WarehouseTransfersService', () => {
@@ -45,6 +50,12 @@ describe('WarehouseTransfersService', () => {
         service = module.get(WarehouseTransfersService);
         (assertWarehouseBelongsToTenant as jest.Mock).mockResolvedValue({ id: 'wh-1' });
         (applyInventoryMovement as jest.Mock).mockResolvedValue(5);
+        (autoPostFromRules as jest.Mock).mockResolvedValue({
+            postingStatus: 'posted',
+            voucherId: 'voucher-1',
+            voucherNumber: 'FT-00001',
+            voucherType: 'fund_transfer',
+        });
     });
 
     it('creates a sent transfer and records outbound inventory movements', async () => {

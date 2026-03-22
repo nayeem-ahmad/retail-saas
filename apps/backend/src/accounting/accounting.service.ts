@@ -13,6 +13,9 @@ import {
     ListLedgerQueryDto,
     ListAccountSubgroupsQueryDto,
     ListVouchersQueryDto,
+    ListPostingRulesQueryDto,
+    UpdatePostingRuleDto,
+    ListPostingExceptionsQueryDto,
 } from './accounting.dto';
 
 export const VOUCHER_NUMBER_PREFIXES: Record<VoucherType, string> = {
@@ -712,6 +715,203 @@ export class AccountingService {
         }
     }
 
+    async listPostingRules(tenantId: string, query: ListPostingRulesQueryDto) {
+        const rules = await this.db.postingRule.findMany({
+            where: {
+                tenant_id: tenantId,
+                ...(query.eventType ? { event_type: query.eventType } : {}),
+                ...(query.isActive !== undefined ? { is_active: query.isActive } : {}),
+            },
+            include: {
+                debitAccount: true,
+                creditAccount: true,
+            },
+            orderBy: [{ event_type: 'asc' }, { priority: 'asc' }, { updated_at: 'desc' }],
+        });
+
+        return {
+            data: rules.map((rule) => ({
+                id: rule.id,
+                eventType: rule.event_type,
+                conditionKey: rule.condition_key,
+                conditionValue: rule.condition_value,
+                debitAccount: {
+                    id: rule.debitAccount.id,
+                    name: rule.debitAccount.name,
+                    code: rule.debitAccount.code,
+                },
+                creditAccount: {
+                    id: rule.creditAccount.id,
+                    name: rule.creditAccount.name,
+                    code: rule.creditAccount.code,
+                },
+                priority: rule.priority,
+                isActive: rule.is_active,
+                updatedAt: rule.updated_at,
+            })),
+        };
+    }
+
+    async updatePostingRule(tenantId: string, id: string, dto: UpdatePostingRuleDto) {
+        if (dto.debitAccountId === dto.creditAccountId) {
+            throw new BadRequestException('Debit and credit accounts must be different.');
+        }
+
+        const existingRule = await this.db.postingRule.findFirst({
+            where: {
+                id,
+                tenant_id: tenantId,
+            },
+        });
+
+        if (!existingRule) {
+            throw new NotFoundException('Posting rule not found.');
+        }
+
+        const accounts = await this.db.account.findMany({
+            where: {
+                tenant_id: tenantId,
+                id: { in: [dto.debitAccountId, dto.creditAccountId] },
+            },
+            select: { id: true },
+        });
+
+        if (accounts.length !== 2) {
+            throw new BadRequestException('One or more mapped accounts do not belong to this tenant.');
+        }
+
+        if (dto.conditionKey === 'none' && dto.conditionValue) {
+            throw new BadRequestException('Condition value must be empty when condition key is none.');
+        }
+
+        if (dto.conditionKey !== 'none' && !dto.conditionValue) {
+            throw new BadRequestException('Condition value is required when condition key is not none.');
+        }
+
+        const updated = await this.db.postingRule.update({
+            where: { id },
+            data: {
+                debit_account_id: dto.debitAccountId,
+                credit_account_id: dto.creditAccountId,
+                condition_key: dto.conditionKey,
+                condition_value: dto.conditionKey === 'none' ? null : dto.conditionValue,
+                priority: dto.priority,
+                is_active: dto.isActive,
+            },
+            include: {
+                debitAccount: true,
+                creditAccount: true,
+            },
+        });
+
+        return {
+            id: updated.id,
+            eventType: updated.event_type,
+            conditionKey: updated.condition_key,
+            conditionValue: updated.condition_value,
+            debitAccountId: updated.debit_account_id,
+            creditAccountId: updated.credit_account_id,
+            priority: updated.priority,
+            isActive: updated.is_active,
+            updatedAt: updated.updated_at,
+        };
+    }
+
+    async listPostingExceptions(tenantId: string, query: ListPostingExceptionsQueryDto) {
+        this.validateDateRange(query.from, query.to);
+        const page = Math.max(1, Number(query.page ?? 1));
+        const limit = Math.min(Math.max(1, Number(query.limit ?? 20)), 100);
+
+        const where = {
+            tenant_id: tenantId,
+            ...(query.status ? { status: query.status } : {}),
+            ...(query.module ? { source_module: query.module } : {}),
+            ...(() => {
+                if (!query.from && !query.to) {
+                    return {};
+                }
+                return {
+                    updated_at: {
+                        ...(query.from ? { gte: this.toStartOfDay(query.from) } : {}),
+                        ...(query.to ? { lte: this.toEndOfDay(query.to) } : {}),
+                    },
+                };
+            })(),
+        };
+
+        const [total, events] = await Promise.all([
+            this.db.postingEvent.count({ where }),
+            this.db.postingEvent.findMany({
+                where,
+                include: {
+                    voucher: {
+                        select: {
+                            id: true,
+                            voucher_number: true,
+                            voucher_type: true,
+                        },
+                    },
+                },
+                orderBy: [{ updated_at: 'desc' }],
+                skip: (page - 1) * limit,
+                take: limit,
+            }),
+        ]);
+
+        return {
+            data: events.map((event) => ({
+                id: event.id,
+                eventType: event.event_type,
+                sourceModule: event.source_module,
+                sourceType: event.source_type,
+                sourceId: event.source_id,
+                status: event.status,
+                attemptCount: event.attempt_count,
+                lastError: event.last_error,
+                lastAttemptAt: event.last_attempt_at,
+                voucher: event.voucher,
+            })),
+            pagination: {
+                page,
+                limit,
+                total,
+            },
+        };
+    }
+
+    async retryPostingException(tenantId: string, id: string) {
+        const event = await this.db.postingEvent.findFirst({
+            where: {
+                id,
+                tenant_id: tenantId,
+            },
+        });
+
+        if (!event) {
+            throw new NotFoundException('POSTING_EXCEPTION_NOT_FOUND');
+        }
+
+        if (event.status === 'posted') {
+            throw new BadRequestException('POSTING_RETRY_ALREADY_POSTED');
+        }
+
+        await this.db.postingEvent.update({
+            where: { id },
+            data: {
+                status: 'pending',
+                attempt_count: { increment: 1 },
+                last_attempt_at: new Date(),
+                last_error: null,
+            },
+        });
+
+        return {
+            id,
+            status: 'pending',
+            message: 'Retry queued. Re-trigger source workflow to re-run posting.',
+        };
+    }
+
     private formatVoucherNumber(voucherType: VoucherType, sequenceNumber: number) {
         return `${VOUCHER_NUMBER_PREFIXES[voucherType]}-${String(sequenceNumber).padStart(VOUCHER_NUMBER_PADDING, '0')}`;
     }
@@ -1021,6 +1221,11 @@ export class AccountingService {
         return {
             ...voucher,
             total_amount: totalAmount,
+            source: {
+                module: voucher.source_module ?? null,
+                type: voucher.source_type ?? null,
+                id: voucher.source_id ?? null,
+            },
         };
     }
 }

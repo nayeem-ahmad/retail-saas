@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { DatabaseService } from '../database/database.service';
 import { applyInventoryMovement, assertWarehouseBelongsToTenant } from '../database/inventory.utils';
 import { CreateWarehouseTransferDto, ListWarehouseTransfersQueryDto, ReceiveWarehouseTransferDto } from './warehouse-transfer.dto';
+import { autoPostFromRules } from '../accounting/posting.utils';
 
 @Injectable()
 export class WarehouseTransfersService {
@@ -118,15 +119,42 @@ export class WarehouseTransfersService {
                 });
             }
 
+            const totalTransferAmount = transfer.items.reduce(
+                (sum, item) => sum + (item.quantity_sent * Number(item.product?.price ?? 0)),
+                0,
+            );
+
+            const posting = await autoPostFromRules({
+                tx,
+                tenantId,
+                eventType: 'fund_movement',
+                conditionKey: 'transfer_scope',
+                conditionValue: transfer.is_cross_branch ? 'inter_store' : 'intra_store',
+                sourceModule: 'warehouse_transfers',
+                sourceType: 'transfer',
+                sourceId: transfer.id,
+                amount: totalTransferAmount,
+                description: `Auto-posted warehouse transfer ${transfer.transfer_number}`,
+                referenceNumber: transfer.transfer_number,
+            });
+
             await tx.warehouseTransfer.update({
                 where: { id },
                 data: { status: 'SENT', sent_at: new Date() },
             });
 
-            return tx.warehouseTransfer.findFirst({
+            const sentTransfer = await tx.warehouseTransfer.findFirst({
                 where: { id, tenant_id: tenantId },
                 include: this.transferInclude(),
             });
+
+            return {
+                ...sentTransfer,
+                posting_status: posting.postingStatus,
+                voucher_id: posting.voucherId ?? null,
+                voucher_number: posting.voucherNumber ?? null,
+                voucher_type: posting.voucherType ?? null,
+            };
         });
     }
 

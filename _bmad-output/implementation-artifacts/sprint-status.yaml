@@ -26,6 +26,11 @@ development_status:
   21-2-purchase-return-validation-inventory-reversal: review
   21-3-purchase-returns-list-create-ui: review
   21-4-purchase-return-detail-edit-print: review
+  31-1-posting-rules-settings-default-mappings: in-progress
+  31-2-sales-sales-return-auto-posting: in-progress
+  31-3-purchase-purchase-return-auto-posting: in-progress
+  31-4-inventory-transfer-accounting-events: in-progress
+  31-5-posting-reliability-replay-reconciliation: in-progress
   80-1-customer-crud: review
   80-2-segment-logic: ready-for-dev
   80-3-purchase-history: ready-for-dev
@@ -38,6 +43,7 @@ epic_status:
   epic-10: done
   epic-20: review
   epic-21: review
+  epic-31: in-progress
   epic-80: review
 
 metadata:

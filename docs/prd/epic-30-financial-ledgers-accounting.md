@@ -22,3 +22,6 @@ This epic is the financial core of the platform. It enables store owners to move
 3. **Story 3: Automated Voucher Numbering** - Sequential, tenant-specific voucher numbers (e.g., CP-001, BR-052).
 4. **Story 4: Real-time Ledger Generation** - API logic to calculate running balances for any account across a date range.
 5. **Story 5: Journal Viewer** - A comprehensive list view of all vouchers with advanced filtering by type and date.
+
+**Scope Note:**
+Cross-module auto-posting from Sales, Purchase, and Inventory events through configurable account mappings is covered in Epic 31.

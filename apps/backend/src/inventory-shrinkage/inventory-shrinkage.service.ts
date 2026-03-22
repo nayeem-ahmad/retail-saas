@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { DatabaseService } from '../database/database.service';
 import { applyInventoryMovement, assertWarehouseBelongsToTenant } from '../database/inventory.utils';
 import { CreateInventoryShrinkageDto } from './inventory-shrinkage.dto';
+import { autoPostFromRules } from '../accounting/posting.utils';
 
 @Injectable()
 export class InventoryShrinkageService {
@@ -60,7 +61,32 @@ export class InventoryShrinkageService {
                 include: this.shrinkageInclude(),
             });
 
-            return shrinkage;
+            const shrinkageAmount = shrinkage.items.reduce(
+                (sum, item) => sum + Number(item.unit_cost ?? 0) * item.quantity,
+                0,
+            );
+
+            const posting = await autoPostFromRules({
+                tx,
+                tenantId,
+                eventType: 'inventory_adjustment',
+                conditionKey: 'reason_type',
+                conditionValue: shrinkage.reason?.code ?? 'SHRINKAGE',
+                sourceModule: 'inventory',
+                sourceType: 'shrinkage',
+                sourceId: shrinkage.id,
+                amount: shrinkageAmount || 0,
+                description: `Auto-posted shrinkage ${shrinkage.reference_number}`,
+                referenceNumber: shrinkage.reference_number,
+            });
+
+            return {
+                ...shrinkage,
+                posting_status: posting.postingStatus,
+                voucher_id: posting.voucherId ?? null,
+                voucher_number: posting.voucherNumber ?? null,
+                voucher_type: posting.voucherType ?? null,
+            };
         });
     }
 

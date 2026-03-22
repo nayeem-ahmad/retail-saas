@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { DatabaseService } from '../database/database.service';
 import { CreatePurchaseReturnDto, UpdatePurchaseReturnDto } from './purchase-return.dto';
 import { applyInventoryMovement, resolveWarehouseId } from '../database/inventory.utils';
+import { autoPostFromRules } from '../accounting/posting.utils';
 
 @Injectable()
 export class PurchaseReturnsService {
@@ -76,18 +77,71 @@ export class PurchaseReturnsService {
                 })),
             });
 
-            return tx.purchaseReturn.findFirst({
+            const posting = await autoPostFromRules({
+                tx,
+                tenantId,
+                eventType: 'purchase_return',
+                conditionKey: 'none',
+                conditionValue: null,
+                sourceModule: 'purchases',
+                sourceType: 'purchase_return',
+                sourceId: purchaseReturn.id,
+                amount: Number(purchaseReturn.total_amount),
+                description: `Auto-posted purchase return ${purchaseReturn.return_number}`,
+                referenceNumber: purchaseReturn.return_number,
+            });
+
+            const purchaseReturnWithDetails = await tx.purchaseReturn.findFirst({
                 where: { id: purchaseReturn.id, tenant_id: tenantId },
                 include: this.returnInclude(true),
             });
+
+            return {
+                ...purchaseReturnWithDetails,
+                posting_status: posting.postingStatus,
+                voucher_id: posting.voucherId ?? null,
+                voucher_number: posting.voucherNumber ?? null,
+                voucher_type: posting.voucherType ?? null,
+            };
         });
     }
 
     async findAll(tenantId: string) {
-        return this.db.purchaseReturn.findMany({
+        const returns = await this.db.purchaseReturn.findMany({
             where: { tenant_id: tenantId },
             include: this.returnInclude(),
             orderBy: { created_at: 'desc' },
+        });
+
+        const returnIds = returns.map((item) => item.id);
+        const vouchers = returnIds.length > 0
+            ? await this.db.voucher.findMany({
+                where: {
+                    tenant_id: tenantId,
+                    source_module: 'purchases',
+                    source_type: 'purchase_return',
+                    source_id: { in: returnIds },
+                },
+                select: {
+                    source_id: true,
+                    id: true,
+                    voucher_number: true,
+                    voucher_type: true,
+                },
+            })
+            : [];
+
+        const voucherByReturnId = new Map(vouchers.map((voucher) => [voucher.source_id, voucher]));
+
+        return returns.map((item) => {
+            const voucher = voucherByReturnId.get(item.id);
+            return {
+                ...item,
+                posting_status: voucher ? 'posted' : 'skipped',
+                voucher_id: voucher?.id ?? null,
+                voucher_number: voucher?.voucher_number ?? null,
+                voucher_type: voucher?.voucher_type ?? null,
+            };
         });
     }
 
@@ -101,7 +155,27 @@ export class PurchaseReturnsService {
             throw new NotFoundException('Purchase return not found');
         }
 
-        return purchaseReturn;
+        const voucher = await this.db.voucher.findFirst({
+            where: {
+                tenant_id: tenantId,
+                source_module: 'purchases',
+                source_type: 'purchase_return',
+                source_id: purchaseReturn.id,
+            },
+            select: {
+                id: true,
+                voucher_number: true,
+                voucher_type: true,
+            },
+        });
+
+        return {
+            ...purchaseReturn,
+            posting_status: voucher ? 'posted' : 'skipped',
+            voucher_id: voucher?.id ?? null,
+            voucher_number: voucher?.voucher_number ?? null,
+            voucher_type: voucher?.voucher_type ?? null,
+        };
     }
 
     async update(tenantId: string, id: string, dto: UpdatePurchaseReturnDto) {

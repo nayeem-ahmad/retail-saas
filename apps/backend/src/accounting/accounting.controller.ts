@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Query, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards, UseInterceptors } from '@nestjs/common';
 import { AccountingService } from './accounting.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RequiresFeature } from '../auth/subscription-access.decorator';
@@ -19,12 +19,15 @@ import {
     ListAccountSubgroupsQueryDto,
     ListVouchersQueryDto,
     VoucherNumberPreviewQueryDto,
+    ListPostingRulesQueryDto,
+    UpdatePostingRuleDto,
+    ListPostingExceptionsQueryDto,
 } from './accounting.dto';
 
 @Controller('accounting')
 @UseGuards(JwtAuthGuard, TenantRoleGuard, SubscriptionAccessGuard)
 @UseInterceptors(TenantInterceptor)
-@TenantRoles('OWNER', 'MANAGER')
+@TenantRoles('OWNER', 'MANAGER', 'ACCOUNTANT')
 @RequiresFeature('premiumAccounting')
 export class AccountingController {
     constructor(private readonly accountingService: AccountingService) {}
@@ -98,6 +101,35 @@ export class AccountingController {
     @Get('dashboard/trends')
     getFinancialTrends(@Tenant() tenant: TenantContext, @Query() query: FinancialTrendQueryDto) {
         return this.accountingService.getFinancialTrends(tenant.tenantId, query);
+    }
+
+    @Get('settings/posting-rules')
+    listPostingRules(@Tenant() tenant: TenantContext, @Query() query: ListPostingRulesQueryDto) {
+        return this.accountingService.listPostingRules(tenant.tenantId, query);
+    }
+
+    @Patch('settings/posting-rules/:id')
+    @TenantRoles('OWNER', 'ACCOUNTANT')
+    updatePostingRule(
+        @Tenant() tenant: TenantContext,
+        @Param('id') id: string,
+        @Body() dto: UpdatePostingRuleDto,
+    ) {
+        return this.accountingService.updatePostingRule(tenant.tenantId, id, dto);
+    }
+
+    @Get('reconciliation/posting-exceptions')
+    listPostingExceptions(
+        @Tenant() tenant: TenantContext,
+        @Query() query: ListPostingExceptionsQueryDto,
+    ) {
+        return this.accountingService.listPostingExceptions(tenant.tenantId, query);
+    }
+
+    @Post('reconciliation/posting-exceptions/:id/retry')
+    @TenantRoles('OWNER', 'ACCOUNTANT')
+    retryPostingException(@Tenant() tenant: TenantContext, @Param('id') id: string) {
+        return this.accountingService.retryPostingException(tenant.tenantId, id);
     }
 
     @Get('reports/ledger/:accountId')

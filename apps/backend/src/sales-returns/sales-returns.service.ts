@@ -2,6 +2,7 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { CreateSalesReturnDto, UpdateSalesReturnDto } from './sales-returns.dto';
 import { applyInventoryMovement, resolveWarehouseId } from '../database/inventory.utils';
+import { autoPostFromRules } from '../accounting/posting.utils';
 
 @Injectable()
 export class SalesReturnsService {
@@ -82,26 +83,103 @@ export class SalesReturnsService {
                  });
             }
 
-            return salesReturn;
+            const posting = await autoPostFromRules({
+                tx,
+                tenantId,
+                eventType: 'sale_return',
+                conditionKey: 'payment_mode',
+                conditionValue: 'cash',
+                sourceModule: 'sales',
+                sourceType: 'sale_return',
+                sourceId: salesReturn.id,
+                amount: Number(salesReturn.total_refund),
+                description: `Auto-posted sales return ${salesReturn.return_number}`,
+                referenceNumber: salesReturn.return_number,
+            });
+
+            return {
+                ...salesReturn,
+                posting_status: posting.postingStatus,
+                voucher_id: posting.voucherId ?? null,
+                voucher_number: posting.voucherNumber ?? null,
+                voucher_type: posting.voucherType ?? null,
+            };
         });
     }
 
     async findAll(tenantId: string) {
-        return this.db.salesReturn.findMany({
+        const returns = await this.db.salesReturn.findMany({
             where: { tenant_id: tenantId },
             include: { sale: true, items: { include: { product: true } } },
             orderBy: { created_at: 'desc' }
         });
+
+        const returnIds = returns.map((item) => item.id);
+        const vouchers = returnIds.length > 0
+            ? await this.db.voucher.findMany({
+                where: {
+                    tenant_id: tenantId,
+                    source_module: 'sales',
+                    source_type: 'sale_return',
+                    source_id: { in: returnIds },
+                },
+                select: {
+                    source_id: true,
+                    id: true,
+                    voucher_number: true,
+                    voucher_type: true,
+                },
+            })
+            : [];
+
+        const voucherByReturnId = new Map(vouchers.map((voucher) => [voucher.source_id, voucher]));
+
+        return returns.map((item) => {
+            const voucher = voucherByReturnId.get(item.id);
+            return {
+                ...item,
+                posting_status: voucher ? 'posted' : 'skipped',
+                voucher_id: voucher?.id ?? null,
+                voucher_number: voucher?.voucher_number ?? null,
+                voucher_type: voucher?.voucher_type ?? null,
+            };
+        });
     }
 
     async findOne(tenantId: string, id: string) {
-        return this.db.salesReturn.findFirst({
+        const salesReturn = await this.db.salesReturn.findFirst({
             where: { id, tenant_id: tenantId },
             include: {
                 sale: { include: { items: { include: { product: true, returns: true } } } },
                 items: { include: { product: true } },
             }
         });
+
+        if (!salesReturn) {
+            return null;
+        }
+
+        const voucher = await this.db.voucher.findFirst({
+            where: {
+                tenant_id: tenantId,
+                source_module: 'sales',
+                source_type: 'sale_return',
+                source_id: salesReturn.id,
+            },
+            select: {
+                id: true,
+                voucher_number: true,
+                voucher_type: true,
+            },
+        });
+
+        return {
+            ...salesReturn,
+            posting_status: voucher ? 'posted' : 'skipped',
+            voucher_id: voucher?.id ?? null,
+            voucher_number: voucher?.voucher_number ?? null,
+            voucher_type: voucher?.voucher_type ?? null,
+        };
     }
 
     async update(tenantId: string, id: string, dto: UpdateSalesReturnDto) {

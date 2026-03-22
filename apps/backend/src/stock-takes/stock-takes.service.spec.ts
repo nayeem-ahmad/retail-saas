@@ -3,10 +3,15 @@ import { BadRequestException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { StockTakesService } from './stock-takes.service';
 import { applyInventoryMovement, assertWarehouseBelongsToTenant } from '../database/inventory.utils';
+import { autoPostFromRules } from '../accounting/posting.utils';
 
 jest.mock('../database/inventory.utils', () => ({
     applyInventoryMovement: jest.fn(),
     assertWarehouseBelongsToTenant: jest.fn(),
+}));
+
+jest.mock('../accounting/posting.utils', () => ({
+    autoPostFromRules: jest.fn(),
 }));
 
 describe('StockTakesService', () => {
@@ -42,6 +47,12 @@ describe('StockTakesService', () => {
         service = module.get(StockTakesService);
         (assertWarehouseBelongsToTenant as jest.Mock).mockResolvedValue({ id: 'wh-1' });
         (applyInventoryMovement as jest.Mock).mockResolvedValue(0);
+        (autoPostFromRules as jest.Mock).mockResolvedValue({
+            postingStatus: 'posted',
+            voucherId: 'voucher-1',
+            voucherNumber: 'JV-00001',
+            voucherType: 'journal',
+        });
         tx.inventorySettings.findUnique.mockResolvedValue({ discrepancy_approval_threshold: 2 });
         db.inventorySettings.findUnique.mockResolvedValue({ discrepancy_approval_threshold: 2 });
     });

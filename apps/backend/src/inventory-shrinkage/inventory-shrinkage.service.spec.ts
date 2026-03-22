@@ -3,10 +3,15 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { InventoryShrinkageService } from './inventory-shrinkage.service';
 import { applyInventoryMovement, assertWarehouseBelongsToTenant } from '../database/inventory.utils';
+import { autoPostFromRules } from '../accounting/posting.utils';
 
 jest.mock('../database/inventory.utils', () => ({
     applyInventoryMovement: jest.fn(),
     assertWarehouseBelongsToTenant: jest.fn(),
+}));
+
+jest.mock('../accounting/posting.utils', () => ({
+    autoPostFromRules: jest.fn(),
 }));
 
 describe('InventoryShrinkageService', () => {
@@ -33,13 +38,23 @@ describe('InventoryShrinkageService', () => {
         service = module.get(InventoryShrinkageService);
         (assertWarehouseBelongsToTenant as jest.Mock).mockResolvedValue({ id: 'wh-1' });
         (applyInventoryMovement as jest.Mock).mockResolvedValue(3);
+        (autoPostFromRules as jest.Mock).mockResolvedValue({
+            postingStatus: 'posted',
+            voucherId: 'voucher-1',
+            voucherNumber: 'JV-00001',
+            voucherType: 'journal',
+        });
     });
 
     it('creates a shrinkage record and posts negative inventory movement', async () => {
         tx.inventoryReason.findFirst.mockResolvedValue({ id: 'reason-1' });
         tx.inventoryShrinkage.count.mockResolvedValue(0);
         tx.product.findMany.mockResolvedValue([{ id: 'prod-1', price: 25 }]);
-        tx.inventoryShrinkage.create.mockResolvedValue({ id: 'shrink-1', reference_number: 'SHR-00001' });
+        tx.inventoryShrinkage.create.mockResolvedValue({
+            id: 'shrink-1',
+            reference_number: 'SHR-00001',
+            items: [{ product_id: 'prod-1', quantity: 2, unit_cost: 25 }],
+        });
 
         const result = await service.create('tenant-1', {
             warehouseId: 'wh-1',

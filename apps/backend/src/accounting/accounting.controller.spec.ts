@@ -6,8 +6,10 @@ import { AccountingController } from './accounting.controller';
 import { AccountingService } from './accounting.service';
 import { TenantRoleGuard } from '../auth/tenant-role.guard';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { SubscriptionAccessGuard } from '../auth/subscription-access.guard';
 import { TenantInterceptor } from '../database/tenant.interceptor';
 import { DatabaseService } from '../database/database.service';
+import { CallHandler, ExecutionContext } from '@nestjs/common';
 
 describe('AccountingController — Story 30.1', () => {
     let app: INestApplication;
@@ -23,6 +25,10 @@ describe('AccountingController — Story 30.1', () => {
         createAccount: jest.fn(),
         getVoucherNumberPreview: jest.fn(),
         createVoucher: jest.fn(),
+        listPostingRules: jest.fn(),
+        updatePostingRule: jest.fn(),
+        listPostingExceptions: jest.fn(),
+        retryPostingException: jest.fn(),
     };
 
     const db = {
@@ -39,6 +45,27 @@ describe('AccountingController — Story 30.1', () => {
                 email: 'user@example.com',
             };
             return true;
+        }
+    }
+
+    class MockSubscriptionAccessGuard {
+        canActivate() {
+            return true;
+        }
+    }
+
+    class MockTenantInterceptor {
+        intercept(context: ExecutionContext, next: CallHandler) {
+            const request = context.switchToHttp().getRequest();
+            request.tenantId = request.headers['x-tenant-id'] || 'tenant-1';
+            request.storeId = request.headers['x-store-id'];
+            request.userRole = 'OWNER';
+            request.tenant = {
+                tenantId: request.headers['x-tenant-id'] || 'tenant-1',
+                userId: request.headers['x-user-id'] || 'user-1',
+                role: 'OWNER',
+            };
+            return next.handle();
         }
     }
 
@@ -110,6 +137,21 @@ describe('AccountingController — Story 30.1', () => {
             voucher_number: 'CP-00001',
             ...dto,
         }));
+        accountingService.listPostingRules.mockResolvedValue({
+            data: [],
+        });
+        accountingService.updatePostingRule.mockResolvedValue({
+            id: 'rule-1',
+            eventType: 'sale',
+        });
+        accountingService.listPostingExceptions.mockResolvedValue({
+            data: [],
+            pagination: { page: 1, limit: 20, total: 0 },
+        });
+        accountingService.retryPostingException.mockResolvedValue({
+            id: 'event-1',
+            status: 'pending',
+        });
         accountingService.createAccount.mockImplementation((tenantId: string, dto: any) => ({
             id: 'account-1',
             tenantId,
@@ -134,6 +176,8 @@ describe('AccountingController — Story 30.1', () => {
         });
 
         moduleBuilder.overrideGuard(JwtAuthGuard).useClass(MockJwtAuthGuard);
+        moduleBuilder.overrideGuard(SubscriptionAccessGuard).useClass(MockSubscriptionAccessGuard);
+        moduleBuilder.overrideInterceptor(TenantInterceptor).useClass(MockTenantInterceptor);
 
         const module: TestingModule = await moduleBuilder.compile();
 

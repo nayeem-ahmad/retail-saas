@@ -199,6 +199,61 @@ export const VoucherType = {
 } as const;
 export type VoucherType = (typeof VoucherType)[keyof typeof VoucherType];
 
+export const PostingRuleEventType = {
+  SALE: 'sale',
+  SALE_RETURN: 'sale_return',
+  PURCHASE: 'purchase',
+  PURCHASE_RETURN: 'purchase_return',
+  INVENTORY_ADJUSTMENT: 'inventory_adjustment',
+  FUND_MOVEMENT: 'fund_movement',
+} as const;
+export type PostingRuleEventType = (typeof PostingRuleEventType)[keyof typeof PostingRuleEventType];
+
+export const PostingRuleConditionKey = {
+  PAYMENT_MODE: 'payment_mode',
+  REASON_TYPE: 'reason_type',
+  TRANSFER_SCOPE: 'transfer_scope',
+  NONE: 'none',
+} as const;
+export type PostingRuleConditionKey = (typeof PostingRuleConditionKey)[keyof typeof PostingRuleConditionKey];
+
+export const PostingEventStatus = {
+  PENDING: 'pending',
+  POSTED: 'posted',
+  FAILED: 'failed',
+  SKIPPED: 'skipped',
+} as const;
+export type PostingEventStatus = (typeof PostingEventStatus)[keyof typeof PostingEventStatus];
+
+export interface PostingRule {
+  id: string;
+  eventType: PostingRuleEventType;
+  conditionKey: PostingRuleConditionKey;
+  conditionValue?: string | null;
+  debitAccountId: string;
+  creditAccountId: string;
+  priority: number;
+  isActive: boolean;
+  updatedAt: string;
+}
+
+export interface PostingException {
+  id: string;
+  eventType: PostingRuleEventType;
+  sourceModule: string;
+  sourceType: string;
+  sourceId: string;
+  status: PostingEventStatus;
+  attemptCount: number;
+  lastError?: string | null;
+  lastAttemptAt?: string | null;
+  voucher?: {
+    id: string;
+    voucher_number: string;
+    voucher_type: string;
+  } | null;
+}
+
 // --- VALIDATION SCHEMAS ---
 
 export const SignupSchema = z.object({

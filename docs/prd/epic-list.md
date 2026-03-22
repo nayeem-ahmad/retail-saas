@@ -33,6 +33,7 @@ This document provides a master list of all epics for the Retail SaaS platform, 
 
 ## 📊 Accounting & Expense (30-39, 50-59)
 *   **Epic 30: Financial Ledgers & Core Accounting**
+*   **Epic 31: Automated Accounting Integration & Posting Rules**
 *   **Epic 34: Accounting & Financial Dashboard**
     *   **Goal:** Cash flow, net profit, and tax liability visualizations.
 *   **Epic 50: Business Expense Management**

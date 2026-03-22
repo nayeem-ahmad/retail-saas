@@ -2,12 +2,24 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { SalesReturnsService } from './sales-returns.service';
 import { DatabaseService } from '../database/database.service';
 import { BadRequestException } from '@nestjs/common';
+import { applyInventoryMovement, resolveWarehouseId } from '../database/inventory.utils';
+import { autoPostFromRules } from '../accounting/posting.utils';
+
+jest.mock('../database/inventory.utils', () => ({
+  applyInventoryMovement: jest.fn(),
+  resolveWarehouseId: jest.fn(),
+}));
+
+jest.mock('../accounting/posting.utils', () => ({
+  autoPostFromRules: jest.fn(),
+}));
 
 describe('SalesReturnsService', () => {
   let service: SalesReturnsService;
   let db: any;
 
   beforeEach(async () => {
+    jest.clearAllMocks();
     db = {
       $transaction: jest.fn().mockImplementation(async (cb) => cb(db)),
       sale: {
@@ -21,6 +33,10 @@ describe('SalesReturnsService', () => {
           findMany: jest.fn(),
           findFirst: jest.fn()
       },
+        voucher: {
+          findMany: jest.fn(),
+          findFirst: jest.fn(),
+        },
       customer: {
           update: jest.fn()
       }
@@ -34,6 +50,16 @@ describe('SalesReturnsService', () => {
     }).compile();
 
     service = module.get<SalesReturnsService>(SalesReturnsService);
+    (resolveWarehouseId as jest.Mock).mockResolvedValue('wh-1');
+    (applyInventoryMovement as jest.Mock).mockResolvedValue(0);
+    (autoPostFromRules as jest.Mock).mockResolvedValue({
+      postingStatus: 'posted',
+      voucherId: 'voucher-1',
+      voucherNumber: 'CP-00001',
+      voucherType: 'cash_payment',
+    });
+    db.voucher.findMany.mockResolvedValue([]);
+    db.voucher.findFirst.mockResolvedValue(null);
   });
 
   it('create() should process return completely and increment stock', async () => {
@@ -55,10 +81,16 @@ describe('SalesReturnsService', () => {
           ]
       });
 
-      expect(db.productStock.updateMany).toHaveBeenCalledWith({
-          where: { product_id: 'p-1', tenant_id: 'tenant-1' },
-          data: { quantity: { increment: 2 } }
-      });
+      expect(applyInventoryMovement).toHaveBeenCalledWith(
+        db,
+        expect.objectContaining({
+          tenantId: 'tenant-1',
+          productId: 'p-1',
+          warehouseId: 'wh-1',
+          quantityDelta: 2,
+          movementType: 'SALES_RETURN',
+        }),
+      );
       expect(db.customer.update).toHaveBeenCalledWith({
           where: { id: 'cust-1' },
           data: { total_spent: { decrement: 20 } } // 2 * 10

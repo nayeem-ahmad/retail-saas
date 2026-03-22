@@ -41,6 +41,17 @@ describe('AccountingService — Story 30.2', () => {
             aggregate: jest.fn(),
             findMany: jest.fn(),
         },
+        postingRule: {
+            findMany: jest.fn(),
+            findFirst: jest.fn(),
+            update: jest.fn(),
+        },
+        postingEvent: {
+            count: jest.fn(),
+            findMany: jest.fn(),
+            findFirst: jest.fn(),
+            update: jest.fn(),
+        },
         $transaction: jest.fn(),
     };
 

@@ -18,7 +18,23 @@ describe('SalesOrdersService', () => {
         findFirst: jest.fn()
       },
       productStock: {
-        updateMany: jest.fn()
+        updateMany: jest.fn(),
+        findUnique: jest.fn(),
+        upsert: jest.fn(),
+      },
+      inventoryMovement: {
+        create: jest.fn(),
+      },
+      warehouse: {
+        findFirst: jest.fn(),
+        create: jest.fn(),
+        count: jest.fn(),
+      },
+      store: {
+        findFirst: jest.fn(),
+      },
+      inventorySettings: {
+        findUnique: jest.fn(),
       },
       customer: {
         update: jest.fn()
@@ -66,12 +82,15 @@ describe('SalesOrdersService', () => {
     };
 
     db.salesOrder.findUnique.mockResolvedValue(mockOrder);
+    db.warehouse.findFirst.mockResolvedValue({ id: 'wh-1' });
     db.productStock.updateMany.mockResolvedValue({ count: 1 });
+    db.productStock.findUnique.mockResolvedValue({ quantity: 8 });
+    db.inventoryMovement.create.mockResolvedValue({ id: 'move-1' });
     db.salesOrder.update.mockResolvedValue({ ...mockOrder, status: 'DELIVERED' });
 
     const result = await service.updateStatus('tenant-1', 'order-1', { status: 'DELIVERED' });
     expect(db.productStock.updateMany).toHaveBeenCalledWith({
-        where: { product_id: 'prod-1', tenant_id: 'tenant-1', quantity: { gte: 2 } },
+      where: { product_id: 'prod-1', tenant_id: 'tenant-1', warehouse_id: 'wh-1', quantity: { gte: 2 } },
         data: { quantity: { decrement: 2 } }
     });
     expect(db.customer.update).toHaveBeenCalled();
@@ -87,6 +106,7 @@ describe('SalesOrdersService', () => {
     };
 
     db.salesOrder.findUnique.mockResolvedValue(mockOrder);
+    db.warehouse.findFirst.mockResolvedValue({ id: 'wh-1' });
     db.productStock.updateMany.mockResolvedValue({ count: 0 }); // simulate failure
 
     await expect(service.updateStatus('tenant-1', 'order-1', { status: 'DELIVERED' }))

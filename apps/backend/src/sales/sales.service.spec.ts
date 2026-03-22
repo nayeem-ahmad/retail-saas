@@ -2,6 +2,17 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { SalesService } from './sales.service';
 import { DatabaseService } from '../database/database.service';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { applyInventoryMovement, resolveWarehouseId } from '../database/inventory.utils';
+import { autoPostFromRules } from '../accounting/posting.utils';
+
+jest.mock('../database/inventory.utils', () => ({
+  applyInventoryMovement: jest.fn(),
+  resolveWarehouseId: jest.fn(),
+}));
+
+jest.mock('../accounting/posting.utils', () => ({
+  autoPostFromRules: jest.fn(),
+}));
 
 describe('SalesService', () => {
   let service: SalesService;
@@ -9,6 +20,7 @@ describe('SalesService', () => {
   let tx: any;
 
   beforeEach(async () => {
+    jest.clearAllMocks();
     tx = {
       sale: {
         create: jest.fn(),
@@ -29,6 +41,12 @@ describe('SalesService', () => {
         deleteMany: jest.fn(),
         create: jest.fn(),
       },
+      inventorySettings: {
+        findUnique: jest.fn(),
+      },
+      warehouse: {
+        findFirst: jest.fn(),
+      },
     };
 
     db = {
@@ -37,6 +55,10 @@ describe('SalesService', () => {
         findMany: jest.fn(),
         findFirst: jest.fn(),
         update: jest.fn(),
+      },
+      voucher: {
+        findMany: jest.fn(),
+        findFirst: jest.fn(),
       },
     };
 
@@ -48,6 +70,16 @@ describe('SalesService', () => {
     }).compile();
 
     service = module.get<SalesService>(SalesService);
+    (resolveWarehouseId as jest.Mock).mockResolvedValue('wh-1');
+    (applyInventoryMovement as jest.Mock).mockResolvedValue(0);
+    (autoPostFromRules as jest.Mock).mockResolvedValue({
+      postingStatus: 'posted',
+      voucherId: 'voucher-1',
+      voucherNumber: 'CR-00001',
+      voucherType: 'cash_receive',
+    });
+    db.voucher.findMany.mockResolvedValue([]);
+    db.voucher.findFirst.mockResolvedValue(null);
   });
 
   describe('create() — Story 10.3: Atomic Sale Transaction', () => {
@@ -67,17 +99,23 @@ describe('SalesService', () => {
       expect(tx.saleItem.create).toHaveBeenCalledWith({
         data: { sale_id: 'sale-1', product_id: 'prod-1', quantity: 2, price_at_sale: 15 },
       });
-      expect(tx.productStock.updateMany).toHaveBeenCalledWith({
-        where: { product_id: 'prod-1', quantity: { gte: 2 } },
-        data: { quantity: { decrement: 2 } },
-      });
+      expect(applyInventoryMovement).toHaveBeenCalledWith(
+        tx,
+        expect.objectContaining({
+          tenantId: 'tenant-1',
+          productId: 'prod-1',
+          warehouseId: 'wh-1',
+          quantityDelta: -2,
+          movementType: 'SALE',
+        }),
+      );
       expect(result.id).toBe('sale-1');
     });
 
     it('should throw BadRequestException when stock is insufficient', async () => {
       tx.sale.create.mockResolvedValue({ id: 'sale-2' });
       tx.saleItem.create.mockResolvedValue({});
-      tx.productStock.updateMany.mockResolvedValue({ count: 0 }); // no rows updated = insufficient stock
+      (applyInventoryMovement as jest.Mock).mockRejectedValueOnce(new BadRequestException('Insufficient stock'));
 
       await expect(
         service.create('tenant-1', {
@@ -175,7 +213,7 @@ describe('SalesService', () => {
     it('should process multiple items atomically', async () => {
       tx.sale.create.mockResolvedValue({ id: 'sale-7' });
       tx.saleItem.create.mockResolvedValue({});
-      tx.productStock.updateMany.mockResolvedValue({ count: 1 });
+      (applyInventoryMovement as jest.Mock).mockResolvedValue(0);
 
       await service.create('tenant-1', {
         storeId: 'store-1',
@@ -188,7 +226,7 @@ describe('SalesService', () => {
       });
 
       expect(tx.saleItem.create).toHaveBeenCalledTimes(2);
-      expect(tx.productStock.updateMany).toHaveBeenCalledTimes(2);
+      expect(applyInventoryMovement).toHaveBeenCalledTimes(2);
     });
   });
 

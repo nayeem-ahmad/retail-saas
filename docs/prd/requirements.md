@@ -16,6 +16,7 @@
 13. **FR13:** The system shall allow authorized users to manually adjust product inventory levels and provide a reason (e.g., damaged, stolen, stock count correction) for the adjustment.
 14. **FR14:** The system shall allow users to create, view, update, and deactivate various payment methods, each linked to an internal account for ledger tracking.
 15. **FR15:** The system shall send an automated SMS notification to the customer's mobile number when a new sales entry is created or a payment is received.
+16. **FR16:** The system shall automatically generate accounting vouchers from operational transactions (sales, purchases, returns, and configured inventory events) using tenant-configurable default account mappings.
 
 ### Non-Functional Requirements
 1.  **NFR1:** The system's user interface must be available in both English and Bangla.

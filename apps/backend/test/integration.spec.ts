@@ -54,10 +54,11 @@ describe('Integration Tests (e2e)', () => {
         await applyMigration('../../../packages/database/migrations/03_accounting_coa.sql');
         await applyMigration('../../../packages/database/migrations/04_voucher_sequences.sql');
         await applyMigration('../../../packages/database/migrations/05_vouchers.sql');
+        await applyMigration('../../../packages/database/migrations/06_posting_rules_events.sql');
 
         // Clean database before tests
         // Note: In a real scenario, use a TDB or separate schema
-        await db.$executeRawUnsafe('TRUNCATE TABLE voucher_details, vouchers, voucher_sequences, accounts, account_subgroups, account_groups, "SaleItem", "Sale", "ProductStock", "Product", "Store", "User", "Tenant" CASCADE');
+        await db.$executeRawUnsafe('TRUNCATE TABLE posting_events, posting_rules, voucher_details, vouchers, voucher_sequences, accounts, account_subgroups, account_groups, "SaleItem", "Sale", "ProductStock", "Product", "Store", "User", "Tenant" CASCADE');
     });
 
     afterAll(async () => {
@@ -100,6 +101,7 @@ describe('Integration Tests (e2e)', () => {
                 .send({
                     name: 'Test Store',
                     location: 'Test City',
+                    planCode: 'PREMIUM',
                 });
 
             expect(response.status).toBe(201);
@@ -176,6 +178,7 @@ describe('Integration Tests (e2e)', () => {
                 .send({
                     name: 'Second Store',
                     location: 'Second City',
+                    planCode: 'PREMIUM',
                 });
 
             expect(setupResponse.status).toBe(201);
@@ -195,6 +198,9 @@ describe('Integration Tests (e2e)', () => {
             const expenseAccount = await db.account.findFirst({
                 where: { tenant_id: tenantId, name: 'General Operating Expense' },
             });
+
+            expect(cashAccount).toBeTruthy();
+            expect(expenseAccount).toBeTruthy();
 
             cashAccountId = cashAccount?.id as string;
 

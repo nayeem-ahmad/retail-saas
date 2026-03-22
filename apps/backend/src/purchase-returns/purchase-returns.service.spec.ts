@@ -2,6 +2,17 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { PurchaseReturnsService } from './purchase-returns.service';
+import { applyInventoryMovement, resolveWarehouseId } from '../database/inventory.utils';
+import { autoPostFromRules } from '../accounting/posting.utils';
+
+jest.mock('../database/inventory.utils', () => ({
+    applyInventoryMovement: jest.fn(),
+    resolveWarehouseId: jest.fn(),
+}));
+
+jest.mock('../accounting/posting.utils', () => ({
+    autoPostFromRules: jest.fn(),
+}));
 
 describe('PurchaseReturnsService', () => {
     let service: PurchaseReturnsService;
@@ -9,6 +20,7 @@ describe('PurchaseReturnsService', () => {
     let tx: any;
 
     beforeEach(async () => {
+        jest.clearAllMocks();
         tx = {
             store: {
                 findFirst: jest.fn(),
@@ -46,6 +58,10 @@ describe('PurchaseReturnsService', () => {
                 findFirst: jest.fn(),
                 delete: jest.fn(),
             },
+            voucher: {
+                findMany: jest.fn(),
+                findFirst: jest.fn(),
+            },
             $transaction: jest.fn().mockImplementation((callback) => callback(tx)),
         };
 
@@ -57,6 +73,14 @@ describe('PurchaseReturnsService', () => {
         }).compile();
 
         service = module.get<PurchaseReturnsService>(PurchaseReturnsService);
+        (resolveWarehouseId as jest.Mock).mockResolvedValue('wh-1');
+        (applyInventoryMovement as jest.Mock).mockResolvedValue(0);
+        (autoPostFromRules as jest.Mock).mockResolvedValue({
+            postingStatus: 'posted',
+            voucherId: 'voucher-1',
+            voucherNumber: 'CR-00001',
+            voucherType: 'cash_receive',
+        });
     });
 
     it('creates a purchase return from an existing purchase', async () => {
@@ -82,10 +106,16 @@ describe('PurchaseReturnsService', () => {
             referenceNumber: 'REF-1',
         });
 
-        expect(tx.productStock.updateMany).toHaveBeenCalledWith({
-            where: { product_id: 'prod-1', tenant_id: 'tenant-1', quantity: { gte: 2 } },
-            data: { quantity: { decrement: 2 } },
-        });
+        expect(applyInventoryMovement).toHaveBeenCalledWith(
+            tx,
+            expect.objectContaining({
+                tenantId: 'tenant-1',
+                productId: 'prod-1',
+                warehouseId: 'wh-1',
+                quantityDelta: -2,
+                movementType: 'PURCHASE_RETURN',
+            }),
+        );
         expect(tx.purchaseReturnItem.createMany).toHaveBeenCalledWith({
             data: [
                 expect.objectContaining({ return_id: 'pret-1', purchase_item_id: 'item-1', quantity: 2 }),
@@ -160,7 +190,7 @@ describe('PurchaseReturnsService', () => {
             ],
         });
         tx.purchaseReturn.count.mockResolvedValue(0);
-        tx.productStock.updateMany.mockResolvedValue({ count: 0 });
+        (applyInventoryMovement as jest.Mock).mockRejectedValueOnce(new BadRequestException('Insufficient stock'));
 
         await expect(
             service.create('tenant-1', {
@@ -180,7 +210,7 @@ describe('PurchaseReturnsService', () => {
             },
             items: [{ id: 'old-item', product_id: 'prod-1', quantity: 2 }],
         });
-        tx.productStock.updateMany.mockResolvedValue({ count: 1 });
+        (applyInventoryMovement as jest.Mock).mockResolvedValue(0);
         tx.purchaseReturn.findFirst.mockResolvedValueOnce({
             id: 'pret-1',
             tenant_id: 'tenant-1',
@@ -196,14 +226,16 @@ describe('PurchaseReturnsService', () => {
             items: [{ purchaseItemId: 'item-1', quantity: 3 }],
         });
 
-        expect(tx.productStock.updateMany).toHaveBeenNthCalledWith(1, {
-            where: { product_id: 'prod-1', tenant_id: 'tenant-1' },
-            data: { quantity: { increment: 2 } },
-        });
-        expect(tx.productStock.updateMany).toHaveBeenNthCalledWith(2, {
-            where: { product_id: 'prod-1', tenant_id: 'tenant-1', quantity: { gte: 3 } },
-            data: { quantity: { decrement: 3 } },
-        });
+        expect(applyInventoryMovement).toHaveBeenNthCalledWith(
+            1,
+            tx,
+            expect.objectContaining({ productId: 'prod-1', quantityDelta: 2, movementType: 'PURCHASE_RETURN_REVERSAL' }),
+        );
+        expect(applyInventoryMovement).toHaveBeenNthCalledWith(
+            2,
+            tx,
+            expect.objectContaining({ productId: 'prod-1', quantityDelta: -3, movementType: 'PURCHASE_RETURN_EDIT' }),
+        );
         expect(tx.purchaseReturnItem.deleteMany).toHaveBeenCalledWith({ where: { return_id: 'pret-1' } });
         expect(tx.purchaseReturnItem.createMany).toHaveBeenCalledWith({
             data: [
@@ -230,10 +262,10 @@ describe('PurchaseReturnsService', () => {
 
         await expect(service.remove('tenant-1', 'pret-1')).resolves.toEqual({ deleted: true });
 
-        expect(tx.productStock.updateMany).toHaveBeenCalledWith({
-            where: { product_id: 'prod-1', tenant_id: 'tenant-1' },
-            data: { quantity: { increment: 2 } },
-        });
+        expect(applyInventoryMovement).toHaveBeenCalledWith(
+            tx,
+            expect.objectContaining({ productId: 'prod-1', quantityDelta: 2, movementType: 'PURCHASE_RETURN_DELETE' }),
+        );
         expect(tx.purchaseReturn.delete).toHaveBeenCalledWith({ where: { id: 'pret-1' } });
     });
 

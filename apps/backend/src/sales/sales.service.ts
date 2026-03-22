@@ -2,6 +2,7 @@ import { Injectable, BadRequestException, NotFoundException } from '@nestjs/comm
 import { DatabaseService } from '../database/database.service';
 import { CreateSaleDto, UpdateSaleDto } from './sale.dto';
 import { applyInventoryMovement, resolveWarehouseId } from '../database/inventory.utils';
+import { autoPostFromRules } from '../accounting/posting.utils';
 
 @Injectable()
 export class SalesService {
@@ -65,18 +66,76 @@ export class SalesService {
                 });
             }
 
-            return sale;
+            const primaryPaymentMethod = dto.payments?.[0]?.paymentMethod?.toLowerCase() || 'cash';
+            const paymentMode = primaryPaymentMethod.includes('bank') || primaryPaymentMethod.includes('card') || primaryPaymentMethod.includes('wallet')
+                ? 'bank'
+                : primaryPaymentMethod.includes('credit')
+                    ? 'credit'
+                    : 'cash';
+
+            const posting = await autoPostFromRules({
+                tx,
+                tenantId,
+                eventType: 'sale',
+                conditionKey: 'payment_mode',
+                conditionValue: paymentMode,
+                sourceModule: 'sales',
+                sourceType: 'sale',
+                sourceId: sale.id,
+                amount: Number(sale.total_amount),
+                description: `Auto-posted sale ${sale.serial_number}`,
+                referenceNumber: sale.serial_number,
+            });
+
+            return {
+                ...sale,
+                posting_status: posting.postingStatus,
+                voucher_id: posting.voucherId ?? null,
+                voucher_number: posting.voucherNumber ?? null,
+                voucher_type: posting.voucherType ?? null,
+            };
         });
     }
 
     async findAll(tenantId: string) {
-        return this.db.sale.findMany({
+        const sales = await this.db.sale.findMany({
             where: { tenant_id: tenantId },
             include: { 
                 items: { include: { product: true } },
                 payments: true
             },
             orderBy: { created_at: 'desc' },
+        });
+
+        const saleIds = sales.map((sale) => sale.id);
+        const vouchers = saleIds.length > 0
+            ? await this.db.voucher.findMany({
+                where: {
+                    tenant_id: tenantId,
+                    source_module: 'sales',
+                    source_type: 'sale',
+                    source_id: { in: saleIds },
+                },
+                select: {
+                    source_id: true,
+                    id: true,
+                    voucher_number: true,
+                    voucher_type: true,
+                },
+            })
+            : [];
+
+        const voucherBySaleId = new Map(vouchers.map((voucher) => [voucher.source_id, voucher]));
+
+        return sales.map((sale) => {
+            const voucher = voucherBySaleId.get(sale.id);
+            return {
+                ...sale,
+                posting_status: voucher ? 'posted' : 'skipped',
+                voucher_id: voucher?.id ?? null,
+                voucher_number: voucher?.voucher_number ?? null,
+                voucher_type: voucher?.voucher_type ?? null,
+            };
         });
     }
 
@@ -93,7 +152,27 @@ export class SalesService {
             throw new NotFoundException('Sale not found');
         }
 
-        return sale;
+        const voucher = await this.db.voucher.findFirst({
+            where: {
+                tenant_id: tenantId,
+                source_module: 'sales',
+                source_type: 'sale',
+                source_id: sale.id,
+            },
+            select: {
+                id: true,
+                voucher_number: true,
+                voucher_type: true,
+            },
+        });
+
+        return {
+            ...sale,
+            posting_status: voucher ? 'posted' : 'skipped',
+            voucher_id: voucher?.id ?? null,
+            voucher_number: voucher?.voucher_number ?? null,
+            voucher_type: voucher?.voucher_type ?? null,
+        };
     }
 
     async update(tenantId: string, id: string, dto: UpdateSaleDto) {
