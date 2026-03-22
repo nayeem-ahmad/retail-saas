@@ -270,6 +270,8 @@ model Product {
   name        String
   sku         String?
   price       Decimal  @default(0) @db.Decimal(12, 2)
+  warranty_enabled Boolean @default(false)
+  warranty_duration_days Int?
   reorder_level Int?
   safety_stock Int?
   lead_time_days Int?
@@ -312,6 +314,26 @@ model ProductStock {
 
   @@unique([tenant_id, product_id, warehouse_id])
   @@index([tenant_id, warehouse_id])
+}
+
+model ProductSerial {
+  id               String   @id @default(uuid())
+  tenant_id        String
+  store_id         String?
+  product_id       String
+  serial_number    String
+  status           String   @default("IN_STOCK")
+  source_type      String?
+  source_id        String?
+  claim_reference  String?
+  sold_at          DateTime?
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+
+  @@unique([tenant_id, product_id, serial_number])
+  @@index([tenant_id, serial_number])
+  @@index([tenant_id, status])
+  @@index([tenant_id, product_id, status])
 }
 
 model InventoryMovement {

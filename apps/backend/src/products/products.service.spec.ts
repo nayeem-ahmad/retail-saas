@@ -73,6 +73,8 @@ describe('ProductsService', () => {
         name: 'Coffee',
         sku: 'CF-001',
         price: 10,
+        warrantyEnabled: true,
+        warrantyDurationDays: 365,
         initialStock: 50,
         reorderLevel: 8,
         safetyStock: 3,
@@ -80,7 +82,16 @@ describe('ProductsService', () => {
       });
 
       expect(tx.product.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({ tenant_id: 'tenant-1', name: 'Coffee', price: 10, reorder_level: 8, safety_stock: 3, lead_time_days: 5 }),
+        data: expect.objectContaining({
+          tenant_id: 'tenant-1',
+          name: 'Coffee',
+          price: 10,
+          warranty_enabled: true,
+          warranty_duration_days: 365,
+          reorder_level: 8,
+          safety_stock: 3,
+          lead_time_days: 5,
+        }),
         include: expect.any(Object),
       });
       expect(tx.productStock.upsert).toHaveBeenCalled();
@@ -156,6 +167,32 @@ describe('ProductsService', () => {
         include: expect.any(Object),
       });
       expect(result.name).toBe('Updated');
+    });
+
+    it('should update warranty fields when provided', async () => {
+      db.product.findFirst.mockResolvedValue({ id: 'p1', tenant_id: 'tenant-1', name: 'Old', stocks: [] });
+      db.product.update.mockResolvedValue({
+        id: 'p1',
+        tenant_id: 'tenant-1',
+        name: 'Old',
+        warranty_enabled: true,
+        warranty_duration_days: 730,
+        stocks: [],
+      });
+
+      await service.update('tenant-1', 'p1', {
+        warrantyEnabled: true,
+        warrantyDurationDays: 730,
+      });
+
+      expect(db.product.update).toHaveBeenCalledWith({
+        where: { id: 'p1' },
+        data: expect.objectContaining({
+          warranty_enabled: true,
+          warranty_duration_days: 730,
+        }),
+        include: expect.any(Object),
+      });
     });
   });
 

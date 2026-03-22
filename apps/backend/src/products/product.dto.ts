@@ -1,4 +1,4 @@
-import { IsInt, IsNumber, IsOptional, IsString, IsUUID, Min } from 'class-validator';
+import { IsBoolean, IsInt, IsNumber, IsOptional, IsString, IsUUID, Min } from 'class-validator';
 
 export class CreateProductDto {
     @IsString()
@@ -43,6 +43,15 @@ export class CreateProductDto {
     @IsInt()
     @Min(0)
     leadTimeDays?: number;
+
+    @IsOptional()
+    @IsBoolean()
+    warrantyEnabled?: boolean;
+
+    @IsOptional()
+    @IsInt()
+    @Min(0)
+    warrantyDurationDays?: number;
 }
 
 export class UpdateProductDto {
@@ -85,4 +94,13 @@ export class UpdateProductDto {
     @IsInt()
     @Min(0)
     leadTimeDays?: number;
+
+    @IsOptional()
+    @IsBoolean()
+    warrantyEnabled?: boolean;
+
+    @IsOptional()
+    @IsInt()
+    @Min(0)
+    warrantyDurationDays?: number;
 }

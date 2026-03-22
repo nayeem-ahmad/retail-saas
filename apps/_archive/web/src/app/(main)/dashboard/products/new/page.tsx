@@ -8,6 +8,7 @@ export default function NewProductPage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [warrantyEnabled, setWarrantyEnabled] = useState(false);
 
   async function handleSubmit(formData: FormData) {
     setError(null);
@@ -86,6 +87,34 @@ export default function NewProductPage() {
             required
             className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-black focus:border-black"
           />
+        </div>
+
+        <div className="rounded-md border border-gray-200 p-4">
+          <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+            <input
+              type="checkbox"
+              name="warrantyEnabled"
+              checked={warrantyEnabled}
+              onChange={(event) => setWarrantyEnabled(event.target.checked)}
+              className="h-4 w-4 rounded border-gray-300"
+            />
+            Warranty Enabled
+          </label>
+
+          <div className="mt-3">
+            <label htmlFor="warrantyDurationDays" className="block text-sm font-medium text-gray-700 mb-1">
+              Warranty Duration (Days)
+            </label>
+            <input
+              type="number"
+              name="warrantyDurationDays"
+              id="warrantyDurationDays"
+              min={0}
+              disabled={!warrantyEnabled}
+              placeholder="e.g. 365"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 disabled:bg-gray-100 focus:outline-none focus:ring-black focus:border-black"
+            />
+          </div>
         </div>
 
         <div className="flex justify-end pt-4">

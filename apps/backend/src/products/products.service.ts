@@ -16,6 +16,8 @@ export class ProductsService {
                     name: dto.name,
                     sku: dto.sku || null,
                     price: dto.price,
+                    warranty_enabled: dto.warrantyEnabled ?? false,
+                    warranty_duration_days: dto.warrantyDurationDays ?? null,
                     reorder_level: dto.reorderLevel ?? null,
                     safety_stock: dto.safetyStock ?? null,
                     lead_time_days: dto.leadTimeDays ?? null,
@@ -95,6 +97,10 @@ export class ProductsService {
                 ...(dto.name !== undefined ? { name: dto.name } : {}),
                 ...(dto.sku !== undefined ? { sku: dto.sku || null } : {}),
                 ...(dto.price !== undefined ? { price: dto.price } : {}),
+                ...(dto.warrantyEnabled !== undefined ? { warranty_enabled: dto.warrantyEnabled } : {}),
+                ...(dto.warrantyDurationDays !== undefined
+                    ? { warranty_duration_days: dto.warrantyDurationDays }
+                    : {}),
                 ...(dto.reorderLevel !== undefined ? { reorder_level: dto.reorderLevel } : {}),
                 ...(dto.safetyStock !== undefined ? { safety_stock: dto.safetyStock } : {}),
                 ...(dto.leadTimeDays !== undefined ? { lead_time_days: dto.leadTimeDays } : {}),

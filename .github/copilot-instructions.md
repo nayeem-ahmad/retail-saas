@@ -36,6 +36,7 @@
 - Follow step-based workflow execution: load steps JIT, never multiple at once
 - Save outputs after EACH step when using the workflow engine
 - The `{project-root}` variable resolves to the workspace root at runtime
+- Frontend source-of-truth is `apps/frontend` only. Do not add or modify feature code in `apps/web`.
 
 ## Available Agents
 

@@ -276,6 +276,8 @@ export interface Product {
   name: string;
   sku?: string | null;
   price: number;
+  warranty_enabled?: boolean;
+  warranty_duration_days?: number | null;
   reorder_level?: number | null;
   safety_stock?: number | null;
   lead_time_days?: number | null;
@@ -414,6 +416,8 @@ export const ProductSchema = z.object({
   name: z.string().min(2, "Product name must be at least 2 characters"),
   sku: z.string().min(3, "SKU must be at least 3 characters").optional().or(z.literal("")),
   price: z.coerce.number().min(0, "Price cannot be negative"),
+  warrantyEnabled: z.coerce.boolean().default(false),
+  warrantyDurationDays: z.coerce.number().int().min(0).optional(),
   initialStock: z.coerce.number().min(0, "Initial stock cannot be negative").default(0),
   groupId: z.string().uuid().optional(),
   subgroupId: z.string().uuid().optional(),

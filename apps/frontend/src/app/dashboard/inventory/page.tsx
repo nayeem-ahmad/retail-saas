@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { AlertTriangle, BookOpen, ClipboardCheck, Package, Plus, Settings2, ShoppingBasket, Tag, Trash2, Truck, TrendingUp } from 'lucide-react';
+import { AlertTriangle, BookOpen, ClipboardCheck, Package, Pencil, Plus, Settings2, ShoppingBasket, Tag, Trash2, Truck, TrendingUp } from 'lucide-react';
 import { api } from '../../../lib/api';
 import AddProductModal from './AddProductModal';
 import { createColumnHelper, type ColumnDef } from '@tanstack/react-table';
@@ -15,6 +15,11 @@ interface Product {
     sku?: string | null;
     price: string | number;
     image_url?: string | null;
+    warranty_enabled?: boolean;
+    warranty_duration_days?: number | null;
+    reorder_level?: number | null;
+    safety_stock?: number | null;
+    lead_time_days?: number | null;
     group?: { id: string; name: string } | null;
     subgroup?: { id: string; name: string } | null;
     stocks?: { quantity: number | string }[];
@@ -26,8 +31,10 @@ export default function InventoryPage() {
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+    const [editingProduct, setEditingProduct] = useState<Product | null>(null);
     const [groups, setGroups] = useState<Array<{ id: string; name: string }>>([]);
     const [subgroups, setSubgroups] = useState<Array<{ id: string; name: string; group_id: string }>>([]);
     const [selectedGroupId, setSelectedGroupId] = useState('');
@@ -78,9 +85,22 @@ export default function InventoryPage() {
     const handleAddProduct = async (productData: any) => {
         try {
             await api.createProduct(productData);
-            loadProducts();
+            await loadProducts();
         } catch (error) {
             console.error('Error adding product', error);
+            throw error;
+        }
+    };
+
+    const handleUpdateProduct = async (productData: any) => {
+        if (!editingProduct) return;
+
+        try {
+            await api.updateProduct(editingProduct.id, productData);
+            await loadProducts();
+            setEditingProduct(null);
+        } catch (error) {
+            console.error('Error updating product', error);
             throw error;
         }
     };
@@ -99,6 +119,11 @@ export default function InventoryPage() {
     const openAddStock = (product: Product) => {
         setSelectedProduct(product);
         setIsPurchaseModalOpen(true);
+    };
+
+    const openEditProduct = (product: Product) => {
+        setEditingProduct(product);
+        setIsEditModalOpen(true);
     };
 
     const columns: ColumnDef<Product, any>[] = useMemo(
@@ -137,6 +162,12 @@ export default function InventoryPage() {
                     </span>
                 ),
                 sortingFn: (a, b) => Number(a.getValue('price') || 0) - Number(b.getValue('price') || 0),
+                size: 120,
+            }),
+            columnHelper.accessor((row) => (row.warranty_enabled ? `${row.warranty_duration_days ?? 0} days` : 'Disabled'), {
+                id: 'warranty',
+                header: 'Warranty',
+                cell: (info) => <span className="text-sm font-bold text-gray-700">{info.getValue()}</span>,
                 size: 120,
             }),
             columnHelper.accessor((row) => Number(row.stocks?.[0]?.quantity || 0), {
@@ -208,6 +239,13 @@ export default function InventoryPage() {
                 header: 'Actions',
                 cell: (info) => (
                     <div className="flex items-center justify-end space-x-1">
+                        <button
+                            onClick={() => openEditProduct(info.row.original)}
+                            className="p-1.5 rounded-lg text-indigo-600 hover:bg-indigo-50 transition-colors"
+                            title="Edit product"
+                        >
+                            <Pencil className="w-4 h-4" />
+                        </button>
                         <button
                             onClick={() => openAddStock(info.row.original)}
                             className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors"
@@ -401,7 +439,19 @@ export default function InventoryPage() {
                 <AddProductModal
                     isOpen={isModalOpen}
                     onClose={() => setIsModalOpen(false)}
-                    onAdd={handleAddProduct}
+                    mode="create"
+                    onSubmit={handleAddProduct}
+                />
+
+                <AddProductModal
+                    isOpen={isEditModalOpen}
+                    onClose={() => {
+                        setIsEditModalOpen(false);
+                        setEditingProduct(null);
+                    }}
+                    mode="edit"
+                    initialProduct={editingProduct}
+                    onSubmit={handleUpdateProduct}
                 />
 
                 <CreatePurchaseModal

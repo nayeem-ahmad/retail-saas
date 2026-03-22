@@ -52,6 +52,8 @@ export default async function ProductsPage() {
               <th className="px-6 py-3 text-sm font-medium text-gray-500 uppercase">Product Name</th>
               <th className="px-6 py-3 text-sm font-medium text-gray-500 uppercase">SKU</th>
               <th className="px-6 py-3 text-sm font-medium text-gray-500 uppercase">Price</th>
+              <th className="px-6 py-3 text-sm font-medium text-gray-500 uppercase">Warranty</th>
+              <th className="px-6 py-3 text-sm font-medium text-gray-500 uppercase">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
@@ -61,11 +63,21 @@ export default async function ProductsPage() {
                   <td className="px-6 py-4 text-sm font-medium text-gray-900">{product.name}</td>
                   <td className="px-6 py-4 text-sm text-gray-500">{product.sku}</td>
                   <td className="px-6 py-4 text-sm text-gray-500">${Number(product.price).toFixed(2)}</td>
+                  <td className="px-6 py-4 text-sm text-gray-500">
+                    {product.warranty_enabled
+                      ? `${product.warranty_duration_days ?? 0} days`
+                      : "Disabled"}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-500">
+                    <Link href={`/dashboard/products/${product.id}/edit`} className="text-black underline">
+                      Edit
+                    </Link>
+                  </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan={3} className="px-6 py-4 text-center text-sm text-gray-500">
+                <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">
                   No products found.
                 </td>
               </tr>

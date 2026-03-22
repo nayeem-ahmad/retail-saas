@@ -7,15 +7,19 @@ import { api } from '../../../lib/api';
 interface AddProductModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onAdd: (product: any) => void;
+    mode?: 'create' | 'edit';
+    initialProduct?: any | null;
+    onSubmit: (product: any) => Promise<void> | void;
 }
 
-export default function AddProductModal({ isOpen, onClose, onAdd }: AddProductModalProps) {
+export default function AddProductModal({ isOpen, onClose, mode = 'create', initialProduct = null, onSubmit }: AddProductModalProps) {
     const [formData, setFormData] = useState({
         name: '',
         sku: '',
         price: '',
         initialStock: '',
+        warrantyEnabled: false,
+        warrantyDurationDays: '',
         reorderLevel: '',
         safetyStock: '',
         leadTimeDays: '',
@@ -49,6 +53,43 @@ export default function AddProductModal({ isOpen, onClose, onAdd }: AddProductMo
         loadCategoryOptions();
     }, [isOpen]);
 
+    useEffect(() => {
+        if (!isOpen) return;
+        if (mode === 'edit' && initialProduct) {
+            setFormData({
+                name: initialProduct.name || '',
+                sku: initialProduct.sku || '',
+                price: String(initialProduct.price ?? ''),
+                initialStock: '',
+                warrantyEnabled: Boolean(initialProduct.warranty_enabled),
+                warrantyDurationDays: initialProduct.warranty_duration_days != null ? String(initialProduct.warranty_duration_days) : '',
+                reorderLevel: initialProduct.reorder_level != null ? String(initialProduct.reorder_level) : '',
+                safetyStock: initialProduct.safety_stock != null ? String(initialProduct.safety_stock) : '',
+                leadTimeDays: initialProduct.lead_time_days != null ? String(initialProduct.lead_time_days) : '',
+                image_url: initialProduct.image_url || '',
+                groupId: initialProduct.group?.id || '',
+                subgroupId: initialProduct.subgroup?.id || '',
+            });
+        }
+
+        if (mode === 'create') {
+            setFormData({
+                name: '',
+                sku: '',
+                price: '',
+                initialStock: '',
+                warrantyEnabled: false,
+                warrantyDurationDays: '',
+                reorderLevel: '',
+                safetyStock: '',
+                leadTimeDays: '',
+                image_url: '',
+                groupId: '',
+                subgroupId: '',
+            });
+        }
+    }, [isOpen, mode, initialProduct]);
+
     const filteredSubgroups = useMemo(
         () => subgroups.filter((subgroup) => !formData.groupId || subgroup.group_id === formData.groupId),
         [subgroups, formData.groupId],
@@ -74,17 +115,18 @@ export default function AddProductModal({ isOpen, onClose, onAdd }: AddProductMo
         setLoading(true);
         try {
             const parseOptionalInt = (value: string) => (value === '' ? undefined : parseInt(value, 10));
-            await onAdd({
+            await onSubmit({
                 ...formData,
                 price: parseFloat(formData.price),
-                initialStock: parseInt(formData.initialStock) || 0,
+                initialStock: mode === 'create' ? parseInt(formData.initialStock) || 0 : undefined,
+                warrantyEnabled: formData.warrantyEnabled,
+                warrantyDurationDays: formData.warrantyEnabled ? parseOptionalInt(formData.warrantyDurationDays) : undefined,
                 reorderLevel: parseOptionalInt(formData.reorderLevel),
                 safetyStock: parseOptionalInt(formData.safetyStock),
                 leadTimeDays: parseOptionalInt(formData.leadTimeDays),
                 groupId: formData.groupId || undefined,
                 subgroupId: formData.subgroupId || undefined,
             });
-            setFormData({ name: '', sku: '', price: '', initialStock: '', reorderLevel: '', safetyStock: '', leadTimeDays: '', image_url: '', groupId: '', subgroupId: '' });
             onClose();
         } catch (error) {
             console.error('Failed to add product', error);
@@ -97,7 +139,7 @@ export default function AddProductModal({ isOpen, onClose, onAdd }: AddProductMo
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-200">
                 <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
-                    <h2 className="text-xl font-bold tracking-tight text-gray-900">Add New Product</h2>
+                    <h2 className="text-xl font-bold tracking-tight text-gray-900">{mode === 'edit' ? 'Edit Product' : 'Add New Product'}</h2>
                     <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-white transition-all">
                         <X className="w-5 h-5" />
                     </button>
@@ -173,13 +215,38 @@ export default function AddProductModal({ isOpen, onClose, onAdd }: AddProductMo
                         <div>
                             <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 ml-1">Initial Stock Level</label>
                             <input
-                                required
+                                required={mode === 'create'}
                                 type="number"
                                 placeholder="50"
+                                disabled={mode === 'edit'}
                                 className="w-full bg-gray-50 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-500/10 transition-all font-bold"
                                 value={formData.initialStock}
                                 onChange={(e) => setFormData({ ...formData, initialStock: e.target.value })}
                             />
+                        </div>
+
+                        <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+                            <label className="flex items-center gap-2 text-sm font-bold text-gray-700">
+                                <input
+                                    type="checkbox"
+                                    checked={formData.warrantyEnabled}
+                                    onChange={(e) => setFormData({ ...formData, warrantyEnabled: e.target.checked, warrantyDurationDays: e.target.checked ? formData.warrantyDurationDays : '' })}
+                                    className="rounded border-gray-300"
+                                />
+                                Warranty Enabled
+                            </label>
+                            <div>
+                                <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 ml-1">Warranty Duration (Days)</label>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    placeholder="e.g. 365"
+                                    disabled={!formData.warrantyEnabled}
+                                    className="w-full bg-white border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-500/10 transition-all font-bold disabled:bg-gray-100"
+                                    value={formData.warrantyDurationDays}
+                                    onChange={(e) => setFormData({ ...formData, warrantyDurationDays: e.target.value })}
+                                />
+                            </div>
                         </div>
 
                         <div className="grid grid-cols-3 gap-4">
@@ -279,7 +346,7 @@ export default function AddProductModal({ isOpen, onClose, onAdd }: AddProductMo
                             type="submit"
                             className="flex-[2] bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold text-sm shadow-lg shadow-blue-200 transition-all hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:translate-y-0"
                         >
-                            {loading ? 'Creating Product...' : 'Confirm & Add Product'}
+                            {loading ? (mode === 'edit' ? 'Saving Changes...' : 'Creating Product...') : (mode === 'edit' ? 'Save Changes' : 'Confirm & Add Product')}
                         </button>
                     </div>
                 </form>
