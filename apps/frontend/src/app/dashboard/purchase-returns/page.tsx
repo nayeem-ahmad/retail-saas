@@ -99,7 +99,7 @@ export default function PurchaseReturnsPage() {
                 header: 'Total',
                 cell: (info) => (
                     <span className="text-sm font-black text-emerald-600">
-                        ${Number(info.getValue() || 0).toFixed(2)}
+                        {Number(info.getValue() || 0).toFixed(2)}
                     </span>
                 ),
                 sortingFn: (a, b) => Number(a.getValue('total_amount') || 0) - Number(b.getValue('total_amount') || 0),

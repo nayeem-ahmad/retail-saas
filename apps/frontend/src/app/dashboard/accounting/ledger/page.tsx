@@ -409,7 +409,7 @@ function InfoPanel({ tone, message }: { tone: 'neutral' | 'error'; message: stri
 }
 
 function formatCurrency(value: number) {
-    return `$${Number(value || 0).toFixed(2)}`;
+    return `${Number(value || 0).toFixed(2)}`;
 }
 
 function formatBalance(amount: number, side: 'debit' | 'credit' | 'neutral') {

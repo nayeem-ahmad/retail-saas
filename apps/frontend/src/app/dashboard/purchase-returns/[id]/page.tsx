@@ -172,8 +172,8 @@ export default function PurchaseReturnDetailPage() {
                     <tr>
                         <td>${item.product?.name || 'Unknown item'}</td>
                         <td class="text-center">${item.quantity}</td>
-                        <td class="text-right">$${Number(item.unit_cost || 0).toFixed(2)}</td>
-                        <td class="text-right">$${Number(item.line_total || 0).toFixed(2)}</td>
+                        <td class="text-right">${Number(item.unit_cost || 0).toFixed(2)}</td>
+                        <td class="text-right">${Number(item.line_total || 0).toFixed(2)}</td>
                     </tr>
                 `,
             )
@@ -228,7 +228,7 @@ export default function PurchaseReturnDetailPage() {
                         ${itemRows}
                         <tr class="total-row">
                             <td colspan="3">Total</td>
-                            <td class="text-right">$${Number(purchaseReturn.total_amount || 0).toFixed(2)}</td>
+                            <td class="text-right">${Number(purchaseReturn.total_amount || 0).toFixed(2)}</td>
                         </tr>
                     </tbody>
                 </table>
@@ -351,10 +351,10 @@ export default function PurchaseReturnDetailPage() {
                         </div>
                         <div className="bg-white p-4 rounded-2xl shadow-sm">
                             <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1">New Total</span>
-                            <span className="text-xl font-black text-emerald-600">${editTotal.toFixed(2)}</span>
+                            <span className="text-xl font-black text-emerald-600">{editTotal.toFixed(2)}</span>
                             {editTotal !== Number(purchaseReturn.total_amount || 0) && (
                                 <span className="block text-xs font-bold mt-1 text-gray-400">
-                                    Was: ${Number(purchaseReturn.total_amount || 0).toFixed(2)}
+                                    Was: {Number(purchaseReturn.total_amount || 0).toFixed(2)}
                                 </span>
                             )}
                         </div>
@@ -381,7 +381,7 @@ export default function PurchaseReturnDetailPage() {
                         </div>
                         <div className="bg-white p-4 rounded-2xl shadow-sm">
                             <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1">Total</span>
-                            <span className="text-xl font-black text-emerald-600">${Number(purchaseReturn.total_amount || 0).toFixed(2)}</span>
+                            <span className="text-xl font-black text-emerald-600">{Number(purchaseReturn.total_amount || 0).toFixed(2)}</span>
                         </div>
                     </div>
                 )}
@@ -430,7 +430,7 @@ export default function PurchaseReturnDetailPage() {
                                                 </td>
                                                 <td className="py-3 text-center text-xs font-bold text-gray-400 uppercase tracking-widest">{item.maxQuantity}</td>
                                                 <td className="py-3 text-right text-sm font-bold text-gray-700">${item.unitCost.toFixed(2)}</td>
-                                                <td className="py-3 text-right text-sm font-black text-emerald-600">${(item.quantity * item.unitCost).toFixed(2)}</td>
+                                                <td className="py-3 text-right text-sm font-black text-emerald-600">{(item.quantity * item.unitCost).toFixed(2)}</td>
                                                 <td className="py-3 text-center">
                                                     <button
                                                         onClick={() => removeItem(index)}

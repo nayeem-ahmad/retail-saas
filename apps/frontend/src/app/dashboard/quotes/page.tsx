@@ -89,8 +89,8 @@ export default function QuotesPage() {
                 <table>
                     <thead><tr><th>Product</th><th>Qty</th><th>Unit Price</th><th>Subtotal</th></tr></thead>
                     <tbody>
-                        ${quote.items.map((item: any) => `<tr><td>${item.product?.name || 'Item'}</td><td>${item.quantity}</td><td>$${Number(item.unit_price).toFixed(2)}</td><td>$${(item.quantity * Number(item.unit_price)).toFixed(2)}</td></tr>`).join('')}
-                        <tr class="total-row"><td colspan="3">Total</td><td>$${Number(quote.total_amount).toFixed(2)}</td></tr>
+                        ${quote.items.map((item: any) => `<tr><td>${item.product?.name || 'Item'}</td><td>${item.quantity}</td><td>${Number(item.unit_price).toFixed(2)}</td><td>${(item.quantity * Number(item.unit_price)).toFixed(2)}</td></tr>`).join('')}
+                        <tr class="total-row"><td colspan="3">Total</td><td>${Number(quote.total_amount).toFixed(2)}</td></tr>
                     </tbody>
                 </table>
                 ${quote.notes ? `<p><strong>Notes:</strong> ${quote.notes}</p>` : ''}
