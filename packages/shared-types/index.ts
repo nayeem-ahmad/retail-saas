@@ -29,7 +29,9 @@ export enum SubscriptionStatus {
 }
 
 export enum SubscriptionPlanCode {
+  FREE = 'FREE',
   BASIC = 'BASIC',
+  STANDARD = 'STANDARD',
   PREMIUM = 'PREMIUM',
 }
 
@@ -48,6 +50,7 @@ export interface TenantSubscriptionSummary {
   current_period_end: string;
   cancel_at_period_end: boolean;
   is_premium: boolean;
+  is_paid_plan: boolean;
   plan: SubscriptionPlanSummary;
 }
 
@@ -108,7 +111,7 @@ export const SignupSchema = z.object({
   password: z.string().min(8, "Password must be at least 8 characters"),
   tenantName: z.string().min(2, "Organization name must be at least 2 characters"),
   storeName: z.string().min(2, "Store name must be at least 2 characters"),
-  planCode: z.nativeEnum(SubscriptionPlanCode).default(SubscriptionPlanCode.BASIC),
+  planCode: z.nativeEnum(SubscriptionPlanCode).default(SubscriptionPlanCode.FREE),
 });
 
 export type SignupInput = z.infer<typeof SignupSchema>;

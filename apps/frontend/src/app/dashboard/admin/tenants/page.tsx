@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { Building2, Loader2, Search, ShieldCheck, Users } from 'lucide-react';
 import { api } from '../../../../lib/api';
 
+type PlanCode = 'FREE' | 'BASIC' | 'STANDARD' | 'PREMIUM';
+
 type TenantRecord = {
     id: string;
     name: string;
@@ -20,7 +22,7 @@ type TenantRecord = {
         cancel_at_period_end: boolean;
         provider_name?: string | null;
         plan: {
-            code: 'BASIC' | 'PREMIUM';
+            code: PlanCode;
             name: string;
             description?: string | null;
             monthly_price: number;
@@ -83,7 +85,7 @@ export default function AdminTenantsPage() {
     const subscriptionForm = useMemo(() => {
         if (!selectedTenant?.subscription) {
             return {
-                planCode: 'BASIC',
+                planCode: 'FREE',
                 status: 'ACTIVE',
                 cancelAtPeriodEnd: false,
             };
@@ -152,7 +154,9 @@ export default function AdminTenantsPage() {
                             </label>
                             <select value={planCode} onChange={(event) => setPlanCode(event.target.value)} className="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-3 text-sm font-medium outline-none">
                                 <option value="">All plans</option>
+                                <option value="FREE">Free</option>
                                 <option value="BASIC">Basic</option>
+                                <option value="STANDARD">Standard</option>
                                 <option value="PREMIUM">Premium</option>
                             </select>
                             <select value={status} onChange={(event) => setStatus(event.target.value)} className="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-3 text-sm font-medium outline-none">
@@ -188,7 +192,7 @@ export default function AdminTenantsPage() {
                                                         <p className="mt-1 text-xs text-gray-500">{tenant.owner?.email || 'No owner assigned'}</p>
                                                     </div>
                                                     <div className="text-right">
-                                                        <span className={`inline-flex rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-widest ${tenant.subscription?.plan.code === 'PREMIUM' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'}`}>
+                                                        <span className={`inline-flex rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-widest ${tenant.subscription?.plan.code === 'PREMIUM' ? 'bg-amber-100 text-amber-700' : tenant.subscription?.plan.code === 'STANDARD' ? 'bg-indigo-100 text-indigo-700' : tenant.subscription?.plan.code === 'BASIC' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
                                                             {tenant.subscription?.plan.code || 'NONE'}
                                                         </span>
                                                         <p className="mt-2 text-[11px] font-bold uppercase tracking-widest text-gray-400">{tenant.subscription?.status || 'UNASSIGNED'}</p>
@@ -235,8 +239,10 @@ export default function AdminTenantsPage() {
                                     </div>
 
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                        <select value={draft.planCode} onChange={(event) => setDraft((current) => ({ ...current, planCode: event.target.value as 'BASIC' | 'PREMIUM' }))} className="rounded-2xl border border-blue-100 bg-white px-4 py-3 text-sm font-medium outline-none">
+                                        <select value={draft.planCode} onChange={(event) => setDraft((current) => ({ ...current, planCode: event.target.value as PlanCode }))} className="rounded-2xl border border-blue-100 bg-white px-4 py-3 text-sm font-medium outline-none">
+                                            <option value="FREE">Free</option>
                                             <option value="BASIC">Basic</option>
+                                            <option value="STANDARD">Standard</option>
                                             <option value="PREMIUM">Premium</option>
                                         </select>
                                         <select value={draft.status} onChange={(event) => setDraft((current) => ({ ...current, status: event.target.value as TenantRecord['subscription']['status'] }))} className="rounded-2xl border border-blue-100 bg-white px-4 py-3 text-sm font-medium outline-none">

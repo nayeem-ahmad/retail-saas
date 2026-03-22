@@ -23,11 +23,18 @@ CREATE TABLE tenants (
 -- --- SUBSCRIPTION PLANS ---
 CREATE TABLE subscription_plans (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    name TEXT NOT NULL, -- e.g., 'Basic', 'Premium'
+    name TEXT NOT NULL, -- one of: 'Free', 'Basic', 'Standard', 'Premium'
+    code TEXT NOT NULL UNIQUE, -- e.g., 'free', 'basic', 'standard', 'premium'
     monthly_price DECIMAL(12, 2) NOT NULL,
     features_json JSONB DEFAULT '{}',
     is_active BOOLEAN DEFAULT true
 );
+
+-- Canonical monthly prices:
+-- Free: BDT 0
+-- Basic: BDT 499
+-- Standard: BDT 999
+-- Premium: BDT 1499
 
 -- --- TENANT SUBSCRIPTIONS ---
 CREATE TABLE tenant_subscriptions (

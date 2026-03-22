@@ -6,6 +6,8 @@ import { ArrowUpRight, BadgeCheck, CreditCard, Loader2, RotateCcw } from 'lucide
 import { api } from '../../../lib/api';
 import { redirectTo } from '../../../lib/browser';
 
+type PlanCode = 'FREE' | 'BASIC' | 'STANDARD' | 'PREMIUM';
+
 type BillingSummary = {
     tenant: { id: string; name: string };
     role: string;
@@ -18,7 +20,7 @@ type BillingSummary = {
         cancel_at_period_end: boolean;
         provider_name?: string | null;
         plan?: {
-            code: 'BASIC' | 'PREMIUM';
+            code: PlanCode;
             name: string;
             description?: string | null;
             monthly_price: number;
@@ -26,7 +28,7 @@ type BillingSummary = {
         } | null;
     } | null;
     available_plans: Array<{
-        code: 'BASIC' | 'PREMIUM';
+        code: PlanCode;
         name: string;
         description?: string | null;
         monthly_price: number;
@@ -52,7 +54,7 @@ function BillingPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [summary, setSummary] = useState<BillingSummary | null>(null);
-    const [selectedPlanCode, setSelectedPlanCode] = useState<'BASIC' | 'PREMIUM'>('BASIC');
+    const [selectedPlanCode, setSelectedPlanCode] = useState<PlanCode>('FREE');
     const [billingCycle, setBillingCycle] = useState<'MONTHLY' | 'YEARLY'>('MONTHLY');
     const [checkout, setCheckout] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -71,9 +73,9 @@ function BillingPageContent() {
 
             const queryPlan = searchParams.get('plan');
             const queryCycle = searchParams.get('cycle');
-            const fallbackPlan = nextSummary.subscription?.plan?.code ?? nextSummary.available_plans[0]?.code ?? 'BASIC';
+            const fallbackPlan = nextSummary.subscription?.plan?.code ?? nextSummary.available_plans[0]?.code ?? 'FREE';
 
-            setSelectedPlanCode((queryPlan as 'BASIC' | 'PREMIUM') || fallbackPlan);
+            setSelectedPlanCode((queryPlan as PlanCode) || fallbackPlan);
             setBillingCycle(queryCycle === 'yearly' ? 'YEARLY' : 'MONTHLY');
         } catch (err: any) {
             setError(err.message || 'Failed to load billing summary.');
@@ -196,7 +198,7 @@ function BillingPageContent() {
                                     <div className="mt-2 flex items-center gap-3">
                                         <h2 className="text-3xl font-black tracking-tight">{summary.subscription?.plan?.name || 'No active plan'}</h2>
                                         {summary.subscription?.plan?.code && (
-                                            <span className={`rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest ${summary.subscription.plan.code === 'PREMIUM' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'}`}>
+                                            <span className={`rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest ${summary.subscription.plan.code === 'PREMIUM' ? 'bg-amber-100 text-amber-700' : summary.subscription.plan.code === 'STANDARD' ? 'bg-indigo-100 text-indigo-700' : summary.subscription.plan.code === 'BASIC' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
                                                 {summary.subscription.plan.code}
                                             </span>
                                         )}
@@ -323,7 +325,7 @@ function BillingPageContent() {
                                 <h3 className="mt-2 text-lg font-black tracking-tight">{summary.provider_name === 'ssl-wireless' ? 'Hosted provider checkout' : 'Manual provider sandbox'}</h3>
                                 <p className="mt-2 text-sm text-gray-500">
                                     {summary.provider_name === 'ssl-wireless'
-                                        ? 'The backend now initializes hosted SSL Wireless checkout and validates the callback before enabling Premium access.'
+                                        ? 'The backend initializes hosted SSL Wireless checkout for paid plans and validates callbacks before entitlement upgrades.'
                                         : 'The backend now supports tenant-scoped checkout initiation plus a manual webhook path for local verification.'}
                                 </p>
                             </div>
@@ -362,7 +364,7 @@ function BillingPageContent() {
 
                             <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
                                 {summary.provider_name === 'ssl-wireless'
-                                    ? 'SSL Wireless callbacks and IPN events are validated server-side before Premium access is activated.'
+                                    ? 'SSL Wireless callbacks and IPN events are validated server-side before paid-plan entitlements are activated.'
                                     : 'Use the manual webhook endpoint when you want to simulate asynchronous provider callbacks during local QA.'}
                             </div>
                         </aside>

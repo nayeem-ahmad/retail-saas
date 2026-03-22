@@ -1,10 +1,10 @@
 export class CreateCheckoutSessionDto {
-    planCode!: 'BASIC' | 'PREMIUM';
+    planCode!: 'FREE' | 'BASIC' | 'STANDARD' | 'PREMIUM';
     billingCycle?: 'MONTHLY' | 'YEARLY';
 }
 
 export class ConfirmCheckoutDto {
-    planCode!: 'BASIC' | 'PREMIUM';
+    planCode!: 'FREE' | 'BASIC' | 'STANDARD' | 'PREMIUM';
     billingCycle?: 'MONTHLY' | 'YEARLY';
     reference?: string;
 }
@@ -23,7 +23,7 @@ export class BillingCallbackDto {
 
 export class ManualBillingWebhookDto {
     tenantId!: string;
-    planCode!: 'BASIC' | 'PREMIUM';
+    planCode!: 'FREE' | 'BASIC' | 'STANDARD' | 'PREMIUM';
     status?: 'ACTIVE' | 'PAST_DUE' | 'CANCELLED' | 'TRIALING';
     billingCycle?: 'MONTHLY' | 'YEARLY';
     currentPeriodStart?: string;

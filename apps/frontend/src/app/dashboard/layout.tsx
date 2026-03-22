@@ -19,12 +19,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const activeTenantId = typeof window !== 'undefined' ? localStorage.getItem('tenant_id') : null;
     const activeTenant = user?.tenants?.find((tenant: any) => tenant.id === activeTenantId) || user?.tenants?.[0];
     const primaryRole = activeTenant?.role;
-    const hasPremiumPlan = activeTenant?.subscription?.is_premium;
     const activePlanCode = activeTenant?.subscription?.plan?.code || null;
+    const planFeatures = (activeTenant?.subscription?.plan?.features_json || {}) as Record<string, unknown>;
+    const hasPaidPlan = activePlanCode && activePlanCode !== 'FREE';
+    const hasAccountingEntitlement = Boolean(planFeatures.premiumAccounting) || activePlanCode === 'STANDARD' || activePlanCode === 'PREMIUM';
+    const hasInventoryReportEntitlement = Boolean(planFeatures.premiumInventoryReports) || activePlanCode === 'STANDARD' || activePlanCode === 'PREMIUM';
     const isPlatformAdmin = Boolean(user?.is_platform_admin);
     const canManageBilling = primaryRole === 'OWNER' || primaryRole === 'MANAGER';
-    const canAccessAccounting = (primaryRole === 'OWNER' || primaryRole === 'MANAGER') && hasPremiumPlan;
-    const canAccessInventoryReports = Boolean(hasPremiumPlan);
+    const canAccessAccounting = (primaryRole === 'OWNER' || primaryRole === 'MANAGER') && hasPaidPlan && hasAccountingEntitlement;
+    const canAccessInventoryReports = Boolean(hasInventoryReportEntitlement);
 
     useEffect(() => {
         if (!canAccessAccounting && pathname.startsWith('/dashboard/accounting')) {

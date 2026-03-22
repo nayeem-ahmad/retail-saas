@@ -1,6 +1,6 @@
 import { Controller, Get, Query, UseGuards, UseInterceptors } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { RequiresPlan } from '../auth/subscription-access.decorator';
+import { RequiresFeature } from '../auth/subscription-access.decorator';
 import { SubscriptionAccessGuard } from '../auth/subscription-access.guard';
 import { TenantInterceptor } from '../database/tenant.interceptor';
 import { Tenant, TenantContext } from '../database/tenant.decorator';
@@ -10,7 +10,7 @@ import { InventoryReportsService } from './inventory-reports.service';
 @Controller('inventory-reports')
 @UseGuards(JwtAuthGuard, SubscriptionAccessGuard)
 @UseInterceptors(TenantInterceptor)
-@RequiresPlan('PREMIUM')
+@RequiresFeature('premiumInventoryReports')
 export class InventoryReportsController {
     constructor(private readonly service: InventoryReportsService) {}
 

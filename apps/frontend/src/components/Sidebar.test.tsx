@@ -63,14 +63,14 @@ describe('Sidebar — Story 30.1', () => {
     });
 
     it('shows platform admin and billing items when enabled', () => {
-        render(<Sidebar canAccessAccounting canAccessAdmin canManageBilling activePlanCode="PREMIUM" />);
+        render(<Sidebar canAccessAccounting canAccessAdmin canManageBilling activePlanCode="STANDARD" />);
 
         expect(screen.getByText('Billing')).toBeInTheDocument();
         expect(screen.getByText('Platform Admin')).toBeInTheDocument();
-        expect(screen.getByText('PREMIUM')).toBeInTheDocument();
+        expect(screen.getByText('STANDARD')).toBeInTheDocument();
     });
 
-    it('hides premium inventory reports for non-premium tenants', () => {
+    it('hides advanced inventory reports for tenants without report entitlement', () => {
         render(<Sidebar canAccessAccounting canAccessInventoryReports={false} />);
 
         expect(screen.queryByText('Reorder Report')).not.toBeInTheDocument();

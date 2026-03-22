@@ -7,7 +7,7 @@ import { ArrowRight, Building2, Loader2, Lock, Mail, Store } from 'lucide-react'
 import { api } from '@/lib/api';
 
 type Plan = {
-    code: 'BASIC' | 'PREMIUM';
+    code: 'FREE' | 'BASIC' | 'STANDARD' | 'PREMIUM';
     name: string;
     description?: string | null;
     monthly_price: number;
@@ -22,7 +22,7 @@ export default function SignupPage() {
         password: '',
         tenantName: '',
         storeName: '',
-        planCode: 'BASIC' as 'BASIC' | 'PREMIUM',
+        planCode: 'FREE' as 'FREE' | 'BASIC' | 'STANDARD' | 'PREMIUM',
     });
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -126,8 +126,10 @@ export default function SignupPage() {
                             <label className="text-sm font-medium text-gray-700 ml-1">Plan</label>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {(plans.length > 0 ? plans : [
-                                    { code: 'BASIC', name: 'Basic', description: 'Core operations', monthly_price: 1499 },
-                                    { code: 'PREMIUM', name: 'Premium', description: 'Accounting and advanced analytics', monthly_price: 3999 },
+                                    { code: 'FREE', name: 'Free', description: 'Starter plan for single-store onboarding', monthly_price: 0 },
+                                    { code: 'BASIC', name: 'Basic', description: 'Core operations for small teams', monthly_price: 499 },
+                                    { code: 'STANDARD', name: 'Standard', description: 'Multi-branch operations with analytics', monthly_price: 999 },
+                                    { code: 'PREMIUM', name: 'Premium', description: 'Full suite with advanced controls', monthly_price: 1499 },
                                 ]).map((plan) => {
                                     const selected = form.planCode === plan.code;
                                     return (

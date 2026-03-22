@@ -1,3 +1,7 @@
+import { config } from 'dotenv';
+import { resolve } from 'path';
+config({ path: resolve(__dirname, '../../../.env') });
+
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { bootstrapDefaultAccountingForTenant } from './bootstrap-accounting';
@@ -7,61 +11,97 @@ const prisma = new PrismaClient();
 async function main() {
     const passwordHash = await bcrypt.hash('password123', 10);
 
-    const basicPlan = await prisma.subscriptionPlan.upsert({
-        where: { code: 'BASIC' },
-        update: {
-            name: 'Basic',
-            description: 'Core retail operations for a single business tenant',
-            monthly_price: 1499,
-            yearly_price: 14990,
-            is_active: true,
-            features_json: {
-                premiumAccounting: false,
-                premiumInventoryReports: false,
-                multiStore: false,
+    const upsertPlan = (data: {
+        code: 'FREE' | 'BASIC' | 'STANDARD' | 'PREMIUM';
+        name: string;
+        description: string;
+        monthly_price: number;
+        yearly_price: number;
+        features_json: Record<string, unknown>;
+    }) =>
+        prisma.subscriptionPlan.upsert({
+            where: { code: data.code },
+            update: {
+                name: data.name,
+                description: data.description,
+                monthly_price: data.monthly_price,
+                yearly_price: data.yearly_price,
+                is_active: true,
+                features_json: data.features_json,
             },
-        },
-        create: {
-            code: 'BASIC',
-            name: 'Basic',
-            description: 'Core retail operations for a single business tenant',
-            monthly_price: 1499,
-            yearly_price: 14990,
-            is_active: true,
-            features_json: {
-                premiumAccounting: false,
-                premiumInventoryReports: false,
-                multiStore: false,
+            create: {
+                code: data.code,
+                name: data.name,
+                description: data.description,
+                monthly_price: data.monthly_price,
+                yearly_price: data.yearly_price,
+                is_active: true,
+                features_json: data.features_json,
             },
+        });
+
+    await upsertPlan({
+        code: 'FREE',
+        name: 'Free',
+        description: 'Starter plan for single-user onboarding and light usage',
+        monthly_price: 0,
+        yearly_price: 0,
+        features_json: {
+            maxStores: 1,
+            maxUsers: 1,
+            maxSkus: 100,
+            premiumAccounting: false,
+            premiumInventoryReports: false,
+            multiStore: false,
         },
     });
 
-    const premiumPlan = await prisma.subscriptionPlan.upsert({
-        where: { code: 'PREMIUM' },
-        update: {
-            name: 'Premium',
-            description: 'Full retail suite with accounting and advanced analytics',
-            monthly_price: 3999,
-            yearly_price: 39990,
-            is_active: true,
-            features_json: {
-                premiumAccounting: true,
-                premiumInventoryReports: true,
-                multiStore: true,
-            },
+    await upsertPlan({
+        code: 'BASIC',
+        name: 'Basic',
+        description: 'Core retail operations for growing single-branch businesses',
+        monthly_price: 499,
+        yearly_price: 4990,
+        features_json: {
+            maxStores: 1,
+            maxUsers: 3,
+            maxSkus: 2000,
+            premiumAccounting: false,
+            premiumInventoryReports: false,
+            multiStore: false,
         },
-        create: {
-            code: 'PREMIUM',
-            name: 'Premium',
-            description: 'Full retail suite with accounting and advanced analytics',
-            monthly_price: 3999,
-            yearly_price: 39990,
-            is_active: true,
-            features_json: {
-                premiumAccounting: true,
-                premiumInventoryReports: true,
-                multiStore: true,
-            },
+    });
+
+    await upsertPlan({
+        code: 'STANDARD',
+        name: 'Standard',
+        description: 'Advanced retail operations with multi-branch and analytics support',
+        monthly_price: 999,
+        yearly_price: 9990,
+        features_json: {
+            maxStores: 3,
+            maxUsers: 10,
+            maxSkus: 20000,
+            premiumAccounting: true,
+            premiumInventoryReports: true,
+            multiStore: true,
+        },
+    });
+
+    const premiumPlan = await upsertPlan({
+        code: 'PREMIUM',
+        name: 'Premium',
+        description: 'Full retail suite with advanced automation, accounting, and integrations',
+        monthly_price: 1499,
+        yearly_price: 14990,
+        features_json: {
+            maxStores: 10,
+            maxUsers: 30,
+            maxSkus: -1,
+            premiumAccounting: true,
+            premiumInventoryReports: true,
+            multiStore: true,
+            apiAccess: true,
         },
     });
 

@@ -44,7 +44,7 @@ interface NavChild {
     label: string;
     /** If true, renders as a non-clickable section header */
     section?: boolean;
-    premiumOnly?: boolean;
+    advancedOnly?: boolean;
 }
 
 interface NavModule {
@@ -114,9 +114,9 @@ const MODULES: NavModule[] = [
             { href: '/dashboard/inventory/stock-takes', icon: ClipboardCheck, label: 'Stock Takes' },
             { href: '/dashboard/inventory/ledger', icon: BookOpen, label: 'Stock Ledger' },
             { href: '/dashboard/inventory/categories', icon: FolderTree, label: 'Categories' },
-            { href: '/dashboard/inventory/reports/reorder', icon: TrendingUp, label: 'Reorder Report', premiumOnly: true },
-            { href: '/dashboard/inventory/reports/shrinkage', icon: AlertTriangle, label: 'Shrinkage Report', premiumOnly: true },
-            { href: '/dashboard/inventory/reports/valuation', icon: Calculator, label: 'Valuation', premiumOnly: true },
+            { href: '/dashboard/inventory/reports/reorder', icon: TrendingUp, label: 'Reorder Report', advancedOnly: true },
+            { href: '/dashboard/inventory/reports/shrinkage', icon: AlertTriangle, label: 'Shrinkage Report', advancedOnly: true },
+            { href: '/dashboard/inventory/reports/valuation', icon: Calculator, label: 'Valuation', advancedOnly: true },
             { href: '/dashboard/inventory/settings', icon: Settings, label: 'Settings' },
         ],
     },
@@ -176,7 +176,7 @@ export default function Sidebar({
 
             return {
                 ...module,
-                children: module.children.filter((child) => !child.premiumOnly || canAccessInventoryReports),
+                children: module.children.filter((child) => !child.advancedOnly || canAccessInventoryReports),
             };
         });
 
@@ -260,7 +260,7 @@ export default function Sidebar({
                         <div className="flex items-center gap-2 mt-0.5">
                             <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Workspace</span>
                             {activePlanCode && (
-                                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-widest ${activePlanCode === 'PREMIUM' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'}`}>
+                                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-widest ${activePlanCode === 'PREMIUM' ? 'bg-amber-100 text-amber-700' : activePlanCode === 'STANDARD' ? 'bg-indigo-100 text-indigo-700' : activePlanCode === 'BASIC' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
                                     {activePlanCode}
                                 </span>
                             )}
@@ -364,7 +364,7 @@ export default function Sidebar({
                                                 <ChildIcon className={`flex-shrink-0 w-4 h-4 ${active ? 'text-blue-600' : ''}`} />
                                                 <span className="text-sm tracking-tight whitespace-nowrap">{label}</span>
                                                 {mod.key === 'inventory' && href.includes('/reports/') && (
-                                                    <span className="ml-auto text-[9px] font-black uppercase tracking-widest text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-md">Premium</span>
+                                                    <span className="ml-auto text-[9px] font-black uppercase tracking-widest text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-md">Advanced</span>
                                                 )}
                                             </Link>
                                         );

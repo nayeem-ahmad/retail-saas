@@ -7,7 +7,16 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { DatabaseService } from '../database/database.service';
-import { SUBSCRIPTION_PLAN_KEY } from './subscription-access.decorator';
+import { SUBSCRIPTION_FEATURE_KEY, SUBSCRIPTION_PLAN_KEY } from './subscription-access.decorator';
+
+type PlanCode = 'FREE' | 'BASIC' | 'STANDARD' | 'PREMIUM';
+
+const PLAN_RANK: Record<PlanCode, number> = {
+    FREE: 0,
+    BASIC: 1,
+    STANDARD: 2,
+    PREMIUM: 3,
+};
 
 @Injectable()
 export class SubscriptionAccessGuard implements CanActivate {
@@ -17,12 +26,16 @@ export class SubscriptionAccessGuard implements CanActivate {
     ) {}
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
-        const requiredPlan = this.reflector.getAllAndOverride<'BASIC' | 'PREMIUM' | undefined>(SUBSCRIPTION_PLAN_KEY, [
+        const requiredPlan = this.reflector.getAllAndOverride<PlanCode | undefined>(SUBSCRIPTION_PLAN_KEY, [
+            context.getHandler(),
+            context.getClass(),
+        ]);
+        const requiredFeature = this.reflector.getAllAndOverride<string | undefined>(SUBSCRIPTION_FEATURE_KEY, [
             context.getHandler(),
             context.getClass(),
         ]);
 
-        if (!requiredPlan || requiredPlan === 'BASIC') {
+        if ((!requiredPlan || requiredPlan === 'FREE') && !requiredFeature) {
             return true;
         }
 
@@ -53,15 +66,42 @@ export class SubscriptionAccessGuard implements CanActivate {
             include: { plan: true },
         });
 
-        const hasPremium =
-            subscription?.plan.code === 'PREMIUM' &&
-            (subscription.status === 'ACTIVE' || subscription.status === 'TRIALING');
+        const activeStatuses = new Set(['ACTIVE', 'TRIALING']);
+        const currentPlan = (subscription?.plan?.code ?? 'FREE') as PlanCode;
+        const hasRequiredPlan = requiredPlan ? PLAN_RANK[currentPlan] >= PLAN_RANK[requiredPlan] : true;
+        const hasActiveSubscription = activeStatuses.has(subscription?.status);
 
-        if (!hasPremium) {
-            throw new ForbiddenException('This feature requires an active Premium subscription.');
+        if (!hasActiveSubscription) {
+            throw new ForbiddenException('This feature requires an active subscription.');
+        }
+
+        if (!hasRequiredPlan) {
+            throw new ForbiddenException(`This feature requires an active ${requiredPlan} plan or higher.`);
+        }
+
+        if (requiredFeature) {
+            const featureValue = (subscription?.plan?.features_json as Record<string, unknown> | undefined)?.[requiredFeature];
+            const hasRequiredFeature = this.isFeatureEnabled(featureValue);
+
+            if (!hasRequiredFeature) {
+                throw new ForbiddenException(`This feature requires the plan entitlement: ${requiredFeature}.`);
+            }
         }
 
         request.subscription = subscription;
         return true;
+    }
+
+    private isFeatureEnabled(value: unknown): boolean {
+        if (typeof value === 'boolean') {
+            return value;
+        }
+        if (typeof value === 'number') {
+            return value > 0;
+        }
+        if (typeof value === 'string') {
+            return value.toLowerCase() === 'true' || value === '1';
+        }
+        return false;
     }
 }

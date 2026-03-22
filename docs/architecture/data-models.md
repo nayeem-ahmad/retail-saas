@@ -48,11 +48,18 @@ interface Tenant {
 
 ### SubscriptionPlan
 
-**Purpose:** Defines the available SaaS pricing tiers (e.g., Basic, Premium).
+**Purpose:** Defines the available SaaS pricing tiers and entitlement metadata (Free, Basic, Standard, Premium).
+
+**Canonical Monthly Plans:**
+- Free (BDT 0)
+- Basic (BDT 499)
+- Standard (BDT 999)
+- Premium (BDT 1499)
 
 **Key Attributes:**
 - `id`: `UUID` - The unique identifier for the plan.
-- `name`: `string` - The name of the plan (e.g., "Basic", "Premium").
+- `name`: `string` - The name of the plan (e.g., "Free", "Basic", "Standard", "Premium").
+- `code`: `string` - Stable machine code used in guards and billing (e.g., `free`, `basic`, `standard`, `premium`).
 - `monthly_price`: `decimal` - The cost per month.
 - `features_json`: `jsonb` - A JSON object defining limits and enabled features.
 
@@ -61,6 +68,7 @@ interface Tenant {
 interface SubscriptionPlan {
   id: string; // UUID
   name: string;
+  code: 'free' | 'basic' | 'standard' | 'premium';
   monthly_price: number;
   features_json: Record<string, any>;
 }

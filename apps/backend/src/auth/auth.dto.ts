@@ -5,7 +5,7 @@ export class SignupDto {
     tenantName: string;
     storeName: string;
     address?: string;
-    planCode?: 'BASIC' | 'PREMIUM';
+    planCode?: 'FREE' | 'BASIC' | 'STANDARD' | 'PREMIUM';
 }
 
 export class LoginDto {
@@ -17,5 +17,5 @@ export class CreateStoreDto {
     tenantName?: string;
     name: string;
     address?: string;
-    planCode?: 'BASIC' | 'PREMIUM';
+    planCode?: 'FREE' | 'BASIC' | 'STANDARD' | 'PREMIUM';
 }

@@ -10,12 +10,14 @@ jest.mock('next/navigation', () => ({
 jest.mock('../../lib/api', () => ({
     api: {
         getSubscriptionPlans: jest.fn().mockResolvedValue([
-            { code: 'BASIC', name: 'Basic', description: 'Core operations', monthly_price: 1499 },
-            { code: 'PREMIUM', name: 'Premium', description: 'Advanced features', monthly_price: 3999 },
+            { code: 'FREE', name: 'Free', description: 'Starter plan', monthly_price: 0 },
+            { code: 'BASIC', name: 'Basic', description: 'Core operations', monthly_price: 499 },
+            { code: 'STANDARD', name: 'Standard', description: 'Growth plan', monthly_price: 999 },
+            { code: 'PREMIUM', name: 'Premium', description: 'Advanced features', monthly_price: 1499 },
         ]),
         signup: jest.fn().mockResolvedValue({
             access_token: 'token-1',
-            tenants: [{ id: 'tenant-1', stores: [{ id: 'store-1' }], subscription: { plan: { code: 'BASIC' } } }],
+            tenants: [{ id: 'tenant-1', stores: [{ id: 'store-1' }], subscription: { plan: { code: 'FREE' } } }],
         }),
     },
 }));
@@ -44,7 +46,7 @@ describe('SignupPage', () => {
             password: 'password123',
             tenantName: 'Tenant One',
             storeName: 'Main Store',
-            planCode: 'BASIC',
+            planCode: 'FREE',
         });
     });
 });

@@ -18,6 +18,7 @@ type BillingCycle = 'MONTHLY' | 'YEARLY';
 type SubscriptionStatus = 'ACTIVE' | 'PAST_DUE' | 'CANCELLED' | 'TRIALING';
 type BillingProviderName = 'manual' | 'ssl-wireless';
 type SslWirelessCallbackMode = 'success' | 'fail' | 'cancel' | 'ipn';
+type PlanCode = 'FREE' | 'BASIC' | 'STANDARD' | 'PREMIUM';
 
 @Injectable()
 export class BillingService {
@@ -53,6 +54,45 @@ export class BillingService {
     async createCheckoutSession(userId: string, tenantId: string, dto: CreateCheckoutSessionDto) {
         const membership = await this.requireTenantMembership(userId, tenantId);
         this.assertBillingAccess(membership.role);
+
+        if (dto.planCode === 'FREE') {
+            const reference = `free_${tenantId.slice(0, 8)}_${Date.now()}`;
+            const result = await this.applySubscriptionChange({
+                tenantId,
+                planCode: 'FREE',
+                billingCycle: 'MONTHLY',
+                status: 'ACTIVE',
+                providerName: 'manual',
+                providerCustomerRef: `tenant_${tenantId}`,
+                providerSubscriptionRef: reference,
+                cancelAtPeriodEnd: false,
+            });
+
+            await this.recordBillingEvent({
+                tenantId,
+                providerName: 'manual',
+                externalEventId: reference,
+                eventType: 'CHECKOUT_BYPASSED',
+                status: 'ACTIVE',
+                referenceId: reference,
+                amount: 0,
+                currency: 'BDT',
+                payload: { reason: 'FREE_PLAN_SELECTED' },
+            });
+
+            return {
+                provider_name: 'manual',
+                reference,
+                external_event_id: reference,
+                checkout_url: null,
+                billing_cycle: 'MONTHLY',
+                amount: 0,
+                currency: 'BDT',
+                plan: result.subscription.plan,
+                requires_confirmation: false,
+                activated: true,
+            };
+        }
 
         const billingCycle = this.normalizeBillingCycle(dto.billingCycle);
         const plan = await this.getActivePlan(dto.planCode);
@@ -162,7 +202,7 @@ export class BillingService {
     async handleSslWirelessCallback(payload: BillingCallbackDto, mode: SslWirelessCallbackMode) {
         const reference = payload.tran_id;
         const tenantId = payload.value_a;
-        const planCode = (payload.value_b as 'BASIC' | 'PREMIUM' | undefined) ?? 'BASIC';
+        const planCode = (payload.value_b as PlanCode | undefined) ?? 'BASIC';
         const billingCycle = this.normalizeBillingCycle(payload.value_c);
 
         if (!reference || !tenantId) {
@@ -238,7 +278,7 @@ export class BillingService {
 
     async applySubscriptionChange(input: {
         tenantId: string;
-        planCode: 'BASIC' | 'PREMIUM';
+        planCode: PlanCode;
         billingCycle?: BillingCycle;
         status?: SubscriptionStatus;
         periodStart?: Date;
@@ -596,7 +636,7 @@ export class BillingService {
         return membership;
     }
 
-    private async getActivePlan(planCode: 'BASIC' | 'PREMIUM') {
+    private async getActivePlan(planCode: PlanCode) {
         const plan = await this.db.subscriptionPlan.findUnique({
             where: { code: planCode },
         });
@@ -629,7 +669,7 @@ export class BillingService {
     }
 
     private mapPlan(plan: {
-        code: 'BASIC' | 'PREMIUM';
+        code: PlanCode;
         name: string;
         description: string | null;
         monthly_price: unknown;
@@ -660,6 +700,7 @@ export class BillingService {
             provider_customer_ref: subscription.provider_customer_ref,
             provider_subscription_ref: subscription.provider_subscription_ref,
             is_premium: subscription.plan?.code === 'PREMIUM',
+            is_paid_plan: subscription.plan?.code !== 'FREE',
             plan: subscription.plan ? this.mapPlan(subscription.plan) : null,
         };
     }

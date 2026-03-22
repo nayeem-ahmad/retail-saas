@@ -156,12 +156,12 @@ export class AuthService {
                 tenantName: dto.name,
                 storeName: dto.name,
                 address: dto.address,
-                planCode: 'BASIC',
+                planCode: 'FREE',
             }),
         );
     }
 
-    async setupTenant(userId: string, dto: { tenantName: string; storeName: string; address?: string; planCode?: 'BASIC' | 'PREMIUM' }) {
+    async setupTenant(userId: string, dto: { tenantName: string; storeName: string; address?: string; planCode?: 'FREE' | 'BASIC' | 'STANDARD' | 'PREMIUM' }) {
         return this.db.$transaction(async (tx) =>
             this.provisionTenant(tx, userId, {
                 tenantName: dto.tenantName,
@@ -175,9 +175,9 @@ export class AuthService {
     private async provisionTenant(
         tx: any,
         userId: string,
-        dto: { tenantName: string; storeName: string; address?: string; planCode?: 'BASIC' | 'PREMIUM' },
+        dto: { tenantName: string; storeName: string; address?: string; planCode?: 'FREE' | 'BASIC' | 'STANDARD' | 'PREMIUM' },
     ) {
-        const planCode = dto.planCode ?? 'BASIC';
+        const planCode = dto.planCode ?? 'FREE';
         const plan = await tx.subscriptionPlan.findUnique({
             where: { code: planCode },
         });
@@ -241,6 +241,7 @@ export class AuthService {
                       current_period_end: subscription.current_period_end,
                       cancel_at_period_end: subscription.cancel_at_period_end,
                       is_premium: plan?.code === 'PREMIUM',
+                      is_paid_plan: plan?.code !== 'FREE',
                       plan: plan
                           ? {
                                 code: plan.code,

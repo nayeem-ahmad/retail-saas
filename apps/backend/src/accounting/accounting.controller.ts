@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Param, Post, Query, UseGuards, UseInterceptors } from '@nestjs/common';
 import { AccountingService } from './accounting.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { RequiresPlan } from '../auth/subscription-access.decorator';
+import { RequiresFeature } from '../auth/subscription-access.decorator';
 import { SubscriptionAccessGuard } from '../auth/subscription-access.guard';
 import { TenantRoleGuard } from '../auth/tenant-role.guard';
 import { TenantRoles } from '../auth/tenant-roles.decorator';
@@ -25,7 +25,7 @@ import {
 @UseGuards(JwtAuthGuard, TenantRoleGuard, SubscriptionAccessGuard)
 @UseInterceptors(TenantInterceptor)
 @TenantRoles('OWNER', 'MANAGER')
-@RequiresPlan('PREMIUM')
+@RequiresFeature('premiumAccounting')
 export class AccountingController {
     constructor(private readonly accountingService: AccountingService) {}
 

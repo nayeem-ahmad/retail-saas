@@ -22,7 +22,9 @@ enum SubscriptionStatus {
 }
 
 enum SubscriptionPlanCode {
+  FREE
   BASIC
+  STANDARD
   PREMIUM
 }
 

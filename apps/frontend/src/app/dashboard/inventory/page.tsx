@@ -33,7 +33,7 @@ export default function InventoryPage() {
     const [selectedGroupId, setSelectedGroupId] = useState('');
     const [selectedSubgroupId, setSelectedSubgroupId] = useState('');
     const [showUncategorized, setShowUncategorized] = useState(false);
-    const [hasPremiumInventoryReports, setHasPremiumInventoryReports] = useState(false);
+    const [hasAdvancedInventoryReports, setHasAdvancedInventoryReports] = useState(false);
 
     useEffect(() => {
         void Promise.all([loadProducts(), loadCategoryOptions()]);
@@ -45,7 +45,8 @@ export default function InventoryPage() {
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
-            setHasPremiumInventoryReports(localStorage.getItem('subscription_plan_code') === 'PREMIUM');
+            const planCode = localStorage.getItem('subscription_plan_code');
+            setHasAdvancedInventoryReports(planCode === 'STANDARD' || planCode === 'PREMIUM');
         }
     }, []);
 
@@ -306,7 +307,7 @@ export default function InventoryPage() {
                             <ClipboardCheck className="w-4 h-4 mr-2" />
                             Stock Takes
                         </Link>
-                        {hasPremiumInventoryReports ? (
+                        {hasAdvancedInventoryReports ? (
                             <>
                                 <Link
                                     href="/dashboard/inventory/reports/reorder"
@@ -329,7 +330,7 @@ export default function InventoryPage() {
                                 className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-2.5 rounded-xl font-bold text-sm flex items-center transition-all hover:border-amber-300 hover:bg-amber-100"
                             >
                                 <TrendingUp className="w-4 h-4 mr-2" />
-                                Upgrade for Premium Reports
+                                Upgrade for Advanced Reports
                             </Link>
                         )}
                         <button

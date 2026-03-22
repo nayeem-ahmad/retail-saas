@@ -13,9 +13,17 @@
 - **Integration Notes:**
 
   - The backend creates the hosted checkout session and redirects the tenant owner or manager to the SSL Wireless payment page.
+  - The Free plan does not initiate hosted checkout; backend activates the free subscription path directly.
   - Success, failure, cancel, and IPN callbacks are processed by the backend, which validates the transaction before changing `TenantSubscription` state.
   - Callback processing is recorded in `BillingEvent` rows so duplicate provider notifications are idempotent and auditable.
   - The billing service still supports a manual fallback path for local development when provider credentials are not configured.
+
+**Plan Catalog Context:**
+
+- Free: BDT 0
+- Basic: BDT 499
+- Standard: BDT 999
+- Premium: BDT 1499
 
 ### bKash Payment Gateway API
 

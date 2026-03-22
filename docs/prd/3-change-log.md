@@ -24,7 +24,7 @@ The validation process will be conducted in three phases:
 
 2.  **Beta Release (Private, Invite-Only):**
     *   **Participants:** A curated group of 20-30 real-world small grocery shop owners in Bangladesh who have expressed prior interest.
-    *   **Goal:** Validate the product's market fit, ease of use in a real-world context, and the perceived value of the Basic Tier feature set.
+    *   **Goal:** Validate the product's market fit, ease of use in a real-world context, and the perceived value of the entry-tier feature set (Free/Basic).
     *   **Methodology:**
         *   **Quantitative:** Track key metrics through in-app analytics:
             *   **User Engagement:** Daily Active Users (DAU), number of transactions processed per day.
