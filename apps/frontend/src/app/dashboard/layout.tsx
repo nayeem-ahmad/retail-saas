@@ -10,6 +10,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const pathname = usePathname();
     const router = useRouter();
     const [user, setUser] = useState<any>(null);
+    const [activeStoreId, setActiveStoreId] = useState<string>('');
 
     useEffect(() => {
         api.getMe().then(setUser).catch(() => null);
@@ -18,6 +19,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const isDashboardHome = pathname === '/dashboard';
     const activeTenantId = typeof window !== 'undefined' ? localStorage.getItem('tenant_id') : null;
     const activeTenant = user?.tenants?.find((tenant: any) => tenant.id === activeTenantId) || user?.tenants?.[0];
+    const tenantStores = activeTenant?.stores || [];
     const primaryRole = activeTenant?.role;
     const activePlanCode = activeTenant?.subscription?.plan?.code || null;
     const planFeatures = (activeTenant?.subscription?.plan?.features_json || {}) as Record<string, unknown>;
@@ -28,6 +30,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const canManageBilling = primaryRole === 'OWNER' || primaryRole === 'MANAGER';
     const canAccessAccounting = (primaryRole === 'OWNER' || primaryRole === 'MANAGER') && hasPaidPlan && hasAccountingEntitlement;
     const canAccessInventoryReports = Boolean(hasInventoryReportEntitlement);
+
+    useEffect(() => {
+        if (!activeTenant) return;
+
+        const savedStoreId = localStorage.getItem('store_id');
+        const hasSavedStore = tenantStores.some((store: any) => store.id === savedStoreId);
+        const resolvedStoreId = hasSavedStore ? savedStoreId : tenantStores[0]?.id;
+
+        if (resolvedStoreId) {
+            setActiveStoreId(resolvedStoreId);
+            if (resolvedStoreId !== savedStoreId) {
+                localStorage.setItem('store_id', resolvedStoreId);
+            }
+        }
+    }, [activeTenant, tenantStores]);
 
     useEffect(() => {
         if (!canAccessAccounting && pathname.startsWith('/dashboard/accounting')) {
@@ -54,6 +71,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
             .join(' ');
     })();
+
+    const handleStoreChange = (storeId: string) => {
+        setActiveStoreId(storeId);
+        localStorage.setItem('store_id', storeId);
+        router.refresh();
+    };
 
     return (
         <div className="flex h-screen bg-[#f9fafb] font-sans text-[#111827]">
@@ -85,6 +108,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     </div>
 
                     <div className="flex items-center space-x-4">
+                        {tenantStores.length > 0 ? (
+                            <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-2 py-1">
+                                <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">Branch</span>
+                                <select
+                                    value={activeStoreId}
+                                    onChange={(e) => handleStoreChange(e.target.value)}
+                                    className="bg-transparent text-xs font-semibold text-gray-700 outline-none"
+                                    aria-label="Select branch"
+                                >
+                                    {tenantStores.map((store: any) => (
+                                        <option key={store.id} value={store.id}>
+                                            {store.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        ) : null}
                         <div className="relative p-2 text-gray-400 hover:text-gray-600 cursor-pointer transition-colors">
                             <Bell className="w-5 h-5" />
                             <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white" />
