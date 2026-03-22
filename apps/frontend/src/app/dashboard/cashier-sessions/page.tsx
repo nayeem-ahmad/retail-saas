@@ -139,15 +139,15 @@ export default function CashierSessionsPage() {
                             <div className="grid grid-cols-3 gap-4">
                                 <div className="bg-gray-50 p-4 rounded-2xl">
                                     <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1">Opening Cash</span>
-                                    <span className="text-xl font-black text-gray-900">${parseFloat(session.opening_cash).toFixed(2)}</span>
+                                    <span className="text-xl font-black text-gray-900">{parseFloat(session.opening_cash).toFixed(2)}</span>
                                 </div>
                                 <div className="bg-green-50 p-4 rounded-2xl">
                                     <span className="text-[10px] font-black uppercase tracking-widest text-green-500 block mb-1">Cash In</span>
-                                    <span className="text-xl font-black text-green-600">${totalCashIn.toFixed(2)}</span>
+                                    <span className="text-xl font-black text-green-600">{totalCashIn.toFixed(2)}</span>
                                 </div>
                                 <div className="bg-rose-50 p-4 rounded-2xl">
                                     <span className="text-[10px] font-black uppercase tracking-widest text-rose-400 block mb-1">Cash Out</span>
-                                    <span className="text-xl font-black text-rose-600">${totalCashOut.toFixed(2)}</span>
+                                    <span className="text-xl font-black text-rose-600">{totalCashOut.toFixed(2)}</span>
                                 </div>
                             </div>
                         </div>
@@ -194,7 +194,7 @@ export default function CashierSessionsPage() {
                                             </div>
                                             <div className="text-right">
                                                 <span className={`text-sm font-black ${parseFloat(tx.amount) > 0 ? 'text-green-600' : 'text-rose-600'}`}>
-                                                    {parseFloat(tx.amount) > 0 ? '+' : ''}${parseFloat(tx.amount).toFixed(2)}
+                                                    {parseFloat(tx.amount) > 0 ? '+' : ''}{parseFloat(tx.amount).toFixed(2)}
                                                 </span>
                                                 <span className="text-[10px] text-gray-400 block">{new Date(tx.created_at).toLocaleTimeString()}</span>
                                             </div>

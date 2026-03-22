@@ -104,7 +104,7 @@ export default function AccountingJournalPage() {
             }),
             columnHelper.accessor('total_amount', {
                 header: 'Amount',
-                cell: (info) => <span className="text-sm font-black text-emerald-600">${Number(info.getValue() || 0).toFixed(2)}</span>,
+                cell: (info) => <span className="text-sm font-black text-emerald-600">{Number(info.getValue() || 0).toFixed(2)}</span>,
                 size: 120,
             }),
             columnHelper.display({

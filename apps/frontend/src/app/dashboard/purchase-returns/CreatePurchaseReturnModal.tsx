@@ -260,7 +260,7 @@ export default function CreatePurchaseReturnModal({
                                                             </p>
                                                         </div>
                                                         <span className="text-sm font-black text-emerald-600">
-                                                            ${Number(purchase.total_amount || 0).toFixed(2)}
+                                                            {Number(purchase.total_amount || 0).toFixed(2)}
                                                         </span>
                                                     </div>
                                                     <p className="text-xs text-gray-500 mt-2">
@@ -303,7 +303,7 @@ export default function CreatePurchaseReturnModal({
                                         <div>
                                             <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1">Original Total</span>
                                             <span className="text-sm font-black text-emerald-600">
-                                                ${Number(selectedPurchase.total_amount || 0).toFixed(2)}
+                                                {Number(selectedPurchase.total_amount || 0).toFixed(2)}
                                             </span>
                                         </div>
                                     </div>
@@ -395,7 +395,7 @@ export default function CreatePurchaseReturnModal({
                                             <p className="text-xs font-black uppercase tracking-widest text-emerald-200">Return Total</p>
                                             <p className="text-sm text-emerald-100 mt-1">Calculated from client-side quantity caps and purchase unit costs</p>
                                         </div>
-                                        <span className="text-2xl font-black">${totalAmount.toFixed(2)}</span>
+                                        <span className="text-2xl font-black">{totalAmount.toFixed(2)}</span>
                                     </div>
                                 </>
                             )}

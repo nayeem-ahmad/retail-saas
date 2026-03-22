@@ -172,8 +172,8 @@ export default function PurchaseReturnDetailPage() {
                     <tr>
                         <td>${item.product?.name || 'Unknown item'}</td>
                         <td class="text-center">${item.quantity}</td>
-                        <td class="text-right">${Number(item.unit_cost || 0).toFixed(2)}</td>
-                        <td class="text-right">${Number(item.line_total || 0).toFixed(2)}</td>
+                        <td class="text-right">{Number(item.unit_cost || 0).toFixed(2)}</td>
+                        <td class="text-right">{Number(item.line_total || 0).toFixed(2)}</td>
                     </tr>
                 `,
             )
@@ -228,7 +228,7 @@ export default function PurchaseReturnDetailPage() {
                         ${itemRows}
                         <tr class="total-row">
                             <td colspan="3">Total</td>
-                            <td class="text-right">${Number(purchaseReturn.total_amount || 0).toFixed(2)}</td>
+                            <td class="text-right">{Number(purchaseReturn.total_amount || 0).toFixed(2)}</td>
                         </tr>
                     </tbody>
                 </table>
@@ -429,7 +429,7 @@ export default function PurchaseReturnDetailPage() {
                                                     />
                                                 </td>
                                                 <td className="py-3 text-center text-xs font-bold text-gray-400 uppercase tracking-widest">{item.maxQuantity}</td>
-                                                <td className="py-3 text-right text-sm font-bold text-gray-700">${item.unitCost.toFixed(2)}</td>
+                                                <td className="py-3 text-right text-sm font-bold text-gray-700">{item.unitCost.toFixed(2)}</td>
                                                 <td className="py-3 text-right text-sm font-black text-emerald-600">{(item.quantity * item.unitCost).toFixed(2)}</td>
                                                 <td className="py-3 text-center">
                                                     <button
@@ -445,7 +445,7 @@ export default function PurchaseReturnDetailPage() {
                                     <tfoot>
                                         <tr className="border-t-2 border-gray-200">
                                             <td colSpan={4} className="pt-3 text-right text-sm font-black uppercase tracking-widest">Total</td>
-                                            <td className="pt-3 text-right text-xl font-black text-emerald-600">${editTotal.toFixed(2)}</td>
+                                            <td className="pt-3 text-right text-xl font-black text-emerald-600">{editTotal.toFixed(2)}</td>
                                             <td></td>
                                         </tr>
                                     </tfoot>
@@ -470,8 +470,8 @@ export default function PurchaseReturnDetailPage() {
                                                 <span className="text-sm font-bold text-gray-900">{item.product?.name || 'Unknown item'}</span>
                                             </td>
                                             <td className="p-3 text-center text-sm font-bold text-gray-700">{item.quantity}</td>
-                                            <td className="p-3 text-right text-sm font-bold text-gray-700">${Number(item.unit_cost || 0).toFixed(2)}</td>
-                                            <td className="p-3 text-right text-sm font-black text-emerald-600">${Number(item.line_total || 0).toFixed(2)}</td>
+                                            <td className="p-3 text-right text-sm font-bold text-gray-700">{Number(item.unit_cost || 0).toFixed(2)}</td>
+                                            <td className="p-3 text-right text-sm font-black text-emerald-600">{Number(item.line_total || 0).toFixed(2)}</td>
                                         </tr>
                                     ))}
                                 </tbody>

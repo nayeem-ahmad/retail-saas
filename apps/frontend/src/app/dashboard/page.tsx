@@ -201,7 +201,7 @@ export default function DashboardPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <StatCard
                     title="Total Sales"
-                    value={`$${totalSalesAmount.toLocaleString()}`}
+                    value={`${totalSalesAmount.toLocaleString()}`}
                     trend="+0% from last month"
                     isPositive={true}
                 />

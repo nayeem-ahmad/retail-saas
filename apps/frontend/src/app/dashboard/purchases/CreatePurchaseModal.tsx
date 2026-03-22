@@ -483,25 +483,25 @@ export default function CreatePurchaseModal({
                             <div className="rounded-2xl bg-emerald-950 text-white p-5 space-y-3">
                                 <div className="flex items-center justify-between text-sm font-bold text-emerald-100">
                                     <span>Subtotal</span>
-                                    <span>${subtotal.toFixed(2)}</span>
+                                    <span>{subtotal.toFixed(2)}</span>
                                 </div>
                                 <div className="flex items-center justify-between text-sm font-bold text-emerald-100">
                                     <span>Tax</span>
-                                    <span>${tax.toFixed(2)}</span>
+                                    <span>{tax.toFixed(2)}</span>
                                 </div>
                                 <div className="flex items-center justify-between text-sm font-bold text-emerald-100">
                                     <span>Freight</span>
-                                    <span>${freight.toFixed(2)}</span>
+                                    <span>{freight.toFixed(2)}</span>
                                 </div>
                                 <div className="flex items-center justify-between text-sm font-bold text-emerald-100">
                                     <span>Discount</span>
-                                    <span>-${discount.toFixed(2)}</span>
+                                    <span>-{discount.toFixed(2)}</span>
                                 </div>
                                 <div className="border-t border-emerald-800 pt-3 flex items-center justify-between">
                                     <span className="text-xs font-black uppercase tracking-widest text-emerald-200">
                                         Purchase Total
                                     </span>
-                                    <span className="text-2xl font-black">${total.toFixed(2)}</span>
+                                    <span className="text-2xl font-black">{total.toFixed(2)}</span>
                                 </div>
                             </div>
                         </div>

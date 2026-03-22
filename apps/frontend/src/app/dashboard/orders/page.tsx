@@ -93,11 +93,11 @@ export default function OrdersPage() {
                 <table>
                     <thead><tr><th>Product</th><th>Qty</th><th>Price</th><th>Subtotal</th></tr></thead>
                     <tbody>
-                        ${order.items.map((item: any) => `<tr><td>${item.product?.name || 'Item'}</td><td>${item.quantity}</td><td>$${Number(item.price_at_order).toFixed(2)}</td><td>$${(item.quantity * Number(item.price_at_order)).toFixed(2)}</td></tr>`).join('')}
-                        <tr class="total-row"><td colspan="3">Total</td><td>$${Number(order.total_amount).toFixed(2)}</td></tr>
+                        ${order.items.map((item: any) => `<tr><td>${item.product?.name || 'Item'}</td><td>${item.quantity}</td><td>${Number(item.price_at_order).toFixed(2)}</td><td>${(item.quantity * Number(item.price_at_order)).toFixed(2)}</td></tr>`).join('')}
+                        <tr class="total-row"><td colspan="3">Total</td><td>${Number(order.total_amount).toFixed(2)}</td></tr>
                     </tbody>
                 </table>
-                <p><strong>Paid:</strong> $${Number(order.amount_paid).toFixed(2)} | <strong>Due:</strong> $${(Number(order.total_amount) - Number(order.amount_paid)).toFixed(2)}</p>
+                <p><strong>Paid:</strong> ${Number(order.amount_paid).toFixed(2)} | <strong>Due:</strong> ${(Number(order.total_amount) - Number(order.amount_paid)).toFixed(2)}</p>
                 <div class="footer">Sales Order</div>
             </body>
             </html>

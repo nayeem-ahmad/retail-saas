@@ -318,7 +318,7 @@ export default function QuoteDetailsPage() {
                                                                 <span className="text-sm font-bold">{product.name}</span>
                                                                 <span className="text-xs text-gray-400 ml-2">{product.sku}</span>
                                                             </div>
-                                                            <span className="text-sm font-bold text-blue-600">${parseFloat(product.price).toFixed(2)}</span>
+                                                            <span className="text-sm font-bold text-blue-600">{parseFloat(product.price).toFixed(2)}</span>
                                                         </button>
                                                     ))}
                                                 </div>
@@ -389,8 +389,8 @@ export default function QuoteDetailsPage() {
                                                 </div>
                                             </div>
                                             <div className="text-right">
-                                                <p className="font-black">${(Number(item.unit_price) * item.quantity).toFixed(2)}</p>
-                                                <p className="text-[10px] text-gray-400 font-bold tracking-widest uppercase">${Number(item.unit_price).toFixed(2)}/ea</p>
+                                                <p className="font-black">{(Number(item.unit_price) * item.quantity).toFixed(2)}</p>
+                                                <p className="text-[10px] text-gray-400 font-bold tracking-widest uppercase">{Number(item.unit_price).toFixed(2)}/ea</p>
                                             </div>
                                         </div>
                                     ))}
@@ -459,7 +459,7 @@ export default function QuoteDetailsPage() {
                             <div className="p-6 space-y-4">
                                 <div className="pt-2 flex justify-between items-center text-gray-900">
                                     <span className="text-xs font-bold uppercase tracking-widest text-gray-400">Grand Total</span>
-                                    <span className="font-black text-3xl tracking-tight">${(isEditMode ? editTotalAmount : totalAmount).toFixed(2)}</span>
+                                    <span className="font-black text-3xl tracking-tight">{(isEditMode ? editTotalAmount : totalAmount).toFixed(2)}</span>
                                 </div>
                             </div>
                         </div>

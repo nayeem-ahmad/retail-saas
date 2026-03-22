@@ -213,7 +213,7 @@ export default function CreateQuotationModal({ isOpen, onClose, onSuccess }: Cre
                                                 <span className="text-sm font-bold">{product.name}</span>
                                                 <span className="text-xs text-gray-400 ml-2">{product.sku}</span>
                                             </div>
-                                            <span className="text-sm font-bold text-blue-600">${parseFloat(product.price).toFixed(2)}</span>
+                                            <span className="text-sm font-bold text-blue-600">{parseFloat(product.price).toFixed(2)}</span>
                                         </button>
                                     ))}
                                 </div>
@@ -272,7 +272,7 @@ export default function CreateQuotationModal({ isOpen, onClose, onSuccess }: Cre
                             <tfoot>
                                 <tr className="border-t-2 border-gray-200">
                                     <td colSpan={3} className="pt-3 text-right text-sm font-black uppercase tracking-widest">Total</td>
-                                    <td className="pt-3 text-right text-xl font-black text-blue-600">${total.toFixed(2)}</td>
+                                    <td className="pt-3 text-right text-xl font-black text-blue-600">{total.toFixed(2)}</td>
                                     <td></td>
                                 </tr>
                             </tfoot>

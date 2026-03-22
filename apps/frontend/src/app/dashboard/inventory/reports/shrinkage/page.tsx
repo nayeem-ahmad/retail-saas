@@ -85,7 +85,7 @@ export default function ShrinkageReportPage() {
             columnHelper.accessor('quantity', { header: 'Quantity Lost', size: 120 }),
             columnHelper.accessor('value', {
                 header: 'Estimated Value',
-                cell: (info) => <span className="text-sm font-black text-rose-600">${Number(info.getValue()).toFixed(2)}</span>,
+                cell: (info) => <span className="text-sm font-black text-rose-600">{Number(info.getValue()).toFixed(2)}</span>,
                 size: 150,
             }),
         ],
@@ -109,7 +109,7 @@ export default function ShrinkageReportPage() {
                     </div>
                     <div className="bg-white border border-gray-100 rounded-2xl p-4">
                         <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">Estimated Value Lost</div>
-                        <div className="mt-2 text-2xl font-black text-rose-600">${Number(report.summary?.totalValue ?? 0).toFixed(2)}</div>
+                        <div className="mt-2 text-2xl font-black text-rose-600">{Number(report.summary?.totalValue ?? 0).toFixed(2)}</div>
                     </div>
                     <div className="bg-white border border-gray-100 rounded-2xl p-4">
                         <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">Top Driver</div>

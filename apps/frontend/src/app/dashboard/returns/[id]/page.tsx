@@ -242,10 +242,10 @@ export default function ReturnDetailPage() {
                         </div>
                         <div className="bg-white p-4 rounded-2xl shadow-sm">
                             <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1">New Total Refund</span>
-                            <span className="text-xl font-black text-rose-600">${editTotal.toFixed(2)}</span>
+                            <span className="text-xl font-black text-rose-600">{editTotal.toFixed(2)}</span>
                             {editTotal !== parseFloat(ret.total_refund) && (
                                 <span className="block text-xs font-bold mt-1 text-gray-400">
-                                    Was: ${parseFloat(ret.total_refund).toFixed(2)}
+                                    Was: {parseFloat(ret.total_refund).toFixed(2)}
                                 </span>
                             )}
                         </div>
@@ -262,7 +262,7 @@ export default function ReturnDetailPage() {
                         </div>
                         <div className="bg-white p-4 rounded-2xl shadow-sm">
                             <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1">Total Refund</span>
-                            <span className="text-xl font-black text-rose-600">${parseFloat(ret.total_refund).toFixed(2)}</span>
+                            <span className="text-xl font-black text-rose-600">{parseFloat(ret.total_refund).toFixed(2)}</span>
                         </div>
                         <div className="bg-white p-4 rounded-2xl shadow-sm">
                             <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1">Items Returned</span>
@@ -294,12 +294,12 @@ export default function ReturnDetailPage() {
                                 <tr key={item.id}>
                                     <td>{item.product?.name || 'Unknown'}</td>
                                     <td>{item.quantity}</td>
-                                    <td>${parseFloat(item.refund_amount).toFixed(2)}</td>
+                                    <td>{parseFloat(item.refund_amount).toFixed(2)}</td>
                                 </tr>
                             ))}
                             <tr className="total-row">
                                 <td colSpan={2}>Total Refund</td>
-                                <td>${parseFloat(ret.total_refund).toFixed(2)}</td>
+                                <td>{parseFloat(ret.total_refund).toFixed(2)}</td>
                             </tr>
                         </tbody>
                     </table>
@@ -377,7 +377,7 @@ export default function ReturnDetailPage() {
                                     <tfoot>
                                         <tr className="border-t-2 border-gray-200">
                                             <td colSpan={4} className="pt-3 text-right text-sm font-black uppercase tracking-widest">Total Refund</td>
-                                            <td className="pt-3 text-right text-xl font-black text-rose-600">${editTotal.toFixed(2)}</td>
+                                            <td className="pt-3 text-right text-xl font-black text-rose-600">{editTotal.toFixed(2)}</td>
                                             <td></td>
                                         </tr>
                                     </tfoot>
@@ -405,14 +405,14 @@ export default function ReturnDetailPage() {
                                             </div>
                                         </td>
                                         <td className="p-4 text-center text-sm font-black">{item.quantity}</td>
-                                        <td className="p-4 text-right text-sm font-black text-rose-600">${parseFloat(item.refund_amount).toFixed(2)}</td>
+                                        <td className="p-4 text-right text-sm font-black text-rose-600">{parseFloat(item.refund_amount).toFixed(2)}</td>
                                     </tr>
                                 ))}
                             </tbody>
                             <tfoot>
                                 <tr className="border-t-2 border-gray-200">
                                     <td colSpan={2} className="p-4 text-right text-sm font-black uppercase tracking-widest">Total Refund</td>
-                                    <td className="p-4 text-right text-xl font-black text-rose-600">${parseFloat(ret.total_refund).toFixed(2)}</td>
+                                    <td className="p-4 text-right text-xl font-black text-rose-600">{parseFloat(ret.total_refund).toFixed(2)}</td>
                                 </tr>
                             </tfoot>
                         </table>

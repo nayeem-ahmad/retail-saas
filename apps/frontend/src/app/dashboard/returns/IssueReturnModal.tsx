@@ -113,7 +113,7 @@ export default function IssueReturnModal({ isOpen, onClose, onSuccess }: IssueRe
                             <div className="bg-gray-50 p-4 rounded-2xl">
                                 <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">Receipt Found</p>
                                 <p className="font-black text-lg">{sale.serial_number}</p>
-                                <p className="text-sm font-bold text-blue-600 mt-1">${Number(sale.total_amount).toFixed(2)} Total</p>
+                                <p className="text-sm font-bold text-blue-600 mt-1">{Number(sale.total_amount).toFixed(2)} Total</p>
                             </div>
 
                             <div>
@@ -125,7 +125,7 @@ export default function IssueReturnModal({ isOpen, onClose, onSuccess }: IssueRe
                                             <div key={item.id} className="flex flex-wrap items-center justify-between p-4 border border-gray-100 rounded-xl gap-4">
                                                 <div className="flex-1 min-w-[150px]">
                                                     <p className="font-bold text-sm tracking-tight">{item.product?.name || 'Item'}</p>
-                                                    <p className="text-xs font-black text-gray-400 uppercase tracking-widest">${Number(item.price_at_sale).toFixed(2)} / ea</p>
+                                                    <p className="text-xs font-black text-gray-400 uppercase tracking-widest">{Number(item.price_at_sale).toFixed(2)} / ea</p>
                                                 </div>
                                                 <div className="flex items-center space-x-4">
                                                     <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">Max: {maxReturnQty}</span>

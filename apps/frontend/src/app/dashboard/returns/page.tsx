@@ -81,8 +81,8 @@ export default function ReturnsPage() {
                 <table>
                     <thead><tr><th>Product</th><th>Qty</th><th>Refund</th></tr></thead>
                     <tbody>
-                        ${ret.items.map((item: any) => `<tr><td>${item.product?.name || 'Item'}</td><td>${item.quantity}</td><td>$${Number(item.refund_amount || item.price_at_sale * item.quantity).toFixed(2)}</td></tr>`).join('')}
-                        <tr class="total-row"><td colspan="2">Total Refund</td><td>$${Number(ret.total_refund).toFixed(2)}</td></tr>
+                        ${ret.items.map((item: any) => `<tr><td>${item.product?.name || 'Item'}</td><td>${item.quantity}</td><td>${Number(item.refund_amount || item.price_at_sale * item.quantity).toFixed(2)}</td></tr>`).join('')}
+                        <tr class="total-row"><td colspan="2">Total Refund</td><td>${Number(ret.total_refund).toFixed(2)}</td></tr>
                     </tbody>
                 </table>
                 ${ret.reason ? `<p><strong>Reason:</strong> ${ret.reason}</p>` : ''}
