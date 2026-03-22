@@ -1,5 +1,4 @@
 import { Type } from 'class-transformer';
-import { AccountCategory, AccountType, VoucherType } from '@retail-saas/shared-types';
 import {
     ArrayMinSize,
     IsDateString,
@@ -12,6 +11,7 @@ import {
     IsString,
     ValidateNested,
 } from 'class-validator';
+import { AccountCategory, AccountType, VoucherType } from './accounting.constants';
 
 export class CreateAccountGroupDto {
     @IsString()

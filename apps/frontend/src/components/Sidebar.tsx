@@ -7,6 +7,7 @@ import {
     LayoutDashboard,
     ShoppingCart,
     Package,
+    Boxes,
     Users,
     FileText,
     ClipboardList,
@@ -24,6 +25,12 @@ import {
     Calculator,
     FolderTree,
     MapPin,
+    ClipboardCheck,
+    AlertTriangle,
+    BookOpen,
+    ShieldCheck,
+    CreditCard,
+    Crown,
     type LucideIcon,
 } from 'lucide-react';
 
@@ -37,6 +44,7 @@ interface NavChild {
     label: string;
     /** If true, renders as a non-clickable section header */
     section?: boolean;
+    premiumOnly?: boolean;
 }
 
 interface NavModule {
@@ -99,7 +107,32 @@ const MODULES: NavModule[] = [
         key: 'inventory',
         icon: Package,
         label: 'Inventory',
-        href: '/dashboard/inventory',
+        children: [
+            { href: '/dashboard/inventory', icon: Package, label: 'Products' },
+            { href: '/dashboard/inventory/transfers', icon: Boxes, label: 'Transfers' },
+            { href: '/dashboard/inventory/shrinkage', icon: AlertTriangle, label: 'Shrinkage' },
+            { href: '/dashboard/inventory/stock-takes', icon: ClipboardCheck, label: 'Stock Takes' },
+            { href: '/dashboard/inventory/ledger', icon: BookOpen, label: 'Stock Ledger' },
+            { href: '/dashboard/inventory/categories', icon: FolderTree, label: 'Categories' },
+            { href: '/dashboard/inventory/reports/reorder', icon: TrendingUp, label: 'Reorder Report', premiumOnly: true },
+            { href: '/dashboard/inventory/reports/shrinkage', icon: AlertTriangle, label: 'Shrinkage Report', premiumOnly: true },
+            { href: '/dashboard/inventory/reports/valuation', icon: Calculator, label: 'Valuation', premiumOnly: true },
+            { href: '/dashboard/inventory/settings', icon: Settings, label: 'Settings' },
+        ],
+    },
+    {
+        key: 'billing',
+        icon: CreditCard,
+        label: 'Billing',
+        href: '/dashboard/billing',
+    },
+    {
+        key: 'admin',
+        icon: ShieldCheck,
+        label: 'Platform Admin',
+        children: [
+            { href: '/dashboard/admin/tenants', icon: Crown, label: 'Tenants' },
+        ],
     },
     {
         key: 'settings',
@@ -113,13 +146,39 @@ const MODULES: NavModule[] = [
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
 
-export default function Sidebar({ canAccessAccounting = true }: { canAccessAccounting?: boolean }) {
+export default function Sidebar({
+    canAccessAccounting = true,
+    canAccessInventoryReports = false,
+    canAccessAdmin = false,
+    canManageBilling = false,
+    activePlanCode,
+}: {
+    canAccessAccounting?: boolean;
+    canAccessInventoryReports?: boolean;
+    canAccessAdmin?: boolean;
+    canManageBilling?: boolean;
+    activePlanCode?: string | null;
+}) {
     const pathname = usePathname();
     const [collapsed, setCollapsed] = useState(false);
     const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
-    const modules = canAccessAccounting
-        ? MODULES
-        : MODULES.filter((module) => module.key !== 'accounting');
+    const modules = MODULES
+        .filter((module) => {
+            if (module.key === 'accounting') return canAccessAccounting;
+            if (module.key === 'admin') return canAccessAdmin;
+            if (module.key === 'billing') return canManageBilling;
+            return true;
+        })
+        .map((module) => {
+            if (module.key !== 'inventory' || !module.children) {
+                return module;
+            }
+
+            return {
+                ...module,
+                children: module.children.filter((child) => !child.premiumOnly || canAccessInventoryReports),
+            };
+        });
 
     useEffect(() => {
         const saved = localStorage.getItem('sidebar-collapsed');
@@ -196,7 +255,17 @@ export default function Sidebar({ canAccessAccounting = true }: { canAccessAccou
                     <Package className="text-white w-5 h-5" />
                 </div>
                 {!collapsed && (
-                    <span className="text-lg font-bold tracking-tight whitespace-nowrap">RetailSaaS</span>
+                    <div className="min-w-0">
+                        <span className="text-lg font-bold tracking-tight whitespace-nowrap block">RetailSaaS</span>
+                        <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Workspace</span>
+                            {activePlanCode && (
+                                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-widest ${activePlanCode === 'PREMIUM' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'}`}>
+                                    {activePlanCode}
+                                </span>
+                            )}
+                        </div>
+                    </div>
                 )}
             </div>
 
@@ -294,6 +363,9 @@ export default function Sidebar({ canAccessAccounting = true }: { canAccessAccou
                                             <Link key={href} href={href} className={childLinkCls(active)}>
                                                 <ChildIcon className={`flex-shrink-0 w-4 h-4 ${active ? 'text-blue-600' : ''}`} />
                                                 <span className="text-sm tracking-tight whitespace-nowrap">{label}</span>
+                                                {mod.key === 'inventory' && href.includes('/reports/') && (
+                                                    <span className="ml-auto text-[9px] font-black uppercase tracking-widest text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-md">Premium</span>
+                                                )}
                                             </Link>
                                         );
                                     })}

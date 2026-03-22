@@ -1,4 +1,4 @@
-import { createParamDecorator, ExecutionContext } from '@nestjs/common';
+import { BadRequestException, createParamDecorator, ExecutionContext } from '@nestjs/common';
 
 export interface TenantContext {
     tenantId: string;
@@ -9,6 +9,10 @@ export interface TenantContext {
 export const Tenant = createParamDecorator(
     (data: unknown, ctx: ExecutionContext): TenantContext => {
         const request = ctx.switchToHttp().getRequest();
+        if (request.user?.userId && !request.tenantId) {
+            throw new BadRequestException('Tenant context is required for this request.');
+        }
+
         return {
             tenantId: request.tenantId,
             storeId: request.storeId,

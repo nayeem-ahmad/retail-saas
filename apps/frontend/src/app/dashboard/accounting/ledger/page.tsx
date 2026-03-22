@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Calculator, Filter, ReceiptText, Wallet } from 'lucide-react';
@@ -54,6 +54,14 @@ type LedgerResponse = {
 const columnHelper = createColumnHelper<LedgerRow>();
 
 export default function AccountingLedgerPage() {
+    return (
+        <Suspense fallback={<div className="p-6 text-sm text-gray-500">Loading ledger...</div>}>
+            <AccountingLedgerPageContent />
+        </Suspense>
+    );
+}
+
+function AccountingLedgerPageContent() {
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();

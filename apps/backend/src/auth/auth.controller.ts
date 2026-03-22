@@ -17,10 +17,26 @@ export class AuthController {
         return this.authService.login(dto);
     }
 
+    @Get('plans')
+    async getPlans() {
+        return this.authService.getPlans();
+    }
+
     @UseGuards(JwtAuthGuard)
     @Post('setup-store')
     async setupStore(@Request() req, @Body() dto: CreateStoreDto) {
         return this.authService.setupStore(req.user.userId, dto);
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Post('setup-tenant')
+    async setupTenant(@Request() req, @Body() dto: CreateStoreDto) {
+        return this.authService.setupTenant(req.user.userId, {
+            tenantName: dto.tenantName || dto.name,
+            storeName: dto.name,
+            address: dto.address,
+            planCode: dto.planCode,
+        });
     }
 
     @UseGuards(JwtAuthGuard)

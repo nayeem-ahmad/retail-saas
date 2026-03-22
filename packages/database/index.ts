@@ -1,2 +1,2 @@
 export * from '@prisma/client';
-export * from './prisma/bootstrap-accounting';
+export * from './prisma/bootstrap-accounting.js';

@@ -36,6 +36,12 @@ jest.mock('lucide-react', () => {
         Calculator: icon,
         FolderTree: icon,
         MapPin: icon,
+        ClipboardCheck: icon,
+        AlertTriangle: icon,
+        BookOpen: icon,
+        ShieldCheck: icon,
+        CreditCard: icon,
+        Crown: icon,
     };
 });
 
@@ -54,5 +60,20 @@ describe('Sidebar — Story 30.1', () => {
         render(<Sidebar canAccessAccounting={false} />);
 
         expect(screen.queryByText('Accounting')).not.toBeInTheDocument();
+    });
+
+    it('shows platform admin and billing items when enabled', () => {
+        render(<Sidebar canAccessAccounting canAccessAdmin canManageBilling activePlanCode="PREMIUM" />);
+
+        expect(screen.getByText('Billing')).toBeInTheDocument();
+        expect(screen.getByText('Platform Admin')).toBeInTheDocument();
+        expect(screen.getByText('PREMIUM')).toBeInTheDocument();
+    });
+
+    it('hides premium inventory reports for non-premium tenants', () => {
+        render(<Sidebar canAccessAccounting canAccessInventoryReports={false} />);
+
+        expect(screen.queryByText('Reorder Report')).not.toBeInTheDocument();
+        expect(screen.queryByText('Shrinkage Report')).not.toBeInTheDocument();
     });
 });

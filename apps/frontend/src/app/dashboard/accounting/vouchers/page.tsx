@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, CircleCheck, FileText, Plus, Scale, Trash2 } from 'lucide-react';
@@ -61,6 +61,14 @@ function createEmptyRow(): VoucherRow {
 }
 
 export default function AccountingVouchersPage() {
+    return (
+        <Suspense fallback={<div className="p-6 text-sm text-gray-500">Loading vouchers...</div>}>
+            <AccountingVouchersPageContent />
+        </Suspense>
+    );
+}
+
+function AccountingVouchersPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [voucherType, setVoucherType] = useState<VoucherType>(VoucherType.CASH_PAYMENT);

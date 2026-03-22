@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { AccountCategory, AccountType, VoucherType } from '@retail-saas/shared-types';
 import { DatabaseService } from '../database/database.service';
+import { AccountCategory, AccountType, VoucherType } from './accounting.constants';
 import {
     CreateVoucherDto,
     CreateAccountDto,
@@ -779,8 +779,10 @@ export class AccountingService {
             },
         });
 
+        const liquidityCategories: AccountCategory[] = [AccountCategory.CASH, AccountCategory.BANK];
+
         const liquidityAccountIds = accounts
-            .filter((account) => [AccountCategory.CASH, AccountCategory.BANK].includes(account.category as AccountCategory))
+            .filter((account) => liquidityCategories.includes(account.category as AccountCategory))
             .map((account) => account.id);
         const revenueAccountIds = accounts
             .filter((account) => account.type === AccountType.REVENUE)
@@ -903,7 +905,7 @@ export class AccountingService {
         }
 
         if (dto.voucherType === VoucherType.FUND_TRANSFER) {
-            const validCategories = new Set([AccountCategory.CASH, AccountCategory.BANK]);
+            const validCategories = new Set<AccountCategory>([AccountCategory.CASH, AccountCategory.BANK]);
             if (!detailAccounts.every((account) => validCategories.has(account.category as AccountCategory))) {
                 throw new BadRequestException('Fund transfer vouchers can only use cash or bank accounts.');
             }

@@ -21,6 +21,44 @@ export interface Tenant {
   created_at: string;
 }
 
+export enum SubscriptionStatus {
+  ACTIVE = 'ACTIVE',
+  PAST_DUE = 'PAST_DUE',
+  CANCELLED = 'CANCELLED',
+  TRIALING = 'TRIALING',
+}
+
+export enum SubscriptionPlanCode {
+  BASIC = 'BASIC',
+  PREMIUM = 'PREMIUM',
+}
+
+export interface SubscriptionPlanSummary {
+  code: SubscriptionPlanCode;
+  name: string;
+  description?: string | null;
+  monthly_price: number;
+  yearly_price?: number | null;
+  features_json?: Record<string, unknown>;
+}
+
+export interface TenantSubscriptionSummary {
+  status: SubscriptionStatus;
+  current_period_start: string;
+  current_period_end: string;
+  cancel_at_period_end: boolean;
+  is_premium: boolean;
+  plan: SubscriptionPlanSummary;
+}
+
+export interface TenantContextSummary {
+  id: string;
+  name: string;
+  role: UserRole;
+  stores: Store[];
+  subscription?: TenantSubscriptionSummary | null;
+}
+
 export interface Store {
   id: string;
   tenant_id: string;
@@ -68,7 +106,9 @@ export enum VoucherType {
 export const SignupSchema = z.object({
   email: z.string().email("Invalid email address"),
   password: z.string().min(8, "Password must be at least 8 characters"),
+  tenantName: z.string().min(2, "Organization name must be at least 2 characters"),
   storeName: z.string().min(2, "Store name must be at least 2 characters"),
+  planCode: z.nativeEnum(SubscriptionPlanCode).default(SubscriptionPlanCode.BASIC),
 });
 
 export type SignupInput = z.infer<typeof SignupSchema>;
@@ -78,12 +118,52 @@ export type SignupInput = z.infer<typeof SignupSchema>;
 export interface Product {
   id: string;
   tenant_id: string;
-  group_id?: string;
-  subgroup_id?: string;
+  group_id?: string | null;
+  subgroup_id?: string | null;
   name: string;
-  sku: string;
+  sku?: string | null;
   price: number;
-  reorder_level: number;
+  reorder_level?: number | null;
+  safety_stock?: number | null;
+  lead_time_days?: number | null;
+  image_url?: string | null;
+  group?: ProductGroup | null;
+  subgroup?: ProductSubgroup | null;
+  stocks?: ProductStock[];
+}
+
+export interface ProductGroup {
+  id: string;
+  tenant_id: string;
+  name: string;
+  description?: string | null;
+  created_at: string;
+  updated_at: string;
+  _count?: { subgroups?: number; products?: number };
+}
+
+export interface ProductSubgroup {
+  id: string;
+  tenant_id: string;
+  group_id: string;
+  name: string;
+  description?: string | null;
+  created_at: string;
+  updated_at: string;
+  group?: ProductGroup | null;
+  _count?: { products?: number };
+}
+
+export interface Warehouse {
+  id: string;
+  tenant_id: string;
+  store_id: string;
+  name: string;
+  code: string;
+  is_default: boolean;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface ProductStock {
@@ -92,6 +172,24 @@ export interface ProductStock {
   product_id: string;
   warehouse_id: string;
   quantity: number;
+  warehouse?: Warehouse;
+}
+
+export interface InventoryMovement {
+  id: string;
+  tenant_id: string;
+  product_id: string;
+  warehouse_id: string;
+  movement_type: string;
+  reference_type?: string | null;
+  reference_id?: string | null;
+  quantity_delta: number;
+  balance_after?: number | null;
+  unit_cost?: number | null;
+  note?: string | null;
+  created_at: string;
+  product?: Product;
+  warehouse?: Warehouse;
 }
 
 export interface Supplier {
@@ -161,9 +259,14 @@ export interface PurchaseReturn {
 
 export const ProductSchema = z.object({
   name: z.string().min(2, "Product name must be at least 2 characters"),
-  sku: z.string().min(3, "SKU must be at least 3 characters"),
+  sku: z.string().min(3, "SKU must be at least 3 characters").optional().or(z.literal("")),
   price: z.coerce.number().min(0, "Price cannot be negative"),
   initialStock: z.coerce.number().min(0, "Initial stock cannot be negative").default(0),
+  groupId: z.string().uuid().optional(),
+  subgroupId: z.string().uuid().optional(),
+  reorderLevel: z.coerce.number().min(0).optional(),
+  safetyStock: z.coerce.number().min(0).optional(),
+  leadTimeDays: z.coerce.number().min(0).optional(),
 });
 
 export type ProductInput = z.infer<typeof ProductSchema>;

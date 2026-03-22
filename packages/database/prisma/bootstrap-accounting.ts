@@ -1,5 +1,5 @@
 import { Prisma, PrismaClient } from '@prisma/client';
-import { AccountCategory, AccountType } from '@retail-saas/shared-types';
+import { AccountCategory, AccountType } from './accounting.constants.js';
 
 export interface DefaultAccountingAccountDefinition {
     name: string;

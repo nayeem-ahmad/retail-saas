@@ -4,6 +4,8 @@ import { PassportModule } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './jwt.strategy';
+import { PlatformAdminGuard } from './platform-admin.guard';
+import { SubscriptionAccessGuard } from './subscription-access.guard';
 
 @Module({
     imports: [
@@ -13,8 +15,8 @@ import { JwtStrategy } from './jwt.strategy';
             signOptions: { expiresIn: '1d' },
         }),
     ],
-    providers: [AuthService, JwtStrategy],
+    providers: [AuthService, JwtStrategy, PlatformAdminGuard, SubscriptionAccessGuard],
     controllers: [AuthController],
-    exports: [AuthService],
+    exports: [AuthService, PlatformAdminGuard, SubscriptionAccessGuard],
 })
 export class AuthModule { }

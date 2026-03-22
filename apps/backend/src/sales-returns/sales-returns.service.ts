@@ -1,6 +1,7 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { CreateSalesReturnDto, UpdateSalesReturnDto } from './sales-returns.dto';
+import { applyInventoryMovement, resolveWarehouseId } from '../database/inventory.utils';
 
 @Injectable()
 export class SalesReturnsService {
@@ -19,6 +20,7 @@ export class SalesReturnsService {
             const returnNumber = `RET-${Date.now()}`;
             let totalRefund = 0;
             const returnItemData = [];
+            const warehouseId = await resolveWarehouseId(tx, tenantId, dto.storeId);
 
             // 2. Validate items and calculate total refund
             for (const returnItem of dto.items) {
@@ -45,10 +47,14 @@ export class SalesReturnsService {
                     refund_amount: refundAmount,
                 });
 
-                // Atomic re-increment of stock
-                await tx.productStock.updateMany({
-                    where: { product_id: originalItem.product_id, tenant_id: tenantId },
-                    data: { quantity: { increment: returnItem.quantity } }
+                await applyInventoryMovement(tx, {
+                    tenantId,
+                    productId: originalItem.product_id,
+                    warehouseId,
+                    quantityDelta: returnItem.quantity,
+                    movementType: 'SALES_RETURN',
+                    referenceType: 'SALES_RETURN',
+                    referenceId: returnNumber,
                 });
             }
 
@@ -112,11 +118,17 @@ export class SalesReturnsService {
 
             // If items are provided, recalculate everything
             if (dto.items && dto.items.length > 0) {
+                const warehouseId = await resolveWarehouseId(tx, tenantId, existing.sale.store_id);
                 // 1. Reverse old stock increments
                 for (const oldItem of existing.items) {
-                    await tx.productStock.updateMany({
-                        where: { product_id: oldItem.product_id, tenant_id: tenantId },
-                        data: { quantity: { decrement: oldItem.quantity } },
+                    await applyInventoryMovement(tx, {
+                        tenantId,
+                        productId: oldItem.product_id,
+                        warehouseId,
+                        quantityDelta: -oldItem.quantity,
+                        movementType: 'SALES_RETURN_REVERSAL',
+                        referenceType: 'SALES_RETURN',
+                        referenceId: id,
                     });
                 }
 
@@ -168,10 +180,14 @@ export class SalesReturnsService {
                         refund_amount: refundAmount,
                     });
 
-                    // 4. Apply new stock increments
-                    await tx.productStock.updateMany({
-                        where: { product_id: newItem.productId, tenant_id: tenantId },
-                        data: { quantity: { increment: newItem.quantity } },
+                    await applyInventoryMovement(tx, {
+                        tenantId,
+                        productId: newItem.productId,
+                        warehouseId,
+                        quantityDelta: newItem.quantity,
+                        movementType: 'SALES_RETURN_EDIT',
+                        referenceType: 'SALES_RETURN',
+                        referenceId: id,
                     });
                 }
 
@@ -219,10 +235,16 @@ export class SalesReturnsService {
             if (!ret) throw new BadRequestException('Return not found');
 
             // Reverse stock increments
+            const warehouseId = await resolveWarehouseId(tx, tenantId, ret.store_id);
             for (const item of ret.items) {
-                await tx.productStock.updateMany({
-                    where: { product_id: item.product_id, tenant_id: tenantId },
-                    data: { quantity: { decrement: item.quantity } },
+                await applyInventoryMovement(tx, {
+                    tenantId,
+                    productId: item.product_id,
+                    warehouseId,
+                    quantityDelta: -item.quantity,
+                    movementType: 'SALES_RETURN_DELETE',
+                    referenceType: 'SALES_RETURN',
+                    referenceId: id,
                 });
             }
 

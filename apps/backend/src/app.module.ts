@@ -16,6 +16,15 @@ import { PurchasesModule } from './purchases/purchases.module';
 import { PurchaseReturnsModule } from './purchase-returns/purchase-returns.module';
 import { AccountingModule } from './accounting/accounting.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { ProductGroupsModule } from './product-groups/product-groups.module';
+import { ProductSubgroupsModule } from './product-subgroups/product-subgroups.module';
+import { InventoryModule } from './inventory/inventory.module';
+import { WarehouseTransfersModule } from './warehouse-transfers/warehouse-transfers.module';
+import { InventoryShrinkageModule } from './inventory-shrinkage/inventory-shrinkage.module';
+import { StockTakesModule } from './stock-takes/stock-takes.module';
+import { InventoryReportsModule } from './inventory-reports/inventory-reports.module';
+import { BillingModule } from './billing/billing.module';
+import { AdminTenantsModule } from './admin-tenants/admin-tenants.module';
 
 @Module({
     imports: [
@@ -35,6 +44,15 @@ import { ScheduleModule } from '@nestjs/schedule';
         PurchasesModule,
         PurchaseReturnsModule,
         AccountingModule,
+        ProductGroupsModule,
+        ProductSubgroupsModule,
+        InventoryModule,
+        WarehouseTransfersModule,
+        InventoryShrinkageModule,
+        StockTakesModule,
+        InventoryReportsModule,
+        BillingModule,
+        AdminTenantsModule,
         ScheduleModule.forRoot()
     ],
     controllers: [],

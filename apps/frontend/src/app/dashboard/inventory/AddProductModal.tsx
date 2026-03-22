@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { X, Camera, Upload } from 'lucide-react';
 import { api } from '../../../lib/api';
 
@@ -16,12 +16,43 @@ export default function AddProductModal({ isOpen, onClose, onAdd }: AddProductMo
         sku: '',
         price: '',
         initialStock: '',
+        reorderLevel: '',
+        safetyStock: '',
+        leadTimeDays: '',
         image_url: '',
+        groupId: '',
+        subgroupId: '',
     });
     const [loading, setLoading] = useState(false);
     const [uploading, setUploading] = useState(false);
+    const [groups, setGroups] = useState<any[]>([]);
+    const [subgroups, setSubgroups] = useState<any[]>([]);
 
     if (!isOpen) return null;
+
+    useEffect(() => {
+        if (!isOpen) return;
+
+        const loadCategoryOptions = async () => {
+            try {
+                const [groupData, subgroupData] = await Promise.all([
+                    api.getProductGroups(),
+                    api.getProductSubgroups(),
+                ]);
+                setGroups(groupData);
+                setSubgroups(subgroupData);
+            } catch (error) {
+                console.error('Failed to load product categories', error);
+            }
+        };
+
+        loadCategoryOptions();
+    }, [isOpen]);
+
+    const filteredSubgroups = useMemo(
+        () => subgroups.filter((subgroup) => !formData.groupId || subgroup.group_id === formData.groupId),
+        [subgroups, formData.groupId],
+    );
 
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -42,12 +73,18 @@ export default function AddProductModal({ isOpen, onClose, onAdd }: AddProductMo
         e.preventDefault();
         setLoading(true);
         try {
+            const parseOptionalInt = (value: string) => (value === '' ? undefined : parseInt(value, 10));
             await onAdd({
                 ...formData,
                 price: parseFloat(formData.price),
                 initialStock: parseInt(formData.initialStock) || 0,
+                reorderLevel: parseOptionalInt(formData.reorderLevel),
+                safetyStock: parseOptionalInt(formData.safetyStock),
+                leadTimeDays: parseOptionalInt(formData.leadTimeDays),
+                groupId: formData.groupId || undefined,
+                subgroupId: formData.subgroupId || undefined,
             });
-            setFormData({ name: '', sku: '', price: '', initialStock: '', image_url: '' });
+            setFormData({ name: '', sku: '', price: '', initialStock: '', reorderLevel: '', safetyStock: '', leadTimeDays: '', image_url: '', groupId: '', subgroupId: '' });
             onClose();
         } catch (error) {
             console.error('Failed to add product', error);
@@ -143,6 +180,89 @@ export default function AddProductModal({ isOpen, onClose, onAdd }: AddProductMo
                                 value={formData.initialStock}
                                 onChange={(e) => setFormData({ ...formData, initialStock: e.target.value })}
                             />
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-4">
+                            <div>
+                                <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 ml-1">Reorder Level</label>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    placeholder="Use global"
+                                    className="w-full bg-gray-50 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-500/10 transition-all font-bold"
+                                    value={formData.reorderLevel}
+                                    onChange={(e) => setFormData({ ...formData, reorderLevel: e.target.value })}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 ml-1">Safety Stock</label>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    placeholder="Use global"
+                                    className="w-full bg-gray-50 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-500/10 transition-all font-bold"
+                                    value={formData.safetyStock}
+                                    onChange={(e) => setFormData({ ...formData, safetyStock: e.target.value })}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 ml-1">Lead Time Days</label>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    placeholder="Use global"
+                                    className="w-full bg-gray-50 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-500/10 transition-all font-bold"
+                                    value={formData.leadTimeDays}
+                                    onChange={(e) => setFormData({ ...formData, leadTimeDays: e.target.value })}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 ml-1">Group</label>
+                                <select
+                                    className="w-full bg-gray-50 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-500/10 transition-all font-medium"
+                                    value={formData.groupId}
+                                    onChange={(e) =>
+                                        setFormData((current) => ({
+                                            ...current,
+                                            groupId: e.target.value,
+                                            subgroupId:
+                                                current.subgroupId &&
+                                                !subgroups.some(
+                                                    (subgroup) =>
+                                                        subgroup.id === current.subgroupId && subgroup.group_id === e.target.value,
+                                                )
+                                                    ? ''
+                                                    : current.subgroupId,
+                                        }))
+                                    }
+                                >
+                                    <option value="">Uncategorized</option>
+                                    {groups.map((group) => (
+                                        <option key={group.id} value={group.id}>
+                                            {group.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 ml-1">Subgroup</label>
+                                <select
+                                    className="w-full bg-gray-50 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-500/10 transition-all font-medium"
+                                    value={formData.subgroupId}
+                                    onChange={(e) => setFormData({ ...formData, subgroupId: e.target.value })}
+                                    disabled={!filteredSubgroups.length}
+                                >
+                                    <option value="">None</option>
+                                    {filteredSubgroups.map((subgroup) => (
+                                        <option key={subgroup.id} value={subgroup.id}>
+                                            {subgroup.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
                         </div>
                     </div>
 

@@ -7,11 +7,69 @@ const prisma = new PrismaClient();
 async function main() {
     const passwordHash = await bcrypt.hash('password123', 10);
 
+    const basicPlan = await prisma.subscriptionPlan.upsert({
+        where: { code: 'BASIC' },
+        update: {
+            name: 'Basic',
+            description: 'Core retail operations for a single business tenant',
+            monthly_price: 1499,
+            yearly_price: 14990,
+            is_active: true,
+            features_json: {
+                premiumAccounting: false,
+                premiumInventoryReports: false,
+                multiStore: false,
+            },
+        },
+        create: {
+            code: 'BASIC',
+            name: 'Basic',
+            description: 'Core retail operations for a single business tenant',
+            monthly_price: 1499,
+            yearly_price: 14990,
+            is_active: true,
+            features_json: {
+                premiumAccounting: false,
+                premiumInventoryReports: false,
+                multiStore: false,
+            },
+        },
+    });
+
+    const premiumPlan = await prisma.subscriptionPlan.upsert({
+        where: { code: 'PREMIUM' },
+        update: {
+            name: 'Premium',
+            description: 'Full retail suite with accounting and advanced analytics',
+            monthly_price: 3999,
+            yearly_price: 39990,
+            is_active: true,
+            features_json: {
+                premiumAccounting: true,
+                premiumInventoryReports: true,
+                multiStore: true,
+            },
+        },
+        create: {
+            code: 'PREMIUM',
+            name: 'Premium',
+            description: 'Full retail suite with accounting and advanced analytics',
+            monthly_price: 3999,
+            yearly_price: 39990,
+            is_active: true,
+            features_json: {
+                premiumAccounting: true,
+                premiumInventoryReports: true,
+                multiStore: true,
+            },
+        },
+    });
+
     // ── 1. Users ────────────────────────────────────────────────────────────
     const adminUser = await prisma.user.upsert({
-        where: { email: 'admin@retailsaas.com' },
-        update: {},
-        create: { email: 'admin@retailsaas.com', name: 'Nayeem Ahmed', passwordHash },
+        where: { email: 'nayeem.ahmad@gmail.com' },
+        update: { name: 'Nayeem Ahmad', passwordHash },
+        create: { email: 'nayeem.ahmad@gmail.com', name: 'Nayeem Ahmad', passwordHash },
     });
 
     const managerUser = await prisma.user.upsert({
@@ -33,6 +91,27 @@ async function main() {
             data: { name: 'Dhaka Retail Co.', owner_id: adminUser.id },
         });
     }
+
+    await prisma.tenantSubscription.upsert({
+        where: { tenant_id: tenant.id },
+        update: {
+            plan_id: premiumPlan.id,
+            status: 'ACTIVE',
+            current_period_start: new Date(),
+            current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+            cancel_at_period_end: false,
+            provider_name: 'seed',
+        },
+        create: {
+            tenant_id: tenant.id,
+            plan_id: premiumPlan.id,
+            status: 'ACTIVE',
+            current_period_start: new Date(),
+            current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+            cancel_at_period_end: false,
+            provider_name: 'seed',
+        },
+    });
 
     // ── 3. Tenant memberships ────────────────────────────────────────────────
     await prisma.tenantUser.upsert({
@@ -59,30 +138,145 @@ async function main() {
         });
     }
 
+    const warehouseCode = `WH-${store.id.slice(0, 8).toUpperCase()}`;
+    let defaultWarehouse = await prisma.warehouse.findFirst({
+        where: { tenant_id: tenant.id, store_id: store.id, is_default: true },
+    });
+    if (!defaultWarehouse) {
+        defaultWarehouse = await prisma.warehouse.create({
+            data: {
+                tenant_id: tenant.id,
+                store_id: store.id,
+                name: `${store.name} Main Warehouse`,
+                code: warehouseCode,
+                is_default: true,
+                is_active: true,
+            },
+        });
+    }
+
+    await prisma.inventorySettings.upsert({
+        where: { tenant_id: tenant.id },
+        update: {
+            default_product_warehouse_id: defaultWarehouse.id,
+            default_purchase_warehouse_id: defaultWarehouse.id,
+            default_sales_warehouse_id: defaultWarehouse.id,
+            default_shrinkage_warehouse_id: defaultWarehouse.id,
+            default_transfer_source_warehouse_id: defaultWarehouse.id,
+            default_transfer_destination_warehouse_id: defaultWarehouse.id,
+        },
+        create: {
+            tenant_id: tenant.id,
+            default_product_warehouse_id: defaultWarehouse.id,
+            default_purchase_warehouse_id: defaultWarehouse.id,
+            default_sales_warehouse_id: defaultWarehouse.id,
+            default_shrinkage_warehouse_id: defaultWarehouse.id,
+            default_transfer_source_warehouse_id: defaultWarehouse.id,
+            default_transfer_destination_warehouse_id: defaultWarehouse.id,
+        },
+    });
+
+    const inventoryReasonDefs = [
+        { type: 'SHRINKAGE', code: 'THEFT', label: 'Theft' },
+        { type: 'SHRINKAGE', code: 'DAMAGE', label: 'Damage' },
+        { type: 'SHRINKAGE', code: 'EXPIRATION', label: 'Expiration' },
+        { type: 'SHRINKAGE', code: 'UNKNOWN', label: 'Unknown Loss' },
+        { type: 'DISCREPANCY', code: 'COUNT_ERROR', label: 'Count Error' },
+        { type: 'DISCREPANCY', code: 'RECONCILIATION', label: 'Reconciliation Adjustment' },
+    ];
+
+    for (const [index, def] of inventoryReasonDefs.entries()) {
+        await prisma.inventoryReason.upsert({
+            where: { tenant_id_type_code: { tenant_id: tenant.id, type: def.type, code: def.code } },
+            update: { label: def.label, is_active: true, is_system: true, display_order: index },
+            create: {
+                tenant_id: tenant.id,
+                type: def.type,
+                code: def.code,
+                label: def.label,
+                is_active: true,
+                is_system: true,
+                display_order: index,
+            },
+        });
+    }
+
     await bootstrapDefaultAccountingForTenant(prisma, tenant.id);
+
+    const productGroupDefs = [
+        {
+            name: 'Beverages',
+            description: 'Coffee, tea, water, and drinks',
+            subgroups: ['Coffee', 'Tea', 'Drinks'],
+        },
+        {
+            name: 'Groceries',
+            description: 'Daily pantry and dry goods',
+            subgroups: ['Grains', 'Spices', 'Dairy'],
+        },
+        {
+            name: 'Snacks & Bakery',
+            description: 'Snacks, chocolate, and bakery items',
+            subgroups: ['Snacks', 'Bakery'],
+        },
+        {
+            name: 'Accessories',
+            description: 'Consumables and accessories',
+            subgroups: ['Supplies'],
+        },
+    ];
+
+    const productGroups = new Map<string, any>();
+    const productSubgroups = new Map<string, any>();
+
+    for (const def of productGroupDefs) {
+        const group = await prisma.productGroup.upsert({
+            where: { tenant_id_name: { tenant_id: tenant.id, name: def.name } },
+            update: { description: def.description },
+            create: {
+                tenant_id: tenant.id,
+                name: def.name,
+                description: def.description,
+            },
+        });
+        productGroups.set(def.name, group);
+
+        for (const subgroupName of def.subgroups) {
+            const subgroup = await prisma.productSubgroup.upsert({
+                where: { group_id_name: { group_id: group.id, name: subgroupName } },
+                update: {},
+                create: {
+                    tenant_id: tenant.id,
+                    group_id: group.id,
+                    name: subgroupName,
+                },
+            });
+            productSubgroups.set(`${def.name}:${subgroupName}`, subgroup);
+        }
+    }
 
     // ── 5. Products ──────────────────────────────────────────────────────────
     const productDefs = [
-        { name: 'Arabica Coffee Beans (250g)',    sku: 'COF-001', price: 320,  stock: 120 },
-        { name: 'Cold Brew Coffee (500ml)',        sku: 'COF-002', price: 180,  stock: 80  },
-        { name: 'Green Tea Bags (25 pack)',        sku: 'TEA-001', price: 95,   stock: 200 },
-        { name: 'Masala Chai Mix (200g)',          sku: 'TEA-002', price: 140,  stock: 150 },
-        { name: 'Mineral Water (1L)',              sku: 'DRK-001', price: 35,   stock: 500 },
-        { name: 'Orange Juice (1L)',               sku: 'DRK-002', price: 120,  stock: 60  },
-        { name: 'Basmati Rice (1kg)',              sku: 'GRN-001', price: 110,  stock: 300 },
-        { name: 'Chickpeas (500g)',                sku: 'GRN-002', price: 75,   stock: 180 },
-        { name: 'Lentils (500g)',                  sku: 'GRN-003', price: 65,   stock: 220 },
-        { name: 'Sunflower Oil (1L)',              sku: 'OIL-001', price: 190,  stock: 90  },
-        { name: 'Turmeric Powder (100g)',          sku: 'SPC-001', price: 55,   stock: 400 },
-        { name: 'Cumin Seeds (100g)',              sku: 'SPC-002', price: 45,   stock: 350 },
-        { name: 'Dark Chocolate Bar (100g)',       sku: 'SNK-001', price: 150,  stock: 70  },
-        { name: 'Mixed Nuts (200g)',               sku: 'SNK-002', price: 280,  stock: 50  },
-        { name: 'Potato Chips (150g)',             sku: 'SNK-003', price: 80,   stock: 110 },
-        { name: 'Whole Wheat Bread (loaf)',        sku: 'BKY-001', price: 60,   stock: 40  },
-        { name: 'Butter (200g)',                   sku: 'DRY-001', price: 130,  stock: 85  },
-        { name: 'Cheddar Cheese (200g)',           sku: 'DRY-002', price: 220,  stock: 45  },
-        { name: 'Espresso Machine Cleaner (250g)', sku: 'ACC-001', price: 195,  stock: 30  },
-        { name: 'Reusable Shopping Bag',           sku: 'ACC-002', price: 50,   stock: 200 },
+        { name: 'Arabica Coffee Beans (250g)', sku: 'COF-001', price: 320, stock: 120, group: 'Beverages', subgroup: 'Coffee' },
+        { name: 'Cold Brew Coffee (500ml)', sku: 'COF-002', price: 180, stock: 80, group: 'Beverages', subgroup: 'Coffee' },
+        { name: 'Green Tea Bags (25 pack)', sku: 'TEA-001', price: 95, stock: 200, group: 'Beverages', subgroup: 'Tea' },
+        { name: 'Masala Chai Mix (200g)', sku: 'TEA-002', price: 140, stock: 150, group: 'Beverages', subgroup: 'Tea' },
+        { name: 'Mineral Water (1L)', sku: 'DRK-001', price: 35, stock: 500, group: 'Beverages', subgroup: 'Drinks' },
+        { name: 'Orange Juice (1L)', sku: 'DRK-002', price: 120, stock: 60, group: 'Beverages', subgroup: 'Drinks' },
+        { name: 'Basmati Rice (1kg)', sku: 'GRN-001', price: 110, stock: 300, group: 'Groceries', subgroup: 'Grains' },
+        { name: 'Chickpeas (500g)', sku: 'GRN-002', price: 75, stock: 180, group: 'Groceries', subgroup: 'Grains' },
+        { name: 'Lentils (500g)', sku: 'GRN-003', price: 65, stock: 220, group: 'Groceries', subgroup: 'Grains' },
+        { name: 'Sunflower Oil (1L)', sku: 'OIL-001', price: 190, stock: 90, group: 'Groceries', subgroup: 'Grains' },
+        { name: 'Turmeric Powder (100g)', sku: 'SPC-001', price: 55, stock: 400, group: 'Groceries', subgroup: 'Spices' },
+        { name: 'Cumin Seeds (100g)', sku: 'SPC-002', price: 45, stock: 350, group: 'Groceries', subgroup: 'Spices' },
+        { name: 'Dark Chocolate Bar (100g)', sku: 'SNK-001', price: 150, stock: 70, group: 'Snacks & Bakery', subgroup: 'Snacks' },
+        { name: 'Mixed Nuts (200g)', sku: 'SNK-002', price: 280, stock: 50, group: 'Snacks & Bakery', subgroup: 'Snacks' },
+        { name: 'Potato Chips (150g)', sku: 'SNK-003', price: 80, stock: 110, group: 'Snacks & Bakery', subgroup: 'Snacks' },
+        { name: 'Whole Wheat Bread (loaf)', sku: 'BKY-001', price: 60, stock: 40, group: 'Snacks & Bakery', subgroup: 'Bakery' },
+        { name: 'Butter (200g)', sku: 'DRY-001', price: 130, stock: 85, group: 'Groceries', subgroup: 'Dairy' },
+        { name: 'Cheddar Cheese (200g)', sku: 'DRY-002', price: 220, stock: 45, group: 'Groceries', subgroup: 'Dairy' },
+        { name: 'Espresso Machine Cleaner (250g)', sku: 'ACC-001', price: 195, stock: 30, group: 'Accessories', subgroup: 'Supplies' },
+        { name: 'Reusable Shopping Bag', sku: 'ACC-002', price: 50, stock: 200, group: 'Accessories', subgroup: 'Supplies' },
     ];
 
     const products: any[] = [];
@@ -91,6 +285,29 @@ async function main() {
             where: { tenant_id_sku: { tenant_id: tenant.id, sku: def.sku } },
         });
         if (existing) {
+            await prisma.product.update({
+                where: { id: existing.id },
+                data: {
+                    group_id: productGroups.get(def.group)?.id,
+                    subgroup_id: productSubgroups.get(`${def.group}:${def.subgroup}`)?.id,
+                },
+            });
+            await prisma.productStock.upsert({
+                where: {
+                    tenant_id_product_id_warehouse_id: {
+                        tenant_id: tenant.id,
+                        product_id: existing.id,
+                        warehouse_id: defaultWarehouse.id,
+                    },
+                },
+                update: {},
+                create: {
+                    tenant_id: tenant.id,
+                    product_id: existing.id,
+                    warehouse_id: defaultWarehouse.id,
+                    quantity: def.stock,
+                },
+            });
             products.push(existing);
         } else {
             const p = await prisma.product.create({
@@ -99,7 +316,9 @@ async function main() {
                     name: def.name,
                     sku: def.sku,
                     price: def.price,
-                    stocks: { create: { tenant_id: tenant.id, quantity: def.stock } },
+                    group_id: productGroups.get(def.group)?.id,
+                    subgroup_id: productSubgroups.get(`${def.group}:${def.subgroup}`)?.id,
+                    stocks: { create: { tenant_id: tenant.id, warehouse_id: defaultWarehouse.id, quantity: def.stock } },
                 },
             });
             products.push(p);
@@ -340,7 +559,7 @@ async function main() {
     console.log(`🧾  Sales:           ${saleCount}`);
     console.log('─────────────────────────────────────');
     console.log('Login → http://localhost:3000');
-    console.log('Email: admin@retailsaas.com  |  Password: password123');
+    console.log('Email: nayeem.ahmad@gmail.com  |  Password: password123');
 }
 
 main()

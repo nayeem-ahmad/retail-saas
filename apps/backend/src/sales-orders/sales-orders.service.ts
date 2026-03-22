@@ -1,6 +1,7 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { CreateSalesOrderDto, UpdateSalesOrderDto, UpdateOrderStatusDto, AddDepositDto } from './sales-orders.dto';
+import { applyInventoryMovement, resolveWarehouseId } from '../database/inventory.utils';
 
 @Injectable()
 export class SalesOrdersService {
@@ -63,14 +64,17 @@ export class SalesOrdersService {
 
             // If transitioning to DELIVERED, decrement stock
             if (dto.status === 'DELIVERED' && order.status !== 'DELIVERED') {
+                const warehouseId = await resolveWarehouseId(tx, tenantId, order.store_id);
                 for (const item of order.items) {
-                    const updateRes = await tx.productStock.updateMany({
-                        where: { product_id: item.product_id, tenant_id: tenantId, quantity: { gte: item.quantity } },
-                        data: { quantity: { decrement: item.quantity } }
+                    await applyInventoryMovement(tx, {
+                        tenantId,
+                        productId: item.product_id,
+                        warehouseId,
+                        quantityDelta: -item.quantity,
+                        movementType: 'SALES_ORDER_DELIVERY',
+                        referenceType: 'SALES_ORDER',
+                        referenceId: id,
                     });
-                    if (updateRes.count === 0) {
-                        throw new BadRequestException(`Insufficient stock for product ${item.product_id}`);
-                    }
                 }
                 
                 // Also update customer total_spent based on the entire order amount

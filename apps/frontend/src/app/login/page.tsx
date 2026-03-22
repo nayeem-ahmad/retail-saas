@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Lock, Mail, ArrowRight, Loader2 } from 'lucide-react';
 import { api } from '@/lib/api';
 
@@ -21,13 +22,15 @@ export default function LoginPage() {
             const loginRes = await api.login({ email, password });
             localStorage.setItem('access_token', loginRes.access_token);
 
-            // Fetch user info to get tenants
-            const meRes = await api.getMe();
+            const meRes = loginRes.tenants ? loginRes : await api.getMe();
             if (meRes.tenants && meRes.tenants.length > 0) {
                 const primaryTenant = meRes.tenants[0];
                 localStorage.setItem('tenant_id', primaryTenant.id);
                 if (primaryTenant.stores && primaryTenant.stores.length > 0) {
                     localStorage.setItem('store_id', primaryTenant.stores[0].id);
+                }
+                if (primaryTenant.subscription?.plan?.code) {
+                    localStorage.setItem('subscription_plan_code', primaryTenant.subscription.plan.code);
                 }
             }
 
@@ -113,7 +116,7 @@ export default function LoginPage() {
                     </form>
 
                     <div className="mt-8 text-center text-sm text-gray-500">
-                        Don't have an account? <a href="#" className="font-medium text-blue-600 hover:text-blue-700 transition-colors">Sign up for free</a>
+                        Don't have an account? <Link href="/signup" className="font-medium text-blue-600 hover:text-blue-700 transition-colors">Sign up for free</Link>
                     </div>
                 </div>
 

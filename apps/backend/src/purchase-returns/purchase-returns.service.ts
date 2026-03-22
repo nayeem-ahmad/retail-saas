@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { CreatePurchaseReturnDto, UpdatePurchaseReturnDto } from './purchase-return.dto';
+import { applyInventoryMovement, resolveWarehouseId } from '../database/inventory.utils';
 
 @Injectable()
 export class PurchaseReturnsService {
@@ -40,16 +41,19 @@ export class PurchaseReturnsService {
             const totalAmount = returnItemData.reduce((sum, item) => sum + item.line_total, 0);
             const count = await tx.purchaseReturn.count({ where: { tenant_id: tenantId } });
             const returnNumber = `PRET-${String(count + 1).padStart(5, '0')}`;
+            const warehouseId = await resolveWarehouseId(tx, tenantId, purchase.store_id);
 
             for (const item of returnItemData) {
-                const stockUpdate = await tx.productStock.updateMany({
-                    where: { product_id: item.product_id, tenant_id: tenantId, quantity: { gte: item.quantity } },
-                    data: { quantity: { decrement: item.quantity } },
+                await applyInventoryMovement(tx, {
+                    tenantId,
+                    productId: item.product_id,
+                    warehouseId,
+                    quantityDelta: -item.quantity,
+                    movementType: 'PURCHASE_RETURN',
+                    referenceType: 'PURCHASE_RETURN',
+                    referenceId: returnNumber,
+                    unitCost: item.unit_cost,
                 });
-
-                if (stockUpdate.count === 0) {
-                    throw new BadRequestException(`Insufficient stock to return product ${item.product_id}.`);
-                }
             }
 
             const purchaseReturn = await tx.purchaseReturn.create({
@@ -133,10 +137,16 @@ export class PurchaseReturnsService {
             }
 
             if (dto.items) {
+                const warehouseId = await resolveWarehouseId(tx, tenantId, existingReturn.purchase.store_id);
                 for (const oldItem of existingReturn.items) {
-                    await tx.productStock.updateMany({
-                        where: { product_id: oldItem.product_id, tenant_id: tenantId },
-                        data: { quantity: { increment: oldItem.quantity } },
+                    await applyInventoryMovement(tx, {
+                        tenantId,
+                        productId: oldItem.product_id,
+                        warehouseId,
+                        quantityDelta: oldItem.quantity,
+                        movementType: 'PURCHASE_RETURN_REVERSAL',
+                        referenceType: 'PURCHASE_RETURN',
+                        referenceId: id,
                     });
                 }
 
@@ -145,14 +155,16 @@ export class PurchaseReturnsService {
                 updateData.total_amount = newItems.reduce((sum, item) => sum + item.line_total, 0);
 
                 for (const item of newItems) {
-                    const stockUpdate = await tx.productStock.updateMany({
-                        where: { product_id: item.product_id, tenant_id: tenantId, quantity: { gte: item.quantity } },
-                        data: { quantity: { decrement: item.quantity } },
+                    await applyInventoryMovement(tx, {
+                        tenantId,
+                        productId: item.product_id,
+                        warehouseId,
+                        quantityDelta: -item.quantity,
+                        movementType: 'PURCHASE_RETURN_EDIT',
+                        referenceType: 'PURCHASE_RETURN',
+                        referenceId: id,
+                        unitCost: item.unit_cost,
                     });
-
-                    if (stockUpdate.count === 0) {
-                        throw new BadRequestException(`Insufficient stock to return product ${item.product_id}.`);
-                    }
                 }
 
                 await tx.purchaseReturnItem.deleteMany({ where: { return_id: id } });
@@ -189,9 +201,15 @@ export class PurchaseReturnsService {
             }
 
             for (const item of existingReturn.items) {
-                await tx.productStock.updateMany({
-                    where: { product_id: item.product_id, tenant_id: tenantId },
-                    data: { quantity: { increment: item.quantity } },
+                const warehouseId = await resolveWarehouseId(tx, tenantId, existingReturn.store_id);
+                await applyInventoryMovement(tx, {
+                    tenantId,
+                    productId: item.product_id,
+                    warehouseId,
+                    quantityDelta: item.quantity,
+                    movementType: 'PURCHASE_RETURN_DELETE',
+                    referenceType: 'PURCHASE_RETURN',
+                    referenceId: id,
                 });
             }
 

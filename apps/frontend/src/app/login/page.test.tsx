@@ -14,12 +14,14 @@ jest.mock('next/navigation', () => ({
 jest.mock('../../lib/api', () => ({
   api: {
     login: jest.fn().mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve({ access_token: 'fake-token' })
+        access_token: 'fake-token',
+        tenants: []
     }),
     getMe: jest.fn().mockResolvedValue({
         tenants: []
-    })
+    }),
+    getSubscriptionPlans: jest.fn(),
+    signup: jest.fn(),
   }
 }));
 

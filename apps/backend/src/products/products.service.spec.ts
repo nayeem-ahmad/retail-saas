@@ -10,11 +10,35 @@ describe('ProductsService', () => {
 
   beforeEach(async () => {
     tx = {
+      store: {
+        findFirst: jest.fn().mockResolvedValue({ id: 'store-1', tenant_id: 'tenant-1', name: 'Main Store' }),
+      },
+      warehouse: {
+        findFirst: jest.fn().mockResolvedValue({ id: 'warehouse-1', store_id: 'store-1', tenant_id: 'tenant-1', is_default: true, is_active: true }),
+        count: jest.fn().mockResolvedValue(0),
+        create: jest.fn(),
+      },
+      inventoryMovement: {
+        create: jest.fn(),
+      },
+      inventorySettings: {
+        findUnique: jest.fn().mockResolvedValue({ default_product_warehouse_id: 'warehouse-1' }),
+      },
+      productGroup: {
+        findFirst: jest.fn(),
+      },
+      productSubgroup: {
+        findFirst: jest.fn(),
+      },
       product: {
         create: jest.fn(),
+        findFirst: jest.fn(),
       },
       productStock: {
         create: jest.fn(),
+        upsert: jest.fn().mockResolvedValue({ id: 'stock-1', quantity: 50 }),
+        updateMany: jest.fn(),
+        findUnique: jest.fn(),
       },
     };
 
@@ -23,6 +47,7 @@ describe('ProductsService', () => {
       product: {
         findMany: jest.fn(),
         findFirst: jest.fn(),
+        update: jest.fn(),
         updateMany: jest.fn(),
         deleteMany: jest.fn(),
       },
@@ -42,27 +67,31 @@ describe('ProductsService', () => {
     it('should create a product with initial stock', async () => {
       const product = { id: 'prod-1', name: 'Coffee', sku: 'CF-001', price: 10 };
       tx.product.create.mockResolvedValue(product);
-      tx.productStock.create.mockResolvedValue({ id: 'stock-1', quantity: 50 });
+      tx.product.findFirst.mockResolvedValue({ id: 'prod-1', name: 'Coffee', sku: 'CF-001', price: 10, reorder_level: 8, safety_stock: 3, lead_time_days: 5, stocks: [] });
 
       const result = await service.create('tenant-1', {
         name: 'Coffee',
         sku: 'CF-001',
         price: 10,
         initialStock: 50,
+        reorderLevel: 8,
+        safetyStock: 3,
+        leadTimeDays: 5,
       });
 
       expect(tx.product.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({ tenant_id: 'tenant-1', name: 'Coffee', price: 10 }),
+        data: expect.objectContaining({ tenant_id: 'tenant-1', name: 'Coffee', price: 10, reorder_level: 8, safety_stock: 3, lead_time_days: 5 }),
+        include: expect.any(Object),
       });
-      expect(tx.productStock.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({ product_id: 'prod-1', quantity: 50 }),
-      });
+      expect(tx.productStock.upsert).toHaveBeenCalled();
+      expect(tx.inventoryMovement.create).toHaveBeenCalled();
       expect(result.id).toBe('prod-1');
     });
 
     it('should create a product without initial stock', async () => {
       const product = { id: 'prod-2', name: 'Tea', sku: 'T-001', price: 5 };
       tx.product.create.mockResolvedValue(product);
+      tx.product.findFirst.mockResolvedValue({ id: 'prod-2', name: 'Tea', sku: 'T-001', price: 5, stocks: [] });
 
       const result = await service.create('tenant-1', {
         name: 'Tea',
@@ -71,7 +100,7 @@ describe('ProductsService', () => {
       });
 
       expect(tx.product.create).toHaveBeenCalled();
-      expect(tx.productStock.create).not.toHaveBeenCalled();
+      expect(tx.productStock.upsert).not.toHaveBeenCalled();
       expect(result.id).toBe('prod-2');
     });
   });
@@ -87,7 +116,12 @@ describe('ProductsService', () => {
 
       expect(db.product.findMany).toHaveBeenCalledWith({
         where: { tenant_id: 'tenant-1' },
-        include: { stocks: true },
+        include: expect.objectContaining({
+          group: true,
+          subgroup: expect.any(Object),
+          stocks: expect.any(Object),
+        }),
+        orderBy: { name: 'asc' },
       });
       expect(result).toHaveLength(2);
     });
@@ -111,15 +145,17 @@ describe('ProductsService', () => {
 
   describe('update()', () => {
     it('should update a product by tenant and id', async () => {
-      db.product.updateMany.mockResolvedValue({ count: 1 });
+      db.product.findFirst.mockResolvedValue({ id: 'p1', tenant_id: 'tenant-1', name: 'Old', stocks: [] });
+      db.product.update.mockResolvedValue({ id: 'p1', tenant_id: 'tenant-1', name: 'Updated', stocks: [] });
 
       const result = await service.update('tenant-1', 'p1', { name: 'Updated' });
 
-      expect(db.product.updateMany).toHaveBeenCalledWith({
-        where: { id: 'p1', tenant_id: 'tenant-1' },
-        data: { name: 'Updated' },
+      expect(db.product.update).toHaveBeenCalledWith({
+        where: { id: 'p1' },
+        data: expect.objectContaining({ name: 'Updated' }),
+        include: expect.any(Object),
       });
-      expect(result.count).toBe(1);
+      expect(result.name).toBe('Updated');
     });
   });
 

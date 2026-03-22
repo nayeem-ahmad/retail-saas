@@ -1,5 +1,22 @@
 # External APIs
 
+## SSL Wireless / SSLCOMMERZ Hosted Checkout API
+
+- **Purpose:** To process tenant subscription payments for plan upgrades and renewals through a backend-owned hosted checkout flow.
+- **Base URL(s):** Sandbox and live URLs are configured through environment variables so the same billing module can be promoted without code changes.
+- **Authentication:** `store_id` and `store_passwd`, stored only on the backend.
+- **Key Backend Endpoints Used:**
+
+  - `POST /gwprocess/v4/api.php` to initialize checkout and receive the hosted payment page URL.
+  - `GET /validator/api/validationserverAPI.php` to validate a returned `val_id` before activating a subscription.
+
+- **Integration Notes:**
+
+  - The backend creates the hosted checkout session and redirects the tenant owner or manager to the SSL Wireless payment page.
+  - Success, failure, cancel, and IPN callbacks are processed by the backend, which validates the transaction before changing `TenantSubscription` state.
+  - Callback processing is recorded in `BillingEvent` rows so duplicate provider notifications are idempotent and auditable.
+  - The billing service still supports a manual fallback path for local development when provider credentials are not configured.
+
 ### bKash Payment Gateway API
 
 - **Purpose:** To securely process online payments from customers for orders placed on the e-commerce storefront.
@@ -9,6 +26,7 @@
 - **Rate Limits:** To be determined from the official documentation.
 
 **Key Endpoints Used (Example Flow):**
+
 - `POST /token` - To obtain an authentication token for making other API calls.
 - `POST /payment/create` - To initiate a payment request and get a payment URL to redirect the user to.
 - `POST /payment/execute` - To confirm and execute the payment after the user has approved it on the bKash platform.
@@ -25,6 +43,7 @@
 - **Rate Limits:** To be determined from the official documentation.
 
 **Key Endpoints Used (Example Flow):**
+
 - `POST /remote-payment-gateway-payment` - To initiate a payment and receive a checkout URL.
 - `GET /remote-payment-gateway-payment/{paymentRefId}` - To verify the status of the payment after the user returns to the site.
 
@@ -39,9 +58,11 @@
 - **Rate Limits:** Dependent on the provider plan.
 
 **Key Endpoints Used (Example Flow):**
+
 - `POST /send-sms` - To dispatch a single SMS message.
 - `GET /balance` - To check the remaining SMS credit balance.
 
 **Integration Notes:**
--   Sending will be handled asynchronously via the **Background Job Queue** (see Scalability Epic) to prevent blocking the main sales flow.
--   A `NotificationService` wrapper will be created to abstract the specific provider, allowing us to switch providers without changing business logic.
+
+- Sending will be handled asynchronously via the **Background Job Queue** (see Scalability Epic) to prevent blocking the main sales flow.
+- A `NotificationService` wrapper will be created to abstract the specific provider, allowing us to switch providers without changing business logic.

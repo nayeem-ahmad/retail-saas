@@ -1,7 +1,7 @@
 import { BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { AccountCategory, AccountType, VoucherType } from '@retail-saas/shared-types';
 import { AccountingService, VOUCHER_NUMBER_PREFIXES } from './accounting.service';
+import { AccountCategory, AccountType, VoucherType } from './accounting.constants';
 import { DatabaseService } from '../database/database.service';
 
 describe('AccountingService — Story 30.2', () => {

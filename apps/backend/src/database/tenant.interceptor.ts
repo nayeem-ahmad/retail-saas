@@ -3,6 +3,7 @@ import {
     NestInterceptor,
     ExecutionContext,
     CallHandler,
+    BadRequestException,
     UnauthorizedException,
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
@@ -39,6 +40,18 @@ export class TenantInterceptor implements NestInterceptor {
             }
 
             request.tenantId = tenantId;
+        } else {
+            const memberships = await this.db.tenantUser.findMany({
+                where: { user_id: userId },
+                select: { tenant_id: true },
+                take: 2,
+            });
+
+            if (memberships.length === 1) {
+                request.tenantId = memberships[0].tenant_id;
+            } else if (memberships.length > 1) {
+                throw new BadRequestException('Tenant context is required for this request.');
+            }
         }
 
         if (storeId) {

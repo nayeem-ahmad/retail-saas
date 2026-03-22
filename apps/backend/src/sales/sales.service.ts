@@ -1,6 +1,7 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { CreateSaleDto, UpdateSaleDto } from './sale.dto';
+import { applyInventoryMovement, resolveWarehouseId } from '../database/inventory.utils';
 
 @Injectable()
 export class SalesService {
@@ -8,6 +9,7 @@ export class SalesService {
 
     async create(tenantId: string, dto: CreateSaleDto) {
         return this.db.$transaction(async (tx) => {
+            const warehouseId = await resolveWarehouseId(tx, tenantId, dto.storeId, dto.warehouseId, 'sale');
             // 1. Generate Serial Number (Simplified for v0.1)
             const serialNumber = `SL-${Date.now()}`;
 
@@ -43,22 +45,16 @@ export class SalesService {
                     },
                 });
 
-                // Atomic Decrement Stock
-                const updateRes = await tx.productStock.updateMany({
-                    where: { 
-                        product_id: item.productId,
-                        quantity: { gte: item.quantity }
-                    },
-                    data: {
-                        quantity: {
-                            decrement: item.quantity,
-                        },
-                    },
+                await applyInventoryMovement(tx, {
+                    tenantId,
+                    productId: item.productId,
+                    warehouseId,
+                    quantityDelta: -item.quantity,
+                    movementType: 'SALE',
+                    referenceType: 'SALE',
+                    referenceId: sale.id,
+                    unitCost: item.priceAtSale,
                 });
-
-                if (updateRes.count === 0) {
-                    throw new BadRequestException(`Insufficient stock for product ${item.productId}`);
-                }
             }
             if (dto.customerId) {
                 await tx.customer.update({
@@ -113,11 +109,17 @@ export class SalesService {
 
             // 1. If items are being replaced, reverse old stock and apply new
             if (dto.items) {
+                const warehouseId = await resolveWarehouseId(tx, tenantId, sale.store_id, undefined, 'sale');
                 // Reverse stock for old items
                 for (const oldItem of sale.items) {
-                    await tx.productStock.updateMany({
-                        where: { product_id: oldItem.product_id },
-                        data: { quantity: { increment: oldItem.quantity } },
+                    await applyInventoryMovement(tx, {
+                        tenantId,
+                        productId: oldItem.product_id,
+                        warehouseId,
+                        quantityDelta: oldItem.quantity,
+                        movementType: 'SALE_EDIT_REVERSAL',
+                        referenceType: 'SALE',
+                        referenceId: id,
                     });
                 }
 
@@ -135,17 +137,16 @@ export class SalesService {
                         },
                     });
 
-                    const updateRes = await tx.productStock.updateMany({
-                        where: {
-                            product_id: item.productId,
-                            quantity: { gte: item.quantity },
-                        },
-                        data: { quantity: { decrement: item.quantity } },
+                    await applyInventoryMovement(tx, {
+                        tenantId,
+                        productId: item.productId,
+                        warehouseId,
+                        quantityDelta: -item.quantity,
+                        movementType: 'SALE_EDIT',
+                        referenceType: 'SALE',
+                        referenceId: id,
+                        unitCost: item.priceAtSale,
                     });
-
-                    if (updateRes.count === 0) {
-                        throw new BadRequestException(`Insufficient stock for product ${item.productId}`);
-                    }
                 }
             }
 

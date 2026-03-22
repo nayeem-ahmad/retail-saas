@@ -44,7 +44,13 @@ export async function fetchWithAuth(endpoint: string, options: RequestInit = {})
 }
 
 export const api = {
-    getProducts: () => fetchWithAuth('/products'),
+    getProducts: (params?: { groupId?: string; subgroupId?: string; uncategorized?: boolean }) => {
+        const query = new URLSearchParams();
+        if (params?.groupId) query.set('groupId', params.groupId);
+        if (params?.subgroupId) query.set('subgroupId', params.subgroupId);
+        if (params?.uncategorized) query.set('uncategorized', 'true');
+        return fetchWithAuth(`/products${query.toString() ? `?${query.toString()}` : ''}`);
+    },
     createProduct: (data: any) => fetchWithAuth('/products', {
         method: 'POST',
         body: JSON.stringify(data),
@@ -58,6 +64,158 @@ export const api = {
     deleteProduct: (id: string) => fetchWithAuth(`/products/${id}`, {
         method: 'DELETE',
     }),
+    getProductGroups: () => fetchWithAuth('/product-groups'),
+    getProductGroup: (id: string) => fetchWithAuth(`/product-groups/${id}`),
+    createProductGroup: (data: any) => fetchWithAuth('/product-groups', {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+    }),
+    updateProductGroup: (id: string, data: any) => fetchWithAuth(`/product-groups/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+    }),
+    deleteProductGroup: (id: string) => fetchWithAuth(`/product-groups/${id}`, {
+        method: 'DELETE',
+    }),
+    getProductSubgroups: (params?: { groupId?: string }) => {
+        const query = new URLSearchParams();
+        if (params?.groupId) query.set('groupId', params.groupId);
+        return fetchWithAuth(`/product-subgroups${query.toString() ? `?${query.toString()}` : ''}`);
+    },
+    getProductSubgroup: (id: string) => fetchWithAuth(`/product-subgroups/${id}`),
+    createProductSubgroup: (data: any) => fetchWithAuth('/product-subgroups', {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+    }),
+    updateProductSubgroup: (id: string, data: any) => fetchWithAuth(`/product-subgroups/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+    }),
+    deleteProductSubgroup: (id: string) => fetchWithAuth(`/product-subgroups/${id}`, {
+        method: 'DELETE',
+    }),
+    getInventoryWarehouses: () => fetchWithAuth('/inventory/warehouses'),
+    createInventoryWarehouse: (data: any) => fetchWithAuth('/inventory/warehouses', {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+    }),
+    updateInventoryWarehouse: (id: string, data: any) => fetchWithAuth(`/inventory/warehouses/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+    }),
+    getInventorySettings: () => fetchWithAuth('/inventory/settings'),
+    updateInventorySettings: (data: any) => fetchWithAuth('/inventory/settings', {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+    }),
+    getInventoryReasons: (params?: { type?: string }) => {
+        const query = new URLSearchParams();
+        if (params?.type) query.set('type', params.type);
+        return fetchWithAuth(`/inventory/reasons${query.toString() ? `?${query.toString()}` : ''}`);
+    },
+    createInventoryReason: (data: any) => fetchWithAuth('/inventory/reasons', {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+    }),
+    updateInventoryReason: (id: string, data: any) => fetchWithAuth(`/inventory/reasons/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+    }),
+    getInventoryLedger: (params?: { productId?: string; warehouseId?: string; movementType?: string; from?: string; to?: string; limit?: number }) => {
+        const query = new URLSearchParams();
+        if (params?.productId) query.set('productId', params.productId);
+        if (params?.warehouseId) query.set('warehouseId', params.warehouseId);
+        if (params?.movementType) query.set('movementType', params.movementType);
+        if (params?.from) query.set('from', params.from);
+        if (params?.to) query.set('to', params.to);
+        if (params?.limit) query.set('limit', String(params.limit));
+        return fetchWithAuth(`/inventory/ledger${query.toString() ? `?${query.toString()}` : ''}`);
+    },
+    getWarehouseTransfers: (params?: { status?: string; sourceWarehouseId?: string; destinationWarehouseId?: string; productId?: string; from?: string; to?: string }) => {
+        const query = new URLSearchParams();
+        if (params?.status) query.set('status', params.status);
+        if (params?.sourceWarehouseId) query.set('sourceWarehouseId', params.sourceWarehouseId);
+        if (params?.destinationWarehouseId) query.set('destinationWarehouseId', params.destinationWarehouseId);
+        if (params?.productId) query.set('productId', params.productId);
+        if (params?.from) query.set('from', params.from);
+        if (params?.to) query.set('to', params.to);
+        return fetchWithAuth(`/warehouse-transfers${query.toString() ? `?${query.toString()}` : ''}`);
+    },
+    getWarehouseTransfer: (id: string) => fetchWithAuth(`/warehouse-transfers/${id}`),
+    createWarehouseTransfer: (data: any) => fetchWithAuth('/warehouse-transfers', {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+    }),
+    sendWarehouseTransfer: (id: string) => fetchWithAuth(`/warehouse-transfers/${id}/send`, {
+        method: 'POST',
+    }),
+    receiveWarehouseTransfer: (id: string, data: any) => fetchWithAuth(`/warehouse-transfers/${id}/receive`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+    }),
+    getInventoryShrinkage: () => fetchWithAuth('/inventory-shrinkage'),
+    getInventoryShrinkageRecord: (id: string) => fetchWithAuth(`/inventory-shrinkage/${id}`),
+    createInventoryShrinkage: (data: any) => fetchWithAuth('/inventory-shrinkage', {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+    }),
+    getStockTakes: () => fetchWithAuth('/stock-takes'),
+    getStockTake: (id: string) => fetchWithAuth(`/stock-takes/${id}`),
+    createStockTake: (data: any) => fetchWithAuth('/stock-takes', {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+    }),
+    updateStockTakeCounts: (id: string, data: any) => fetchWithAuth(`/stock-takes/${id}/counts`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+    }),
+    updateStockTakeStatus: (id: string, data: any) => fetchWithAuth(`/stock-takes/${id}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+    }),
+    postStockTake: (id: string) => fetchWithAuth(`/stock-takes/${id}/post`, {
+        method: 'POST',
+    }),
+    getReorderSuggestions: (params?: { warehouseId?: string; groupId?: string; subgroupId?: string }) => {
+        const query = new URLSearchParams();
+        if (params?.warehouseId) query.set('warehouseId', params.warehouseId);
+        if (params?.groupId) query.set('groupId', params.groupId);
+        if (params?.subgroupId) query.set('subgroupId', params.subgroupId);
+        return fetchWithAuth(`/inventory-reports/reorder-suggestions${query.toString() ? `?${query.toString()}` : ''}`);
+    },
+    getInventoryValuation: (params?: { warehouseId?: string; groupId?: string; subgroupId?: string }) => {
+        const query = new URLSearchParams();
+        if (params?.warehouseId) query.set('warehouseId', params.warehouseId);
+        if (params?.groupId) query.set('groupId', params.groupId);
+        if (params?.subgroupId) query.set('subgroupId', params.subgroupId);
+        return fetchWithAuth(`/inventory-reports/valuation${query.toString() ? `?${query.toString()}` : ''}`);
+    },
+    getShrinkageSummary: (params?: { warehouseId?: string; reasonId?: string; productId?: string; groupId?: string; subgroupId?: string; from?: string; to?: string }) => {
+        const query = new URLSearchParams();
+        if (params?.warehouseId) query.set('warehouseId', params.warehouseId);
+        if (params?.reasonId) query.set('reasonId', params.reasonId);
+        if (params?.productId) query.set('productId', params.productId);
+        if (params?.groupId) query.set('groupId', params.groupId);
+        if (params?.subgroupId) query.set('subgroupId', params.subgroupId);
+        if (params?.from) query.set('from', params.from);
+        if (params?.to) query.set('to', params.to);
+        return fetchWithAuth(`/inventory-reports/shrinkage-summary${query.toString() ? `?${query.toString()}` : ''}`);
+    },
     uploadFile: (file: File) => {
         const formData = new FormData();
         formData.append('file', file);
@@ -304,6 +462,47 @@ export const api = {
     }).then(res => {
         if (!res.ok) throw new Error('Login failed');
         return res.json();
+    }),
+    signup: (data: any) => fetch(`${API_URL}/auth/signup`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+    }).then(async res => {
+        const body = await res.json().catch(() => null);
+        if (!res.ok) throw new Error(body?.message || 'Signup failed');
+        return body;
+    }),
+    getSubscriptionPlans: () => fetch(`${API_URL}/auth/plans`).then(async res => {
+        const body = await res.json().catch(() => null);
+        if (!res.ok) throw new Error(body?.message || 'Failed to load plans');
+        return body;
+    }),
+    getBillingSummary: () => fetchWithAuth('/billing/summary'),
+    createBillingCheckoutSession: (data: any) => fetchWithAuth('/billing/checkout-session', {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+    }),
+    confirmBillingCheckout: (data: any) => fetchWithAuth('/billing/confirm', {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+    }),
+    cancelBillingAtPeriodEnd: () => fetchWithAuth('/billing/cancel-at-period-end', {
+        method: 'POST',
+    }),
+    getAdminTenants: (params?: { search?: string; planCode?: string; status?: string }) => {
+        const query = new URLSearchParams();
+        if (params?.search) query.set('search', params.search);
+        if (params?.planCode) query.set('planCode', params.planCode);
+        if (params?.status) query.set('status', params.status);
+        return fetchWithAuth(`/admin/tenants${query.toString() ? `?${query.toString()}` : ''}`);
+    },
+    getAdminTenant: (tenantId: string) => fetchWithAuth(`/admin/tenants/${tenantId}`),
+    updateAdminTenantSubscription: (tenantId: string, data: any) => fetchWithAuth(`/admin/tenants/${tenantId}/subscription`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
     }),
     getMe: () => fetchWithAuth('/auth/me'),
 };

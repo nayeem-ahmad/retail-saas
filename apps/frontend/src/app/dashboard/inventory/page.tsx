@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { Package, Plus, ShoppingBasket, Trash2 } from 'lucide-react';
+import Link from 'next/link';
+import { AlertTriangle, BookOpen, ClipboardCheck, Package, Plus, Settings2, ShoppingBasket, Tag, Trash2, Truck, TrendingUp } from 'lucide-react';
 import { api } from '../../../lib/api';
 import AddProductModal from './AddProductModal';
 import { createColumnHelper, type ColumnDef } from '@tanstack/react-table';
@@ -14,6 +15,8 @@ interface Product {
     sku?: string | null;
     price: string | number;
     image_url?: string | null;
+    group?: { id: string; name: string } | null;
+    subgroup?: { id: string; name: string } | null;
     stocks?: { quantity: number | string }[];
 }
 
@@ -25,19 +28,49 @@ export default function InventoryPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+    const [groups, setGroups] = useState<Array<{ id: string; name: string }>>([]);
+    const [subgroups, setSubgroups] = useState<Array<{ id: string; name: string; group_id: string }>>([]);
+    const [selectedGroupId, setSelectedGroupId] = useState('');
+    const [selectedSubgroupId, setSelectedSubgroupId] = useState('');
+    const [showUncategorized, setShowUncategorized] = useState(false);
+    const [hasPremiumInventoryReports, setHasPremiumInventoryReports] = useState(false);
 
     useEffect(() => {
-        loadProducts();
+        void Promise.all([loadProducts(), loadCategoryOptions()]);
+    }, []);
+
+    useEffect(() => {
+        void loadProducts();
+    }, [selectedGroupId, selectedSubgroupId, showUncategorized]);
+
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            setHasPremiumInventoryReports(localStorage.getItem('subscription_plan_code') === 'PREMIUM');
+        }
     }, []);
 
     const loadProducts = async () => {
         try {
-            const data = await api.getProducts();
+            const data = await api.getProducts({
+                groupId: showUncategorized ? undefined : selectedGroupId || undefined,
+                subgroupId: showUncategorized ? undefined : selectedSubgroupId || undefined,
+                uncategorized: showUncategorized,
+            });
             setProducts(data);
         } catch (error) {
             console.error('Failed to load products', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const loadCategoryOptions = async () => {
+        try {
+            const [groupData, subgroupData] = await Promise.all([api.getProductGroups(), api.getProductSubgroups()]);
+            setGroups(groupData);
+            setSubgroups(subgroupData);
+        } catch (error) {
+            console.error('Failed to load category options', error);
         }
     };
 
@@ -157,6 +190,18 @@ export default function InventoryPage() {
                     size: 130,
                 },
             ),
+            columnHelper.accessor((row) => row.group?.name || 'Uncategorized', {
+                id: 'group',
+                header: 'Group',
+                cell: (info) => <span className="text-sm font-bold text-gray-700">{info.getValue()}</span>,
+                size: 140,
+            }),
+            columnHelper.accessor((row) => row.subgroup?.name || '-', {
+                id: 'subgroup',
+                header: 'Subgroup',
+                cell: (info) => <span className="text-sm text-gray-500">{info.getValue()}</span>,
+                size: 150,
+            }),
             columnHelper.display({
                 id: 'actions',
                 header: 'Actions',
@@ -169,6 +214,13 @@ export default function InventoryPage() {
                         >
                             <ShoppingBasket className="w-4 h-4" />
                         </button>
+                        <Link
+                            href={`/dashboard/inventory/transfers?productId=${info.row.original.id}`}
+                            className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors"
+                            title="View transfer history"
+                        >
+                            <Truck className="w-4 h-4" />
+                        </Link>
                         <button
                             onClick={() => handleDelete(info.row.original.id)}
                             className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 transition-colors"
@@ -196,6 +248,11 @@ export default function InventoryPage() {
         [],
     );
 
+    const filteredSubgroups = useMemo(
+        () => subgroups.filter((subgroup) => !selectedGroupId || subgroup.group_id === selectedGroupId),
+        [subgroups, selectedGroupId],
+    );
+
     return (
         <div className="overflow-y-auto h-full bg-[#f3f4f6] p-6 font-sans text-gray-900">
             <div className="max-w-[1400px] mx-auto space-y-6">
@@ -206,13 +263,138 @@ export default function InventoryPage() {
                             Manage catalog pricing and stock positions
                         </p>
                     </div>
-                    <button
-                        onClick={() => setIsModalOpen(true)}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl font-bold text-sm flex items-center shadow-lg shadow-blue-200 transition-all hover:-translate-y-0.5 active:translate-y-0"
-                    >
-                        <Plus className="w-4 h-4 mr-2" />
-                        Add Product
-                    </button>
+                    <div className="flex items-center gap-3">
+                        <Link
+                            href="/dashboard/inventory/ledger"
+                            className="bg-white border border-gray-200 text-gray-700 px-4 py-2.5 rounded-xl font-bold text-sm flex items-center transition-all hover:border-blue-300 hover:text-blue-700"
+                        >
+                            <BookOpen className="w-4 h-4 mr-2" />
+                            Stock Ledger
+                        </Link>
+                        <Link
+                            href="/dashboard/inventory/settings"
+                            className="bg-white border border-gray-200 text-gray-700 px-4 py-2.5 rounded-xl font-bold text-sm flex items-center transition-all hover:border-blue-300 hover:text-blue-700"
+                        >
+                            <Settings2 className="w-4 h-4 mr-2" />
+                            Settings
+                        </Link>
+                        <Link
+                            href="/dashboard/inventory/categories"
+                            className="bg-white border border-gray-200 text-gray-700 px-4 py-2.5 rounded-xl font-bold text-sm flex items-center transition-all hover:border-blue-300 hover:text-blue-700"
+                        >
+                            <Tag className="w-4 h-4 mr-2" />
+                            Manage Categories
+                        </Link>
+                        <Link
+                            href="/dashboard/inventory/transfers"
+                            className="bg-white border border-gray-200 text-gray-700 px-4 py-2.5 rounded-xl font-bold text-sm flex items-center transition-all hover:border-blue-300 hover:text-blue-700"
+                        >
+                            <Truck className="w-4 h-4 mr-2" />
+                            Transfers
+                        </Link>
+                        <Link
+                            href="/dashboard/inventory/shrinkage"
+                            className="bg-white border border-gray-200 text-gray-700 px-4 py-2.5 rounded-xl font-bold text-sm flex items-center transition-all hover:border-blue-300 hover:text-blue-700"
+                        >
+                            <AlertTriangle className="w-4 h-4 mr-2" />
+                            Shrinkage
+                        </Link>
+                        <Link
+                            href="/dashboard/inventory/stock-takes"
+                            className="bg-white border border-gray-200 text-gray-700 px-4 py-2.5 rounded-xl font-bold text-sm flex items-center transition-all hover:border-blue-300 hover:text-blue-700"
+                        >
+                            <ClipboardCheck className="w-4 h-4 mr-2" />
+                            Stock Takes
+                        </Link>
+                        {hasPremiumInventoryReports ? (
+                            <>
+                                <Link
+                                    href="/dashboard/inventory/reports/reorder"
+                                    className="bg-white border border-gray-200 text-gray-700 px-4 py-2.5 rounded-xl font-bold text-sm flex items-center transition-all hover:border-blue-300 hover:text-blue-700"
+                                >
+                                    <TrendingUp className="w-4 h-4 mr-2" />
+                                    Reorder Report
+                                </Link>
+                                <Link
+                                    href="/dashboard/inventory/reports/shrinkage"
+                                    className="bg-white border border-gray-200 text-gray-700 px-4 py-2.5 rounded-xl font-bold text-sm flex items-center transition-all hover:border-blue-300 hover:text-blue-700"
+                                >
+                                    <AlertTriangle className="w-4 h-4 mr-2" />
+                                    Shrinkage Report
+                                </Link>
+                            </>
+                        ) : (
+                            <Link
+                                href="/dashboard/billing"
+                                className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-2.5 rounded-xl font-bold text-sm flex items-center transition-all hover:border-amber-300 hover:bg-amber-100"
+                            >
+                                <TrendingUp className="w-4 h-4 mr-2" />
+                                Upgrade for Premium Reports
+                            </Link>
+                        )}
+                        <button
+                            onClick={() => setIsModalOpen(true)}
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl font-bold text-sm flex items-center shadow-lg shadow-blue-200 transition-all hover:-translate-y-0.5 active:translate-y-0"
+                        >
+                            <Plus className="w-4 h-4 mr-2" />
+                            Add Product
+                        </button>
+                    </div>
+                </div>
+
+                <div className="bg-white border border-gray-100 rounded-2xl p-4 flex flex-wrap gap-3 items-end">
+                    <div className="min-w-[220px] flex-1">
+                        <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 ml-1">Group Filter</label>
+                        <select
+                            value={selectedGroupId}
+                            onChange={(e) => {
+                                setSelectedGroupId(e.target.value);
+                                setSelectedSubgroupId('');
+                                setShowUncategorized(false);
+                            }}
+                            className="w-full bg-gray-50 border-none rounded-xl py-3 px-4 text-sm font-medium"
+                        >
+                            <option value="">All Groups</option>
+                            {groups.map((group) => (
+                                <option key={group.id} value={group.id}>
+                                    {group.name}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                    <div className="min-w-[220px] flex-1">
+                        <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 ml-1">Subgroup Filter</label>
+                        <select
+                            value={selectedSubgroupId}
+                            onChange={(e) => {
+                                setSelectedSubgroupId(e.target.value);
+                                setShowUncategorized(false);
+                            }}
+                            className="w-full bg-gray-50 border-none rounded-xl py-3 px-4 text-sm font-medium"
+                        >
+                            <option value="">All Subgroups</option>
+                            {filteredSubgroups.map((subgroup) => (
+                                <option key={subgroup.id} value={subgroup.id}>
+                                    {subgroup.name}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                    <label className="flex items-center gap-2 text-sm font-bold text-gray-700 px-2 pb-2">
+                        <input
+                            type="checkbox"
+                            checked={showUncategorized}
+                            onChange={(e) => {
+                                setShowUncategorized(e.target.checked);
+                                if (e.target.checked) {
+                                    setSelectedGroupId('');
+                                    setSelectedSubgroupId('');
+                                }
+                            }}
+                            className="rounded border-gray-300"
+                        />
+                        Show only uncategorized
+                    </label>
                 </div>
 
                 <AddProductModal

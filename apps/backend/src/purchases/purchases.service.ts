@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
 import { CreatePurchaseDto } from './purchase.dto';
+import { applyInventoryMovement, resolveWarehouseId } from '../database/inventory.utils';
 
 @Injectable()
 export class PurchasesService {
@@ -33,6 +34,7 @@ export class PurchasesService {
         const totalAmount = subtotal + taxAmount + freightAmount - discountAmount;
 
         return this.db.$transaction(async (tx) => {
+            const warehouseId = await resolveWarehouseId(tx, tenantId, store.id, dto.warehouseId, 'purchase');
             let supplierId = dto.supplierId;
 
             if (dto.newSupplier) {
@@ -93,14 +95,15 @@ export class PurchasesService {
                     },
                 });
 
-                await tx.productStock.upsert({
-                    where: { product_id: item.productId },
-                    update: { quantity: { increment: item.quantity } },
-                    create: {
-                        tenant_id: tenantId,
-                        product_id: item.productId,
-                        quantity: item.quantity,
-                    },
+                await applyInventoryMovement(tx, {
+                    tenantId,
+                    productId: item.productId,
+                    warehouseId,
+                    quantityDelta: item.quantity,
+                    movementType: 'PURCHASE_RECEIPT',
+                    referenceType: 'PURCHASE',
+                    referenceId: purchase.id,
+                    unitCost: item.unitCost,
                 });
             }
 

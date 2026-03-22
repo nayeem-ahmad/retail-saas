@@ -6,6 +6,7 @@ import {
     Patch,
     Param,
     Delete,
+    Query,
     UseGuards,
     UseInterceptors,
 } from '@nestjs/common';
@@ -27,8 +28,17 @@ export class ProductsController {
     }
 
     @Get()
-    findAll(@Tenant() tenant: TenantContext) {
-        return this.productsService.findAll(tenant.tenantId);
+    findAll(
+        @Tenant() tenant: TenantContext,
+        @Query('groupId') groupId?: string,
+        @Query('subgroupId') subgroupId?: string,
+        @Query('uncategorized') uncategorized?: string,
+    ) {
+        return this.productsService.findAll(tenant.tenantId, {
+            groupId,
+            subgroupId,
+            uncategorized: uncategorized === 'true',
+        });
     }
 
     @Get(':id')

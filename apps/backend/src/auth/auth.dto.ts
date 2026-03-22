@@ -2,6 +2,10 @@ export class SignupDto {
     email: string;
     password: string;
     name?: string;
+    tenantName: string;
+    storeName: string;
+    address?: string;
+    planCode?: 'BASIC' | 'PREMIUM';
 }
 
 export class LoginDto {
@@ -10,6 +14,8 @@ export class LoginDto {
 }
 
 export class CreateStoreDto {
+    tenantName?: string;
     name: string;
     address?: string;
+    planCode?: 'BASIC' | 'PREMIUM';
 }

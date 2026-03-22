@@ -29,6 +29,10 @@ export class CreatePurchaseDto {
 
     @IsOptional()
     @IsString()
+    warehouseId?: string;
+
+    @IsOptional()
+    @IsString()
     supplierId?: string;
 
     @IsOptional()

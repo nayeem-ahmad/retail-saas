@@ -11,6 +11,7 @@ export class CreatePaymentDto {
 
 export class CreateSaleDto {
     storeId: string;
+    warehouseId?: string;
     customerId?: string;
     totalAmount: number;
     amountPaid: number;

@@ -16,8 +16,27 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }, []);
 
     const isDashboardHome = pathname === '/dashboard';
-    const primaryRole = user?.tenants?.[0]?.role;
-    const canAccessAccounting = primaryRole === 'OWNER' || primaryRole === 'MANAGER';
+    const activeTenantId = typeof window !== 'undefined' ? localStorage.getItem('tenant_id') : null;
+    const activeTenant = user?.tenants?.find((tenant: any) => tenant.id === activeTenantId) || user?.tenants?.[0];
+    const primaryRole = activeTenant?.role;
+    const hasPremiumPlan = activeTenant?.subscription?.is_premium;
+    const activePlanCode = activeTenant?.subscription?.plan?.code || null;
+    const isPlatformAdmin = Boolean(user?.is_platform_admin);
+    const canManageBilling = primaryRole === 'OWNER' || primaryRole === 'MANAGER';
+    const canAccessAccounting = (primaryRole === 'OWNER' || primaryRole === 'MANAGER') && hasPremiumPlan;
+    const canAccessInventoryReports = Boolean(hasPremiumPlan);
+
+    useEffect(() => {
+        if (!canAccessAccounting && pathname.startsWith('/dashboard/accounting')) {
+            router.replace('/dashboard');
+        }
+        if (!canAccessInventoryReports && pathname.startsWith('/dashboard/inventory/reports')) {
+            router.replace('/dashboard/inventory');
+        }
+        if (!isPlatformAdmin && pathname.startsWith('/dashboard/admin')) {
+            router.replace('/dashboard');
+        }
+    }, [canAccessAccounting, canAccessInventoryReports, isPlatformAdmin, pathname, router]);
 
     // Build a human-readable page title from the path
     const pageTitle = (() => {
@@ -35,7 +54,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
     return (
         <div className="flex h-screen bg-[#f9fafb] font-sans text-[#111827]">
-            <Sidebar canAccessAccounting={canAccessAccounting} />
+            <Sidebar
+                canAccessAccounting={canAccessAccounting}
+                canAccessInventoryReports={canAccessInventoryReports}
+                canAccessAdmin={isPlatformAdmin}
+                canManageBilling={canManageBilling}
+                activePlanCode={activePlanCode}
+            />
 
             <div className="flex-1 flex flex-col overflow-hidden">
                 {/* Top header */}
@@ -66,7 +91,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                             <div className="text-right hidden sm:block">
                                 <p className="text-sm font-semibold tracking-tight leading-none">{user?.name || '—'}</p>
                                 <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">
-                                    {user?.tenants?.[0]?.role || 'Staff'}
+                                    {activeTenant?.role || 'Staff'}
                                 </p>
                             </div>
                             <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-700 text-sm font-black border border-blue-200 cursor-pointer hover:scale-105 transition-transform">
