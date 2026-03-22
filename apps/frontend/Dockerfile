@@ -14,6 +14,8 @@ RUN npm install --include=optional
 # Builder stage
 FROM deps AS builder
 COPY . .
+# Some deployments don't include a public directory; ensure it exists for runner COPY.
+RUN mkdir -p /app/apps/frontend/public
 # Build the shared package first
 RUN npm run build --workspace=@retail-saas/shared-types || true
 # Generate Prisma client
