@@ -105,7 +105,7 @@
 
 **Goal:** Provide a high-performance, resilient Point of Sale (POS) interface for processing retail transactions with support for multiple payment methods and real-time inventory updates.
 
-**Delivered Scope Update:** Epic 10 now also includes a shared sales ledger experience with searchable list views, payment-aware transaction summaries, editable sale detail screens, and browser print support for transaction documents.
+**Delivered Scope Update:** Epic 10 now also includes a shared sales ledger experience with searchable list views, payment-aware transaction summaries, editable sale detail screens, browser print support for transaction documents, and a normalized dashboard navigation IA where setup pages are grouped under Settings and report pages are grouped under Reports.
 
 ## Stories
 
@@ -146,6 +146,18 @@
     4.  Sales detail and list views surface paid amount, payment method breakdowns, and printable receipt output.
 *   **Technical Context:** UI State Management, Complex Form Validation.
 
+### [10.5] Dashboard Navigation IA (Settings + Reports Hub)
+
+* **User Story:** As a Shop Owner or Manager, I want setup/configuration screens grouped under Settings and all report screens grouped under Reports, so that navigation is predictable and future reporting features are easy to discover.
+
+* **Acceptance Criteria:**
+    1. Setup/configuration pages (e.g., customers, customer groups, territories, category/settings pages, chart of accounts) appear under the Settings module.
+    2. A dedicated Reports module exists in the sidebar.
+    3. Existing report pages are moved from feature modules into Reports navigation entries.
+    4. Navigation conventions are documented for future stories: new setup pages must be added under Settings; new report pages must be added under Reports.
+
+* **Technical Context:** Frontend sidebar information architecture, route mapping, UX consistency.
+
 # Epic 11: Sales Returns Management
 
 **Goal:** Provide a reliable returns workflow that lets teams issue partial or full refunds, re-increment stock, and maintain a clear operational history through list, detail, edit, print, and delete flows.
@@ -160,7 +172,7 @@
 
 ## Epic 80: Customer Management & Segmentation
 
-**Goal:** Provide a structured customer management foundation with rich customer profiles, reusable customer groups, and territory hierarchy management that all follow the same searchable dashboard list experience used across Sales.
+**Goal:** Provide a structured customer management foundation with rich customer profiles, reusable customer groups, and territory hierarchy management that all follow the same searchable dashboard list experience used across Sales, while keeping customer setup workflows under the Settings navigation module.
 
 **Delivered Scope Update:** Epic 80 now includes shared DataTable-based list views for Customers, Customer Groups, and Territories, aligning those operational pages with the Sales ledger UI pattern for search, sorting, exports, filters, and consistent row-level actions.
 
@@ -170,7 +182,7 @@
 
 * **User Story:** As a Shop Owner or Manager, I want to create, edit, and view rich customer profiles with segmentation context, so that I can maintain a structured customer database that supports downstream sales workflows.
 * **Acceptance Criteria:**
-    1. A "Customers" menu item and dashboard screen exists.
+    1. A "Customers" management entry exists under the Settings menu and opens the customer dashboard screen.
     2. The customer list surfaces code, type, group, territory, spend, segment, and registration date.
     3. Customer workflows remain connected to customer group and territory assignments.
 * **Technical Context:** Next.js dashboard UI, shared DataTable component, customer/customer-group/territory APIs.
@@ -179,7 +191,7 @@
 
 * **User Story:** As a Shop Owner or Manager, I want to define and manage Customer Groups, so that I can classify customers for targeted pricing, discounts, and reporting.
 * **Acceptance Criteria:**
-    1. A dedicated customer group management screen exists.
+    1. A dedicated customer group management screen exists under Settings.
     2. The list view supports search and presents name, description, default discount, and customer count.
     3. Edit and delete actions are available from the list while preserving the inline form workflow.
 * **Technical Context:** NestJS customer-group APIs, shared DataTable component, inline form workflow.
@@ -188,7 +200,7 @@
 
 * **User Story:** As a Shop Owner or Manager, I want to define and manage Territories, so that I can assign customers to geographic regions for delivery planning, sales coverage, and reporting.
 * **Acceptance Criteria:**
-    1. A dedicated territory management screen exists.
+    1. A dedicated territory management screen exists under Settings.
     2. The list view surfaces hierarchy context through parent and level columns while keeping the flat API contract.
     3. Edit and delete actions remain available alongside the territory form workflow.
 * **Technical Context:** NestJS territory APIs, shared DataTable component, parent-child hierarchy display.

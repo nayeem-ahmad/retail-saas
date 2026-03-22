@@ -31,6 +31,7 @@ import {
     ShieldCheck,
     CreditCard,
     Crown,
+    BarChart3,
     type LucideIcon,
 } from 'lucide-react';
 
@@ -75,10 +76,6 @@ const MODULES: NavModule[] = [
             { href: '/dashboard/returns',          icon: ArrowLeftRight,  label: 'Sales Returns' },
             { href: '/dashboard/orders',           icon: ClipboardList,   label: 'Sales Orders' },
             { href: '/dashboard/quotes',           icon: FileText,        label: 'Sales Quotations' },
-            { href: '#setup',                      icon: Settings,        label: 'Setup', section: true },
-            { href: '/dashboard/customers',        icon: Users,           label: 'Customers' },
-            { href: '/dashboard/customer-groups',  icon: FolderTree,      label: 'Customer Groups' },
-            { href: '/dashboard/territories',      icon: MapPin,          label: 'Territories' },
             { href: '/dashboard/cashier-sessions', icon: Clock,           label: 'Cashier Sessions' },
         ],
     },
@@ -97,7 +94,6 @@ const MODULES: NavModule[] = [
         label: 'Accounting',
         children: [
             { href: '/dashboard/accounting', icon: Calculator, label: 'Overview' },
-            { href: '/dashboard/accounting/coa', icon: FolderTree, label: 'Chart of Accounts' },
             { href: '/dashboard/accounting/vouchers', icon: FileText, label: 'Voucher Entry' },
             { href: '/dashboard/accounting/journal', icon: ClipboardList, label: 'Journal' },
             { href: '/dashboard/accounting/ledger', icon: ClipboardList, label: 'Ledger' },
@@ -113,11 +109,17 @@ const MODULES: NavModule[] = [
             { href: '/dashboard/inventory/shrinkage', icon: AlertTriangle, label: 'Shrinkage' },
             { href: '/dashboard/inventory/stock-takes', icon: ClipboardCheck, label: 'Stock Takes' },
             { href: '/dashboard/inventory/ledger', icon: BookOpen, label: 'Stock Ledger' },
-            { href: '/dashboard/inventory/categories', icon: FolderTree, label: 'Categories' },
+        ],
+    },
+    {
+        key: 'reports',
+        icon: BarChart3,
+        label: 'Reports',
+        children: [
+            { href: '#inventory-reports', icon: Package, label: 'Inventory', section: true, advancedOnly: true },
             { href: '/dashboard/inventory/reports/reorder', icon: TrendingUp, label: 'Reorder Report', advancedOnly: true },
             { href: '/dashboard/inventory/reports/shrinkage', icon: AlertTriangle, label: 'Shrinkage Report', advancedOnly: true },
             { href: '/dashboard/inventory/reports/valuation', icon: Calculator, label: 'Valuation', advancedOnly: true },
-            { href: '/dashboard/inventory/settings', icon: Settings, label: 'Settings' },
         ],
     },
     {
@@ -138,7 +140,17 @@ const MODULES: NavModule[] = [
         key: 'settings',
         icon: Settings,
         label: 'Settings',
-        href: '#',
+        children: [
+            { href: '#sales-setup', icon: ShoppingBag, label: 'Sales Setup', section: true },
+            { href: '/dashboard/customers', icon: Users, label: 'Customers' },
+            { href: '/dashboard/customer-groups', icon: FolderTree, label: 'Customer Groups' },
+            { href: '/dashboard/territories', icon: MapPin, label: 'Territories' },
+            { href: '#inventory-setup', icon: Package, label: 'Inventory Setup', section: true },
+            { href: '/dashboard/inventory/categories', icon: FolderTree, label: 'Categories' },
+            { href: '/dashboard/inventory/settings', icon: Settings, label: 'Inventory Settings' },
+            { href: '#accounting-setup', icon: Calculator, label: 'Accounting Setup', section: true },
+            { href: '/dashboard/accounting/coa', icon: FolderTree, label: 'Chart of Accounts' },
+        ],
     },
 ];
 
@@ -170,7 +182,7 @@ export default function Sidebar({
             return true;
         })
         .map((module) => {
-            if (module.key !== 'inventory' || !module.children) {
+            if (!['inventory', 'reports'].includes(module.key) || !module.children) {
                 return module;
             }
 
@@ -363,7 +375,7 @@ export default function Sidebar({
                                             <Link key={href} href={href} className={childLinkCls(active)}>
                                                 <ChildIcon className={`flex-shrink-0 w-4 h-4 ${active ? 'text-blue-600' : ''}`} />
                                                 <span className="text-sm tracking-tight whitespace-nowrap">{label}</span>
-                                                {mod.key === 'inventory' && href.includes('/reports/') && (
+                                                {mod.key === 'reports' && href.includes('/reports/') && (
                                                     <span className="ml-auto text-[9px] font-black uppercase tracking-widest text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-md">Advanced</span>
                                                 )}
                                             </Link>

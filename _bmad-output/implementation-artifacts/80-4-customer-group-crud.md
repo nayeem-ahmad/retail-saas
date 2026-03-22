@@ -14,7 +14,7 @@ so that I can classify customers for targeted pricing, discounts, and reporting.
 2. CRUD API endpoints exist: `POST`, `GET`, `GET :id`, `PATCH :id`, `DELETE :id` under `/customer-groups`. [ ]
 3. Group name is unique per tenant. [ ]
 4. Deleting a group that has associated customers is blocked with a clear error message. [ ]
-5. A "Customer Groups" management UI exists (standalone page or section within Settings). [ ]
+5. A "Customer Groups" management UI exists under the Settings menu. [ ]
 6. The groups are available as a dropdown when creating/editing a Customer (Story 80.1). [ ]
 
 ## Data Model
@@ -51,7 +51,7 @@ so that I can classify customers for targeted pricing, discounts, and reporting.
   - [ ] Implement delete guard — reject if customers reference this group.
 
 - [ ] Task 3: Frontend UI
-  - [ ] Add a "Customer Groups" page at `/dashboard/customers/groups` or under Settings.
+  - [ ] Add a "Customer Groups" page under Settings navigation.
   - [ ] List table with Name, Description, Discount %, Customer Count.
   - [ ] Add/Edit modal with form fields.
   - [ ] Delete button with confirmation (blocked if customers exist).

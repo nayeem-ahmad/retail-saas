@@ -42,6 +42,7 @@ jest.mock('lucide-react', () => {
         ShieldCheck: icon,
         CreditCard: icon,
         Crown: icon,
+        BarChart3: icon,
     };
 });
 
@@ -67,12 +68,15 @@ describe('Sidebar — Story 30.1', () => {
 
         expect(screen.getByText('Billing')).toBeInTheDocument();
         expect(screen.getByText('Platform Admin')).toBeInTheDocument();
+        expect(screen.getByText('Reports')).toBeInTheDocument();
+        expect(screen.getByText('Settings')).toBeInTheDocument();
         expect(screen.getByText('STANDARD')).toBeInTheDocument();
     });
 
     it('hides advanced inventory reports for tenants without report entitlement', () => {
         render(<Sidebar canAccessAccounting canAccessInventoryReports={false} />);
 
+        expect(screen.queryByText('Reports')).toBeInTheDocument();
         expect(screen.queryByText('Reorder Report')).not.toBeInTheDocument();
         expect(screen.queryByText('Shrinkage Report')).not.toBeInTheDocument();
     });

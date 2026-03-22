@@ -10,7 +10,7 @@ so that I can maintain a structured, segmented customer database to drive sales 
 
 ## Acceptance Criteria
 
-1.  A "Customers" menu item and dashboard screen exists. [x]
+1.  A "Customers" management entry exists under the Settings menu and opens the customer dashboard screen. [x]
 2.  A user can create a new customer with all required and optional fields (see Data Model below). [x]
 3.  **Customer Code** is auto-generated on create (e.g. `CUST-00001`), editable by user, but must remain unique per tenant. [x]
 4.  **Customer Type** is selectable: `Individual` or `Organization`. [x]

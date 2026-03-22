@@ -15,7 +15,7 @@ so that I can assign customers to geographic regions for delivery planning, sale
 3. CRUD API endpoints exist: `POST`, `GET`, `GET :id`, `PATCH :id`, `DELETE :id` under `/territories`. [ ]
 4. Territory name is unique per tenant (within the same parent). [ ]
 5. Deleting a territory that has associated customers or child territories is blocked with a clear error. [ ]
-6. A "Territories" management UI exists (standalone page or section within Settings). [ ]
+6. A "Territories" management UI exists under the Settings menu. [ ]
 7. Territories are available as a dropdown when creating/editing a Customer (Story 80.1). [ ]
 8. The `GET` list endpoint returns territories in a flat list with `parent_id` so the frontend can render a tree if desired. [ ]
 
@@ -59,7 +59,7 @@ so that I can assign customers to geographic regions for delivery planning, sale
   - [ ] `GET /territories` returns flat list with `parent_id` and `_count.customers`.
 
 - [ ] Task 3: Frontend UI
-  - [ ] Add a "Territories" page at `/dashboard/customers/territories` or under Settings.
+  - [ ] Add a "Territories" page under Settings navigation.
   - [ ] List view — optionally render as indented tree using `parent_id`.
   - [ ] Add/Edit modal: Name, Parent Territory (dropdown), Description.
   - [ ] Delete button with confirmation (blocked if children or customers exist).
