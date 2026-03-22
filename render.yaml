@@ -1,9 +1,3 @@
-databases:
-  - name: retail-saas-db
-    plan: starter
-    databaseName: retail_saas
-    user: retail_saas
-
 services:
   - type: web
     name: retail-saas-backend
@@ -18,13 +12,9 @@ services:
       - key: PORT
         value: 4000
       - key: DATABASE_URL
-        fromDatabase:
-          name: retail-saas-db
-          property: connectionString
+        sync: false
       - key: DIRECT_URL
-        fromDatabase:
-          name: retail-saas-db
-          property: connectionString
+        sync: false
       - key: JWT_SECRET
         generateValue: true
       - key: FRONTEND_URL
