@@ -1,0 +1,82 @@
+databases:
+  - name: retail-saas-db
+    plan: starter
+    databaseName: retail_saas
+    user: retail_saas
+
+services:
+  - type: web
+    name: retail-saas-backend
+    runtime: docker
+    dockerContext: .
+    dockerfilePath: ./apps/backend/Dockerfile
+    plan: starter
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 4000
+      - key: DATABASE_URL
+        fromDatabase:
+          name: retail-saas-db
+          property: connectionString
+      - key: DIRECT_URL
+        fromDatabase:
+          name: retail-saas-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: FRONTEND_URL
+        sync: false
+      - key: BACKEND_PUBLIC_URL
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: BILLING_PROVIDER
+        sync: false
+      - key: PLATFORM_ADMIN_EMAILS
+        sync: false
+      - key: SSL_WIRELESS_STORE_ID
+        sync: false
+      - key: SSL_WIRELESS_STORE_PASSWORD
+        sync: false
+      - key: SSL_WIRELESS_API_URL
+        sync: false
+      - key: SSL_WIRELESS_VALIDATION_URL
+        sync: false
+      - key: SSL_WIRELESS_SUCCESS_REDIRECT
+        sync: false
+      - key: SSL_WIRELESS_FAIL_REDIRECT
+        sync: false
+      - key: SSL_WIRELESS_CANCEL_REDIRECT
+        sync: false
+      - key: BKASH_APP_KEY
+        sync: false
+      - key: BKASH_APP_SECRET
+        sync: false
+      - key: BKASH_API_URL
+        sync: false
+      - key: NAGAD_MERCHANT_ID
+        sync: false
+      - key: NAGAD_API_KEY
+        sync: false
+      - key: NAGAD_API_URL
+        sync: false
+
+  - type: web
+    name: retail-saas-frontend
+    runtime: docker
+    dockerContext: .
+    dockerfilePath: ./apps/frontend/Dockerfile
+    plan: starter
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: NEXT_PUBLIC_API_URL
+        sync: false
