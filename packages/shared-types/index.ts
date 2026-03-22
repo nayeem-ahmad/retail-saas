@@ -1,49 +1,51 @@
 import { z } from "zod";
 
-export enum UserRole {
-  OWNER = "OWNER",
-  MANAGER = "MANAGER",
-  CASHIER = "CASHIER",
-  ACCOUNTANT = "ACCOUNTANT",
-}
+export const UserRole = {
+  OWNER: "OWNER",
+  MANAGER: "MANAGER",
+  CASHIER: "CASHIER",
+  ACCOUNTANT: "ACCOUNTANT",
+} as const;
+export type UserRole = (typeof UserRole)[keyof typeof UserRole];
 
-export enum StorePermission {
+export const StorePermission = {
   // Product & Catalog
-  VIEW_PRODUCT_CATALOG = "VIEW_PRODUCT_CATALOG",
-  EDIT_PRODUCTS = "EDIT_PRODUCTS",
-  EDIT_PRODUCT_PRICES = "EDIT_PRODUCT_PRICES",
-  EDIT_SUPPLIERS = "EDIT_SUPPLIERS",
+  VIEW_PRODUCT_CATALOG: "VIEW_PRODUCT_CATALOG",
+  EDIT_PRODUCTS: "EDIT_PRODUCTS",
+  EDIT_PRODUCT_PRICES: "EDIT_PRODUCT_PRICES",
+  EDIT_SUPPLIERS: "EDIT_SUPPLIERS",
 
   // Inventory
-  CREATE_INVENTORY_MOVEMENTS = "CREATE_INVENTORY_MOVEMENTS",
-  CREATE_GOODS_TRANSFER = "CREATE_GOODS_TRANSFER",
-  APPROVE_GOODS_TRANSFER = "APPROVE_GOODS_TRANSFER",
-  STOCK_TAKE = "STOCK_TAKE",
+  CREATE_INVENTORY_MOVEMENTS: "CREATE_INVENTORY_MOVEMENTS",
+  CREATE_GOODS_TRANSFER: "CREATE_GOODS_TRANSFER",
+  APPROVE_GOODS_TRANSFER: "APPROVE_GOODS_TRANSFER",
+  STOCK_TAKE: "STOCK_TAKE",
 
   // Transactions
-  CREATE_SALE = "CREATE_SALE",
-  CREATE_PURCHASE = "CREATE_PURCHASE",
-  CREATE_RETURN = "CREATE_RETURN",
-  CREATE_SALES_ORDER = "CREATE_SALES_ORDER",
-  CREATE_QUOTATION = "CREATE_QUOTATION",
+  CREATE_SALE: "CREATE_SALE",
+  CREATE_PURCHASE: "CREATE_PURCHASE",
+  CREATE_RETURN: "CREATE_RETURN",
+  CREATE_SALES_ORDER: "CREATE_SALES_ORDER",
+  CREATE_QUOTATION: "CREATE_QUOTATION",
 
   // Accounting
-  VIEW_LEDGER = "VIEW_LEDGER",
-  CREATE_VOUCHER = "CREATE_VOUCHER",
-  VIEW_FINANCIAL_REPORTS = "VIEW_FINANCIAL_REPORTS",
+  VIEW_LEDGER: "VIEW_LEDGER",
+  CREATE_VOUCHER: "CREATE_VOUCHER",
+  VIEW_FINANCIAL_REPORTS: "VIEW_FINANCIAL_REPORTS",
 
   // Fund Transfers
-  CREATE_FUND_TRANSFER = "CREATE_FUND_TRANSFER",
-  APPROVE_FUND_TRANSFER = "APPROVE_FUND_TRANSFER",
+  CREATE_FUND_TRANSFER: "CREATE_FUND_TRANSFER",
+  APPROVE_FUND_TRANSFER: "APPROVE_FUND_TRANSFER",
 
   // Multi-Store
-  SWITCH_STORES = "SWITCH_STORES",
-  VIEW_CONSOLIDATED_REPORTS = "VIEW_CONSOLIDATED_REPORTS",
+  SWITCH_STORES: "SWITCH_STORES",
+  VIEW_CONSOLIDATED_REPORTS: "VIEW_CONSOLIDATED_REPORTS",
 
   // User Management
-  MANAGE_USERS = "MANAGE_USERS",
-  MANAGE_USER_STORE_ACCESS = "MANAGE_USER_STORE_ACCESS",
-}
+  MANAGE_USERS: "MANAGE_USERS",
+  MANAGE_USER_STORE_ACCESS: "MANAGE_USER_STORE_ACCESS",
+} as const;
+export type StorePermission = (typeof StorePermission)[keyof typeof StorePermission];
 
 /** Permissions automatically granted by role when provisioning a user. */
 export const ROLE_DEFAULT_PERMISSIONS: Record<UserRole, StorePermission[]> = {
@@ -98,19 +100,21 @@ export interface Tenant {
   created_at: string;
 }
 
-export enum SubscriptionStatus {
-  ACTIVE = 'ACTIVE',
-  PAST_DUE = 'PAST_DUE',
-  CANCELLED = 'CANCELLED',
-  TRIALING = 'TRIALING',
-}
+export const SubscriptionStatus = {
+  ACTIVE: 'ACTIVE',
+  PAST_DUE: 'PAST_DUE',
+  CANCELLED: 'CANCELLED',
+  TRIALING: 'TRIALING',
+} as const;
+export type SubscriptionStatus = (typeof SubscriptionStatus)[keyof typeof SubscriptionStatus];
 
-export enum SubscriptionPlanCode {
-  FREE = 'FREE',
-  BASIC = 'BASIC',
-  STANDARD = 'STANDARD',
-  PREMIUM = 'PREMIUM',
-}
+export const SubscriptionPlanCode = {
+  FREE: 'FREE',
+  BASIC: 'BASIC',
+  STANDARD: 'STANDARD',
+  PREMIUM: 'PREMIUM',
+} as const;
+export type SubscriptionPlanCode = (typeof SubscriptionPlanCode)[keyof typeof SubscriptionPlanCode];
 
 export interface SubscriptionPlanSummary {
   code: SubscriptionPlanCode;
@@ -169,28 +173,31 @@ export interface ApiError {
   };
 }
 
-export enum AccountType {
-  ASSET = "asset",
-  LIABILITY = "liability",
-  EQUITY = "equity",
-  REVENUE = "revenue",
-  EXPENSE = "expense",
-}
+export const AccountType = {
+  ASSET: "asset",
+  LIABILITY: "liability",
+  EQUITY: "equity",
+  REVENUE: "revenue",
+  EXPENSE: "expense",
+} as const;
+export type AccountType = (typeof AccountType)[keyof typeof AccountType];
 
-export enum AccountCategory {
-  CASH = "cash",
-  BANK = "bank",
-  GENERAL = "general",
-}
+export const AccountCategory = {
+  CASH: "cash",
+  BANK: "bank",
+  GENERAL: "general",
+} as const;
+export type AccountCategory = (typeof AccountCategory)[keyof typeof AccountCategory];
 
-export enum VoucherType {
-  CASH_PAYMENT = "cash_payment",
-  CASH_RECEIVE = "cash_receive",
-  BANK_PAYMENT = "bank_payment",
-  BANK_RECEIVE = "bank_receive",
-  FUND_TRANSFER = "fund_transfer",
-  JOURNAL = "journal",
-}
+export const VoucherType = {
+  CASH_PAYMENT: "cash_payment",
+  CASH_RECEIVE: "cash_receive",
+  BANK_PAYMENT: "bank_payment",
+  BANK_RECEIVE: "bank_receive",
+  FUND_TRANSFER: "fund_transfer",
+  JOURNAL: "journal",
+} as const;
+export type VoucherType = (typeof VoucherType)[keyof typeof VoucherType];
 
 // --- VALIDATION SCHEMAS ---
 
