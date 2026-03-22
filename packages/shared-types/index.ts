@@ -1,11 +1,88 @@
 import { z } from "zod";
 
 export enum UserRole {
-  OWNER = "owner",
-  MANAGER = "manager",
-  CASHIER = "cashier",
-  ACCOUNTANT = "accountant",
+  OWNER = "OWNER",
+  MANAGER = "MANAGER",
+  CASHIER = "CASHIER",
+  ACCOUNTANT = "ACCOUNTANT",
 }
+
+export enum StorePermission {
+  // Product & Catalog
+  VIEW_PRODUCT_CATALOG = "VIEW_PRODUCT_CATALOG",
+  EDIT_PRODUCTS = "EDIT_PRODUCTS",
+  EDIT_PRODUCT_PRICES = "EDIT_PRODUCT_PRICES",
+  EDIT_SUPPLIERS = "EDIT_SUPPLIERS",
+
+  // Inventory
+  CREATE_INVENTORY_MOVEMENTS = "CREATE_INVENTORY_MOVEMENTS",
+  CREATE_GOODS_TRANSFER = "CREATE_GOODS_TRANSFER",
+  APPROVE_GOODS_TRANSFER = "APPROVE_GOODS_TRANSFER",
+  STOCK_TAKE = "STOCK_TAKE",
+
+  // Transactions
+  CREATE_SALE = "CREATE_SALE",
+  CREATE_PURCHASE = "CREATE_PURCHASE",
+  CREATE_RETURN = "CREATE_RETURN",
+  CREATE_SALES_ORDER = "CREATE_SALES_ORDER",
+  CREATE_QUOTATION = "CREATE_QUOTATION",
+
+  // Accounting
+  VIEW_LEDGER = "VIEW_LEDGER",
+  CREATE_VOUCHER = "CREATE_VOUCHER",
+  VIEW_FINANCIAL_REPORTS = "VIEW_FINANCIAL_REPORTS",
+
+  // Fund Transfers
+  CREATE_FUND_TRANSFER = "CREATE_FUND_TRANSFER",
+  APPROVE_FUND_TRANSFER = "APPROVE_FUND_TRANSFER",
+
+  // Multi-Store
+  SWITCH_STORES = "SWITCH_STORES",
+  VIEW_CONSOLIDATED_REPORTS = "VIEW_CONSOLIDATED_REPORTS",
+
+  // User Management
+  MANAGE_USERS = "MANAGE_USERS",
+  MANAGE_USER_STORE_ACCESS = "MANAGE_USER_STORE_ACCESS",
+}
+
+/** Permissions automatically granted by role when provisioning a user. */
+export const ROLE_DEFAULT_PERMISSIONS: Record<UserRole, StorePermission[]> = {
+  [UserRole.OWNER]: Object.values(StorePermission),
+  [UserRole.MANAGER]: [
+    StorePermission.VIEW_PRODUCT_CATALOG,
+    StorePermission.EDIT_PRODUCTS,
+    StorePermission.EDIT_PRODUCT_PRICES,
+    StorePermission.EDIT_SUPPLIERS,
+    StorePermission.CREATE_INVENTORY_MOVEMENTS,
+    StorePermission.CREATE_GOODS_TRANSFER,
+    StorePermission.STOCK_TAKE,
+    StorePermission.CREATE_SALE,
+    StorePermission.CREATE_PURCHASE,
+    StorePermission.CREATE_RETURN,
+    StorePermission.CREATE_SALES_ORDER,
+    StorePermission.CREATE_QUOTATION,
+    StorePermission.VIEW_LEDGER,
+    StorePermission.CREATE_VOUCHER,
+    StorePermission.VIEW_FINANCIAL_REPORTS,
+    StorePermission.CREATE_FUND_TRANSFER,
+    StorePermission.SWITCH_STORES,
+  ],
+  [UserRole.CASHIER]: [
+    StorePermission.VIEW_PRODUCT_CATALOG,
+    StorePermission.CREATE_SALE,
+    StorePermission.CREATE_RETURN,
+    StorePermission.SWITCH_STORES,
+    StorePermission.VIEW_LEDGER,
+  ],
+  [UserRole.ACCOUNTANT]: [
+    StorePermission.VIEW_PRODUCT_CATALOG,
+    StorePermission.VIEW_LEDGER,
+    StorePermission.CREATE_VOUCHER,
+    StorePermission.VIEW_FINANCIAL_REPORTS,
+    StorePermission.SWITCH_STORES,
+    StorePermission.VIEW_CONSOLIDATED_REPORTS,
+  ],
+};
 
 export interface TenantUser {
   id: string;
@@ -54,10 +131,21 @@ export interface TenantSubscriptionSummary {
   plan: SubscriptionPlanSummary;
 }
 
+export interface UserStoreAccess {
+  id: string;
+  user_id: string;
+  store_id: string;
+  tenant_id: string;
+  /** STORE_ONLY = locked to this store; MULTI_STORE_CAPABLE = can switch */
+  access_level: "STORE_ONLY" | "MULTI_STORE_CAPABLE";
+  created_at: string;
+}
+
 export interface TenantContextSummary {
   id: string;
   name: string;
   role: UserRole;
+  /** All stores user has UserStoreAccess for (not all tenant stores). */
   stores: Store[];
   subscription?: TenantSubscriptionSummary | null;
 }

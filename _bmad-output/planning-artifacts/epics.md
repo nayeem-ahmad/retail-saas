@@ -1,6 +1,6 @@
-# Epic 01: SaaS Foundation & Infrastructure
+# Epic 01: SaaS Foundation & Infrastructure (Multi-Store Ready)
 
-**Goal:** This epic focuses on establishing the technical and structural foundation of the Retail SaaS platform. By the end of this epic, the development environment will be fully operational, and the application will support basic multi-tenant store and user management.
+**Goal:** This epic focuses on establishing the technical and structural foundation of the Retail SaaS platform with full multi-store/multi-branch support. By the end of this epic, the development environment will be fully operational, and the application will support multi-tenant, multi-store architectures with granular permission-based access control.
 
 ## Stories
 
@@ -12,29 +12,40 @@
     3.  `.env.local` is configured with Supabase connection strings from the PRD.
 *   **Technical Context:** Next.js 14+ (App Router), Tailwind CSS, TypeScript.
 
-### [1.2] Database Schema & RLS Foundation
-*   **User Story:** As a Shop Owner, I want my data to be strictly isolated from other stores, so that my business information is secure.
+### [1.2] Database Schema & RLS Foundation (Multi-Store)
+*   **User Story:** As a Shop Owner with multiple stores, I want my data to be strictly isolated per store, so that each branch's business information is secure and accessible only to authorized users.
 *   **Acceptance Criteria:**
-    1.  `profiles`, `stores`, and `memberships` tables created in Supabase.
-    2.  PostgreSQL Row-Level Security (RLS) policies implemented on all tables using `store_id`.
-    3.  A `current_store_id()` helper function created in the database for RLS.
-*   **Technical Context:** Supabase, PostgreSQL, RLS.
+    1.  `User`, `Tenant`, `Store`, `UserStoreAccess`, and `UserStorePermission` tables created.
+    2.  PostgreSQL Row-Level Security (RLS) policies implemented on all transaction tables using `tenant_id` and `store_id`.
+    3.  Master data tables (products, suppliers, customers) use `tenant_id` only (shared across stores).
+    4.  `UserStorePermission` table introduced for granular permission-based access control.
+    5.  A `current_tenant_id()` and `current_store_id()` helper functions created in the database for RLS.
+    6.  `ProductPrice` table created to support store-specific pricing overrides.
+*   **Technical Context:** Supabase, PostgreSQL, RLS, Permission-based RBAC.
 
-### [1.3] Multi-tenant Auth & Sign-up Flow
-*   **User Story:** As a new Shop Owner, I want to sign up and create my store profile in one step, so that I can quickly start using the system.
+### [1.3] Multi-Tenant, Multi-Store Auth & Sign-up Flow
+*   **User Story:** As a new Shop Owner, I want to sign up and create my first store profile in one step, so that I can quickly start using the system. I should also be able to add more stores later without creating new accounts.
 *   **Acceptance Criteria:**
     1.  Sign-up page handles Supabase Auth registration.
-    2.  Post-registration flow automatically creates a `store` and a `membership` record with role `OWNER`.
-    3.  User redirected to the dashboard upon successful setup.
-*   **Technical Context:** Supabase Auth, Next.js Server Actions.
+    2.  Post-registration flow automatically creates a `tenant` (organization) and an initial `store`.
+    3.  Creates a `UserStoreAccess` record with `access_level = STORE_ONLY` for Cashier or `MULTI_STORE_CAPABLE` for Owner.
+    4.  Seeds default permissions based on owner role (all permissions granted).
+    5.  Login endpoint returns list of accessible stores; if user has access to multiple stores, store selector is presented.
+    6.  User can switch between stores post-login via dropdown (updates API headers).
+    7.  User redirected to dashboard with current store context established.
+*   **Technical Context:** Supabase Auth, Next.js Server Actions, Multi-store context.
 
-### [1.4] RBAC & Store Invitations
-*   **User Story:** As a Shop Owner, I want to define roles like Manager or Cashier, so that I can control access to my store's data.
+### [1.4] Permission-Based Access Control & Multi-Store Invitations
+*   **User Story:** As a Shop Owner, I want to invite employees to one or multiple stores and assign them granular permissions (not just roles), so that I can have fine-grained control over what each user can do at each store.
 *   **Acceptance Criteria:**
-    1.  `roles` enum created (OWNER, MANAGER, CASHIER).
-    2.  `memberships` table enforces unique `user_id` + `store_id` pairs.
-    3.  Middleware implemented to check roles for protected routes.
-*   **Technical Context:** RBAC, Next.js Middleware.
+    1.  Permission enum created (EDIT_PRODUCTS, CREATE_SALE, APPROVE_GOODS_TRANSFER, VIEW_CONSOLIDATED_REPORTS, etc.).
+    2.  `UserStoreAccess` table enforces user-to-store assignments with `access_level` (STORE_ONLY or MULTI_STORE_CAPABLE).
+    3.  `UserStorePermission` table allows granular permission assignment per user per store.
+    4.  Role-to-permission seeding provided (OWNER = all permissions; MANAGER, CASHIER, ACCOUNTANT = limited presets).
+    5.  Store selector UI appears for users with access to multiple stores.
+    6.  Middleware/Guards verify permissions on every request.
+    7.  Cashiers can be assigned to multiple stores (e.g., weekend coverage).
+*   **Technical Context:** Permission-based RBAC, Next.js Middleware, Guards.
 
 ### [1.5] API Foundation & Global Error Handling
 *   **User Story:** As a Developer, I want a standardized way to handle API calls and errors, so that our application is robust and easy to maintain.

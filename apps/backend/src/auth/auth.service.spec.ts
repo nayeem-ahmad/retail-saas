@@ -29,6 +29,8 @@ describe('AuthService', () => {
         tenantUser: { create: jest.fn() },
         store: { create: jest.fn() },
         tenantSubscription: { create: jest.fn() },
+        userStoreAccess: { create: jest.fn() },
+        userStorePermission: { createMany: jest.fn() },
         $transaction: jest.fn(),
     };
 
@@ -36,12 +38,36 @@ describe('AuthService', () => {
         sign: jest.fn().mockReturnValue('jwt-token'),
     };
 
+    const makeUserWithAccess = (storeId: string, tenantId: string) => ({
+        id: 'user-1',
+        email: 'owner@example.com',
+        name: 'Owner',
+        storeAccess: [{ tenant_id: tenantId, store: { id: storeId } }],
+        tenantMembers: [{
+            role: 'OWNER',
+            tenant_id: tenantId,
+            tenant: {
+                id: tenantId,
+                name: 'Tenant One',
+                subscription: {
+                    status: 'TRIALING',
+                    current_period_start: new Date('2026-03-21T00:00:00.000Z'),
+                    current_period_end: new Date('2026-04-04T00:00:00.000Z'),
+                    cancel_at_period_end: false,
+                    plan: { code: 'BASIC', name: 'Basic', description: null, monthly_price: 1499, yearly_price: null, features_json: {} },
+                },
+            },
+        }],
+    });
+
     beforeEach(async () => {
         jest.resetAllMocks();
         db.$transaction.mockImplementation(async (callback: any) => callback(db));
         db.accountGroup.upsert.mockResolvedValue({ id: 'group-1', name: 'Current Assets' });
         db.accountSubgroup.upsert.mockResolvedValue({ id: 'subgroup-1', name: 'Cash and Bank' });
         db.account.upsert.mockResolvedValue({ id: 'account-1', name: 'Cash in Hand' });
+        db.userStoreAccess.create.mockResolvedValue({});
+        db.userStorePermission.createMany.mockResolvedValue({ count: 22 });
         jwtService.sign.mockReturnValue('jwt-token');
 
         const module: TestingModule = await Test.createTestingModule({
@@ -58,26 +84,7 @@ describe('AuthService', () => {
     it('signs up a new tenant-backed user', async () => {
         db.user.findUnique
             .mockResolvedValueOnce(null)
-            .mockResolvedValueOnce({
-                id: 'user-1',
-                email: 'owner@example.com',
-                name: 'Owner',
-                tenantMembers: [{
-                    role: 'OWNER',
-                    tenant: {
-                        id: 'tenant-1',
-                        name: 'Tenant One',
-                        stores: [{ id: 'store-1' }],
-                        subscription: {
-                            status: 'TRIALING',
-                            current_period_start: new Date('2026-03-21T00:00:00.000Z'),
-                            current_period_end: new Date('2026-04-04T00:00:00.000Z'),
-                            cancel_at_period_end: false,
-                            plan: { code: 'BASIC', name: 'Basic', description: null, monthly_price: 1499, yearly_price: null, features_json: {} },
-                        },
-                    },
-                }],
-            });
+            .mockResolvedValueOnce(makeUserWithAccess('store-1', 'tenant-1'));
         db.user.create.mockResolvedValue({ id: 'user-1', email: 'owner@example.com', name: 'Owner' });
         db.subscriptionPlan.findUnique.mockResolvedValue({ id: 'plan-basic', code: 'BASIC', is_active: true });
         db.tenant.create.mockResolvedValue({ id: 'tenant-1' });
@@ -94,6 +101,68 @@ describe('AuthService', () => {
 
         expect(result.access_token).toBe('jwt-token');
         expect(db.tenantSubscription.create).toHaveBeenCalled();
+    });
+
+    it('provisionTenant creates UserStoreAccess and UserStorePermission for OWNER', async () => {
+        db.user.findUnique
+            .mockResolvedValueOnce(null)
+            .mockResolvedValueOnce(makeUserWithAccess('store-1', 'tenant-1'));
+        db.user.create.mockResolvedValue({ id: 'user-1', email: 'owner@example.com', name: 'Owner' });
+        db.subscriptionPlan.findUnique.mockResolvedValue({ id: 'plan-free', code: 'FREE', is_active: true });
+        db.tenant.create.mockResolvedValue({ id: 'tenant-1' });
+        db.store.create.mockResolvedValue({ id: 'store-1' });
+
+        await service.signup({
+            email: 'owner@example.com',
+            password: 'password123',
+            name: 'Owner',
+            tenantName: 'Tenant One',
+            storeName: 'Main Store',
+        });
+
+        expect(db.userStoreAccess.create).toHaveBeenCalledWith(
+            expect.objectContaining({
+                data: expect.objectContaining({
+                    user_id: 'user-1',
+                    store_id: 'store-1',
+                    tenant_id: 'tenant-1',
+                    access_level: 'MULTI_STORE_CAPABLE',
+                }),
+            }),
+        );
+        expect(db.userStorePermission.createMany).toHaveBeenCalledWith(
+            expect.objectContaining({
+                data: expect.arrayContaining([
+                    expect.objectContaining({ user_id: 'user-1', store_id: 'store-1' }),
+                ]),
+            }),
+        );
+    });
+
+    it('mapTenantMembership returns only stores from UserStoreAccess', async () => {
+        db.user.findUnique.mockResolvedValue({
+            id: 'user-1',
+            email: 'manager@example.com',
+            name: 'Manager',
+            storeAccess: [
+                { tenant_id: 'tenant-1', store: { id: 'store-1', name: 'Gulshan' } },
+                // store-2 belongs to different tenant, should NOT appear in tenant-1 stores
+                { tenant_id: 'tenant-2', store: { id: 'store-2', name: 'Banani' } },
+            ],
+            tenantMembers: [{
+                role: 'MANAGER',
+                tenant_id: 'tenant-1',
+                tenant: {
+                    id: 'tenant-1',
+                    name: 'Tenant One',
+                    subscription: null,
+                },
+            }],
+        });
+
+        const result = await service.getMe('user-1');
+        expect(result.tenants[0].stores).toHaveLength(1);
+        expect(result.tenants[0].stores[0].id).toBe('store-1');
     });
 
     it('rejects duplicate emails on signup', async () => {
@@ -119,6 +188,7 @@ describe('AuthService', () => {
             id: 'user-1',
             email: 'nayeem.ahmad@gmail.com',
             name: 'Nayeem Ahmad',
+            storeAccess: [],
             tenantMembers: [],
         });
 

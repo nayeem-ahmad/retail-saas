@@ -81,8 +81,10 @@ The validation process will be conducted in three phases:
 3.  **NFR3:** The user interface must be simple, clean, and intuitive, designed for non-technical users.
 4.  **NFR4:** The system must integrate with local Bangladeshi payment gateways, specifically bKash and Nagad.
 5.  **NFR5:** The system must be built on a scalable cloud infrastructure.
-6.  **NFR6:** The system must provide configurable, role-based access control for multiple users (entitlement-gated across paid tiers).
+6.  **NFR6:** The system must provide configurable, permission-based access control for multiple users across single or multiple stores (entitlement-gated across paid tiers).
 7.  **NFR7:** The system must feature a centralized Notification Center for actionable alerts like "Low Stock" and "New Online Order".
+8.  **NFR8:** Each tenant (organization) must be able to manage multiple physical stores/branches with isolated transaction data but shared master data. Users can be assigned to single or multiple stores with granular, permission-based access control.
+9.  **NFR9:** The system must support inter-branch operations (goods transfers, fund movements) with approval workflows and consolidated reporting across all branches of a tenant.
 
 ---
 
@@ -132,13 +134,26 @@ The quality strategy will focus on a strong foundation of unit tests for individ
 
 ---
 
+## Multi-Store & Multi-Branch Architecture
+
+Starting from MVP, the platform is designed to support tenants managing multiple physical stores/branches:
+
+- **Store-Level Data Isolation:** Each transaction (sales, purchases, orders) is scoped to its originating store. Users cannot see/access data from stores they haven't been granted permission to access.
+- **Master Data Sharing:** Products, suppliers, customers, and chart of accounts are shared across all stores within a tenant.
+- **Role-Based Permission Model:** Access is controlled via granular permissions (e.g., `CREATE_SALE`, `APPROVE_GOODS_TRANSFER`, `EDIT_PRODUCT_PRICES`), not just roles. Admins can assign permissions per user per store.
+- **Multi-Store User Assignment:** Users (including Cashiers) can be assigned to one or multiple stores, enabling flexible staffing and weekend coverage scenarios.
+- **Cross-Store Operations:** Supported operations include inter-branch inventory transfers, fund transfers, and consolidated reporting—all with audit trails and approval workflows.
+- **Consolidated Reporting:** Owner/Admin users can view multi-store rollups for revenue, inventory, and financial metrics.
+
+Detailed requirements: See `_bmad-output/planning-artifacts/multi-store-architecture-requirements.md` and `_bmad-output/planning-artifacts/multi-store-permission-model.md`.
+
 ## Epic List
 
 **Epic 1: Foundation & Core Retail Operations (MVP)**
-*   **Goal:** Establish the project's technical foundation and deliver the core, end-to-end functionality for a single retail store to manage sales and inventory using entry-tier features (Free/Basic).
+*   **Goal:** Establish the project's technical foundation and deliver the core, end-to-end functionality for multi-store support with sales and inventory management using entry-tier features (Free/Basic).
 
 **Epic 2: Advanced Operations & Business Intelligence**
-*   **Goal:** Enhance the platform with premium features for multi-user support, advanced analytics, CRM, accounting, and HR capabilities.
+*   **Goal:** Enhance the platform with premium features for multi-store management, advanced analytics, CRM, accounting, and HR capabilities.
 
 **Epic 3: E-commerce & Delivery Enablement**
 *   **Goal:** Launch the customer-facing e-commerce storefront and provide the tools for managing online orders and deliveries.
@@ -159,6 +174,7 @@ The quality strategy will focus on a strong foundation of unit tests for individ
     1.  A Git monorepo is created and accessible to the team.
     2.  A basic CI/CD pipeline is configured to run on commit to the main branch.
     3.  The pipeline can successfully build and deploy a simple "Hello World" or health-check endpoint to the target cloud environment.
+    4.  Multi-store context passing (tenant_id, store_id headers) is configured in the deployment baseline.
 
 ---
 **Story 1.2: Basic User & Store Setup**
@@ -167,6 +183,7 @@ The quality strategy will focus on a strong foundation of unit tests for individ
     1.  A user can register for a new account with an email and password.
     2.  A registered user can log in to the application.
     3.  Upon first login, the user is prompted to create a store with a name and address.
+    4.  Multi-tenant context is established (tenant_id, store_id) and persisted in user session.
 
 ---
 **Story 1.3: Basic Product Management**
@@ -201,13 +218,15 @@ The quality strategy will focus on a strong foundation of unit tests for individ
 **Expanded Goal:** This epic builds upon the core MVP by introducing a suite of premium features designed to help a growing business operate more efficiently and make smarter decisions. It focuses on moving beyond single-user, basic transactions to support multiple employees, deeper financial tracking, and proactive business management.
 
 ---
-**Story 2.1: Multi-User & Role-Based Access Control**
-*   As a Store Owner (Admin), I want to invite other users (e.g., Cashiers) to my store and assign them roles, so that my employees can use the system with limited permissions.
+**Story 2.1: Multi-User & Permission-Based Access Control**
+*   As a Store Owner (Admin), I want to invite other users to one or multiple stores and assign them granular permissions, so that my employees can use the system with precisely controlled access.
 *   **Acceptance Criteria:**
-    1.  An Admin user can send an email invitation to a new user.
-    2.  The Admin can assign a "Cashier" role to an invited user.
-    3.  A user with the "Cashier" role can access and use the POS screen.
-    4.  A user with the "Cashier" role cannot access settings, advanced reports, or other admin-level sections.
+    1.  An Admin user can send an email invitation to a new user with store(s) to assign.
+    2.  The Admin can assign roles (Owner, Manager, Cashier, Accountant) and custom permissions per store.
+    3.  A user can be assigned to multiple stores (e.g., Mon-Fri at Store A, Sat-Sun at Store B).
+    4.  A user with `CREATE_SALE` permission can process POS sales at assigned stores.
+    5.  A user without `VIEW_CONSOLIDATED_REPORTS` permission cannot see multi-store rollup reports.
+    6.  Store selector dropdown appears for users with access to multiple stores.
 
 ---
 **Story 2.2: Advanced Sales & Inventory Reporting**

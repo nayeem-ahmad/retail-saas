@@ -33,6 +33,44 @@ enum CustomerType {
   ORGANIZATION
 }
 
+enum StorePermission {
+  // Product & Catalog
+  VIEW_PRODUCT_CATALOG
+  EDIT_PRODUCTS
+  EDIT_PRODUCT_PRICES
+  EDIT_SUPPLIERS
+
+  // Inventory
+  CREATE_INVENTORY_MOVEMENTS
+  CREATE_GOODS_TRANSFER
+  APPROVE_GOODS_TRANSFER
+  STOCK_TAKE
+
+  // Transactions
+  CREATE_SALE
+  CREATE_PURCHASE
+  CREATE_RETURN
+  CREATE_SALES_ORDER
+  CREATE_QUOTATION
+
+  // Accounting
+  VIEW_LEDGER
+  CREATE_VOUCHER
+  VIEW_FINANCIAL_REPORTS
+
+  // Fund Transfers
+  CREATE_FUND_TRANSFER
+  APPROVE_FUND_TRANSFER
+
+  // Multi-Store
+  SWITCH_STORES
+  VIEW_CONSOLIDATED_REPORTS
+
+  // User Management
+  MANAGE_USERS
+  MANAGE_USER_STORE_ACCESS
+}
+
 model User {
   id            String       @id @default(uuid())
   email         String       @unique
@@ -42,9 +80,13 @@ model User {
   updated_at    DateTime     @updatedAt
    
   // Relations
-  tenantsOwned  Tenant[]     @relation("TenantOwner")
-  tenantMembers TenantUser[]
-  cashierSessions CashierSession[]
+  tenantsOwned      Tenant[]            @relation("TenantOwner")
+  tenantMembers     TenantUser[]
+  cashierSessions   CashierSession[]
+  storeAccess       UserStoreAccess[]
+  storePermissions  UserStorePermission[]
+  fundTransfersInitiated FundTransfer[]  @relation("FundTransferInitiator")
+  fundTransfersReceived  FundTransfer[]  @relation("FundTransferReceiver")
 }
 
 model Tenant {
@@ -86,8 +128,12 @@ model Tenant {
   accounts Account[]
   voucherSequences VoucherSequence[]
   vouchers Voucher[]
-  cashierSessions CashierSession[]
-  cashTransactions CashTransaction[]
+  cashierSessions   CashierSession[]
+  cashTransactions  CashTransaction[]
+  userStoreAccess   UserStoreAccess[]
+  userStorePermissions UserStorePermission[]
+  productPrices     ProductPrice[]
+  fundTransfers     FundTransfer[]
 }
 
 model TenantUser {
@@ -111,15 +157,20 @@ model Store {
   created_at DateTime @default(now())
    
   // Relations
-  tenant    Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
-  sales     Sale[]
-  salesReturns SalesReturn[]
+  tenant          Tenant              @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  sales           Sale[]
+  salesReturns    SalesReturn[]
   purchaseReturns PurchaseReturn[]
-  salesOrders SalesOrder[]
-  quotations Quotation[]
-  purchases Purchase[]
+  salesOrders     SalesOrder[]
+  quotations      Quotation[]
+  purchases       Purchase[]
   cashierSessions CashierSession[]
-  warehouses Warehouse[]
+  warehouses      Warehouse[]
+  userStoreAccess UserStoreAccess[]
+  userStorePermissions UserStorePermission[]
+  productPrices   ProductPrice[]
+  fundTransfersSource      FundTransfer[] @relation("FundTransferSourceStore")
+  fundTransfersDestination FundTransfer[] @relation("FundTransferDestinationStore")
 }
 
 model Warehouse {
@@ -215,6 +266,7 @@ model Product {
   orderItems  SalesOrderItem[]
   quoteItems  QuotationItem[]
   purchaseItems PurchaseItem[]
+  prices      ProductPrice[]
 
   @@unique([tenant_id, sku])
   @@index([tenant_id, group_id])
@@ -326,6 +378,14 @@ model WarehouseTransfer {
   created_at               DateTime @default(now())
   updated_at               DateTime @updatedAt
 
+  // Cross-branch fields
+  source_store_id          String?
+  destination_store_id     String?
+  is_cross_branch          Boolean  @default(false)
+  requires_approval        Boolean  @default(false)
+  approved_by              String?
+  approval_date            DateTime?
+
   tenant                   Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
   sourceWarehouse          Warehouse @relation("TransferSourceWarehouse", fields: [source_warehouse_id], references: [id])
   destinationWarehouse     Warehouse @relation("TransferDestinationWarehouse", fields: [destination_warehouse_id], references: [id])
@@ -335,6 +395,7 @@ model WarehouseTransfer {
   @@index([tenant_id, status, created_at])
   @@index([tenant_id, source_warehouse_id])
   @@index([tenant_id, destination_warehouse_id])
+  @@index([tenant_id, is_cross_branch])
 }
 
 model WarehouseTransferItem {
@@ -691,6 +752,8 @@ model Voucher {
 
   tenant           Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
   details          VoucherDetail[]
+  fundTransfersSource      FundTransfer[] @relation("FundTransferSourceVoucher")
+  fundTransfersDestination FundTransfer[] @relation("FundTransferDestinationVoucher")
 
   @@unique([tenant_id, voucher_number])
   @@index([tenant_id])
@@ -939,4 +1002,95 @@ model BillingEvent {
   @@unique([provider_name, external_event_id])
   @@index([tenant_id, created_at])
   @@index([tenant_id, provider_name])
+}
+
+// ── Multi-Store Access & Permission Models ───────────────────────────────────
+
+model UserStoreAccess {
+  id           String   @id @default(uuid())
+  user_id      String
+  store_id     String
+  tenant_id    String
+  // STORE_ONLY = access to exactly this one context
+  // MULTI_STORE_CAPABLE = can switch between assigned stores
+  access_level String   @default("STORE_ONLY")
+  created_at   DateTime @default(now())
+
+  user         User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  store        Store    @relation(fields: [store_id], references: [id], onDelete: Cascade)
+  tenant       Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, store_id])
+  @@index([tenant_id, store_id])
+  @@index([user_id, tenant_id])
+}
+
+model UserStorePermission {
+  id           String          @id @default(uuid())
+  user_id      String
+  store_id     String
+  tenant_id    String
+  permission   StorePermission
+  granted_by   String
+  granted_at   DateTime        @default(now())
+
+  user         User            @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  store        Store           @relation(fields: [store_id], references: [id], onDelete: Cascade)
+  tenant       Tenant          @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, store_id, permission])
+  @@index([user_id, store_id])
+  @@index([tenant_id, store_id, permission])
+}
+
+// Store-specific product price overrides.
+// store_id = NULL means base price (default for all stores).
+model ProductPrice {
+  id             String    @id @default(uuid())
+  tenant_id      String
+  product_id     String
+  store_id       String?
+  price          Decimal   @db.Decimal(12, 2)
+  cost           Decimal?  @db.Decimal(12, 2)
+  effective_from DateTime  @default(now())
+  effective_to   DateTime?
+  created_at     DateTime  @default(now())
+
+  tenant         Tenant    @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  product        Product   @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  store          Store?    @relation(fields: [store_id], references: [id], onDelete: Cascade)
+
+  @@index([tenant_id, product_id, store_id])
+  @@index([product_id, store_id, effective_from])
+}
+
+model FundTransfer {
+  id                    String    @id @default(uuid())
+  tenant_id             String
+  source_store_id       String
+  destination_store_id  String
+  amount                Decimal   @db.Decimal(12, 2)
+  method                String    @default("CASH")  // CASH, CHECK, BANK_TRANSFER
+  description           String?
+  // INITIATED, IN_TRANSIT, RECEIVED, CANCELLED
+  status                String    @default("INITIATED")
+  initiated_by          String
+  received_by           String?
+  // Voucher linkage for accounting integration
+  source_voucher_id     String?
+  destination_voucher_id String?
+  created_at            DateTime  @default(now())
+  received_at           DateTime?
+
+  tenant                Tenant    @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  sourceStore           Store     @relation("FundTransferSourceStore", fields: [source_store_id], references: [id])
+  destinationStore      Store     @relation("FundTransferDestinationStore", fields: [destination_store_id], references: [id])
+  initiatedByUser       User      @relation("FundTransferInitiator", fields: [initiated_by], references: [id])
+  receivedByUser        User?     @relation("FundTransferReceiver", fields: [received_by], references: [id])
+  sourceVoucher         Voucher?  @relation("FundTransferSourceVoucher", fields: [source_voucher_id], references: [id])
+  destinationVoucher    Voucher?  @relation("FundTransferDestinationVoucher", fields: [destination_voucher_id], references: [id])
+
+  @@index([tenant_id, status, created_at])
+  @@index([tenant_id, source_store_id])
+  @@index([tenant_id, destination_store_id])
 }

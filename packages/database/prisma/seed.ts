@@ -5,6 +5,7 @@ config({ path: resolve(__dirname, '../../../.env') });
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { bootstrapDefaultAccountingForTenant } from './bootstrap-accounting';
+import { ROLE_DEFAULT_PERMISSIONS, UserRole } from '@retail-saas/shared-types';
 
 const prisma = new PrismaClient();
 
@@ -215,6 +216,86 @@ async function main() {
             default_transfer_destination_warehouse_id: defaultWarehouse.id,
         },
     });
+
+    // ── 4b. Second Store (Banani Branch) ────────────────────────────────────
+    let store2 = await prisma.store.findFirst({
+        where: { tenant_id: tenant.id, name: 'Banani Branch' },
+    });
+    if (!store2) {
+        store2 = await prisma.store.create({
+            data: { tenant_id: tenant.id, name: 'Banani Branch', address: '45 Banani Road, Dhaka 1213' },
+        });
+    }
+
+    const warehouseCode2 = `WH-${store2.id.slice(0, 8).toUpperCase()}`;
+    let warehouse2 = await prisma.warehouse.findFirst({
+        where: { tenant_id: tenant.id, store_id: store2.id, is_default: true },
+    });
+    if (!warehouse2) {
+        warehouse2 = await prisma.warehouse.create({
+            data: {
+                tenant_id: tenant.id,
+                store_id: store2.id,
+                name: `${store2.name} Main Warehouse`,
+                code: warehouseCode2,
+                is_default: true,
+                is_active: true,
+            },
+        });
+    }
+
+    // ── 4c. UserStoreAccess seeding ─────────────────────────────────────────
+    // Admin (OWNER): multi-store capable, access to both stores
+    // Manager: single-store (Gulshan only)
+    // Cashier: multi-store capable (covers weekends at Banani too)
+    const storeAccessEntries = [
+        { user_id: adminUser.id, store_id: store.id,  access_level: 'MULTI_STORE_CAPABLE' },
+        { user_id: adminUser.id, store_id: store2.id, access_level: 'MULTI_STORE_CAPABLE' },
+        { user_id: managerUser.id, store_id: store.id, access_level: 'STORE_ONLY' },
+        { user_id: cashierUser.id, store_id: store.id,  access_level: 'MULTI_STORE_CAPABLE' },
+        { user_id: cashierUser.id, store_id: store2.id, access_level: 'MULTI_STORE_CAPABLE' },
+    ];
+
+    for (const entry of storeAccessEntries) {
+        await prisma.userStoreAccess.upsert({
+            where: { user_id_store_id: { user_id: entry.user_id, store_id: entry.store_id } },
+            update: { access_level: entry.access_level },
+            create: { ...entry, tenant_id: tenant.id },
+        });
+    }
+
+    // ── 4d. UserStorePermission seeding ────────────────────────────────────
+    type PermEntry = { user_id: string; store_id: string; role: UserRole };
+    const permEntries: PermEntry[] = [
+        { user_id: adminUser.id,   store_id: store.id,  role: UserRole.OWNER },
+        { user_id: adminUser.id,   store_id: store2.id, role: UserRole.OWNER },
+        { user_id: managerUser.id, store_id: store.id,  role: UserRole.MANAGER },
+        { user_id: cashierUser.id, store_id: store.id,  role: UserRole.CASHIER },
+        { user_id: cashierUser.id, store_id: store2.id, role: UserRole.CASHIER },
+    ];
+
+    for (const entry of permEntries) {
+        const perms = ROLE_DEFAULT_PERMISSIONS[entry.role];
+        for (const permission of perms) {
+            await prisma.userStorePermission.upsert({
+                where: {
+                    user_id_store_id_permission: {
+                        user_id: entry.user_id,
+                        store_id: entry.store_id,
+                        permission,
+                    },
+                },
+                update: {},
+                create: {
+                    user_id: entry.user_id,
+                    store_id: entry.store_id,
+                    tenant_id: tenant.id,
+                    permission,
+                    granted_by: adminUser.id,
+                },
+            });
+        }
+    }
 
     const inventoryReasonDefs = [
         { type: 'SHRINKAGE', code: 'THEFT', label: 'Theft' },
@@ -586,17 +667,21 @@ async function main() {
     const saleCount       = await prisma.sale.count({ where: { tenant_id: tenant.id } });
     const groupCount      = await prisma.customerGroup.count({ where: { tenant_id: tenant.id } });
     const territoryCount  = await prisma.territory.count({ where: { tenant_id: tenant.id } });
+    const storeAccessCount = await prisma.userStoreAccess.count({ where: { tenant_id: tenant.id } });
+    const permCount       = await prisma.userStorePermission.count({ where: { tenant_id: tenant.id } });
 
     console.log('\n✅  Seed complete');
     console.log('─────────────────────────────────────');
     console.log(`👤  Users:           admin / manager / cashier  (password: password123)`);
     console.log(`🏪  Tenant:          ${tenant.name}`);
-    console.log(`🏬  Store:           ${store.name}`);
+    console.log(`🏬  Stores:          ${store.name} + ${store2.name}`);
     console.log(`📦  Products:        ${productCount}`);
     console.log(`👥  Customers:       ${customerCount}`);
     console.log(`📂  Customer Groups: ${groupCount}`);
     console.log(`🗺️   Territories:     ${territoryCount}`);
     console.log(`🧾  Sales:           ${saleCount}`);
+    console.log(`🔑  Store Access:    ${storeAccessCount} entries`);
+    console.log(`🛡️   Permissions:     ${permCount} entries`);
     console.log('─────────────────────────────────────');
     console.log('Login → http://localhost:3000');
     console.log('Email: nayeem.ahmad@gmail.com  |  Password: password123');

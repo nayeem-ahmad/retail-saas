@@ -5,6 +5,7 @@ import {
     CallHandler,
     BadRequestException,
     UnauthorizedException,
+    ForbiddenException,
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { DatabaseService } from '../database/database.service';
@@ -24,8 +25,10 @@ export class TenantInterceptor implements NestInterceptor {
         const tenantId = request.headers['x-tenant-id'];
         const storeId = request.headers['x-store-id'];
 
+        // --- Resolve & validate tenant ---
+        let resolvedTenantId: string;
+
         if (tenantId) {
-            // Verify user belongs to this tenant
             const membership = await this.db.tenantUser.findUnique({
                 where: {
                     tenant_id_user_id: {
@@ -33,29 +36,68 @@ export class TenantInterceptor implements NestInterceptor {
                         user_id: userId,
                     },
                 },
+                select: { tenant_id: true, role: true },
             });
 
             if (!membership) {
                 throw new UnauthorizedException('Invalid tenant context');
             }
 
-            request.tenantId = tenantId;
+            resolvedTenantId = tenantId as string;
+            request.userRole = membership.role;
         } else {
             const memberships = await this.db.tenantUser.findMany({
                 where: { user_id: userId },
-                select: { tenant_id: true },
+                select: { tenant_id: true, role: true },
                 take: 2,
             });
 
             if (memberships.length === 1) {
-                request.tenantId = memberships[0].tenant_id;
+                resolvedTenantId = memberships[0].tenant_id;
+                request.userRole = memberships[0].role;
             } else if (memberships.length > 1) {
                 throw new BadRequestException('Tenant context is required for this request.');
+            } else {
+                return next.handle();
             }
         }
 
+        request.tenantId = resolvedTenantId;
+
+        // --- Resolve & validate store ---
+        const isOwner = request.userRole === 'OWNER';
+
         if (storeId) {
-            request.storeId = storeId;
+            // OWNER bypasses store access check (they own all stores in their tenant)
+            if (!isOwner) {
+                const access = await this.db.userStoreAccess.findUnique({
+                    where: {
+                        user_id_store_id: {
+                            user_id: userId,
+                            store_id: storeId as string,
+                        },
+                    },
+                    select: { store_id: true, access_level: true },
+                });
+
+                if (!access) {
+                    throw new ForbiddenException('You do not have access to this store');
+                }
+            }
+
+            request.storeId = storeId as string;
+        } else {
+            // Auto-resolve: if user has exactly one store in this tenant, set it automatically
+            const userStoreAccess = await this.db.userStoreAccess.findMany({
+                where: { user_id: userId, tenant_id: resolvedTenantId },
+                select: { store_id: true },
+                take: 2,
+            });
+
+            if (userStoreAccess.length === 1) {
+                request.storeId = userStoreAccess[0].store_id;
+            }
+            // If 0 or >1, storeId stays undefined — endpoints that need it will demand the header
         }
 
         return next.handle();

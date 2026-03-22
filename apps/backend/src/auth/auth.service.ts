@@ -5,6 +5,7 @@ import { bootstrapDefaultAccountingForTenant } from '@retail-saas/database';
 import * as bcrypt from 'bcrypt';
 import { SignupDto, LoginDto } from './auth.dto';
 import { isPlatformAdminEmail } from './platform-admin.util';
+import { ROLE_DEFAULT_PERMISSIONS, UserRole } from '@retail-saas/shared-types';
 
 @Injectable()
 export class AuthService {
@@ -88,13 +89,15 @@ export class AuthService {
                     include: {
                         tenant: {
                             include: {
-                                stores: true,
                                 subscription: {
                                     include: { plan: true },
                                 },
                             },
                         },
                     },
+                },
+                storeAccess: {
+                    include: { store: true },
                 },
             },
         });
@@ -114,7 +117,9 @@ export class AuthService {
                 name: user.name,
                 is_platform_admin: isPlatformAdmin,
             },
-            tenants: user.tenantMembers.map((membership) => this.mapTenantMembership(membership)),
+            tenants: user.tenantMembers.map((membership) =>
+                this.mapTenantMembership(membership, user.storeAccess),
+            ),
         };
     }
 
@@ -126,13 +131,15 @@ export class AuthService {
                     include: {
                         tenant: {
                             include: {
-                                stores: true,
                                 subscription: {
                                     include: { plan: true },
                                 },
                             },
                         },
                     },
+                },
+                storeAccess: {
+                    include: { store: true },
                 },
             },
         });
@@ -146,7 +153,9 @@ export class AuthService {
             email: user.email,
             name: user.name,
             is_platform_admin: isPlatformAdminEmail(user.email),
-            tenants: user.tenantMembers.map((membership) => this.mapTenantMembership(membership)),
+            tenants: user.tenantMembers.map((membership) =>
+                this.mapTenantMembership(membership, user.storeAccess),
+            ),
         };
     }
 
@@ -220,20 +229,47 @@ export class AuthService {
             },
         });
 
+        // Seed UserStoreAccess: OWNER can access all stores (MULTI_STORE_CAPABLE)
+        await tx.userStoreAccess.create({
+            data: {
+                user_id: userId,
+                store_id: store.id,
+                tenant_id: tenant.id,
+                access_level: 'MULTI_STORE_CAPABLE',
+            },
+        });
+
+        // Seed all StorePermissions for OWNER
+        const ownerPermissions = ROLE_DEFAULT_PERMISSIONS[UserRole.OWNER];
+        await tx.userStorePermission.createMany({
+            data: ownerPermissions.map((permission) => ({
+                user_id: userId,
+                store_id: store.id,
+                tenant_id: tenant.id,
+                permission,
+                granted_by: userId,
+            })),
+            skipDuplicates: true,
+        });
+
         await bootstrapDefaultAccountingForTenant(tx, tenant.id);
 
         return { tenant, store };
     }
 
-    private mapTenantMembership(membership: any) {
+    private mapTenantMembership(membership: any, allStoreAccess: any[] = []) {
         const subscription = membership.tenant.subscription;
         const plan = subscription?.plan;
+        // Only return stores the user has explicit UserStoreAccess for in this tenant
+        const accessibleStores = allStoreAccess
+            .filter((a) => a.tenant_id === membership.tenant_id)
+            .map((a) => a.store);
 
         return {
             id: membership.tenant.id,
             name: membership.tenant.name,
             role: membership.role,
-            stores: membership.tenant.stores,
+            stores: accessibleStores,
             subscription: subscription
                 ? {
                       status: subscription.status,

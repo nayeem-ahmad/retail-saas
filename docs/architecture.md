@@ -73,10 +73,13 @@ graph TD
 
 #### Architectural Patterns
 
+-   **Multi-Tenant, Multi-Store Architecture:** The platform supports tenants (organizations) managing multiple physical stores/branches. Store context (tenant_id + store_id) is passed via request headers and validated on every request. _Rationale:_ Enables businesses to scale from single-store to multi-store without architectural rework.
+-   **Permission-Based Access Control:** Access is controlled via granular permissions (CREATE_SALE, APPROVE_GOODS_TRANSFER, etc.), not just roles. Admins can customize permissions per user per store. _Rationale:_ Flexibility to support varied organizational structures (cashiers at multiple locations, region managers, etc.).
+-   **Data Scoping:** Transaction data (sales, purchases) is strictly scoped by `tenant_id` AND `store_id`. Master data (products, suppliers) is scoped by `tenant_id` only (shared across stores). _Rationale:_ Ensures data isolation while enabling operational efficiency.
 -   **Jamstack Architecture:** The frontend will be a static or server-rendered application, consuming APIs for dynamic functionality. _Rationale:_ Optimal performance, scalability, and security.
 -   **Component-Based UI:** The frontend will be built with reusable React components. _Rationale:_ Maintainability, consistency, and reusability.
 -   **Repository Pattern:** The backend will use a repository pattern to abstract data access logic. _Rationale:_ Decouples business logic from data sources, improving testability and flexibility.
--   **API Gateway Pattern:** All API requests will be routed through a single gateway (Vercel's API routes). _Rationale:_ Centralized point for routing, authentication, and logging.
+-   **API Gateway Pattern:** All API requests will be routed through a single gateway (Next.js API routes). _Rationale:_ Centralized point for routing, authentication, logging, and tenant/store context validation.
 
 ## Tech Stack
 

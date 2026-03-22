@@ -4,6 +4,7 @@ export interface TenantContext {
     tenantId: string;
     storeId?: string;
     userId: string;
+    userRole?: string;
 }
 
 export const Tenant = createParamDecorator(
@@ -17,6 +18,7 @@ export const Tenant = createParamDecorator(
             tenantId: request.tenantId,
             storeId: request.storeId,
             userId: request.user?.userId,
+            userRole: request.userRole,
         };
     },
 );
