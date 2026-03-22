@@ -1,4 +1,4 @@
-import { Prisma, PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient, PostingRuleConditionKey, PostingRuleEventType } from '@prisma/client';
 import { AccountCategory, AccountType } from './accounting.constants.js';
 
 export interface DefaultAccountingAccountDefinition {
@@ -194,7 +194,14 @@ export async function bootstrapDefaultAccountingForTenant(
     const purchasePayableId = accountByName.get('Purchase Payable');
     const expenseId = accountByName.get('General Operating Expense');
 
-    const defaultRules = [
+    const defaultRules: Array<{
+        event_type: PostingRuleEventType;
+        condition_key: PostingRuleConditionKey;
+        condition_value: string | null;
+        debit_account_id: string | undefined;
+        credit_account_id: string | undefined;
+        priority: number;
+    }> = [
         {
             event_type: 'sale',
             condition_key: 'payment_mode',
