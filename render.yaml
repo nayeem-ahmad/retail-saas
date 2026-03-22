@@ -4,7 +4,7 @@ services:
     runtime: docker
     dockerContext: .
     dockerfilePath: ./apps/backend/Dockerfile
-    plan: starter
+    plan: free
     autoDeploy: true
     envVars:
       - key: NODE_ENV
@@ -61,7 +61,7 @@ services:
     runtime: docker
     dockerContext: .
     dockerfilePath: ./apps/frontend/Dockerfile
-    plan: starter
+    plan: free
     autoDeploy: true
     envVars:
       - key: NODE_ENV
