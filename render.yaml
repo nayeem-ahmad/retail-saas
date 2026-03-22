@@ -1,6 +1,7 @@
 services:
   - type: web
     name: retail-saas-backend
+    rootDir: .
     runtime: docker
     dockerContext: .
     dockerfilePath: ./apps/backend/Dockerfile
@@ -58,6 +59,7 @@ services:
 
   - type: web
     name: retail-saas-frontend
+    rootDir: .
     runtime: docker
     dockerContext: .
     dockerfilePath: ./apps/frontend/Dockerfile

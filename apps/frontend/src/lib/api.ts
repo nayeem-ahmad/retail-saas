@@ -1,4 +1,6 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+const DEFAULT_PROD_API_URL = 'https://retail-saas-backend.onrender.com';
+const API_URL = process.env.NEXT_PUBLIC_API_URL
+    || (process.env.NODE_ENV === 'production' ? DEFAULT_PROD_API_URL : 'http://localhost:4000');
 
 export async function fetchWithAuth(endpoint: string, options: RequestInit = {}) {
     const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
