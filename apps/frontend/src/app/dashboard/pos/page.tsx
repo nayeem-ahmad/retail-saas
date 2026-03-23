@@ -1,19 +1,54 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ShoppingCart, Search, Package, Trash2, Plus, Minus, CreditCard, ChevronRight, Store, X, Banknote } from 'lucide-react';
+import { ShoppingCart, Search, Package, Trash2, Plus, Minus, CreditCard, ChevronRight, Store, X, Banknote, CheckCircle, AlertCircle, XCircle } from 'lucide-react';
 import { api } from '../../../lib/api';
+
+type Notification = { id: string; type: 'success' | 'error' | 'info'; message: string };
 
 export default function POSPage() {
     const [products, setProducts] = useState<any[]>([]);
     const [cart, setCart] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
+    const [notifications, setNotifications] = useState<Notification[]>([]);
 
     const [showCheckout, setShowCheckout] = useState(false);
     const [cashAmount, setCashAmount] = useState<number>(0);
     const [bkashAmount, setBkashAmount] = useState<number>(0);
     const [cardAmount, setCardAmount] = useState<number>(0);
+
+    const addNotification = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+        const id = Date.now().toString();
+        setNotifications(prev => [...prev, { id, type, message }]);
+        setTimeout(() => {
+            setNotifications(prev => prev.filter(n => n.id !== id));
+        }, 4000);
+    };
+
+    const validateSerialNumbers = (): boolean => {
+        for (const item of cart) {
+            if (!item.warranty_enabled) {
+                continue;
+            }
+
+            const serialNumbers = getWarrantySerialsForQuantity(item.serialNumbers, item.quantity)
+                .map((value) => value.trim())
+                .filter((value) => value.length > 0);
+
+            if (serialNumbers.length !== item.quantity) {
+                addNotification(`Please provide ${item.quantity} serial number(s) for ${item.name}.`, 'error');
+                return false;
+            }
+
+            const unique = new Set(serialNumbers);
+            if (unique.size !== serialNumbers.length) {
+                addNotification(`Serial numbers for ${item.name} must be unique.`, 'error');
+                return false;
+            }
+        }
+        return true;
+    };
 
     useEffect(() => {
         loadProducts();
@@ -117,6 +152,12 @@ export default function POSPage() {
 
     const handleCheckoutClick = () => {
         if (cart.length === 0) return;
+
+        // Validate serial numbers BEFORE showing Payment Details dialog
+        if (!validateSerialNumbers()) {
+            return;
+        }
+
         setCashAmount(total);
         setBkashAmount(0);
         setCardAmount(0);
@@ -125,29 +166,8 @@ export default function POSPage() {
 
     const handleConfirmCheckout = async () => {
         if (totalPaid < total) {
-            alert('Insufficient amount paid!');
+            addNotification('Insufficient amount paid!', 'error');
             return;
-        }
-
-        for (const item of cart) {
-            if (!item.warranty_enabled) {
-                continue;
-            }
-
-            const serialNumbers = getWarrantySerialsForQuantity(item.serialNumbers, item.quantity)
-                .map((value) => value.trim())
-                .filter((value) => value.length > 0);
-
-            if (serialNumbers.length !== item.quantity) {
-                alert(`Please provide ${item.quantity} serial number(s) for ${item.name}.`);
-                return;
-            }
-
-            const unique = new Set(serialNumbers);
-            if (unique.size !== serialNumbers.length) {
-                alert(`Serial numbers for ${item.name} must be unique.`);
-                return;
-            }
         }
 
         try {
@@ -173,13 +193,13 @@ export default function POSPage() {
                 payments
             };
             await api.createSale(saleData);
-            alert('Sale completed successfully!');
+            addNotification('Sale completed successfully!', 'success');
             setCart([]);
             setShowCheckout(false);
             loadProducts(); // Update stock levels
         } catch (error) {
             console.error('Checkout failed', error);
-            alert('Checkout failed. Please check stock levels.');
+            addNotification('Checkout failed. Please check stock levels.', 'error');
         }
     };
 
@@ -406,6 +426,25 @@ export default function POSPage() {
                     </div>
                 </div>
             )}
+
+            {/* Notification Toasts */}
+            <div className="fixed top-6 right-6 z-[100] space-y-3 pointer-events-none">
+                {notifications.map(notif => (
+                    <div
+                        key={notif.id}
+                        className={`flex items-start space-x-3 px-4 py-3 rounded-2xl shadow-lg border animate-in slide-in-from-right-full pointer-events-auto ${
+                            notif.type === 'success' ? 'bg-green-50 border-green-200 text-green-800' :
+                            notif.type === 'error' ? 'bg-red-50 border-red-200 text-red-800' :
+                            'bg-blue-50 border-blue-200 text-blue-800'
+                        }`}
+                    >
+                        {notif.type === 'success' && <CheckCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />}
+                        {notif.type === 'error' && <XCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />}
+                        {notif.type === 'info' && <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />}
+                        <p className="text-sm font-bold">{notif.message}</p>
+                    </div>
+                ))}
+            </div>
         </div>
     );
 }
