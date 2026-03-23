@@ -22,6 +22,9 @@ describe('SalesService', () => {
   beforeEach(async () => {
     jest.clearAllMocks();
     tx = {
+      product: {
+        findMany: jest.fn(),
+      },
       sale: {
         create: jest.fn(),
         findFirst: jest.fn(),
@@ -46,6 +49,11 @@ describe('SalesService', () => {
       },
       warehouse: {
         findFirst: jest.fn(),
+      },
+      productSerial: {
+        findUnique: jest.fn(),
+        update: jest.fn(),
+        create: jest.fn(),
       },
     };
 
@@ -78,6 +86,10 @@ describe('SalesService', () => {
       voucherNumber: 'CR-00001',
       voucherType: 'cash_receive',
     });
+    tx.product.findMany.mockResolvedValue([{ id: 'prod-1', name: 'Product 1', warranty_enabled: false }]);
+    tx.productSerial.findUnique.mockResolvedValue(null);
+    tx.productSerial.update.mockResolvedValue({});
+    tx.productSerial.create.mockResolvedValue({});
     db.voucher.findMany.mockResolvedValue([]);
     db.voucher.findFirst.mockResolvedValue(null);
   });
@@ -113,6 +125,9 @@ describe('SalesService', () => {
     });
 
     it('should throw BadRequestException when stock is insufficient', async () => {
+      tx.product.findMany.mockResolvedValue([
+        { id: 'prod-low', name: 'Low Stock Product', warranty_enabled: false },
+      ]);
       tx.sale.create.mockResolvedValue({ id: 'sale-2' });
       tx.saleItem.create.mockResolvedValue({});
       (applyInventoryMovement as jest.Mock).mockRejectedValueOnce(new BadRequestException('Insufficient stock'));
@@ -214,6 +229,10 @@ describe('SalesService', () => {
       tx.sale.create.mockResolvedValue({ id: 'sale-7' });
       tx.saleItem.create.mockResolvedValue({});
       (applyInventoryMovement as jest.Mock).mockResolvedValue(0);
+      tx.product.findMany.mockResolvedValue([
+        { id: 'prod-A', name: 'Product A', warranty_enabled: false },
+        { id: 'prod-B', name: 'Product B', warranty_enabled: false },
+      ]);
 
       await service.create('tenant-1', {
         storeId: 'store-1',
@@ -227,6 +246,38 @@ describe('SalesService', () => {
 
       expect(tx.saleItem.create).toHaveBeenCalledTimes(2);
       expect(applyInventoryMovement).toHaveBeenCalledTimes(2);
+    });
+
+    it('should reject sale when a warranty serial is already sold', async () => {
+      tx.product.findMany.mockResolvedValue([
+        { id: 'prod-w', name: 'Warranty Product', warranty_enabled: true },
+      ]);
+      tx.sale.create.mockResolvedValue({ id: 'sale-8', total_amount: 100 });
+      tx.saleItem.create.mockResolvedValue({});
+      tx.productSerial.findUnique.mockResolvedValue({
+        id: 'serial-1',
+        status: 'SOLD',
+        source_id: 'prior-sale-1',
+      });
+
+      await expect(
+        service.create('tenant-1', {
+          storeId: 'store-1',
+          totalAmount: 100,
+          amountPaid: 100,
+          items: [
+            {
+              productId: 'prod-w',
+              quantity: 1,
+              priceAtSale: 100,
+              serialNumbers: ['SERIAL-001'],
+            },
+          ],
+        }),
+      ).rejects.toThrow(BadRequestException);
+
+      expect(tx.productSerial.create).not.toHaveBeenCalled();
+      expect(tx.productSerial.update).not.toHaveBeenCalled();
     });
   });
 

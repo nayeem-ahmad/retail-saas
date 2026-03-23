@@ -11,6 +11,17 @@ export class SalesService {
     async create(tenantId: string, dto: CreateSaleDto) {
         return this.db.$transaction(async (tx) => {
             const warehouseId = await resolveWarehouseId(tx, tenantId, dto.storeId, dto.warehouseId, 'sale');
+            const saleProducts = await tx.product.findMany({
+                where: {
+                    tenant_id: tenantId,
+                    id: { in: dto.items.map((item) => item.productId) },
+                },
+                select: { id: true, name: true, warranty_enabled: true },
+            });
+
+            const productById = new Map(saleProducts.map((product) => [product.id, product]));
+            this.validateWarrantySerials(dto.items, productById);
+
             // 1. Generate Serial Number (Simplified for v0.1)
             const serialNumber = `SL-${Date.now()}`;
 
@@ -36,6 +47,7 @@ export class SalesService {
 
             // 3. Process Items and update stock
             for (const item of dto.items) {
+                const product = productById.get(item.productId);
                 // Create Sale Item
                 await tx.saleItem.create({
                     data: {
@@ -56,6 +68,52 @@ export class SalesService {
                     referenceId: sale.id,
                     unitCost: item.priceAtSale,
                 });
+
+                if (product?.warranty_enabled) {
+                    for (const unitSerial of item.serialNumbers ?? []) {
+                        const existingSerial = await tx.productSerial.findUnique({
+                            where: {
+                                tenant_id_product_id_serial_number: {
+                                    tenant_id: tenantId,
+                                    product_id: item.productId,
+                                    serial_number: unitSerial,
+                                },
+                            },
+                        });
+
+                        if (existingSerial?.status === 'SOLD' && existingSerial.source_id !== sale.id) {
+                            throw new BadRequestException(
+                                `Serial number ${unitSerial} for ${product.name} has already been sold.`,
+                            );
+                        }
+
+                        if (existingSerial) {
+                            await tx.productSerial.update({
+                                where: { id: existingSerial.id },
+                                data: {
+                                    store_id: dto.storeId,
+                                    status: 'SOLD',
+                                    source_type: 'SALE',
+                                    source_id: sale.id,
+                                    sold_at: new Date(),
+                                },
+                            });
+                        } else {
+                            await tx.productSerial.create({
+                                data: {
+                                    tenant_id: tenantId,
+                                    store_id: dto.storeId,
+                                    product_id: item.productId,
+                                    serial_number: unitSerial,
+                                    status: 'SOLD',
+                                    source_type: 'SALE',
+                                    source_id: sale.id,
+                                    sold_at: new Date(),
+                                },
+                            });
+                        }
+                    }
+                }
             }
             if (dto.customerId) {
                 await tx.customer.update({
@@ -227,6 +285,7 @@ export class SalesService {
                         unitCost: item.priceAtSale,
                     });
                 }
+
             }
 
             // 2. If payments are being replaced
@@ -294,5 +353,38 @@ export class SalesService {
                 },
             });
         });
+    }
+
+    private validateWarrantySerials(
+        items: CreateSaleDto['items'],
+        productById: Map<string, { id: string; name: string; warranty_enabled: boolean }>,
+    ) {
+        for (const item of items) {
+            const product = productById.get(item.productId);
+            if (!product) {
+                throw new BadRequestException(`Product not found for sale item: ${item.productId}`);
+            }
+
+            if (!product.warranty_enabled) {
+                continue;
+            }
+
+            const normalizedSerials = (item.serialNumbers ?? [])
+                .map((value) => value.trim())
+                .filter((value) => value.length > 0);
+
+            if (normalizedSerials.length !== item.quantity) {
+                throw new BadRequestException(
+                    `Warranty product "${product.name}" requires ${item.quantity} serial number(s).`,
+                );
+            }
+
+            const unique = new Set(normalizedSerials);
+            if (unique.size !== normalizedSerials.length) {
+                throw new BadRequestException(`Warranty product "${product.name}" has duplicate serial numbers.`);
+            }
+
+            item.serialNumbers = normalizedSerials;
+        }
     }
 }

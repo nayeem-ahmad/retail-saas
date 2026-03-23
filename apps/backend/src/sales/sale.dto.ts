@@ -2,6 +2,7 @@ export class CreateSaleItemDto {
     productId: string;
     quantity: number;
     priceAtSale: number;
+    serialNumbers?: string[];
 }
 
 export class CreatePaymentDto {
@@ -24,6 +25,7 @@ export class UpdateSaleItemDto {
     productId: string;
     quantity: number;
     priceAtSale: number;
+    serialNumbers?: string[];
 }
 
 export class UpdatePaymentDto {

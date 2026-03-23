@@ -30,12 +30,42 @@ export default function POSPage() {
         }
     };
 
+    const getWarrantySerialsForQuantity = (serialNumbers: string[] | undefined, quantity: number) => {
+        const normalized = (serialNumbers ?? []).slice(0, quantity).map((value) => value ?? '');
+        while (normalized.length < quantity) {
+            normalized.push('');
+        }
+        return normalized;
+    };
+
     const addToCart = (product: any) => {
         const existing = cart.find(item => item.id === product.id);
         if (existing) {
-            setCart(cart.map(item => item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item));
+            setCart(cart.map(item => {
+                if (item.id !== product.id) {
+                    return item;
+                }
+
+                const nextQuantity = item.quantity + 1;
+                if (!item.warranty_enabled) {
+                    return { ...item, quantity: nextQuantity };
+                }
+
+                return {
+                    ...item,
+                    quantity: nextQuantity,
+                    serialNumbers: getWarrantySerialsForQuantity(item.serialNumbers, nextQuantity),
+                };
+            }));
         } else {
-            setCart([...cart, { ...product, quantity: 1 }]);
+            setCart([
+                ...cart,
+                {
+                    ...product,
+                    quantity: 1,
+                    serialNumbers: product.warranty_enabled ? [''] : undefined,
+                },
+            ]);
         }
     };
 
@@ -43,9 +73,34 @@ export default function POSPage() {
         setCart(cart.map(item => {
             if (item.id === id) {
                 const newQty = Math.max(1, item.quantity + delta);
-                return { ...item, quantity: newQty };
+
+                if (!item.warranty_enabled) {
+                    return { ...item, quantity: newQty };
+                }
+
+                return {
+                    ...item,
+                    quantity: newQty,
+                    serialNumbers: getWarrantySerialsForQuantity(item.serialNumbers, newQty),
+                };
             }
             return item;
+        }));
+    };
+
+    const updateSerialNumber = (id: string, index: number, value: string) => {
+        setCart(cart.map(item => {
+            if (item.id !== id || !item.warranty_enabled) {
+                return item;
+            }
+
+            const serialNumbers = getWarrantySerialsForQuantity(item.serialNumbers, item.quantity);
+            serialNumbers[index] = value;
+
+            return {
+                ...item,
+                serialNumbers,
+            };
         }));
     };
 
@@ -73,6 +128,28 @@ export default function POSPage() {
             alert('Insufficient amount paid!');
             return;
         }
+
+        for (const item of cart) {
+            if (!item.warranty_enabled) {
+                continue;
+            }
+
+            const serialNumbers = getWarrantySerialsForQuantity(item.serialNumbers, item.quantity)
+                .map((value) => value.trim())
+                .filter((value) => value.length > 0);
+
+            if (serialNumbers.length !== item.quantity) {
+                alert(`Please provide ${item.quantity} serial number(s) for ${item.name}.`);
+                return;
+            }
+
+            const unique = new Set(serialNumbers);
+            if (unique.size !== serialNumbers.length) {
+                alert(`Serial numbers for ${item.name} must be unique.`);
+                return;
+            }
+        }
+
         try {
             const payments = [];
             if (cashAmount > 0) payments.push({ paymentMethod: 'CASH', amount: cashAmount });
@@ -87,6 +164,11 @@ export default function POSPage() {
                     productId: item.id,
                     quantity: item.quantity,
                     priceAtSale: parseFloat(item.price),
+                    serialNumbers: item.warranty_enabled
+                        ? getWarrantySerialsForQuantity(item.serialNumbers, item.quantity)
+                              .map((value) => value.trim())
+                              .filter((value) => value.length > 0)
+                        : undefined,
                 })),
                 payments
             };
@@ -184,26 +266,49 @@ export default function POSPage() {
                         </div>
                     ) : (
                         cart.map((item) => (
-                            <div key={item.id} className="bg-gray-50/50 p-4 rounded-2xl flex items-center space-x-4 group border border-transparent hover:border-blue-500/10 hover:bg-white hover:shadow-lg hover:shadow-blue-500/5 transition-all">
-                                <div className="w-12 h-12 bg-white rounded-xl flex-shrink-0 flex items-center justify-center overflow-hidden border border-gray-100">
-                                    {item.image_url ? (
-                                        <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
-                                    ) : (
-                                        <Package className="w-5 h-5 text-gray-200" />
-                                    )}
+                            <div key={item.id} className="bg-gray-50/50 p-4 rounded-2xl group border border-transparent hover:border-blue-500/10 hover:bg-white hover:shadow-lg hover:shadow-blue-500/5 transition-all space-y-3">
+                                <div className="flex items-center space-x-4">
+                                    <div className="w-12 h-12 bg-white rounded-xl flex-shrink-0 flex items-center justify-center overflow-hidden border border-gray-100">
+                                        {item.image_url ? (
+                                            <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
+                                        ) : (
+                                            <Package className="w-5 h-5 text-gray-200" />
+                                        )}
+                                    </div>
+                                    <div className="flex-1">
+                                        <h4 className="text-sm font-black tracking-tight text-gray-900 leading-tight">{item.name}</h4>
+                                        <p className="text-xs font-bold text-blue-600 mt-0.5">${item.price}</p>
+                                        {item.warranty_enabled && (
+                                            <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest mt-1">Warranty serial required</p>
+                                        )}
+                                    </div>
+                                    <div className="flex items-center bg-white rounded-xl p-1 shadow-sm border border-gray-100">
+                                        <button onClick={() => updateQuantity(item.id, -1)} className="p-1 hover:text-blue-600 transition-colors"><Minus className="w-4 h-4" /></button>
+                                        <span className="w-8 text-center text-xs font-black">{item.quantity}</span>
+                                        <button onClick={() => updateQuantity(item.id, 1)} className="p-1 hover:text-blue-600 transition-colors"><Plus className="w-4 h-4" /></button>
+                                    </div>
+                                    <button onClick={() => removeFromCart(item.id)} className="p-2 text-gray-300 hover:text-rose-500 transition-colors">
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
                                 </div>
-                                <div className="flex-1">
-                                    <h4 className="text-sm font-black tracking-tight text-gray-900 leading-tight">{item.name}</h4>
-                                    <p className="text-xs font-bold text-blue-600 mt-0.5">${item.price}</p>
-                                </div>
-                                <div className="flex items-center bg-white rounded-xl p-1 shadow-sm border border-gray-100">
-                                    <button onClick={() => updateQuantity(item.id, -1)} className="p-1 hover:text-blue-600 transition-colors"><Minus className="w-4 h-4" /></button>
-                                    <span className="w-8 text-center text-xs font-black">{item.quantity}</span>
-                                    <button onClick={() => updateQuantity(item.id, 1)} className="p-1 hover:text-blue-600 transition-colors"><Plus className="w-4 h-4" /></button>
-                                </div>
-                                <button onClick={() => removeFromCart(item.id)} className="p-2 text-gray-300 hover:text-rose-500 transition-colors">
-                                    <Trash2 className="w-4 h-4" />
-                                </button>
+
+                                {item.warranty_enabled && (
+                                    <div className="bg-white border border-amber-100 rounded-xl p-3 space-y-2">
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-amber-700">Serial numbers</p>
+                                        <div className="grid grid-cols-1 gap-2">
+                                            {getWarrantySerialsForQuantity(item.serialNumbers, item.quantity).map((serial: string, index: number) => (
+                                                <input
+                                                    key={`${item.id}-serial-${index}`}
+                                                    type="text"
+                                                    value={serial}
+                                                    onChange={(e) => updateSerialNumber(item.id, index, e.target.value)}
+                                                    placeholder={`Unit ${index + 1} serial`}
+                                                    className="w-full bg-gray-50 border border-gray-100 rounded-lg px-3 py-2 text-xs font-bold text-gray-900 focus:ring-2 focus:ring-amber-500/20 focus:bg-white transition-all"
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         ))
                     )}
