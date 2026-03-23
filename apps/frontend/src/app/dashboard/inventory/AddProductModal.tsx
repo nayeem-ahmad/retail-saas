@@ -32,8 +32,6 @@ export default function AddProductModal({ isOpen, onClose, mode = 'create', init
     const [groups, setGroups] = useState<any[]>([]);
     const [subgroups, setSubgroups] = useState<any[]>([]);
 
-    if (!isOpen) return null;
-
     useEffect(() => {
         if (!isOpen) return;
 
@@ -94,6 +92,8 @@ export default function AddProductModal({ isOpen, onClose, mode = 'create', init
         () => subgroups.filter((subgroup) => !formData.groupId || subgroup.group_id === formData.groupId),
         [subgroups, formData.groupId],
     );
+
+    if (!isOpen) return null;
 
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
