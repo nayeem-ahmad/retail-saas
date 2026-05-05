@@ -425,6 +425,11 @@ export const api = {
     deleteQuotation: (id: string) => fetchWithAuth(`/sales-quotations/${id}`, {
         method: 'DELETE',
     }),
+    updateQuotationStatus: (id: string, status: string) => fetchWithAuth(`/sales-quotations/${id}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status }),
+        headers: { 'Content-Type': 'application/json' },
+    }),
     reviseQuotation: (id: string) => fetchWithAuth(`/sales-quotations/${id}/revise`, {
         method: 'POST',
     }),
