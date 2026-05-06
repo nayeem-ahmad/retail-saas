@@ -4,7 +4,7 @@ import { RequiresPlan } from '../auth/subscription-access.decorator';
 import { SubscriptionAccessGuard } from '../auth/subscription-access.guard';
 import { TenantInterceptor } from '../database/tenant.interceptor';
 import { Tenant, TenantContext } from '../database/tenant.decorator';
-import { GetSalesByProductDto, GetSalesSummaryDto } from './sales-reports.dto';
+import { GetReturnsAnalysisDto, GetSalesByProductDto, GetSalesSummaryDto, GetTopCustomersDto } from './sales-reports.dto';
 import { SalesReportsService } from './sales-reports.service';
 
 @Controller('sales-reports')
@@ -22,5 +22,15 @@ export class SalesReportsController {
     @Get('by-product')
     getSalesByProduct(@Tenant() tenant: TenantContext, @Query() query: GetSalesByProductDto) {
         return this.service.getSalesByProduct(tenant.tenantId, query);
+    }
+
+    @Get('top-customers')
+    getTopCustomers(@Tenant() tenant: TenantContext, @Query() query: GetTopCustomersDto) {
+        return this.service.getTopCustomers(tenant.tenantId, query);
+    }
+
+    @Get('returns-analysis')
+    getReturnsAnalysis(@Tenant() tenant: TenantContext, @Query() query: GetReturnsAnalysisDto) {
+        return this.service.getReturnsAnalysis(tenant.tenantId, query);
     }
 }

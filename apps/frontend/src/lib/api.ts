@@ -214,6 +214,24 @@ export const api = {
         if (params?.to) query.set('to', params.to);
         return fetchWithAuth(`/sales-reports/summary${query.toString() ? `?${query.toString()}` : ''}`);
     },
+    getTopCustomers: (params?: { customerGroupId?: string; territoryId?: string; from?: string; to?: string; limit?: number }) => {
+        const query = new URLSearchParams();
+        if (params?.customerGroupId) query.set('customerGroupId', params.customerGroupId);
+        if (params?.territoryId) query.set('territoryId', params.territoryId);
+        if (params?.from) query.set('from', params.from);
+        if (params?.to) query.set('to', params.to);
+        if (params?.limit) query.set('limit', String(params.limit));
+        return fetchWithAuth(`/sales-reports/top-customers${query.toString() ? `?${query.toString()}` : ''}`);
+    },
+    getReturnsAnalysis: (params?: { storeId?: string; groupId?: string; subgroupId?: string; from?: string; to?: string }) => {
+        const query = new URLSearchParams();
+        if (params?.storeId) query.set('storeId', params.storeId);
+        if (params?.groupId) query.set('groupId', params.groupId);
+        if (params?.subgroupId) query.set('subgroupId', params.subgroupId);
+        if (params?.from) query.set('from', params.from);
+        if (params?.to) query.set('to', params.to);
+        return fetchWithAuth(`/sales-reports/returns-analysis${query.toString() ? `?${query.toString()}` : ''}`);
+    },
     getSalesByProduct: (params?: { storeId?: string; groupId?: string; subgroupId?: string; from?: string; to?: string }) => {
         const query = new URLSearchParams();
         if (params?.storeId) query.set('storeId', params.storeId);

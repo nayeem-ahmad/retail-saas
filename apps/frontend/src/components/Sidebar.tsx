@@ -119,6 +119,8 @@ const MODULES: NavModule[] = [
             { href: '#sales-reports', icon: ShoppingBag, label: 'Sales', section: true, advancedOnly: true },
             { href: '/dashboard/sales/reports/summary', icon: TrendingUp, label: 'Sales Summary', advancedOnly: true },
             { href: '/dashboard/sales/reports/products', icon: Package, label: 'Sales by Product', advancedOnly: true },
+            { href: '/dashboard/sales/reports/top-customers', icon: Users, label: 'Top Customers', advancedOnly: true },
+            { href: '/dashboard/sales/reports/returns-analysis', icon: Undo2, label: 'Returns Analysis', advancedOnly: true },
             { href: '#inventory-reports', icon: Package, label: 'Inventory', section: true, advancedOnly: true },
             { href: '/dashboard/inventory/reports/reorder', icon: TrendingUp, label: 'Reorder Report', advancedOnly: true },
             { href: '/dashboard/inventory/reports/shrinkage', icon: AlertTriangle, label: 'Shrinkage Report', advancedOnly: true },
