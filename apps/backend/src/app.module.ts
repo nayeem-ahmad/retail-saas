@@ -23,6 +23,7 @@ import { WarehouseTransfersModule } from './warehouse-transfers/warehouse-transf
 import { InventoryShrinkageModule } from './inventory-shrinkage/inventory-shrinkage.module';
 import { StockTakesModule } from './stock-takes/stock-takes.module';
 import { InventoryReportsModule } from './inventory-reports/inventory-reports.module';
+import { SalesReportsModule } from './sales-reports/sales-reports.module';
 import { BillingModule } from './billing/billing.module';
 import { AdminTenantsModule } from './admin-tenants/admin-tenants.module';
 
@@ -51,6 +52,7 @@ import { AdminTenantsModule } from './admin-tenants/admin-tenants.module';
         InventoryShrinkageModule,
         StockTakesModule,
         InventoryReportsModule,
+        SalesReportsModule,
         BillingModule,
         AdminTenantsModule,
         ScheduleModule.forRoot()
