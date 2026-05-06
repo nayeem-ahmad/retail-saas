@@ -67,6 +67,7 @@ export default function WarrantyClaimsPage() {
     // Status update state
     const [newStatus, setNewStatus] = useState('');
     const [resolutionNotes, setResolutionNotes] = useState('');
+    const [replacementSerial, setReplacementSerial] = useState('');
     const [statusUpdating, setStatusUpdating] = useState(false);
 
     const storeId = typeof window !== 'undefined' ? localStorage.getItem('store_id') ?? '' : '';
@@ -127,11 +128,13 @@ export default function WarrantyClaimsPage() {
             const updated = await api.updateWarrantyClaimStatus(statusModalClaim.id, {
                 status: newStatus,
                 resolutionNotes: resolutionNotes.trim() || undefined,
+                replacementSerialNumber: newStatus === 'REPLACED' ? replacementSerial.trim() || undefined : undefined,
             });
             setClaims((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
             setStatusModalClaim(null);
             setNewStatus('');
             setResolutionNotes('');
+            setReplacementSerial('');
         } catch (err: any) {
             console.error('Status update failed', err);
         } finally {
@@ -152,6 +155,7 @@ export default function WarrantyClaimsPage() {
         setStatusModalClaim(claim);
         setNewStatus(NEXT_STATUSES[claim.status]?.[0] ?? '');
         setResolutionNotes('');
+        setReplacementSerial('');
     };
 
     const columns = useMemo(
@@ -169,6 +173,19 @@ export default function WarrantyClaimsPage() {
                 cell: (info) => (
                     <span className="font-mono text-sm text-gray-700">{info.getValue()}</span>
                 ),
+            }),
+            columnHelper.accessor('replacement_serial_number', {
+                header: 'Replacement Serial',
+                cell: (info) => {
+                    const v = info.getValue();
+                    return v ? (
+                        <span className="font-mono text-sm text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">
+                            {v}
+                        </span>
+                    ) : (
+                        <span className="text-gray-400 text-sm">—</span>
+                    );
+                },
             }),
             columnHelper.display({
                 id: 'product',
@@ -431,6 +448,23 @@ export default function WarrantyClaimsPage() {
                                     ))}
                                 </select>
                             </div>
+                            {newStatus === 'REPLACED' && (
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Replacement Serial Number <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={replacementSerial}
+                                        onChange={(e) => setReplacementSerial(e.target.value)}
+                                        placeholder="Serial number of the unit being given out"
+                                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                    />
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        Must be an in-stock unit of the same product.
+                                    </p>
+                                </div>
+                            )}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
                                     Resolution Notes
@@ -453,7 +487,11 @@ export default function WarrantyClaimsPage() {
                             </button>
                             <button
                                 onClick={handleStatusUpdate}
-                                disabled={statusUpdating || !newStatus}
+                                disabled={
+                                    statusUpdating ||
+                                    !newStatus ||
+                                    (newStatus === 'REPLACED' && !replacementSerial.trim())
+                                }
                                 className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
                             >
                                 {statusUpdating ? 'Saving...' : 'Save'}

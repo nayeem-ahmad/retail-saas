@@ -1206,21 +1206,22 @@ model FundTransfer {
 
 // Warranty claim statuses: SUBMITTED, APPROVED, REJECTED, REPAIRED, REPLACED, COMPLETED
 model WarrantyClaim {
-  id               String    @id @default(uuid())
-  tenant_id        String
-  store_id         String
-  claim_number     String
-  serial_number    String
-  product_id       String
-  sale_id          String?
-  customer_id      String?
-  status           String    @default("SUBMITTED")
-  reason           String
-  description      String?
-  resolution_notes String?
-  resolved_at      DateTime?
-  created_at       DateTime  @default(now())
-  updated_at       DateTime  @updatedAt
+  id                       String    @id @default(uuid())
+  tenant_id                String
+  store_id                 String
+  claim_number             String
+  serial_number            String
+  product_id               String
+  sale_id                  String?
+  customer_id              String?
+  status                   String    @default("SUBMITTED")
+  reason                   String
+  description              String?
+  resolution_notes         String?
+  replacement_serial_number String?
+  resolved_at              DateTime?
+  created_at               DateTime  @default(now())
+  updated_at               DateTime  @updatedAt
 
   tenant           Tenant    @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
   store            Store     @relation(fields: [store_id], references: [id])

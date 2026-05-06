@@ -8,4 +8,5 @@ export class CreateWarrantyClaimDto {
 export class UpdateWarrantyClaimStatusDto {
     status: string;
     resolutionNotes?: string;
+    replacementSerialNumber?: string;
 }

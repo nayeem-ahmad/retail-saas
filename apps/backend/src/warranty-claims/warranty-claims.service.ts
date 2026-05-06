@@ -142,26 +142,70 @@ export class WarrantyClaimsService {
     }
 
     async updateStatus(tenantId: string, id: string, dto: UpdateWarrantyClaimStatusDto) {
-        const claim = await this.db.warrantyClaim.findUnique({ where: { id } });
+        return this.db.$transaction(async (tx) => {
+            const claim = await tx.warrantyClaim.findUnique({ where: { id } });
 
-        if (!claim || claim.tenant_id !== tenantId) {
-            throw new NotFoundException('Warranty claim not found.');
-        }
+            if (!claim || claim.tenant_id !== tenantId) {
+                throw new NotFoundException('Warranty claim not found.');
+            }
 
-        if (!VALID_STATUSES.includes(dto.status)) {
-            throw new BadRequestException(`Invalid status "${dto.status}".`);
-        }
+            if (!VALID_STATUSES.includes(dto.status)) {
+                throw new BadRequestException(`Invalid status "${dto.status}".`);
+            }
 
-        const isResolved = ['REPAIRED', 'REPLACED', 'COMPLETED', 'REJECTED'].includes(dto.status);
+            let replacementSerial: string | null = claim.replacement_serial_number;
 
-        return this.db.warrantyClaim.update({
-            where: { id },
-            data: {
-                status: dto.status,
-                resolution_notes: dto.resolutionNotes ?? claim.resolution_notes,
-                resolved_at: isResolved && !claim.resolved_at ? new Date() : claim.resolved_at,
-            },
-            include: { product: true, sale: true, customer: true, store: true },
+            if (dto.status === 'REPLACED') {
+                const repSerial = dto.replacementSerialNumber?.trim();
+                if (!repSerial) {
+                    throw new BadRequestException('A replacement serial number is required when status is REPLACED.');
+                }
+
+                const replacementRecord = await tx.productSerial.findFirst({
+                    where: { tenant_id: tenantId, serial_number: repSerial },
+                });
+
+                if (!replacementRecord) {
+                    throw new NotFoundException(`Replacement serial "${repSerial}" not found.`);
+                }
+
+                if (replacementRecord.product_id !== claim.product_id) {
+                    throw new BadRequestException(
+                        `Replacement serial "${repSerial}" belongs to a different product.`,
+                    );
+                }
+
+                if (replacementRecord.status !== 'IN_STOCK') {
+                    throw new BadRequestException(
+                        `Replacement serial "${repSerial}" is not available (status: ${replacementRecord.status}).`,
+                    );
+                }
+
+                await tx.productSerial.updateMany({
+                    where: { tenant_id: tenantId, serial_number: repSerial },
+                    data: {
+                        status: 'SOLD',
+                        source_type: 'WARRANTY_REPLACEMENT',
+                        source_id: claim.id,
+                        sold_at: new Date(),
+                    },
+                });
+
+                replacementSerial = repSerial;
+            }
+
+            const isResolved = ['REPAIRED', 'REPLACED', 'COMPLETED', 'REJECTED'].includes(dto.status);
+
+            return tx.warrantyClaim.update({
+                where: { id },
+                data: {
+                    status: dto.status,
+                    resolution_notes: dto.resolutionNotes ?? claim.resolution_notes,
+                    replacement_serial_number: replacementSerial,
+                    resolved_at: isResolved && !claim.resolved_at ? new Date() : claim.resolved_at,
+                },
+                include: { product: true, sale: true, customer: true, store: true },
+            });
         });
     }
 }

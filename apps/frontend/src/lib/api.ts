@@ -522,7 +522,7 @@ export const api = {
         body: JSON.stringify(data),
         headers: { 'Content-Type': 'application/json' },
     }),
-    updateWarrantyClaimStatus: (id: string, data: { status: string; resolutionNotes?: string }) =>
+    updateWarrantyClaimStatus: (id: string, data: { status: string; resolutionNotes?: string; replacementSerialNumber?: string }) =>
         fetchWithAuth(`/warranty-claims/${id}/status`, {
             method: 'PATCH',
             body: JSON.stringify(data),

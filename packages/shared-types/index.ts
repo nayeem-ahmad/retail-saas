@@ -435,6 +435,7 @@ export interface WarrantyClaim {
   reason: string;
   description?: string | null;
   resolution_notes?: string | null;
+  replacement_serial_number?: string | null;
   resolved_at?: string | null;
   created_at: string;
   updated_at: string;
