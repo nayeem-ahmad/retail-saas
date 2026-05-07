@@ -661,25 +661,318 @@ async function main() {
         }
     }
 
-    // ── 8. Summary ───────────────────────────────────────────────────────────
+    // ── 8. Additional Warehouse ──────────────────────────────────────────────
+    let backupWarehouse = await prisma.warehouse.findFirst({
+        where: { tenant_id: tenant.id, store_id: store.id, name: 'Gulshan Back Storage' },
+    });
+    if (!backupWarehouse) {
+        backupWarehouse = await prisma.warehouse.create({
+            data: {
+                tenant_id: tenant.id,
+                store_id: store.id,
+                name: 'Gulshan Back Storage',
+                code: `WH-${store.id.slice(0, 6).toUpperCase()}-BCK`,
+                is_default: false,
+                is_active: true,
+            },
+        });
+    }
+
+    // ── 9. Additional Accounts ────────────────────────────────────────────────
+    const currentAssetsGroup = await prisma.accountGroup.findFirst({
+        where: { tenant_id: tenant.id, name: 'Current Assets' },
+    });
+    const expensesGroup = await prisma.accountGroup.findFirst({
+        where: { tenant_id: tenant.id, name: 'Operating Expenses' },
+    });
+    const cashBankSubgroup = currentAssetsGroup
+        ? await prisma.accountSubgroup.findFirst({ where: { group_id: currentAssetsGroup.id, name: 'Cash and Bank' } })
+        : null;
+
+    if (currentAssetsGroup && cashBankSubgroup) {
+        // Mobile wallet accounts
+        for (const [name, code] of [['bKash Account', '1015'], ['Nagad Account', '1016'], ['Rocket Account', '1017']] as [string, string][]) {
+            await prisma.account.upsert({
+                where: { tenant_id_name: { tenant_id: tenant.id, name } },
+                update: {},
+                create: { tenant_id: tenant.id, group_id: currentAssetsGroup.id, subgroup_id: cashBankSubgroup.id, name, code, type: 'ASSET', category: 'cash' },
+            });
+        }
+    }
+
+    if (currentAssetsGroup) {
+        const receivablesSubgroup = await prisma.accountSubgroup.upsert({
+            where: { group_id_name: { group_id: currentAssetsGroup.id, name: 'Receivables' } },
+            update: {},
+            create: { tenant_id: tenant.id, group_id: currentAssetsGroup.id, name: 'Receivables' },
+        });
+        await prisma.account.upsert({
+            where: { tenant_id_name: { tenant_id: tenant.id, name: 'Accounts Receivable' } },
+            update: {},
+            create: { tenant_id: tenant.id, group_id: currentAssetsGroup.id, subgroup_id: receivablesSubgroup.id, name: 'Accounts Receivable', code: '1030', type: 'ASSET', category: 'general' },
+        });
+
+        const inventorySubgroup = await prisma.accountSubgroup.upsert({
+            where: { group_id_name: { group_id: currentAssetsGroup.id, name: 'Inventory' } },
+            update: {},
+            create: { tenant_id: tenant.id, group_id: currentAssetsGroup.id, name: 'Inventory' },
+        });
+        await prisma.account.upsert({
+            where: { tenant_id_name: { tenant_id: tenant.id, name: 'Stock on Hand' } },
+            update: {},
+            create: { tenant_id: tenant.id, group_id: currentAssetsGroup.id, subgroup_id: inventorySubgroup.id, name: 'Stock on Hand', code: '1040', type: 'ASSET', category: 'general' },
+        });
+        await prisma.account.upsert({
+            where: { tenant_id_name: { tenant_id: tenant.id, name: 'Goods in Transit' } },
+            update: {},
+            create: { tenant_id: tenant.id, group_id: currentAssetsGroup.id, subgroup_id: inventorySubgroup.id, name: 'Goods in Transit', code: '1041', type: 'ASSET', category: 'general' },
+        });
+    }
+
+    if (expensesGroup) {
+        const cogsSubgroup = await prisma.accountSubgroup.upsert({
+            where: { group_id_name: { group_id: expensesGroup.id, name: 'Cost of Goods Sold' } },
+            update: {},
+            create: { tenant_id: tenant.id, group_id: expensesGroup.id, name: 'Cost of Goods Sold' },
+        });
+        await prisma.account.upsert({
+            where: { tenant_id_name: { tenant_id: tenant.id, name: 'Cost of Goods Sold' } },
+            update: {},
+            create: { tenant_id: tenant.id, group_id: expensesGroup.id, subgroup_id: cogsSubgroup.id, name: 'Cost of Goods Sold', code: '5020', type: 'EXPENSE', category: 'general' },
+        });
+
+        const overheadSubgroup = await prisma.accountSubgroup.upsert({
+            where: { group_id_name: { group_id: expensesGroup.id, name: 'Overhead' } },
+            update: {},
+            create: { tenant_id: tenant.id, group_id: expensesGroup.id, name: 'Overhead' },
+        });
+        for (const [name, code] of [['Rent Expense', '5030'], ['Staff Salaries', '5040'], ['Utilities Expense', '5050'], ['Marketing Expense', '5060']] as [string, string][]) {
+            await prisma.account.upsert({
+                where: { tenant_id_name: { tenant_id: tenant.id, name } },
+                update: {},
+                create: { tenant_id: tenant.id, group_id: expensesGroup.id, subgroup_id: overheadSubgroup.id, name, code, type: 'EXPENSE', category: 'general' },
+            });
+        }
+    }
+
+    // ── 10. Suppliers ─────────────────────────────────────────────────────────
+    const supplierDefs = [
+        { name: 'Agro Fresh Ltd.',        phone: '+880-2-9876543',  email: 'info@agrofresh.bd',    address: 'Tejgaon Industrial Area, Dhaka' },
+        { name: 'Dhaka Beverages Co.',    phone: '+8801900111222',  email: 'sales@dhakabev.bd',    address: 'Narayanganj, Dhaka' },
+        { name: 'Pran-RFL Group',         phone: '+880-2-8812345',  email: 'orders@pran.com.bd',   address: 'Maona, Gazipur' },
+        { name: 'Square Food & Beverage', phone: '+880-2-9967890',  email: 'trade@square-bd.com',  address: 'Manikganj, Dhaka' },
+        { name: 'Bengal Grains Ltd.',     phone: '+8801711555666',  email: 'supply@bengalgrains.bd', address: 'Gopalganj' },
+        { name: 'Chittagong Spice House', phone: '+88031-888777',   email: 'spices@ctgspice.bd',   address: 'Agrabad, Chittagong' },
+    ];
+
+    const suppliers: any[] = [];
+    for (const def of supplierDefs) {
+        const s = await prisma.supplier.upsert({
+            where: { tenant_id_name: { tenant_id: tenant.id, name: def.name } },
+            update: {},
+            create: { tenant_id: tenant.id, ...def },
+        });
+        suppliers.push(s);
+    }
+
+    // ── 11. Purchases ─────────────────────────────────────────────────────────
+    const purchaseDefs = [
+        {
+            supplier: suppliers[0], number: 'PO-SEED-0001', notes: 'Monthly grocery restock',
+            items: [
+                { p: products[6],  qty: 50, cost: 90  },   // Basmati Rice
+                { p: products[7],  qty: 30, cost: 60  },   // Chickpeas
+                { p: products[8],  qty: 40, cost: 50  },   // Lentils
+                { p: products[9],  qty: 20, cost: 155 },   // Sunflower Oil
+            ],
+        },
+        {
+            supplier: suppliers[1], number: 'PO-SEED-0002', notes: 'Beverage stock top-up',
+            items: [
+                { p: products[0],  qty: 30, cost: 260 },   // Arabica Coffee
+                { p: products[1],  qty: 20, cost: 140 },   // Cold Brew
+                { p: products[4],  qty: 100, cost: 25 },   // Mineral Water
+                { p: products[5],  qty: 20, cost: 90  },   // Orange Juice
+            ],
+        },
+        {
+            supplier: suppliers[2], number: 'PO-SEED-0003', notes: null,
+            items: [
+                { p: products[2],  qty: 50, cost: 72  },   // Green Tea
+                { p: products[3],  qty: 40, cost: 110 },   // Masala Chai
+                { p: products[12], qty: 20, cost: 110 },   // Dark Chocolate
+                { p: products[13], qty: 15, cost: 220 },   // Mixed Nuts
+                { p: products[14], qty: 25, cost: 60  },   // Potato Chips
+            ],
+        },
+        {
+            supplier: suppliers[4], number: 'PO-SEED-0004', notes: 'Quarterly grains purchase',
+            items: [
+                { p: products[6],  qty: 100, cost: 88 },   // Basmati Rice
+                { p: products[7],  qty: 50, cost: 58  },   // Chickpeas
+                { p: products[8],  qty: 60, cost: 48  },   // Lentils
+            ],
+        },
+        {
+            supplier: suppliers[5], number: 'PO-SEED-0005', notes: 'Spice restocking',
+            items: [
+                { p: products[10], qty: 60, cost: 40  },   // Turmeric
+                { p: products[11], qty: 60, cost: 32  },   // Cumin Seeds
+            ],
+        },
+        {
+            supplier: suppliers[3], number: 'PO-SEED-0006', notes: 'Bakery & dairy supplies',
+            items: [
+                { p: products[15], qty: 20, cost: 45  },   // Whole Wheat Bread
+                { p: products[16], qty: 30, cost: 100 },   // Butter
+                { p: products[17], qty: 20, cost: 175 },   // Cheddar Cheese
+            ],
+        },
+    ];
+
+    for (const def of purchaseDefs) {
+        const existing = await prisma.purchase.findUnique({
+            where: { tenant_id_purchase_number: { tenant_id: tenant.id, purchase_number: def.number } },
+        });
+        if (existing) continue;
+
+        const subtotal = def.items.reduce((s, i) => s + i.qty * i.cost, 0);
+        await prisma.purchase.create({
+            data: {
+                tenant_id: tenant.id,
+                store_id: store.id,
+                supplier_id: def.supplier.id,
+                purchase_number: def.number,
+                subtotal_amount: subtotal,
+                total_amount: subtotal,
+                notes: def.notes ?? null,
+                items: {
+                    create: def.items.map(i => ({
+                        product_id: i.p.id,
+                        quantity: i.qty,
+                        unit_cost: i.cost,
+                        line_total: i.qty * i.cost,
+                    })),
+                },
+            },
+        });
+    }
+
+    // ── 12. Sales Returns ─────────────────────────────────────────────────────
+    const returnSources = await Promise.all([
+        prisma.sale.findUnique({ where: { tenant_id_serial_number: { tenant_id: tenant.id, serial_number: 'SL-SEED-0001' } }, include: { items: true } }),
+        prisma.sale.findUnique({ where: { tenant_id_serial_number: { tenant_id: tenant.id, serial_number: 'SL-SEED-0003' } }, include: { items: true } }),
+        prisma.sale.findUnique({ where: { tenant_id_serial_number: { tenant_id: tenant.id, serial_number: 'SL-SEED-0007' } }, include: { items: true } }),
+        prisma.sale.findUnique({ where: { tenant_id_serial_number: { tenant_id: tenant.id, serial_number: 'SL-SEED-0010' } }, include: { items: true } }),
+    ]);
+
+    type ReturnDef = {
+        sale: typeof returnSources[0];
+        number: string;
+        reason: string;
+        returnItems: (items: { id: string; product_id: string; price_at_sale: any }[]) => { id: string; product_id: string; price_at_sale: any; qty: number }[];
+    };
+
+    const salesReturnDefs: ReturnDef[] = [
+        {
+            sale: returnSources[0],
+            number: 'SR-SEED-0001',
+            reason: 'Product damaged on delivery',
+            returnItems: (items) => {
+                const item = items.find(i => i.product_id === products[0].id);
+                return item ? [{ ...item, qty: 1 }] : [];
+            },
+        },
+        {
+            sale: returnSources[1],
+            number: 'SR-SEED-0002',
+            reason: 'Customer changed mind',
+            returnItems: (items) => {
+                const item = items.find(i => i.product_id === products[10].id);
+                return item ? [{ ...item, qty: 2 }] : [];
+            },
+        },
+        {
+            sale: returnSources[2],
+            number: 'SR-SEED-0003',
+            reason: 'Expiry concern raised by customer',
+            returnItems: (items) => {
+                const item = items.find(i => i.product_id === products[4].id);
+                return item ? [{ ...item, qty: 5 }] : [];
+            },
+        },
+        {
+            sale: returnSources[3],
+            number: 'SR-SEED-0004',
+            reason: 'Wrong item delivered',
+            returnItems: (items) => {
+                const item = items.find(i => i.product_id === products[12].id);
+                return item ? [{ ...item, qty: 1 }] : [];
+            },
+        },
+    ];
+
+    for (const def of salesReturnDefs) {
+        if (!def.sale) continue;
+        const existing = await prisma.salesReturn.findUnique({
+            where: { tenant_id_return_number: { tenant_id: tenant.id, return_number: def.number } },
+        });
+        if (existing) continue;
+
+        const itemsToReturn = def.returnItems(def.sale.items);
+        if (!itemsToReturn.length) continue;
+
+        const totalRefund = itemsToReturn.reduce((s, ri) => s + Number(ri.price_at_sale) * ri.qty, 0);
+        await prisma.salesReturn.create({
+            data: {
+                tenant_id: tenant.id,
+                store_id: store.id,
+                sale_id: def.sale.id,
+                return_number: def.number,
+                total_refund: totalRefund,
+                reason: def.reason,
+                status: 'COMPLETED',
+                items: {
+                    create: itemsToReturn.map(ri => ({
+                        sale_item_id: ri.id,
+                        product_id: ri.product_id,
+                        quantity: ri.qty,
+                        refund_amount: Number(ri.price_at_sale) * ri.qty,
+                    })),
+                },
+            },
+        });
+    }
+
+    // ── 13. Summary ──────────────────────────────────────────────────────────
     const productCount    = await prisma.product.count({ where: { tenant_id: tenant.id } });
-    const customerCount   = await prisma.customer.count({ where: { tenant_id: tenant.id } });
-    const saleCount       = await prisma.sale.count({ where: { tenant_id: tenant.id } });
-    const groupCount      = await prisma.customerGroup.count({ where: { tenant_id: tenant.id } });
-    const territoryCount  = await prisma.territory.count({ where: { tenant_id: tenant.id } });
+    const customerCount    = await prisma.customer.count({ where: { tenant_id: tenant.id } });
+    const saleCount        = await prisma.sale.count({ where: { tenant_id: tenant.id } });
+    const returnCount      = await prisma.salesReturn.count({ where: { tenant_id: tenant.id } });
+    const groupCount       = await prisma.customerGroup.count({ where: { tenant_id: tenant.id } });
+    const territoryCount   = await prisma.territory.count({ where: { tenant_id: tenant.id } });
     const storeAccessCount = await prisma.userStoreAccess.count({ where: { tenant_id: tenant.id } });
-    const permCount       = await prisma.userStorePermission.count({ where: { tenant_id: tenant.id } });
+    const permCount        = await prisma.userStorePermission.count({ where: { tenant_id: tenant.id } });
+    const supplierCount    = await prisma.supplier.count({ where: { tenant_id: tenant.id } });
+    const purchaseCount    = await prisma.purchase.count({ where: { tenant_id: tenant.id } });
+    const accountCount     = await prisma.account.count({ where: { tenant_id: tenant.id } });
+    const warehouseCount   = await prisma.warehouse.count({ where: { tenant_id: tenant.id } });
 
     console.log('\n✅  Seed complete');
     console.log('─────────────────────────────────────');
     console.log(`👤  Users:           admin / manager / cashier  (password: password123)`);
     console.log(`🏪  Tenant:          ${tenant.name}`);
     console.log(`🏬  Stores:          ${store.name} + ${store2.name}`);
+    console.log(`🏭  Warehouses:      ${warehouseCount}`);
     console.log(`📦  Products:        ${productCount}`);
+    console.log(`🏷️   Suppliers:       ${supplierCount}`);
     console.log(`👥  Customers:       ${customerCount}`);
     console.log(`📂  Customer Groups: ${groupCount}`);
     console.log(`🗺️   Territories:     ${territoryCount}`);
     console.log(`🧾  Sales:           ${saleCount}`);
+    console.log(`↩️   Sales Returns:   ${returnCount}`);
+    console.log(`🛒  Purchases:       ${purchaseCount}`);
+    console.log(`📒  Accounts (CoA):  ${accountCount}`);
     console.log(`🔑  Store Access:    ${storeAccessCount} entries`);
     console.log(`🛡️   Permissions:     ${permCount} entries`);
     console.log('─────────────────────────────────────');
