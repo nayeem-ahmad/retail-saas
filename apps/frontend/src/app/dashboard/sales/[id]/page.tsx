@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, Printer, Save, Package, CreditCard, FileText, Pencil, Plus, Trash2, X, Search, User } from 'lucide-react';
 import { api } from '../../../../lib/api';
+import { printPOSReceipt } from '../../../../lib/pos-receipt-printer';
 
 interface EditItem {
     productId: string;
@@ -204,6 +205,39 @@ export default function SaleDetailPage() {
         printWindow.print();
     };
 
+    const handlePOSPrint = async () => {
+        if (!sale) return;
+
+        const subtotal = (sale.items || []).reduce(
+            (sum: number, item: any) => sum + item.quantity * parseFloat(item.price_at_sale),
+            0
+        );
+        const total = parseFloat(sale.total_amount);
+        const tax = total - subtotal;
+
+        await printPOSReceipt({
+            invoiceId: sale.id,
+            serialNumber: sale.serial_number,
+            date: new Date(sale.created_at).toLocaleString(),
+            customerName: sale.customer?.name,
+            items: (sale.items || []).map((item: any) => ({
+                name: item.product?.name || 'Unknown',
+                sku: item.product?.sku,
+                quantity: item.quantity,
+                unitPrice: parseFloat(item.price_at_sale),
+            })),
+            payments: (sale.payments || []).map((p: any) => ({
+                method: p.payment_method,
+                amount: parseFloat(p.amount),
+            })),
+            subtotal,
+            tax: tax > 0 ? tax : 0,
+            total,
+            amountPaid: parseFloat(sale.amount_paid),
+            note: sale.note,
+        });
+    };
+
     if (loading) {
         return (
             <div className="flex items-center justify-center h-full bg-[#f3f4f6]">
@@ -279,8 +313,15 @@ export default function SaleDetailPage() {
                                     <span>Edit</span>
                                 </button>
                                 <button
+                                    onClick={handlePOSPrint}
+                                    className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest shadow-md flex items-center space-x-2 transition-all hover:-translate-y-0.5"
+                                >
+                                    <Printer className="w-4 h-4" />
+                                    <span>POS Receipt</span>
+                                </button>
+                                <button
                                     onClick={handlePrint}
-                                    className="bg-gray-900 hover:bg-blue-600 text-white px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest shadow-md flex items-center space-x-2 transition-all hover:-translate-y-0.5"
+                                    className="bg-gray-900 hover:bg-gray-700 text-white px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest shadow-md flex items-center space-x-2 transition-all hover:-translate-y-0.5"
                                 >
                                     <Printer className="w-4 h-4" />
                                     <span>Print Preview</span>

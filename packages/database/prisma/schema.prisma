@@ -276,6 +276,7 @@ model Product {
   safety_stock Int?
   lead_time_days Int?
   image_url   String?
+  unit_type   String   @default("none")
   created_at  DateTime @default(now())
   
   // Relations
