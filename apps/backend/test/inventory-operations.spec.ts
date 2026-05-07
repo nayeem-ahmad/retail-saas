@@ -94,7 +94,7 @@ describe('Inventory Operations (e2e)', () => {
                     tenant_id: tenantId,
                     store_id: storeId,
                     name: 'Secondary Warehouse',
-                    location: 'Back Room',
+                    code: 'WH-SEC',
                 },
             });
             destWarehouseId = dest.id;
