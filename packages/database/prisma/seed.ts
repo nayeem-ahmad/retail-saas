@@ -378,26 +378,26 @@ async function main() {
 
     // ── 5. Products ──────────────────────────────────────────────────────────
     const productDefs = [
-        { name: 'Arabica Coffee Beans (250g)', sku: 'COF-001', price: 320, stock: 120, group: 'Beverages', subgroup: 'Coffee' },
-        { name: 'Cold Brew Coffee (500ml)', sku: 'COF-002', price: 180, stock: 80, group: 'Beverages', subgroup: 'Coffee' },
-        { name: 'Green Tea Bags (25 pack)', sku: 'TEA-001', price: 95, stock: 200, group: 'Beverages', subgroup: 'Tea' },
-        { name: 'Masala Chai Mix (200g)', sku: 'TEA-002', price: 140, stock: 150, group: 'Beverages', subgroup: 'Tea' },
-        { name: 'Mineral Water (1L)', sku: 'DRK-001', price: 35, stock: 500, group: 'Beverages', subgroup: 'Drinks' },
-        { name: 'Orange Juice (1L)', sku: 'DRK-002', price: 120, stock: 60, group: 'Beverages', subgroup: 'Drinks' },
-        { name: 'Basmati Rice (1kg)', sku: 'GRN-001', price: 110, stock: 300, group: 'Groceries', subgroup: 'Grains' },
-        { name: 'Chickpeas (500g)', sku: 'GRN-002', price: 75, stock: 180, group: 'Groceries', subgroup: 'Grains' },
-        { name: 'Lentils (500g)', sku: 'GRN-003', price: 65, stock: 220, group: 'Groceries', subgroup: 'Grains' },
-        { name: 'Sunflower Oil (1L)', sku: 'OIL-001', price: 190, stock: 90, group: 'Groceries', subgroup: 'Grains' },
-        { name: 'Turmeric Powder (100g)', sku: 'SPC-001', price: 55, stock: 400, group: 'Groceries', subgroup: 'Spices' },
-        { name: 'Cumin Seeds (100g)', sku: 'SPC-002', price: 45, stock: 350, group: 'Groceries', subgroup: 'Spices' },
-        { name: 'Dark Chocolate Bar (100g)', sku: 'SNK-001', price: 150, stock: 70, group: 'Snacks & Bakery', subgroup: 'Snacks' },
-        { name: 'Mixed Nuts (200g)', sku: 'SNK-002', price: 280, stock: 50, group: 'Snacks & Bakery', subgroup: 'Snacks' },
-        { name: 'Potato Chips (150g)', sku: 'SNK-003', price: 80, stock: 110, group: 'Snacks & Bakery', subgroup: 'Snacks' },
-        { name: 'Whole Wheat Bread (loaf)', sku: 'BKY-001', price: 60, stock: 40, group: 'Snacks & Bakery', subgroup: 'Bakery' },
-        { name: 'Butter (200g)', sku: 'DRY-001', price: 130, stock: 85, group: 'Groceries', subgroup: 'Dairy' },
-        { name: 'Cheddar Cheese (200g)', sku: 'DRY-002', price: 220, stock: 45, group: 'Groceries', subgroup: 'Dairy' },
-        { name: 'Espresso Machine Cleaner (250g)', sku: 'ACC-001', price: 195, stock: 30, group: 'Accessories', subgroup: 'Supplies' },
-        { name: 'Reusable Shopping Bag', sku: 'ACC-002', price: 50, stock: 200, group: 'Accessories', subgroup: 'Supplies' },
+        { name: 'Arabica Coffee Beans (250g)', sku: 'COF-001', price: 320, stock: 120, group: 'Beverages', subgroup: 'Coffee', image_url: 'https://images.unsplash.com/photo-1447933601403-0c6688de566e?w=400&h=400&fit=crop' },
+        { name: 'Cold Brew Coffee (500ml)', sku: 'COF-002', price: 180, stock: 80, group: 'Beverages', subgroup: 'Coffee', image_url: 'https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=400&h=400&fit=crop' },
+        { name: 'Green Tea Bags (25 pack)', sku: 'TEA-001', price: 95, stock: 200, group: 'Beverages', subgroup: 'Tea', image_url: 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=400&h=400&fit=crop' },
+        { name: 'Masala Chai Mix (200g)', sku: 'TEA-002', price: 140, stock: 150, group: 'Beverages', subgroup: 'Tea', image_url: 'https://images.unsplash.com/photo-1571934811356-5cc061b6821f?w=400&h=400&fit=crop' },
+        { name: 'Mineral Water (1L)', sku: 'DRK-001', price: 35, stock: 500, group: 'Beverages', subgroup: 'Drinks', image_url: 'https://images.unsplash.com/photo-1548839140-29a749e1cf4d?w=400&h=400&fit=crop' },
+        { name: 'Orange Juice (1L)', sku: 'DRK-002', price: 120, stock: 60, group: 'Beverages', subgroup: 'Drinks', image_url: 'https://images.unsplash.com/photo-1600271886742-f049cd451bba?w=400&h=400&fit=crop' },
+        { name: 'Basmati Rice (1kg)', sku: 'GRN-001', price: 110, stock: 300, group: 'Groceries', subgroup: 'Grains', image_url: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400&h=400&fit=crop' },
+        { name: 'Chickpeas (500g)', sku: 'GRN-002', price: 75, stock: 180, group: 'Groceries', subgroup: 'Grains', image_url: 'https://images.unsplash.com/photo-1515543904379-3d757afe72e4?w=400&h=400&fit=crop' },
+        { name: 'Lentils (500g)', sku: 'GRN-003', price: 65, stock: 220, group: 'Groceries', subgroup: 'Grains', image_url: 'https://images.unsplash.com/photo-1609250283786-571e234b7a0a?w=400&h=400&fit=crop' },
+        { name: 'Sunflower Oil (1L)', sku: 'OIL-001', price: 190, stock: 90, group: 'Groceries', subgroup: 'Grains', image_url: 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=400&h=400&fit=crop' },
+        { name: 'Turmeric Powder (100g)', sku: 'SPC-001', price: 55, stock: 400, group: 'Groceries', subgroup: 'Spices', image_url: 'https://images.unsplash.com/photo-1615485500704-8e3b3e23f1dc?w=400&h=400&fit=crop' },
+        { name: 'Cumin Seeds (100g)', sku: 'SPC-002', price: 45, stock: 350, group: 'Groceries', subgroup: 'Spices', image_url: 'https://images.unsplash.com/photo-1599909533731-d24d78f59eb1?w=400&h=400&fit=crop' },
+        { name: 'Dark Chocolate Bar (100g)', sku: 'SNK-001', price: 150, stock: 70, group: 'Snacks & Bakery', subgroup: 'Snacks', image_url: 'https://images.unsplash.com/photo-1481391319762-47dff72954d9?w=400&h=400&fit=crop' },
+        { name: 'Mixed Nuts (200g)', sku: 'SNK-002', price: 280, stock: 50, group: 'Snacks & Bakery', subgroup: 'Snacks', image_url: 'https://images.unsplash.com/photo-1599599810769-bcde5a160d32?w=400&h=400&fit=crop' },
+        { name: 'Potato Chips (150g)', sku: 'SNK-003', price: 80, stock: 110, group: 'Snacks & Bakery', subgroup: 'Snacks', image_url: 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=400&h=400&fit=crop' },
+        { name: 'Whole Wheat Bread (loaf)', sku: 'BKY-001', price: 60, stock: 40, group: 'Snacks & Bakery', subgroup: 'Bakery', image_url: 'https://images.unsplash.com/photo-1549931319-a545dcf3bc73?w=400&h=400&fit=crop' },
+        { name: 'Butter (200g)', sku: 'DRY-001', price: 130, stock: 85, group: 'Groceries', subgroup: 'Dairy', image_url: 'https://images.unsplash.com/photo-1550583724-b2692b85b150?w=400&h=400&fit=crop' },
+        { name: 'Cheddar Cheese (200g)', sku: 'DRY-002', price: 220, stock: 45, group: 'Groceries', subgroup: 'Dairy', image_url: 'https://images.unsplash.com/photo-1486297678162-eb2a19b0a32d?w=400&h=400&fit=crop' },
+        { name: 'Espresso Machine Cleaner (250g)', sku: 'ACC-001', price: 195, stock: 30, group: 'Accessories', subgroup: 'Supplies', image_url: 'https://images.unsplash.com/photo-1595435934249-5df7ed86e1c0?w=400&h=400&fit=crop' },
+        { name: 'Reusable Shopping Bag', sku: 'ACC-002', price: 50, stock: 200, group: 'Accessories', subgroup: 'Supplies', image_url: 'https://images.unsplash.com/photo-1584308972272-9e4e7685e80f?w=400&h=400&fit=crop' },
     ];
 
     const products: any[] = [];
@@ -411,6 +411,7 @@ async function main() {
                 data: {
                     group_id: productGroups.get(def.group)?.id,
                     subgroup_id: productSubgroups.get(`${def.group}:${def.subgroup}`)?.id,
+                    image_url: def.image_url,
                 },
             });
             await prisma.productStock.upsert({
@@ -437,6 +438,7 @@ async function main() {
                     name: def.name,
                     sku: def.sku,
                     price: def.price,
+                    image_url: def.image_url,
                     group_id: productGroups.get(def.group)?.id,
                     subgroup_id: productSubgroups.get(`${def.group}:${def.subgroup}`)?.id,
                     stocks: { create: { tenant_id: tenant.id, warehouse_id: defaultWarehouse.id, quantity: def.stock } },
