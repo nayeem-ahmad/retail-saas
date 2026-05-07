@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { X, Search, Trash2 } from 'lucide-react';
 import { api } from '../../../lib/api';
+import { isCompoundUnit, CompoundUnitType } from '../../../lib/compound-units';
+import CompoundUnitInput from '../../../components/CompoundUnitInput';
 
 interface CreateQuotationModalProps {
     isOpen: boolean;
@@ -16,6 +18,7 @@ interface QuoteItem {
     sku: string;
     quantity: number;
     unitPrice: number;
+    unitType: string;
 }
 
 export default function CreateQuotationModal({ isOpen, onClose, onSuccess }: CreateQuotationModalProps) {
@@ -62,6 +65,7 @@ export default function CreateQuotationModal({ isOpen, onClose, onSuccess }: Cre
                     sku: product.sku || '',
                     quantity: 1,
                     unitPrice: parseFloat(product.price),
+                    unitType: product.unit_type || 'none',
                 },
             ]);
         }
@@ -240,13 +244,22 @@ export default function CreateQuotationModal({ isOpen, onClose, onSuccess }: Cre
                                             <span className="text-xs text-gray-400 ml-2">{item.sku}</span>
                                         </td>
                                         <td className="py-3">
-                                            <input
-                                                type="number"
-                                                min={1}
-                                                value={item.quantity}
-                                                onChange={(e) => updateItem(index, 'quantity', Math.max(1, parseInt(e.target.value, 10) || 1))}
-                                                className="w-full text-center bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 text-sm font-bold focus:ring-2 focus:ring-blue-500/20"
-                                            />
+                                            {isCompoundUnit(item.unitType) ? (
+                                                <CompoundUnitInput
+                                                    unitType={item.unitType as CompoundUnitType}
+                                                    value={item.quantity}
+                                                    onChange={(val) => updateItem(index, 'quantity', Math.max(1, val))}
+                                                    inputClassName="bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 text-sm font-bold focus:ring-2 focus:ring-blue-500/20"
+                                                />
+                                            ) : (
+                                                <input
+                                                    type="number"
+                                                    min={1}
+                                                    value={item.quantity}
+                                                    onChange={(e) => updateItem(index, 'quantity', Math.max(1, parseInt(e.target.value, 10) || 1))}
+                                                    className="w-full text-center bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 text-sm font-bold focus:ring-2 focus:ring-blue-500/20"
+                                                />
+                                            )}
                                         </td>
                                         <td className="py-3">
                                             <input
