@@ -136,8 +136,14 @@ export default function CustomerProfile() {
 
             {/* Receipt History */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
-                <div className="p-6 border-b border-gray-100">
+                <div className="p-6 border-b border-gray-100 flex items-center justify-between">
                     <h2 className="text-lg font-black flex items-center"><ShoppingBag className="w-5 h-5 mr-2 text-blue-600" /> Purchase History</h2>
+                    <button
+                        onClick={() => router.push(`/dashboard/customers/${id}/history`)}
+                        className="text-xs font-black uppercase tracking-wider text-blue-600 hover:text-blue-800 transition-colors"
+                    >
+                        View Full History →
+                    </button>
                 </div>
                 <div className="divide-y divide-gray-50">
                     {customer.sales?.length === 0 ? (
