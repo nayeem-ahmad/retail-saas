@@ -72,9 +72,63 @@ export class CustomersService {
                 }
             }
         });
-        
+
         if (!customer) throw new NotFoundException('Customer not found');
         return customer;
+    }
+
+    async getHistory(tenantId: string, id: string) {
+        const customer = await this.db.customer.findFirst({
+            where: { id, tenant_id: tenantId },
+            select: {
+                id: true,
+                name: true,
+                customer_code: true,
+                segment_category: true,
+                total_spent: true,
+                created_at: true,
+            },
+        });
+
+        if (!customer) throw new NotFoundException('Customer not found');
+
+        const sales = await this.db.sale.findMany({
+            where: { customer_id: id },
+            include: { items: { include: { product: true } } },
+            orderBy: { created_at: 'desc' },
+        });
+
+        const totalOrders = sales.length;
+        const totalSpent = Number(customer.total_spent);
+        const avgOrderValue = totalOrders > 0
+            ? Math.round((sales.reduce((sum, s) => sum + Number(s.total_amount), 0) / totalOrders) * 100) / 100
+            : 0;
+        const lastPurchaseDate = sales[0]?.created_at ?? null;
+
+        const productMap: Record<string, { name: string; qty: number; value: number }> = {};
+        for (const sale of sales) {
+            for (const item of sale.items) {
+                const name = item.product?.name ?? 'Unknown';
+                if (!productMap[name]) productMap[name] = { name, qty: 0, value: 0 };
+                productMap[name].qty += item.quantity;
+                productMap[name].value += Math.round(Number(item.price_at_sale) * item.quantity * 100) / 100;
+            }
+        }
+        const topProducts = Object.values(productMap)
+            .sort((a, b) => b.qty - a.qty)
+            .slice(0, 5);
+
+        return {
+            customer,
+            summary: {
+                totalOrders,
+                totalSpent,
+                avgOrderValue,
+                lastPurchaseDate,
+            },
+            topProducts,
+            sales,
+        };
     }
 
     async update(tenantId: string, id: string, dto: UpdateCustomerDto) {

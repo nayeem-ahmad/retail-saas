@@ -28,7 +28,7 @@ export class CustomersController {
 
     @Get(':id/history')
     async getHistory(@Tenant() tenant: TenantContext, @Param('id') id: string) {
-        return this.customersService.findOne(tenant.tenantId, id);
+        return this.customersService.getHistory(tenant.tenantId, id);
     }
 
     @Patch(':id')
