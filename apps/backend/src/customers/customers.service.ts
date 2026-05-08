@@ -72,9 +72,119 @@ export class CustomersService {
                 }
             }
         });
-        
+
         if (!customer) throw new NotFoundException('Customer not found');
         return customer;
+    }
+
+    async getPurchaseHistory(tenantId: string, id: string) {
+        const customer = await this.db.customer.findFirst({
+            where: { id, tenant_id: tenantId },
+            select: {
+                id: true,
+                name: true,
+                customer_code: true,
+                segment_category: true,
+                total_spent: true,
+                sales: {
+                    orderBy: { created_at: 'desc' },
+                    include: {
+                        items: { include: { product: { select: { id: true, name: true } } } },
+                    },
+                },
+            },
+        });
+
+        if (!customer) throw new NotFoundException('Customer not found');
+
+        const sales = customer.sales;
+        const totalOrders = sales.length;
+        const totalSpent = sales.reduce((sum, s) => sum + Number(s.amount_paid ?? 0), 0);
+        const avgOrderValue = totalOrders > 0 ? totalSpent / totalOrders : 0;
+
+        const sorted = [...sales].sort((a, b) => a.created_at.getTime() - b.created_at.getTime());
+        const firstPurchase = sorted[0]?.created_at ?? null;
+        const lastPurchase = sorted[sorted.length - 1]?.created_at ?? null;
+
+        let purchaseFrequencyDays: number | null = null;
+        if (totalOrders >= 2 && firstPurchase && lastPurchase) {
+            const spanDays = (lastPurchase.getTime() - firstPurchase.getTime()) / (1000 * 3600 * 24);
+            purchaseFrequencyDays = Math.round(spanDays / (totalOrders - 1));
+        }
+
+        // Monthly aggregation
+        const monthlyMap: Record<string, { orders: number; spent: number }> = {};
+        for (const sale of sales) {
+            const key = sale.created_at.toISOString().slice(0, 7); // "YYYY-MM"
+            const entry = monthlyMap[key] ?? { orders: 0, spent: 0 };
+            entry.orders++;
+            entry.spent += Number(sale.amount_paid ?? 0);
+            monthlyMap[key] = entry;
+        }
+        const monthlyTotals = Object.entries(monthlyMap)
+            .map(([month, v]) => ({ month, ...v }))
+            .sort((a, b) => a.month.localeCompare(b.month));
+
+        // Top products
+        const productMap: Record<string, { name: string; quantity: number; totalValue: number; orderCount: number }> = {};
+        for (const sale of sales) {
+            for (const item of sale.items) {
+                const pid = item.product?.id ?? 'unknown';
+                const existing = productMap[pid] ?? { name: item.product?.name ?? 'Unknown', quantity: 0, totalValue: 0, orderCount: 0 };
+                existing.quantity += item.quantity;
+                existing.totalValue += Number(item.price_at_sale) * item.quantity;
+                existing.orderCount++;
+                productMap[pid] = existing;
+            }
+        }
+        const topProducts = Object.entries(productMap)
+            .map(([productId, v]) => ({ productId, ...v }))
+            .sort((a, b) => b.quantity - a.quantity)
+            .slice(0, 10);
+
+        return {
+            customer: {
+                id: customer.id,
+                name: customer.name,
+                customer_code: customer.customer_code,
+                segment_category: customer.segment_category,
+                total_spent: customer.total_spent,
+            },
+            summary: {
+                totalOrders,
+                totalSpent,
+                avgOrderValue,
+                firstPurchase,
+                lastPurchase,
+                purchaseFrequencyDays,
+            },
+            monthlyTotals,
+            topProducts,
+            transactions: sales,
+        };
+    }
+
+    async getSegmentStats(tenantId: string) {
+        const customers = await this.db.customer.findMany({
+            where: { tenant_id: tenantId },
+            select: { segment_category: true },
+        });
+
+        const counts: Record<string, number> = {};
+        for (const c of customers) {
+            const seg = c.segment_category || 'Regular';
+            counts[seg] = (counts[seg] || 0) + 1;
+        }
+
+        const total = customers.length;
+        return {
+            total,
+            breakdown: Object.entries(counts).map(([segment, count]) => ({
+                segment,
+                count,
+                percentage: total > 0 ? Math.round((count / total) * 100) : 0,
+            })),
+        };
     }
 
     async update(tenantId: string, id: string, dto: UpdateCustomerDto) {
