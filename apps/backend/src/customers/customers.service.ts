@@ -213,10 +213,11 @@ export class CustomersService {
 
         const totalOrders = sales.length;
         const avgOrderValue = totalOrders > 0
-            ? Math.round((sales.reduce((sum, sale) => sum + Number(sale.total_amount), 0) / totalOrders) * 100) / 100
+            ? Math.round((sales.reduce((sum, s) => sum + Number(s.total_amount), 0) / totalOrders) * 100) / 100
             : 0;
         const lastPurchaseDate = sales[0]?.created_at ?? null;
 
+        // Key by product_id to correctly handle products that share a name
         const productMap: Record<string, { name: string; qty: number; value: number }> = {};
         for (const sale of sales) {
             for (const item of sale.items) {

@@ -48,6 +48,7 @@ export class SegmentsService {
         const where = tenantId ? { tenant_id: tenantId } : {};
         const customers = await this.db.customer.findMany({ where });
 
+        // Single query to get last purchase date per customer — avoids N+1
         const lastSaleRows = await this.db.sale.groupBy({
             by: ['customer_id'],
             where: {
