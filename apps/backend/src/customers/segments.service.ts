@@ -44,25 +44,36 @@ export class SegmentsService {
         return 'Regular';
     }
 
-    async refreshAll(tenantId?: string): Promise<{ updated: number; total: number }> {
+    async refreshAll(tenantId?: string, now?: Date): Promise<{ updated: number; total: number }> {
         const where = tenantId ? { tenant_id: tenantId } : {};
         const customers = await this.db.customer.findMany({ where });
 
+        // Single query to get last purchase date per customer — avoids N+1
+        const lastSaleRows = await this.db.sale.groupBy({
+            by: ['customer_id'],
+            where: {
+                ...(tenantId ? { tenant_id: tenantId } : {}),
+                customer_id: { not: null },
+            },
+            _max: { created_at: true },
+        });
+
+        const lastPurchaseMap = new Map<string, Date>();
+        for (const row of lastSaleRows) {
+            if (row.customer_id && row._max.created_at) {
+                lastPurchaseMap.set(row.customer_id, row._max.created_at);
+            }
+        }
+
+        const effectiveNow = now ?? new Date();
         let updated = 0;
-        const now = new Date();
 
         for (const customer of customers) {
-            const lastSale = await this.db.sale.findFirst({
-                where: { customer_id: customer.id },
-                orderBy: { created_at: 'desc' },
-                select: { created_at: true },
-            });
-
             const segment = this.classifyCustomer({
                 totalSpent: Number(customer.total_spent),
-                lastPurchaseDate: lastSale?.created_at ?? null,
+                lastPurchaseDate: lastPurchaseMap.get(customer.id) ?? null,
                 accountCreatedAt: customer.created_at,
-                now,
+                now: effectiveNow,
             });
 
             if (segment !== customer.segment_category) {

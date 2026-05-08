@@ -15,7 +15,7 @@ describe('SegmentsService', () => {
                 update: jest.fn(),
             },
             sale: {
-                findFirst: jest.fn(),
+                groupBy: jest.fn(),
             },
         };
 
@@ -116,10 +116,12 @@ describe('SegmentsService', () => {
             db.customer.findMany.mockResolvedValue([
                 { id: 'c1', tenant_id: 't1', total_spent: 60000, segment_category: 'Regular', created_at: new Date('2025-01-01') },
             ]);
-            db.sale.findFirst.mockResolvedValue({ created_at: new Date('2026-04-25') });
+            db.sale.groupBy.mockResolvedValue([
+                { customer_id: 'c1', _max: { created_at: new Date('2026-04-25') } },
+            ]);
             db.customer.update.mockResolvedValue({});
 
-            const result = await service.refreshAll('t1');
+            const result = await service.refreshAll('t1', NOW);
 
             expect(db.customer.update).toHaveBeenCalledWith({
                 where: { id: 'c1' },
@@ -133,25 +135,40 @@ describe('SegmentsService', () => {
             db.customer.findMany.mockResolvedValue([
                 { id: 'c2', tenant_id: 't1', total_spent: 500, segment_category: 'Regular', created_at: new Date('2025-01-01') },
             ]);
-            db.sale.findFirst.mockResolvedValue({ created_at: new Date('2026-04-25') });
+            db.sale.groupBy.mockResolvedValue([
+                { customer_id: 'c2', _max: { created_at: new Date('2026-04-25') } },
+            ]);
 
-            const result = await service.refreshAll('t1');
+            const result = await service.refreshAll('t1', NOW);
 
             expect(db.customer.update).not.toHaveBeenCalled();
             expect(result.updated).toBe(0);
             expect(result.total).toBe(1);
         });
 
-        it('calls findMany without where clause when tenantId is not provided', async () => {
+        it('calls findMany without tenant filter when tenantId is not provided', async () => {
             db.customer.findMany.mockResolvedValue([]);
-            await service.refreshAll();
+            db.sale.groupBy.mockResolvedValue([]);
+            await service.refreshAll(undefined, NOW);
             expect(db.customer.findMany).toHaveBeenCalledWith({ where: {} });
         });
 
         it('calls findMany with tenant_id filter when tenantId is provided', async () => {
             db.customer.findMany.mockResolvedValue([]);
-            await service.refreshAll('tenant-abc');
+            db.sale.groupBy.mockResolvedValue([]);
+            await service.refreshAll('tenant-abc', NOW);
             expect(db.customer.findMany).toHaveBeenCalledWith({ where: { tenant_id: 'tenant-abc' } });
+        });
+
+        it('scopes the groupBy sale query to the tenant', async () => {
+            db.customer.findMany.mockResolvedValue([]);
+            db.sale.groupBy.mockResolvedValue([]);
+            await service.refreshAll('tenant-abc', NOW);
+            expect(db.sale.groupBy).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    where: expect.objectContaining({ tenant_id: 'tenant-abc' }),
+                }),
+            );
         });
     });
 });

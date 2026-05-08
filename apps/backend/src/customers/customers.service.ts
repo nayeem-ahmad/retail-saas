@@ -72,7 +72,7 @@ export class CustomersService {
                 }
             }
         });
-        
+
         if (!customer) throw new NotFoundException('Customer not found');
         return customer;
     }
@@ -80,33 +80,39 @@ export class CustomersService {
     async getHistory(tenantId: string, id: string) {
         const customer = await this.db.customer.findFirst({
             where: { id, tenant_id: tenantId },
-            select: { id: true, name: true, customer_code: true, segment_category: true, total_spent: true },
+            select: {
+                id: true,
+                name: true,
+                customer_code: true,
+                segment_category: true,
+                total_spent: true,
+                created_at: true,
+            },
         });
 
-        if (!customer) {
-            const { NotFoundException } = await import('@nestjs/common');
-            throw new NotFoundException('Customer not found');
-        }
+        if (!customer) throw new NotFoundException('Customer not found');
 
         const sales = await this.db.sale.findMany({
-            where: { customer_id: id },
+            where: { customer_id: id, tenant_id: tenantId },
             include: { items: { include: { product: true } } },
             orderBy: { created_at: 'desc' },
         });
 
         const totalOrders = sales.length;
         const avgOrderValue = totalOrders > 0
-            ? sales.reduce((sum, s) => sum + Number(s.total_amount), 0) / totalOrders
+            ? Math.round((sales.reduce((sum, s) => sum + Number(s.total_amount), 0) / totalOrders) * 100) / 100
             : 0;
         const lastPurchaseDate = sales[0]?.created_at ?? null;
 
+        // Key by product_id to handle products sharing the same name
         const productMap: Record<string, { name: string; qty: number; value: number }> = {};
         for (const sale of sales) {
             for (const item of sale.items) {
+                const key = item.product_id;
                 const name = item.product?.name ?? 'Unknown';
-                if (!productMap[name]) productMap[name] = { name, qty: 0, value: 0 };
-                productMap[name].qty += item.quantity;
-                productMap[name].value += Number(item.price_at_sale) * item.quantity;
+                if (!productMap[key]) productMap[key] = { name, qty: 0, value: 0 };
+                productMap[key].qty += item.quantity;
+                productMap[key].value += Math.round(Number(item.price_at_sale) * item.quantity * 100) / 100;
             }
         }
         const topProducts = Object.values(productMap)
@@ -118,7 +124,7 @@ export class CustomersService {
             summary: {
                 totalOrders,
                 totalSpent: Number(customer.total_spent),
-                avgOrderValue: Math.round(avgOrderValue * 100) / 100,
+                avgOrderValue,
                 lastPurchaseDate,
             },
             topProducts,
