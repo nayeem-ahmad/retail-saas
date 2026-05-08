@@ -251,6 +251,7 @@ export const api = {
     getCustomers: () => fetchWithAuth('/customers'),
     getCustomer: (id: string) => fetchWithAuth(`/customers/${id}`),
     getCustomerHistory: (id: string) => fetchWithAuth(`/customers/${id}/history`),
+    refreshCustomerSegments: () => fetchWithAuth('/customers/segments/refresh', { method: 'POST' }),
     createCustomer: (data: any) => fetchWithAuth('/customers', {
         method: 'POST',
         body: JSON.stringify(data),

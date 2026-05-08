@@ -2,8 +2,13 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { DatabaseService } from '../database/database.service';
 
-const VIP_THRESHOLD_BDT = 50000;
-const AT_RISK_DAYS = 30;
+export const SEGMENT_THRESHOLDS = {
+    VIP_SPEND_BDT: 50000,
+    AT_RISK_DAYS: 30,
+    NEW_ACCOUNT_DAYS: 30,
+};
+
+export type SegmentCategory = 'New' | 'Regular' | 'At-Risk' | 'VIP';
 
 @Injectable()
 export class SegmentsService {
@@ -11,47 +16,71 @@ export class SegmentsService {
 
     constructor(private db: DatabaseService) {}
 
-    @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
-    async handleCron() {
-        this.logger.debug('Running Customer Segmentation evaluation');
-        const customers = await this.db.customer.findMany({
-            include: { customerGroup: true },
-        });
-        
-        for (const customer of customers) {
-            let segment = 'Regular';
+    classifyCustomer(params: {
+        totalSpent: number;
+        lastPurchaseDate: Date | null;
+        accountCreatedAt: Date;
+        now?: Date;
+    }): SegmentCategory {
+        const now = params.now ?? new Date();
+        const { totalSpent, lastPurchaseDate, accountCreatedAt } = params;
 
-            // VIP: lifetime spent > ৳50,000 BDT
-            if (Number(customer.total_spent) > VIP_THRESHOLD_BDT) {
-                segment = 'VIP';
-            }
-            
-            // At-Risk: no purchase in > 30 days (only if not already VIP)
+        if (totalSpent > SEGMENT_THRESHOLDS.VIP_SPEND_BDT) return 'VIP';
+
+        const refDate = lastPurchaseDate ?? accountCreatedAt;
+        const daysSince = (now.getTime() - refDate.getTime()) / (1000 * 3600 * 24);
+
+        if (daysSince > SEGMENT_THRESHOLDS.AT_RISK_DAYS) {
+            const accountAgeDays = (now.getTime() - accountCreatedAt.getTime()) / (1000 * 3600 * 24);
+            if (accountAgeDays <= SEGMENT_THRESHOLDS.NEW_ACCOUNT_DAYS && !lastPurchaseDate) return 'New';
+            return 'At-Risk';
+        }
+
+        if (!lastPurchaseDate) {
+            const accountAgeDays = (now.getTime() - accountCreatedAt.getTime()) / (1000 * 3600 * 24);
+            if (accountAgeDays <= SEGMENT_THRESHOLDS.NEW_ACCOUNT_DAYS) return 'New';
+        }
+
+        return 'Regular';
+    }
+
+    async refreshAll(tenantId?: string): Promise<{ updated: number; total: number }> {
+        const where = tenantId ? { tenant_id: tenantId } : {};
+        const customers = await this.db.customer.findMany({ where });
+
+        let updated = 0;
+        const now = new Date();
+
+        for (const customer of customers) {
             const lastSale = await this.db.sale.findFirst({
                 where: { customer_id: customer.id },
                 orderBy: { created_at: 'desc' },
+                select: { created_at: true },
             });
-            
-            if (lastSale) {
-                const daysSince = (new Date().getTime() - lastSale.created_at.getTime()) / (1000 * 3600 * 24);
-                if (daysSince > AT_RISK_DAYS && segment !== 'VIP') {
-                    segment = 'At-Risk';
-                }
-            } else {
-                const daysSinceCreated = (new Date().getTime() - customer.created_at.getTime()) / (1000 * 3600 * 24);
-                if (daysSinceCreated > AT_RISK_DAYS && segment !== 'VIP') {
-                    segment = 'At-Risk';
-                }
-            }
-            
+
+            const segment = this.classifyCustomer({
+                totalSpent: Number(customer.total_spent),
+                lastPurchaseDate: lastSale?.created_at ?? null,
+                accountCreatedAt: customer.created_at,
+                now,
+            });
+
             if (segment !== customer.segment_category) {
                 await this.db.customer.update({
                     where: { id: customer.id },
-                    data: { segment_category: segment }
+                    data: { segment_category: segment },
                 });
+                updated++;
             }
         }
 
-        this.logger.debug('Segmentation evaluation complete');
+        this.logger.debug(`Segmentation complete: ${updated}/${customers.length} customers updated`);
+        return { updated, total: customers.length };
+    }
+
+    @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+    async handleCron() {
+        this.logger.debug('Running scheduled customer segmentation');
+        await this.refreshAll();
     }
 }

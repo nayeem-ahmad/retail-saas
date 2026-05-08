@@ -77,6 +77,55 @@ export class CustomersService {
         return customer;
     }
 
+    async getHistory(tenantId: string, id: string) {
+        const customer = await this.db.customer.findFirst({
+            where: { id, tenant_id: tenantId },
+            select: { id: true, name: true, customer_code: true, segment_category: true, total_spent: true },
+        });
+
+        if (!customer) {
+            const { NotFoundException } = await import('@nestjs/common');
+            throw new NotFoundException('Customer not found');
+        }
+
+        const sales = await this.db.sale.findMany({
+            where: { customer_id: id },
+            include: { items: { include: { product: true } } },
+            orderBy: { created_at: 'desc' },
+        });
+
+        const totalOrders = sales.length;
+        const avgOrderValue = totalOrders > 0
+            ? sales.reduce((sum, s) => sum + Number(s.total_amount), 0) / totalOrders
+            : 0;
+        const lastPurchaseDate = sales[0]?.created_at ?? null;
+
+        const productMap: Record<string, { name: string; qty: number; value: number }> = {};
+        for (const sale of sales) {
+            for (const item of sale.items) {
+                const name = item.product?.name ?? 'Unknown';
+                if (!productMap[name]) productMap[name] = { name, qty: 0, value: 0 };
+                productMap[name].qty += item.quantity;
+                productMap[name].value += Number(item.price_at_sale) * item.quantity;
+            }
+        }
+        const topProducts = Object.values(productMap)
+            .sort((a, b) => b.qty - a.qty)
+            .slice(0, 5);
+
+        return {
+            customer,
+            summary: {
+                totalOrders,
+                totalSpent: Number(customer.total_spent),
+                avgOrderValue: Math.round(avgOrderValue * 100) / 100,
+                lastPurchaseDate,
+            },
+            topProducts,
+            sales,
+        };
+    }
+
     async update(tenantId: string, id: string, dto: UpdateCustomerDto) {
         const customer = await this.db.customer.findFirst({
             where: { id, tenant_id: tenantId },
