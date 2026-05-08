@@ -77,6 +77,29 @@ export class CustomersService {
         return customer;
     }
 
+    async getSegmentStats(tenantId: string) {
+        const customers = await this.db.customer.findMany({
+            where: { tenant_id: tenantId },
+            select: { segment_category: true },
+        });
+
+        const counts: Record<string, number> = {};
+        for (const c of customers) {
+            const seg = c.segment_category || 'Regular';
+            counts[seg] = (counts[seg] || 0) + 1;
+        }
+
+        const total = customers.length;
+        return {
+            total,
+            breakdown: Object.entries(counts).map(([segment, count]) => ({
+                segment,
+                count,
+                percentage: total > 0 ? Math.round((count / total) * 100) : 0,
+            })),
+        };
+    }
+
     async update(tenantId: string, id: string, dto: UpdateCustomerDto) {
         const customer = await this.db.customer.findFirst({
             where: { id, tenant_id: tenantId },
