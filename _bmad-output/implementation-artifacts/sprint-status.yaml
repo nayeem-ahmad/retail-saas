@@ -33,8 +33,8 @@ development_status:
   31-4-inventory-transfer-accounting-events: in-progress
   31-5-posting-reliability-replay-reconciliation: in-progress
   80-1-customer-crud: review
-  80-2-segment-logic: ready-for-dev
-  80-3-purchase-history: ready-for-dev
+  80-2-segment-logic: done
+  80-3-purchase-history: done
   80-4-customer-group-crud: done
   80-5-territory-crud: done
 
@@ -48,5 +48,5 @@ epic_status:
   epic-80: review
 
 metadata:
-  last_updated: 2026-03-20
+  last_updated: 2026-05-08
   analyst: Mary

@@ -26,14 +26,15 @@ import { InventoryReportsModule } from './inventory-reports/inventory-reports.mo
 import { SalesReportsModule } from './sales-reports/sales-reports.module';
 import { BillingModule } from './billing/billing.module';
 import { AdminTenantsModule } from './admin-tenants/admin-tenants.module';
+import { WarrantyClaimsModule } from './warranty-claims/warranty-claims.module';
 
 @Module({
     imports: [
-        DatabaseModule, 
-        AuthModule, 
-        ProductsModule, 
-        AssetsModule, 
-        SalesModule, 
+        DatabaseModule,
+        AuthModule,
+        ProductsModule,
+        AssetsModule,
+        SalesModule,
         CustomersModule,
         CustomerGroupsModule,
         TerritoriesModule,
@@ -55,6 +56,7 @@ import { AdminTenantsModule } from './admin-tenants/admin-tenants.module';
         SalesReportsModule,
         BillingModule,
         AdminTenantsModule,
+        WarrantyClaimsModule,
         ScheduleModule.forRoot()
     ],
     controllers: [],

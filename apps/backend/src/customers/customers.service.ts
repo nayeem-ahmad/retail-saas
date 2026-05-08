@@ -112,33 +112,36 @@ export class CustomersService {
             purchaseFrequencyDays = Math.round(spanDays / (totalOrders - 1));
         }
 
-        // Monthly aggregation
         const monthlyMap: Record<string, { orders: number; spent: number }> = {};
         for (const sale of sales) {
-            const key = sale.created_at.toISOString().slice(0, 7); // "YYYY-MM"
+            const key = sale.created_at.toISOString().slice(0, 7);
             const entry = monthlyMap[key] ?? { orders: 0, spent: 0 };
             entry.orders++;
             entry.spent += Number(sale.amount_paid ?? 0);
             monthlyMap[key] = entry;
         }
         const monthlyTotals = Object.entries(monthlyMap)
-            .map(([month, v]) => ({ month, ...v }))
+            .map(([month, value]) => ({ month, ...value }))
             .sort((a, b) => a.month.localeCompare(b.month));
 
-        // Top products
         const productMap: Record<string, { name: string; quantity: number; totalValue: number; orderCount: number }> = {};
         for (const sale of sales) {
             for (const item of sale.items) {
-                const pid = item.product?.id ?? 'unknown';
-                const existing = productMap[pid] ?? { name: item.product?.name ?? 'Unknown', quantity: 0, totalValue: 0, orderCount: 0 };
+                const productId = item.product?.id ?? 'unknown';
+                const existing = productMap[productId] ?? {
+                    name: item.product?.name ?? 'Unknown',
+                    quantity: 0,
+                    totalValue: 0,
+                    orderCount: 0,
+                };
                 existing.quantity += item.quantity;
                 existing.totalValue += Number(item.price_at_sale) * item.quantity;
                 existing.orderCount++;
-                productMap[pid] = existing;
+                productMap[productId] = existing;
             }
         }
         const topProducts = Object.entries(productMap)
-            .map(([productId, v]) => ({ productId, ...v }))
+            .map(([productId, value]) => ({ productId, ...value }))
             .sort((a, b) => b.quantity - a.quantity)
             .slice(0, 10);
 
@@ -184,6 +187,60 @@ export class CustomersService {
                 count,
                 percentage: total > 0 ? Math.round((count / total) * 100) : 0,
             })),
+        };
+    }
+
+    async getHistory(tenantId: string, id: string) {
+        const customer = await this.db.customer.findFirst({
+            where: { id, tenant_id: tenantId },
+            select: {
+                id: true,
+                name: true,
+                customer_code: true,
+                segment_category: true,
+                total_spent: true,
+                created_at: true,
+            },
+        });
+
+        if (!customer) throw new NotFoundException('Customer not found');
+
+        const sales = await this.db.sale.findMany({
+            where: { customer_id: id, tenant_id: tenantId },
+            include: { items: { include: { product: true } } },
+            orderBy: { created_at: 'desc' },
+        });
+
+        const totalOrders = sales.length;
+        const avgOrderValue = totalOrders > 0
+            ? Math.round((sales.reduce((sum, sale) => sum + Number(sale.total_amount), 0) / totalOrders) * 100) / 100
+            : 0;
+        const lastPurchaseDate = sales[0]?.created_at ?? null;
+
+        const productMap: Record<string, { name: string; qty: number; value: number }> = {};
+        for (const sale of sales) {
+            for (const item of sale.items) {
+                const key = item.product_id;
+                const name = item.product?.name ?? 'Unknown';
+                if (!productMap[key]) productMap[key] = { name, qty: 0, value: 0 };
+                productMap[key].qty += item.quantity;
+                productMap[key].value += Math.round(Number(item.price_at_sale) * item.quantity * 100) / 100;
+            }
+        }
+        const topProducts = Object.values(productMap)
+            .sort((a, b) => b.qty - a.qty)
+            .slice(0, 5);
+
+        return {
+            customer,
+            summary: {
+                totalOrders,
+                totalSpent: Number(customer.total_spent),
+                avgOrderValue,
+                lastPurchaseDate,
+            },
+            topProducts,
+            sales,
         };
     }
 
