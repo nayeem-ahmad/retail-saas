@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowRight, BookOpen, Calculator, ClipboardList, FileText } from 'lucide-react';
+import { ArrowRight, BookOpen, Calculator, ClipboardList, FileText, Settings2, GitMerge } from 'lucide-react';
 
 const ACCOUNTING_LINKS = [
     {
@@ -12,23 +12,37 @@ const ACCOUNTING_LINKS = [
     {
         href: '/dashboard/accounting/vouchers',
         title: 'Voucher Entry',
-        description: 'Prepare cash, bank, transfer, and journal voucher workflows for upcoming posting stories.',
+        description: 'Prepare cash, bank, transfer, and journal voucher workflows.',
         icon: FileText,
         accent: 'bg-emerald-50 text-emerald-700 border-emerald-100',
     },
     {
         href: '/dashboard/accounting/journal',
         title: 'Journal',
-        description: 'Review voucher activity chronologically once voucher posting is enabled.',
+        description: 'Review voucher activity chronologically.',
         icon: ClipboardList,
         accent: 'bg-sky-50 text-sky-700 border-sky-100',
     },
     {
         href: '/dashboard/accounting/ledger',
         title: 'Ledger',
-        description: 'Navigate into account-level running balances and audit trails from a single report hub.',
+        description: 'Navigate into account-level running balances and audit trails.',
         icon: Calculator,
         accent: 'bg-violet-50 text-violet-700 border-violet-100',
+    },
+    {
+        href: '/dashboard/accounting/posting-rules',
+        title: 'Posting Rules',
+        description: 'Configure account mappings for automatic voucher creation on sales, purchases, returns, and inventory events.',
+        icon: Settings2,
+        accent: 'bg-indigo-50 text-indigo-700 border-indigo-100',
+    },
+    {
+        href: '/dashboard/accounting/reconciliation',
+        title: 'Posting Exceptions',
+        description: 'Review failed or skipped automatic posting events and retry them.',
+        icon: GitMerge,
+        accent: 'bg-rose-50 text-rose-700 border-rose-100',
     },
 ];
 
@@ -53,7 +67,7 @@ export default function AccountingPage() {
                     </div>
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                     {ACCOUNTING_LINKS.map(({ href, title, description, icon: Icon, accent }) => (
                         <Link
                             key={title}

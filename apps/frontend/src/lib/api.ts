@@ -360,6 +360,30 @@ export const api = {
         body: JSON.stringify(data),
         headers: { 'Content-Type': 'application/json' },
     }),
+    getPostingRules: (params?: { eventType?: string; isActive?: boolean }) => {
+        const query = new URLSearchParams();
+        if (params?.eventType) query.set('eventType', params.eventType);
+        if (params?.isActive !== undefined) query.set('isActive', String(params.isActive));
+        return fetchWithAuth(`/accounting/settings/posting-rules${query.toString() ? `?${query.toString()}` : ''}`);
+    },
+    updatePostingRule: (id: string, data: any) => fetchWithAuth(`/accounting/settings/posting-rules/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+    }),
+    getPostingExceptions: (params?: { status?: string; module?: string; from?: string; to?: string; page?: number; limit?: number }) => {
+        const query = new URLSearchParams();
+        if (params?.status) query.set('status', params.status);
+        if (params?.module) query.set('module', params.module);
+        if (params?.from) query.set('from', params.from);
+        if (params?.to) query.set('to', params.to);
+        if (params?.page) query.set('page', String(params.page));
+        if (params?.limit) query.set('limit', String(params.limit));
+        return fetchWithAuth(`/accounting/reconciliation/posting-exceptions${query.toString() ? `?${query.toString()}` : ''}`);
+    },
+    retryPostingException: (id: string) => fetchWithAuth(`/accounting/reconciliation/posting-exceptions/${id}/retry`, {
+        method: 'POST',
+    }),
     getReturns: () => fetchWithAuth('/sales-returns'),
     getReturn: (id: string) => fetchWithAuth(`/sales-returns/${id}`),
     createReturn: (data: any) => fetchWithAuth('/sales-returns', {
