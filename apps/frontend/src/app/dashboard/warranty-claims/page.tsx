@@ -270,7 +270,7 @@ export default function WarrantyClaimsPage() {
             {loading ? (
                 <div className="text-center py-16 text-gray-400">Loading claims...</div>
             ) : (
-                <DataTable columns={columns} data={claims} />
+                <DataTable tableId="warranty-claims" title="Warranty Claims" columns={columns} data={claims} />
             )}
 
             {/* New Claim Modal */}
