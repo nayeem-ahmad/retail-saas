@@ -251,6 +251,8 @@ export const api = {
     getCustomers: () => fetchWithAuth('/customers'),
     getCustomer: (id: string) => fetchWithAuth(`/customers/${id}`),
     getCustomerHistory: (id: string) => fetchWithAuth(`/customers/${id}/history`),
+    getCustomerSegmentStats: () => fetchWithAuth('/customers/segment-stats'),
+    runCustomerSegmentation: () => fetchWithAuth('/customers/run-segmentation', { method: 'POST' }),
     createCustomer: (data: any) => fetchWithAuth('/customers', {
         method: 'POST',
         body: JSON.stringify(data),
@@ -528,4 +530,20 @@ export const api = {
         headers: { 'Content-Type': 'application/json' },
     }),
     getMe: () => fetchWithAuth('/auth/me'),
+    // Warranty Claims
+    lookupWarrantySerial: (serialNumber: string) =>
+        fetchWithAuth(`/warranty-claims/lookup?serialNumber=${encodeURIComponent(serialNumber)}`),
+    getWarrantyClaims: () => fetchWithAuth('/warranty-claims'),
+    getWarrantyClaim: (id: string) => fetchWithAuth(`/warranty-claims/${id}`),
+    createWarrantyClaim: (data: any) => fetchWithAuth('/warranty-claims', {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+    }),
+    updateWarrantyClaimStatus: (id: string, data: { status: string; resolutionNotes?: string; replacementSerialNumber?: string }) =>
+        fetchWithAuth(`/warranty-claims/${id}/status`, {
+            method: 'PATCH',
+            body: JSON.stringify(data),
+            headers: { 'Content-Type': 'application/json' },
+        }),
 };

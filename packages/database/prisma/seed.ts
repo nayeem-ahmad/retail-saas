@@ -697,7 +697,7 @@ async function main() {
             await prisma.account.upsert({
                 where: { tenant_id_name: { tenant_id: tenant.id, name } },
                 update: {},
-                create: { tenant_id: tenant.id, group_id: currentAssetsGroup.id, subgroup_id: cashBankSubgroup.id, name, code, type: 'ASSET', category: 'cash' },
+                create: { tenant_id: tenant.id, group_id: currentAssetsGroup.id, subgroup_id: cashBankSubgroup.id, name, code, type: 'asset', category: 'cash' },
             });
         }
     }
@@ -711,7 +711,7 @@ async function main() {
         await prisma.account.upsert({
             where: { tenant_id_name: { tenant_id: tenant.id, name: 'Accounts Receivable' } },
             update: {},
-            create: { tenant_id: tenant.id, group_id: currentAssetsGroup.id, subgroup_id: receivablesSubgroup.id, name: 'Accounts Receivable', code: '1030', type: 'ASSET', category: 'general' },
+            create: { tenant_id: tenant.id, group_id: currentAssetsGroup.id, subgroup_id: receivablesSubgroup.id, name: 'Accounts Receivable', code: '1030', type: 'asset', category: 'general' },
         });
 
         const inventorySubgroup = await prisma.accountSubgroup.upsert({
@@ -722,12 +722,12 @@ async function main() {
         await prisma.account.upsert({
             where: { tenant_id_name: { tenant_id: tenant.id, name: 'Stock on Hand' } },
             update: {},
-            create: { tenant_id: tenant.id, group_id: currentAssetsGroup.id, subgroup_id: inventorySubgroup.id, name: 'Stock on Hand', code: '1040', type: 'ASSET', category: 'general' },
+            create: { tenant_id: tenant.id, group_id: currentAssetsGroup.id, subgroup_id: inventorySubgroup.id, name: 'Stock on Hand', code: '1040', type: 'asset', category: 'general' },
         });
         await prisma.account.upsert({
             where: { tenant_id_name: { tenant_id: tenant.id, name: 'Goods in Transit' } },
             update: {},
-            create: { tenant_id: tenant.id, group_id: currentAssetsGroup.id, subgroup_id: inventorySubgroup.id, name: 'Goods in Transit', code: '1041', type: 'ASSET', category: 'general' },
+            create: { tenant_id: tenant.id, group_id: currentAssetsGroup.id, subgroup_id: inventorySubgroup.id, name: 'Goods in Transit', code: '1041', type: 'asset', category: 'general' },
         });
     }
 
@@ -740,7 +740,7 @@ async function main() {
         await prisma.account.upsert({
             where: { tenant_id_name: { tenant_id: tenant.id, name: 'Cost of Goods Sold' } },
             update: {},
-            create: { tenant_id: tenant.id, group_id: expensesGroup.id, subgroup_id: cogsSubgroup.id, name: 'Cost of Goods Sold', code: '5020', type: 'EXPENSE', category: 'general' },
+            create: { tenant_id: tenant.id, group_id: expensesGroup.id, subgroup_id: cogsSubgroup.id, name: 'Cost of Goods Sold', code: '5020', type: 'expense', category: 'general' },
         });
 
         const overheadSubgroup = await prisma.accountSubgroup.upsert({
@@ -752,7 +752,7 @@ async function main() {
             await prisma.account.upsert({
                 where: { tenant_id_name: { tenant_id: tenant.id, name } },
                 update: {},
-                create: { tenant_id: tenant.id, group_id: expensesGroup.id, subgroup_id: overheadSubgroup.id, name, code, type: 'EXPENSE', category: 'general' },
+                create: { tenant_id: tenant.id, group_id: expensesGroup.id, subgroup_id: overheadSubgroup.id, name, code, type: 'expense', category: 'general' },
             });
         }
     }

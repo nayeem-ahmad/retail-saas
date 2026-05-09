@@ -193,7 +193,8 @@ export default function Sidebar({
                 ...module,
                 children: module.children.filter((child) => !child.advancedOnly || canAccessInventoryReports),
             };
-        });
+        })
+        .filter((module) => !module.children || module.children.length > 0);
 
     useEffect(() => {
         const saved = localStorage.getItem('sidebar-collapsed');
