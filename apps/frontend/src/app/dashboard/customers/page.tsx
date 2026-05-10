@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { Users, Plus, Eye } from 'lucide-react';
+import { Users, Plus, Eye, RefreshCw } from 'lucide-react';
 import { api } from '../../../lib/api';
 import AddCustomerModal from './AddCustomerModal';
 import Link from 'next/link';
@@ -35,6 +35,8 @@ export default function CustomersPage() {
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [evaluating, setEvaluating] = useState(false);
+    const [evalMessage, setEvalMessage] = useState('');
 
     useEffect(() => {
         loadCustomers();
@@ -54,6 +56,20 @@ export default function CustomersPage() {
     const handleAddCustomer = async (data: any) => {
         await api.createCustomer(data);
         loadCustomers();
+    };
+
+    const handleEvaluateSegments = async () => {
+        setEvaluating(true);
+        setEvalMessage('');
+        try {
+            const result = await api.evaluateCustomerSegments();
+            setEvalMessage(`Segmentation complete — ${result.updated} customer(s) updated.`);
+            await loadCustomers();
+        } catch (error: any) {
+            setEvalMessage(error.message || 'Failed to evaluate segments.');
+        } finally {
+            setEvaluating(false);
+        }
     };
 
     const columns: ColumnDef<Customer, any>[] = useMemo(
@@ -185,16 +201,30 @@ export default function CustomersPage() {
                             Track profiles, segmentation, and purchase value
                         </p>
                     </div>
-                    <button
-                        onClick={() => setIsModalOpen(true)}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl font-bold text-sm flex items-center shadow-lg shadow-blue-200 transition-all hover:-translate-y-0.5 active:translate-y-0"
-                    >
-                        <Plus className="w-4 h-4 mr-2" />
-                        New Customer
-                    </button>
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={handleEvaluateSegments}
+                            disabled={evaluating}
+                            className="bg-white border border-gray-200 text-gray-700 px-4 py-2.5 rounded-xl font-bold text-sm flex items-center hover:bg-gray-50 disabled:opacity-60"
+                            title="Re-evaluate customer segments based on spend and activity"
+                        >
+                            <RefreshCw className={`w-4 h-4 mr-2 ${evaluating ? 'animate-spin' : ''}`} />
+                            {evaluating ? 'Evaluating...' : 'Re-evaluate Segments'}
+                        </button>
+                        <button
+                            onClick={() => setIsModalOpen(true)}
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl font-bold text-sm flex items-center shadow-lg shadow-blue-200 transition-all hover:-translate-y-0.5 active:translate-y-0"
+                        >
+                            <Plus className="w-4 h-4 mr-2" />
+                            New Customer
+                        </button>
+                    </div>
                 </div>
 
                 <AddCustomerModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onAdd={handleAddCustomer} />
+                {evalMessage && (
+                    <div className="bg-white border border-gray-100 rounded-xl px-4 py-3 text-sm font-bold text-gray-700">{evalMessage}</div>
+                )}
 
                 <DataTable<Customer>
                     tableId="customers"

@@ -13,45 +13,53 @@ export class SegmentsService {
 
     @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
     async handleCron() {
-        this.logger.debug('Running Customer Segmentation evaluation');
-        const customers = await this.db.customer.findMany({
-            include: { customerGroup: true },
-        });
-        
-        for (const customer of customers) {
-            let segment = 'Regular';
+        this.logger.debug('Running Customer Segmentation evaluation (all tenants)');
+        const tenants = await this.db.tenant.findMany({ select: { id: true } });
+        for (const tenant of tenants) {
+            await this.evaluateForTenant(tenant.id);
+        }
+        this.logger.debug('Segmentation evaluation complete');
+    }
 
-            // VIP: lifetime spent > ৳50,000 BDT
-            if (Number(customer.total_spent) > VIP_THRESHOLD_BDT) {
-                segment = 'VIP';
-            }
-            
-            // At-Risk: no purchase in > 30 days (only if not already VIP)
-            const lastSale = await this.db.sale.findFirst({
-                where: { customer_id: customer.id },
-                orderBy: { created_at: 'desc' },
-            });
-            
-            if (lastSale) {
-                const daysSince = (new Date().getTime() - lastSale.created_at.getTime()) / (1000 * 3600 * 24);
-                if (daysSince > AT_RISK_DAYS && segment !== 'VIP') {
-                    segment = 'At-Risk';
-                }
-            } else {
-                const daysSinceCreated = (new Date().getTime() - customer.created_at.getTime()) / (1000 * 3600 * 24);
-                if (daysSinceCreated > AT_RISK_DAYS && segment !== 'VIP') {
-                    segment = 'At-Risk';
-                }
-            }
-            
+    async evaluateForTenant(tenantId: string): Promise<{ updated: number }> {
+        const customers = await this.db.customer.findMany({
+            where: { tenant_id: tenantId },
+        });
+
+        let updated = 0;
+
+        for (const customer of customers) {
+            const segment = await this.classifyCustomer(customer);
             if (segment !== customer.segment_category) {
                 await this.db.customer.update({
                     where: { id: customer.id },
-                    data: { segment_category: segment }
+                    data: { segment_category: segment },
                 });
+                updated++;
             }
         }
 
-        this.logger.debug('Segmentation evaluation complete');
+        return { updated };
+    }
+
+    private async classifyCustomer(customer: { id: string; total_spent: any; created_at: Date; segment_category: string }): Promise<string> {
+        if (Number(customer.total_spent) > VIP_THRESHOLD_BDT) {
+            return 'VIP';
+        }
+
+        const lastSale = await this.db.sale.findFirst({
+            where: { customer_id: customer.id },
+            orderBy: { created_at: 'desc' },
+            select: { created_at: true },
+        });
+
+        const referenceDate = lastSale ? lastSale.created_at : customer.created_at;
+        const daysSince = (Date.now() - referenceDate.getTime()) / (1000 * 3600 * 24);
+
+        if (daysSince > AT_RISK_DAYS) {
+            return 'At-Risk';
+        }
+
+        return 'Regular';
     }
 }

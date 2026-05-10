@@ -77,6 +77,53 @@ export class CustomersService {
         return customer;
     }
 
+    async getPurchaseHistory(
+        tenantId: string,
+        id: string,
+        params?: { page?: number; limit?: number; from?: string; to?: string },
+    ) {
+        const customer = await this.db.customer.findFirst({
+            where: { id, tenant_id: tenantId },
+            select: { id: true },
+        });
+        if (!customer) throw new NotFoundException('Customer not found');
+
+        const page = params?.page ?? 1;
+        const limit = Math.min(params?.limit ?? 20, 100);
+        const skip = (page - 1) * limit;
+
+        const where: any = { customer_id: id };
+        if (params?.from || params?.to) {
+            where.created_at = {};
+            if (params?.from) where.created_at.gte = new Date(params.from);
+            if (params?.to) where.created_at.lte = new Date(params.to);
+        }
+
+        const [total, sales] = await Promise.all([
+            this.db.sale.count({ where }),
+            this.db.sale.findMany({
+                where,
+                orderBy: { created_at: 'desc' },
+                skip,
+                take: limit,
+                include: {
+                    items: {
+                        include: { product: { select: { id: true, name: true } } },
+                    },
+                    payments: { select: { payment_method: true, amount: true } },
+                },
+            }),
+        ]);
+
+        return {
+            data: sales,
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit),
+        };
+    }
+
     async update(tenantId: string, id: string, dto: UpdateCustomerDto) {
         const customer = await this.db.customer.findFirst({
             where: { id, tenant_id: tenantId },
