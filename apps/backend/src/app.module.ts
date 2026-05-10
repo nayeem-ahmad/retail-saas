@@ -25,6 +25,7 @@ import { StockTakesModule } from './stock-takes/stock-takes.module';
 import { InventoryReportsModule } from './inventory-reports/inventory-reports.module';
 import { BillingModule } from './billing/billing.module';
 import { AdminTenantsModule } from './admin-tenants/admin-tenants.module';
+import { WarrantyClaimsModule } from './warranty-claims/warranty-claims.module';
 
 @Module({
     imports: [
@@ -53,6 +54,7 @@ import { AdminTenantsModule } from './admin-tenants/admin-tenants.module';
         InventoryReportsModule,
         BillingModule,
         AdminTenantsModule,
+        WarrantyClaimsModule,
         ScheduleModule.forRoot()
     ],
     controllers: [],

@@ -507,4 +507,26 @@ export const api = {
         headers: { 'Content-Type': 'application/json' },
     }),
     getMe: () => fetchWithAuth('/auth/me'),
+    lookupWarrantySerial: (serialNumber: string) =>
+        fetchWithAuth(`/warranty-claims/lookup?serialNumber=${encodeURIComponent(serialNumber)}`),
+    getWarrantyClaims: (params?: { status?: string; from?: string; to?: string }) => {
+        const query = new URLSearchParams();
+        if (params?.status) query.set('status', params.status);
+        if (params?.from) query.set('from', params.from);
+        if (params?.to) query.set('to', params.to);
+        return fetchWithAuth(`/warranty-claims${query.toString() ? `?${query.toString()}` : ''}`);
+    },
+    createWarrantyClaim: (data: any) =>
+        fetchWithAuth('/warranty-claims', {
+            method: 'POST',
+            body: JSON.stringify(data),
+            headers: { 'Content-Type': 'application/json' },
+        }),
+    getWarrantyClaim: (id: string) => fetchWithAuth(`/warranty-claims/${id}`),
+    updateWarrantyClaimStatus: (id: string, data: { status: string; resolutionNotes?: string }) =>
+        fetchWithAuth(`/warranty-claims/${id}/status`, {
+            method: 'PATCH',
+            body: JSON.stringify(data),
+            headers: { 'Content-Type': 'application/json' },
+        }),
 };
