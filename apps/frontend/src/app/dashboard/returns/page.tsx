@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { createColumnHelper, type ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table';
 import IssueReturnModal from './IssueReturnModal';
+import { PostingBadge } from '@/components/PostingBadge';
 
 interface SalesReturn {
     id: string;
@@ -17,6 +18,8 @@ interface SalesReturn {
     status?: string;
     items: any[];
     sale?: { serial_number: string };
+    posting_status?: string | null;
+    voucher_number?: string | null;
 }
 
 const statusColors: Record<string, string> = {
@@ -159,6 +162,17 @@ export default function ReturnsPage() {
                         </span>
                     );
                 },
+                size: 120,
+            }),
+            columnHelper.display({
+                id: 'posting',
+                header: 'Voucher',
+                cell: ({ row }) => (
+                    <PostingBadge
+                        status={row.original.posting_status}
+                        voucherNumber={row.original.voucher_number}
+                    />
+                ),
                 size: 120,
             }),
             columnHelper.display({

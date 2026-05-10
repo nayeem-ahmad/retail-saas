@@ -6,6 +6,7 @@ import { createColumnHelper, type ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table';
 import { api } from '../../../lib/api';
 import CreatePurchaseModal from './CreatePurchaseModal';
+import { PostingBadge } from '@/components/PostingBadge';
 
 interface PurchaseItem {
     id: string;
@@ -27,6 +28,8 @@ interface Purchase {
         name: string;
     } | null;
     items: PurchaseItem[];
+    posting_status?: string | null;
+    voucher_number?: string | null;
 }
 
 const columnHelper = createColumnHelper<Purchase>();
@@ -108,6 +111,17 @@ export default function PurchasesPage() {
                 },
                 sortingFn: 'datetime',
                 size: 150,
+            }),
+            columnHelper.display({
+                id: 'posting',
+                header: 'Voucher',
+                cell: ({ row }) => (
+                    <PostingBadge
+                        status={row.original.posting_status}
+                        voucherNumber={row.original.voucher_number}
+                    />
+                ),
+                size: 120,
             }),
         ],
         [],
