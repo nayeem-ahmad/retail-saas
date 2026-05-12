@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { ShoppingCart, Search, Package, Trash2, Plus, Minus, CreditCard, ChevronRight, Store, X, Banknote, CheckCircle, AlertCircle, XCircle, Printer } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { ShoppingCart, Search, Package, Trash2, Plus, Minus, CreditCard, ChevronRight, Store, X, Banknote, CheckCircle, AlertCircle, XCircle, Printer, Scan } from 'lucide-react';
 import { api } from '../../../lib/api';
 import { printPOSReceipt } from '../../../lib/pos-receipt-printer';
 
@@ -19,6 +19,13 @@ export default function POSPage() {
     const [bkashAmount, setBkashAmount] = useState<number>(0);
     const [cardAmount, setCardAmount] = useState<number>(0);
     const [lastSale, setLastSale] = useState<any>(null);
+    const [lastScanned, setLastScanned] = useState<string | null>(null);
+
+    // Barcode scanner state (keyboard wedge: rapid keystrokes ending with Enter)
+    const scanBufferRef = useRef<string>('');
+    const lastKeyTimeRef = useRef<number>(0);
+    const SCAN_SPEED_MS = 50; // scanners fire < 50 ms between chars
+    const MIN_BARCODE_LEN = 3;
 
     const addNotification = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
         const id = Date.now().toString();
@@ -105,6 +112,48 @@ export default function POSPage() {
             ]);
         }
     };
+
+    // Keyboard-wedge barcode scanner: rapid keystrokes ending with Enter
+    useEffect(() => {
+        const onKeyDown = (e: KeyboardEvent) => {
+            const tag = (document.activeElement as HTMLElement)?.tagName;
+            if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+
+            const now = Date.now();
+            const gap = now - lastKeyTimeRef.current;
+            lastKeyTimeRef.current = now;
+
+            if (e.key === 'Enter') {
+                const sku = scanBufferRef.current;
+                scanBufferRef.current = '';
+                if (sku.length >= MIN_BARCODE_LEN && gap < SCAN_SPEED_MS * 3) {
+                    const match = products.find(
+                        (p) => p.sku?.toLowerCase() === sku.toLowerCase(),
+                    );
+                    if (match) {
+                        addToCart(match);
+                        setLastScanned(match.name);
+                        setTimeout(() => setLastScanned(null), 2000);
+                    } else {
+                        addNotification(`No product found for barcode: ${sku}`, 'error');
+                    }
+                }
+                return;
+            }
+
+            if (e.key.length === 1) {
+                if (gap > SCAN_SPEED_MS * 3 && scanBufferRef.current.length > 0) {
+                    scanBufferRef.current = '';
+                }
+                scanBufferRef.current += e.key;
+            }
+        };
+
+        window.addEventListener('keydown', onKeyDown);
+        return () => window.removeEventListener('keydown', onKeyDown);
+    // Re-register when products or cart changes so addToCart has fresh state
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [products, cart]);
 
     const updateQuantity = (id: string, delta: number) => {
         setCart(cart.map(item => {
@@ -241,17 +290,31 @@ export default function POSPage() {
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-2xl font-black tracking-tight">POS Terminal</h1>
-                        <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mt-0.5">Quick selection & billing</p>
+                        <div className="flex items-center gap-3 mt-0.5">
+                            <p className="text-gray-500 text-xs font-bold uppercase tracking-widest">Quick selection & billing</p>
+                            <span className="flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
+                                <Scan className="w-3 h-3" />
+                                Barcode ready
+                            </span>
+                        </div>
                     </div>
-                    <div className="relative w-72">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-                        <input
-                            type="text"
-                            placeholder="Search SKU or Name..."
-                            className="w-full bg-white border-none rounded-xl py-2.5 pl-10 pr-4 text-sm shadow-sm focus:ring-2 focus:ring-blue-500/10 transition-all font-medium"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
+                    <div className="flex items-center gap-3">
+                        {lastScanned && (
+                            <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-1.5 animate-in slide-in-from-right-2">
+                                <CheckCircle className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                                <span className="text-xs font-black text-emerald-800 truncate max-w-[140px]">{lastScanned}</span>
+                            </div>
+                        )}
+                        <div className="relative w-72">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                            <input
+                                type="text"
+                                placeholder="Search SKU or Name..."
+                                className="w-full bg-white border-none rounded-xl py-2.5 pl-10 pr-4 text-sm shadow-sm focus:ring-2 focus:ring-blue-500/10 transition-all font-medium"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                        </div>
                     </div>
                 </div>
 

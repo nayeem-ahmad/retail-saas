@@ -182,3 +182,4 @@ Track all work here. Check off items as they're completed. Add new items as they
 - [x] Add helmet middleware — `app.use(helmet())` in main.ts sets CSP, HSTS, X-Frame-Options, X-Content-Type-Options, and other security headers — done 2026-05-12
 - [x] Account lockout after N failed login attempts — 5 attempts triggers 15-min lock; fields on User model; tests added — done 2026-05-12
 - [x] Add structured logging (Pino) — nestjs-pino wired globally; pino-http request logs; SegmentsService migrated to PinoLogger — done 2026-05-12
+- [x] Barcode scanning support in POS — keyboard-wedge listener (<50ms/char + Enter) matches by SKU, shows scan confirmation badge — done 2026-05-12
