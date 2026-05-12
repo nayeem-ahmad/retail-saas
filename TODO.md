@@ -58,7 +58,7 @@ Track all work here. Check off items as they're completed. Add new items as they
 ### Auth & Account Management
 - [ ] Password reset flow (email-based expiring token)
 - [ ] Email verification on signup
-- [ ] Account lockout after N failed login attempts
+- [x] Account lockout after N failed login attempts
 - [ ] Session invalidation on password change
 - [ ] Consider TOTP 2FA for OWNER role
 - [ ] Implement refresh token rotation
@@ -170,3 +170,4 @@ Track all work here. Check off items as they're completed. Add new items as they
 - [x] Audit all endpoints for missing auth guards — all 26 controllers verified; no unguarded mutations found; added BILLING_WEBHOOK_SECRET to .env.example — done 2026-05-12
 - [x] Deploy rate limiting — `@nestjs/throttler` global guard (300 req/min default); auth endpoints capped at 10 req/min; billing checkout capped at 20 req/min — done 2026-05-12
 - [x] Add input sanitization — global `SanitizePipe` strips HTML tags from all string request body fields; 5 unit tests — done 2026-05-12
+- [x] Account lockout after N failed login attempts — 5 attempts triggers 15-min lock; fields on User model; tests added — done 2026-05-12

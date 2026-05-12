@@ -9,6 +9,9 @@ import { ROLE_DEFAULT_PERMISSIONS, UserRole } from '@retail-saas/shared-types';
 
 @Injectable()
 export class AuthService {
+    private static readonly MAX_FAILED_ATTEMPTS = 5;
+    private static readonly LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
+
     constructor(
         private db: DatabaseService,
         private jwtService: JwtService,
@@ -58,11 +61,34 @@ export class AuthService {
             throw new UnauthorizedException('Invalid credentials');
         }
 
+        if (user.locked_until && user.locked_until > new Date()) {
+            const retryAfterSec = Math.ceil((user.locked_until.getTime() - Date.now()) / 1000);
+            throw new UnauthorizedException(
+                `Account locked due to too many failed attempts. Try again in ${retryAfterSec} seconds.`,
+            );
+        }
+
         const isPasswordValid = await bcrypt.compare(dto.password, user.passwordHash);
 
         if (!isPasswordValid) {
+            const attempts = user.failed_login_attempts + 1;
+            const locked = attempts >= AuthService.MAX_FAILED_ATTEMPTS;
+            await this.db.user.update({
+                where: { id: user.id },
+                data: {
+                    failed_login_attempts: attempts,
+                    locked_until: locked
+                        ? new Date(Date.now() + AuthService.LOCKOUT_DURATION_MS)
+                        : undefined,
+                },
+            });
             throw new UnauthorizedException('Invalid credentials');
         }
+
+        await this.db.user.update({
+            where: { id: user.id },
+            data: { failed_login_attempts: 0, locked_until: null },
+        });
 
         return this.generateAuthResponse(user.id);
     }
