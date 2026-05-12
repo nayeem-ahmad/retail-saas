@@ -13,6 +13,8 @@ Track all work here. Check off items as they're completed. Add new items as they
 - [ ] Implement CSRF protection (`@nestjs/csrf` or double-submit cookie pattern)
 - [x] Deploy rate limiting — Upstash Redis is wired in `.env.example` but not used in code — done 2026-05-12
 - [ ] Add input sanitization (beyond class-validator) to prevent XSS at API boundary
+- [ ] Deploy rate limiting — Upstash Redis is wired in `.env.example` but not used in code
+- [x] Add input sanitization (beyond class-validator) to prevent XSS at API boundary — done 2026-05-12
 - [x] Audit all endpoints for missing auth guards — done 2026-05-12
 - [ ] Implement audit logging table (who changed what, when — needed for billing disputes)
 
@@ -167,3 +169,4 @@ Track all work here. Check off items as they're completed. Add new items as they
 - [x] Ensure `.env` is in `.gitignore` — confirmed present on line 32 of `.gitignore` — done 2026-05-09
 - [x] Audit all endpoints for missing auth guards — all 26 controllers verified; no unguarded mutations found; added BILLING_WEBHOOK_SECRET to .env.example — done 2026-05-12
 - [x] Deploy rate limiting — `@nestjs/throttler` global guard (300 req/min default); auth endpoints capped at 10 req/min; billing checkout capped at 20 req/min — done 2026-05-12
+- [x] Add input sanitization — global `SanitizePipe` strips HTML tags from all string request body fields; 5 unit tests — done 2026-05-12
