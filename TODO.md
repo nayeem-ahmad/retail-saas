@@ -38,7 +38,7 @@ Track all work here. Check off items as they're completed. Add new items as they
 
 ### Monitoring & Observability
 - [ ] Integrate Sentry in backend and frontend
-- [ ] Add structured logging (Winston or Pino) — replace bare Logger.debug calls
+- [x] Add structured logging (Winston or Pino) — replace bare Logger.debug calls
 - [ ] Set up uptime monitoring (BetterStack or similar)
 - [ ] Configure alerts for: error rate spikes, payment webhook failures, DB connection exhaustion
 
@@ -170,3 +170,4 @@ Track all work here. Check off items as they're completed. Add new items as they
 - [x] Audit all endpoints for missing auth guards — all 26 controllers verified; no unguarded mutations found; added BILLING_WEBHOOK_SECRET to .env.example — done 2026-05-12
 - [x] Deploy rate limiting — `@nestjs/throttler` global guard (300 req/min default); auth endpoints capped at 10 req/min; billing checkout capped at 20 req/min — done 2026-05-12
 - [x] Add input sanitization — global `SanitizePipe` strips HTML tags from all string request body fields; 5 unit tests — done 2026-05-12
+- [x] Add structured logging (Pino) — nestjs-pino wired globally; pino-http request logs; SegmentsService migrated to PinoLogger — done 2026-05-12
