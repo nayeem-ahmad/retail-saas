@@ -66,7 +66,7 @@ Track all work here. Check off items as they're completed. Add new items as they
 - [ ] Standardize response envelope (`{ data, meta, error }`) across all endpoints
 - [ ] Enforce pagination on all list endpoints (unbounded queries will kill DB under load)
 - [ ] Add Swagger/OpenAPI docs via `@nestjs/swagger`
-- [ ] Add request ID header for distributed tracing
+- [x] Add request ID header for distributed tracing
 
 ### Data & Compliance
 - [ ] Implement soft deletes — current hard deletes break accounting record integrity
