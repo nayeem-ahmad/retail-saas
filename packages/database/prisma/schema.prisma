@@ -95,13 +95,15 @@ enum PostingEventStatus {
 }
 
 model User {
-  id            String       @id @default(uuid())
-  email         String       @unique
-  passwordHash  String
-  name          String?
-  created_at    DateTime     @default(now())
-  updated_at    DateTime     @updatedAt
-   
+  id                   String    @id @default(uuid())
+  email                String    @unique
+  passwordHash         String
+  name                 String?
+  failed_login_attempts Int      @default(0)
+  locked_until         DateTime?
+  created_at           DateTime  @default(now())
+  updated_at           DateTime  @updatedAt
+
   // Relations
   tenantsOwned      Tenant[]            @relation("TenantOwner")
   tenantMembers     TenantUser[]

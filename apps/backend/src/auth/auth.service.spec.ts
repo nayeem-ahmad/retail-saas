@@ -188,11 +188,75 @@ describe('AuthService', () => {
         } as any)).rejects.toThrow(ConflictException);
     });
 
-    it('rejects invalid login credentials', async () => {
-        db.user.findUnique.mockResolvedValue({ id: 'user-1', email: 'owner@example.com', passwordHash: 'hashed' });
+    it('rejects invalid login credentials and increments failed_login_attempts', async () => {
+        db.user.findUnique.mockResolvedValue({
+            id: 'user-1',
+            email: 'owner@example.com',
+            passwordHash: 'hashed',
+            failed_login_attempts: 0,
+            locked_until: null,
+        });
+        db.user.update.mockResolvedValue({});
         (bcrypt.compare as jest.Mock).mockResolvedValue(false);
 
         await expect(service.login({ email: 'owner@example.com', password: 'wrong' })).rejects.toThrow(UnauthorizedException);
+        expect(db.user.update).toHaveBeenCalledWith(expect.objectContaining({
+            data: expect.objectContaining({ failed_login_attempts: 1 }),
+        }));
+    });
+
+    it('locks account after 5 failed attempts', async () => {
+        db.user.findUnique.mockResolvedValue({
+            id: 'user-1',
+            email: 'owner@example.com',
+            passwordHash: 'hashed',
+            failed_login_attempts: 4,
+            locked_until: null,
+        });
+        db.user.update.mockResolvedValue({});
+        (bcrypt.compare as jest.Mock).mockResolvedValue(false);
+
+        await expect(service.login({ email: 'owner@example.com', password: 'wrong' })).rejects.toThrow(UnauthorizedException);
+        expect(db.user.update).toHaveBeenCalledWith(expect.objectContaining({
+            data: expect.objectContaining({
+                failed_login_attempts: 5,
+                locked_until: expect.any(Date),
+            }),
+        }));
+    });
+
+    it('rejects login when account is locked', async () => {
+        db.user.findUnique.mockResolvedValue({
+            id: 'user-1',
+            email: 'owner@example.com',
+            passwordHash: 'hashed',
+            failed_login_attempts: 5,
+            locked_until: new Date(Date.now() + 5 * 60 * 1000),
+        });
+
+        await expect(service.login({ email: 'owner@example.com', password: 'any' })).rejects.toThrow(UnauthorizedException);
+        expect(db.user.update).not.toHaveBeenCalled();
+    });
+
+    it('resets failed_login_attempts on successful login', async () => {
+        db.user.findUnique
+            .mockResolvedValueOnce({
+                id: 'user-1',
+                email: 'owner@example.com',
+                passwordHash: 'hashed',
+                failed_login_attempts: 3,
+                locked_until: null,
+            })
+            .mockResolvedValueOnce(makeUserWithAccess('store-1', 'tenant-1'));
+        db.user.update.mockResolvedValue({});
+        (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+
+        const result = await service.login({ email: 'owner@example.com', password: 'correct' });
+
+        expect(result.access_token).toBe('jwt-token');
+        expect(db.user.update).toHaveBeenCalledWith(expect.objectContaining({
+            data: expect.objectContaining({ failed_login_attempts: 0, locked_until: null }),
+        }));
     });
 
     it('marks nayeem.ahmad@gmail.com as platform admin in auth responses', async () => {
