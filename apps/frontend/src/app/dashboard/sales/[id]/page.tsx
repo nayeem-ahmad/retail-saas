@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, Printer, Save, Package, CreditCard, FileText, Pencil, Plus, Trash2, X, Search, User } from 'lucide-react';
+import ProductImage from '../../../../components/ProductImage';
 import { api } from '../../../../lib/api';
 import { printPOSReceipt } from '../../../../lib/pos-receipt-printer';
 
@@ -566,12 +567,8 @@ export default function SaleDetailPage() {
                                         <tr key={item.id} className="hover:bg-gray-50/50 transition-colors">
                                             <td className="p-4">
                                                 <div className="flex items-center space-x-3">
-                                                    <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center">
-                                                        {item.product?.image_url ? (
-                                                            <img src={item.product.image_url} alt={item.product.name} className="w-full h-full object-cover rounded-xl" />
-                                                        ) : (
-                                                            <Package className="w-4 h-4 text-gray-200" />
-                                                        )}
+                                                    <div className="w-10 h-10 bg-gray-50 rounded-xl relative overflow-hidden flex items-center justify-center">
+                                                        <ProductImage src={item.product?.image_url} alt={item.product?.name ?? ''} fallbackClassName="w-full h-full flex items-center justify-center" />
                                                     </div>
                                                     <span className="text-sm font-black text-gray-900">{item.product?.name || 'Unknown'}</span>
                                                 </div>

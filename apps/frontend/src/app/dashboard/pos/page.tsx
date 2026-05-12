@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { ShoppingCart, Search, Package, Trash2, Plus, Minus, CreditCard, ChevronRight, Store, X, Banknote, CheckCircle, AlertCircle, XCircle, Printer, Scan } from 'lucide-react';
 import { api } from '../../../lib/api';
 import { printPOSReceipt } from '../../../lib/pos-receipt-printer';
+import ProductImage from '../../../components/ProductImage';
 
 type Notification = { id: string; type: 'success' | 'error' | 'info'; message: string };
 
@@ -329,12 +330,8 @@ export default function POSPage() {
                                     onClick={() => addToCart(product)}
                                     className="bg-white p-4 rounded-3xl shadow-sm border border-transparent hover:border-blue-500/20 hover:shadow-xl hover:shadow-blue-500/5 cursor-pointer transition-all group flex flex-col items-center text-center space-y-3"
                                 >
-                                    <div className="w-full aspect-square bg-gray-50 rounded-2xl flex items-center justify-center overflow-hidden">
-                                        {product.image_url ? (
-                                            <img src={product.image_url} alt={product.name} className="w-full h-full object-cover transition-transform group-hover:scale-110" />
-                                        ) : (
-                                            <Package className="w-8 h-8 text-gray-200" />
-                                        )}
+                                    <div className="w-full aspect-square bg-gray-50 rounded-2xl relative overflow-hidden">
+                                        <ProductImage src={product.image_url} alt={product.name} className="transition-transform group-hover:scale-110" />
                                     </div>
                                     <div className="w-full">
                                         <h3 className="text-sm font-black tracking-tight text-gray-900 truncate">{product.name}</h3>
@@ -377,12 +374,8 @@ export default function POSPage() {
                         cart.map((item) => (
                             <div key={item.id} className="bg-gray-50/50 p-4 rounded-2xl group border border-transparent hover:border-blue-500/10 hover:bg-white hover:shadow-lg hover:shadow-blue-500/5 transition-all space-y-3">
                                 <div className="flex items-center space-x-4">
-                                    <div className="w-12 h-12 bg-white rounded-xl flex-shrink-0 flex items-center justify-center overflow-hidden border border-gray-100">
-                                        {item.image_url ? (
-                                            <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
-                                        ) : (
-                                            <Package className="w-5 h-5 text-gray-200" />
-                                        )}
+                                    <div className="w-12 h-12 bg-white rounded-xl flex-shrink-0 relative overflow-hidden border border-gray-100">
+                                        <ProductImage src={item.image_url} alt={item.name} fallbackClassName="w-full h-full flex items-center justify-center" />
                                     </div>
                                     <div className="flex-1">
                                         <h4 className="text-sm font-black tracking-tight text-gray-900 leading-tight">{item.name}</h4>
