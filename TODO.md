@@ -10,6 +10,7 @@ Track all work here. Check off items as they're completed. Add new items as they
 - [ ] Remove `.env` from git history and rotate all exposed secrets (SUPABASE_SERVICE_ROLE_KEY, payment credentials)
 - [x] Ensure `.env` is in `.gitignore` and never committed again
 - [x] Add `helmet` middleware to NestJS app (CSP, HSTS, X-Frame-Options, etc.)
+- [x] Add `helmet` middleware to NestJS app (CSP, HSTS, X-Frame-Options, etc.) — done 2026-05-12
 - [ ] Implement CSRF protection (`@nestjs/csrf` or double-submit cookie pattern)
 - [x] Deploy rate limiting — Upstash Redis is wired in `.env.example` but not used in code — done 2026-05-12
 - [ ] Add input sanitization (beyond class-validator) to prevent XSS at API boundary
@@ -178,3 +179,4 @@ Track all work here. Check off items as they're completed. Add new items as they
 - [x] Add input sanitization — global `SanitizePipe` strips HTML tags from all string request body fields; 5 unit tests — done 2026-05-12
 - [x] Add Swagger/OpenAPI docs — `@nestjs/swagger` wired in main.ts; all 26 controllers tagged with @ApiTags + @ApiBearerAuth; UI at /api/docs — done 2026-05-12
 - [x] Add request ID header — `RequestIdMiddleware` propagates or generates UUID per request via x-request-id; exposed in CORS headers — done 2026-05-12
+- [x] Add helmet middleware — `app.use(helmet())` in main.ts sets CSP, HSTS, X-Frame-Options, X-Content-Type-Options, and other security headers — done 2026-05-12
