@@ -6,7 +6,10 @@ import {
     ListAdminTenantsQueryDto,
     UpdateAdminTenantSubscriptionDto,
 } from './admin-tenants.dto';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 
+@ApiTags('Admin Tenants')
+@ApiBearerAuth()
 @Controller('admin/tenants')
 @UseGuards(JwtAuthGuard, PlatformAdminGuard)
 export class AdminTenantsController {

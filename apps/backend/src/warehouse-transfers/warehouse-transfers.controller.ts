@@ -4,7 +4,10 @@ import { TenantInterceptor } from '../database/tenant.interceptor';
 import { Tenant, TenantContext } from '../database/tenant.decorator';
 import { CreateWarehouseTransferDto, ListWarehouseTransfersQueryDto, ReceiveWarehouseTransferDto } from './warehouse-transfer.dto';
 import { WarehouseTransfersService } from './warehouse-transfers.service';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 
+@ApiTags('Warehouse Transfers')
+@ApiBearerAuth()
 @Controller('warehouse-transfers')
 @UseGuards(JwtAuthGuard)
 @UseInterceptors(TenantInterceptor)

@@ -22,7 +22,9 @@ import {
     CreateCheckoutSessionDto,
     ManualBillingWebhookDto,
 } from './billing.dto';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 
+@ApiTags('Billing')
 @Controller('billing')
 export class BillingController {
     constructor(private readonly billingService: BillingService) {}

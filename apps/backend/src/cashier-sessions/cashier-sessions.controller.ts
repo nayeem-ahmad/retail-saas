@@ -5,7 +5,10 @@ import { CloseSessionDto } from './dto/close-session.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { TenantInterceptor } from '../database/tenant.interceptor';
 import { Tenant, TenantContext } from '../database/tenant.decorator';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 
+@ApiTags('Cashier Sessions')
+@ApiBearerAuth()
 @Controller('cashier-sessions')
 @UseGuards(JwtAuthGuard)
 @UseInterceptors(TenantInterceptor)

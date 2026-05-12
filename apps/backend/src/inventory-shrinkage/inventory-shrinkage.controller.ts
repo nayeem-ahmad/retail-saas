@@ -4,7 +4,10 @@ import { TenantInterceptor } from '../database/tenant.interceptor';
 import { Tenant, TenantContext } from '../database/tenant.decorator';
 import { CreateInventoryShrinkageDto } from './inventory-shrinkage.dto';
 import { InventoryShrinkageService } from './inventory-shrinkage.service';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 
+@ApiTags('Inventory Shrinkage')
+@ApiBearerAuth()
 @Controller('inventory-shrinkage')
 @UseGuards(JwtAuthGuard)
 @UseInterceptors(TenantInterceptor)

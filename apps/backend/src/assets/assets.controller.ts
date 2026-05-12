@@ -11,7 +11,10 @@ import { AssetsService } from './assets.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { TenantInterceptor } from '../database/tenant.interceptor';
 import { Tenant, TenantContext } from '../database/tenant.decorator';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 
+@ApiTags('Assets')
+@ApiBearerAuth()
 @Controller('assets')
 @UseGuards(JwtAuthGuard)
 @UseInterceptors(TenantInterceptor)
