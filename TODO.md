@@ -65,7 +65,7 @@ Track all work here. Check off items as they're completed. Add new items as they
 - [ ] Add API versioning (`/api/v1/`) before any external integrations are built
 - [ ] Standardize response envelope (`{ data, meta, error }`) across all endpoints
 - [ ] Enforce pagination on all list endpoints (unbounded queries will kill DB under load)
-- [ ] Add Swagger/OpenAPI docs via `@nestjs/swagger`
+- [x] Add Swagger/OpenAPI docs via `@nestjs/swagger`
 - [ ] Add request ID header for distributed tracing
 
 ### Data & Compliance
