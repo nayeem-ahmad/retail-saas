@@ -82,7 +82,7 @@ Track all work here. Check off items as they're completed. Add new items as they
 - [ ] Add E2E tests for critical paths: signup → onboarding → POS sale → billing
 - [ ] Add integration tests for payment webhook handlers
 - [ ] Add load tests for POS endpoint (peak: multiple cashiers × multiple tenants)
-- [ ] Verify GitHub Actions CI actually runs tests on every push
+- [x] Verify GitHub Actions CI actually runs tests on every push — CI now triggers on push/PR to main and dev
 
 ---
 
@@ -139,7 +139,7 @@ Track all work here. Check off items as they're completed. Add new items as they
 - [ ] Review DB indexes after first real load (`pg_stat_user_indexes`)
 - [ ] Configure Render auto-scaling or upgrade to a plan that supports it
 - [ ] Disaster recovery drill — practice restoring from backup
-- [ ] Add dependency vulnerability scanning to CI (`npm audit` or Dependabot)
+- [x] Add dependency vulnerability scanning to CI (`npm audit` or Dependabot)
 - [ ] Establish secret rotation schedule (quarterly minimum)
 
 ### Mobile App
