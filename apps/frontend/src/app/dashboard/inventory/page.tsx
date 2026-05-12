@@ -8,6 +8,7 @@ import AddProductModal from './AddProductModal';
 import { createColumnHelper, type ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table';
 import CreatePurchaseModal from '../purchases/CreatePurchaseModal';
+import ProductImage from '@/components/ProductImage';
 
 interface Product {
     id: string;
@@ -134,9 +135,9 @@ export default function InventoryPage() {
                     const product = info.row.original;
                     return (
                         <div className="flex items-center space-x-3">
-                            <div className="w-9 h-9 rounded-xl bg-gray-100 overflow-hidden flex items-center justify-center text-[10px] font-black text-gray-500 uppercase">
+                            <div className="w-9 h-9 rounded-xl bg-gray-100 relative overflow-hidden flex items-center justify-center text-[10px] font-black text-gray-500 uppercase">
                                 {product.image_url ? (
-                                    <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
+                                    <ProductImage src={product.image_url} alt={product.name} fallbackClassName="w-full h-full flex items-center justify-center" />
                                 ) : (
                                     product.name.slice(0, 2)
                                 )}

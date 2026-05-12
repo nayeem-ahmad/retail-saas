@@ -157,7 +157,8 @@ export default function AddProductModal({ isOpen, onClose, mode = 'create', init
                             <div className="relative group">
                                 <div className="w-24 h-24 bg-gray-100 rounded-2xl border-2 border-dashed border-gray-200 flex items-center justify-center overflow-hidden transition-all group-hover:border-blue-400">
                                     {formData.image_url ? (
-                                        <img src={formData.image_url} alt="Preview" className="w-full h-full object-cover" />
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                        <img src={formData.image_url} alt="Preview" className="w-full h-full object-cover" loading="lazy" />
                                     ) : (
                                         <div className="text-center">
                                             <Camera className="w-6 h-6 text-gray-400 mx-auto" />

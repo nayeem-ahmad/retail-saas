@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { api } from '../../../../lib/api';
 import Link from 'next/link';
 import { ArrowLeft, User, Phone, Mail, ShoppingBag, CreditCard, MapPin, Building2, FolderTree, Map, BarChart3 } from 'lucide-react';
+import Image from 'next/image';
 
 export default function CustomerProfile() {
     const { id } = useParams();
@@ -55,9 +56,9 @@ export default function CustomerProfile() {
 
             {/* Profile Header */}
             <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 flex items-start space-x-6">
-                <div className="w-20 h-20 bg-blue-600 rounded-2xl shadow-xl shadow-blue-500/20 flex items-center justify-center text-white font-black text-3xl uppercase overflow-hidden">
+                <div className="w-20 h-20 bg-blue-600 rounded-2xl shadow-xl shadow-blue-500/20 flex items-center justify-center text-white font-black text-3xl uppercase relative overflow-hidden">
                     {customer.profile_pic_url
-                        ? <img src={customer.profile_pic_url} alt={customer.name} className="w-full h-full object-cover" />
+                        ? <Image src={customer.profile_pic_url} alt={customer.name} fill className="object-cover" sizes="80px" />
                         : customer.name.substring(0,2)}
                 </div>
                 <div className="flex-1">

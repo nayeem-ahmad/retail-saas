@@ -118,6 +118,8 @@ Track all work here. Check off items as they're completed. Add new items as they
 - [ ] Run `EXPLAIN ANALYZE` on the 10 most frequent queries
 - [x] Add DB query timeout to prevent runaway queries
 - [ ] Enable Next.js Image optimization for product images
+- [ ] Add DB query timeout to prevent runaway queries
+- [x] Enable Next.js Image optimization for product images
 
 ---
 
@@ -170,3 +172,4 @@ Track all work here. Check off items as they're completed. Add new items as they
 - [x] Audit all endpoints for missing auth guards — all 26 controllers verified; no unguarded mutations found; added BILLING_WEBHOOK_SECRET to .env.example — done 2026-05-12
 - [x] Deploy rate limiting — `@nestjs/throttler` global guard (300 req/min default); auth endpoints capped at 10 req/min; billing checkout capped at 20 req/min — done 2026-05-12
 - [x] Add input sanitization — global `SanitizePipe` strips HTML tags from all string request body fields; 5 unit tests — done 2026-05-12
+- [x] Enable Next.js Image optimization — ProductImage component with fill+error fallback; remotePatterns allow all HTTPS; avif/webp formats; POS, Inventory, Sales, Customer pages updated — done 2026-05-12
