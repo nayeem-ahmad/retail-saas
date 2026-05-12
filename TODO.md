@@ -69,6 +69,7 @@ Track all work here. Check off items as they're completed. Add new items as they
 - [ ] Enforce pagination on all list endpoints (unbounded queries will kill DB under load)
 - [ ] Add Swagger/OpenAPI docs via `@nestjs/swagger`
 - [x] Add request ID header for distributed tracing
+- [x] Add request ID header for distributed tracing — done 2026-05-12
 
 ### Data & Compliance
 - [ ] Implement soft deletes — current hard deletes break accounting record integrity
@@ -170,3 +171,4 @@ Track all work here. Check off items as they're completed. Add new items as they
 - [x] Audit all endpoints for missing auth guards — all 26 controllers verified; no unguarded mutations found; added BILLING_WEBHOOK_SECRET to .env.example — done 2026-05-12
 - [x] Deploy rate limiting — `@nestjs/throttler` global guard (300 req/min default); auth endpoints capped at 10 req/min; billing checkout capped at 20 req/min — done 2026-05-12
 - [x] Add input sanitization — global `SanitizePipe` strips HTML tags from all string request body fields; 5 unit tests — done 2026-05-12
+- [x] Add request ID header — `RequestIdMiddleware` propagates or generates UUID per request via x-request-id; exposed in CORS headers — done 2026-05-12
