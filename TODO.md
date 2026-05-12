@@ -110,6 +110,9 @@ Track all work here. Check off items as they're completed. Add new items as they
 - [ ] Barcode scanning support in POS (hardware scanner input via keyboard wedge)
 - [x] Stockout guard — prevent selling items with zero stock — already enforced via applyInventoryMovement() in database/inventory.utils.ts:179
 - [x] Dashboard KPI widgets (revenue today, low stock count, pending orders) — low stock count widget added; revenue covered by Financial Snapshot; active orders shown — done 2026-05-12
+- [x] Barcode scanning support in POS (hardware scanner input via keyboard wedge)
+- [ ] Stockout guard — prevent selling items with zero stock
+- [ ] Dashboard KPI widgets (revenue today, low stock count, pending orders)
 - [x] Proper 404 and error pages in frontend
 
 ### Performance
@@ -170,3 +173,4 @@ Track all work here. Check off items as they're completed. Add new items as they
 - [x] Audit all endpoints for missing auth guards — all 26 controllers verified; no unguarded mutations found; added BILLING_WEBHOOK_SECRET to .env.example — done 2026-05-12
 - [x] Deploy rate limiting — `@nestjs/throttler` global guard (300 req/min default); auth endpoints capped at 10 req/min; billing checkout capped at 20 req/min — done 2026-05-12
 - [x] Add input sanitization — global `SanitizePipe` strips HTML tags from all string request body fields; 5 unit tests — done 2026-05-12
+- [x] Barcode scanning support in POS — keyboard-wedge listener (<50ms/char + Enter) matches by SKU, shows scan confirmation badge — done 2026-05-12
