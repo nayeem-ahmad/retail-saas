@@ -3,6 +3,7 @@ import { DatabaseService } from '../database/database.service';
 import { JwtService } from '@nestjs/jwt';
 import { bootstrapDefaultAccountingForTenant } from '@retail-saas/database';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 import { SignupDto, LoginDto } from './auth.dto';
 import { isPlatformAdminEmail } from './platform-admin.util';
 import { ROLE_DEFAULT_PERMISSIONS, UserRole } from '@retail-saas/shared-types';
@@ -64,7 +65,14 @@ export class AuthService {
             throw new UnauthorizedException('Invalid credentials');
         }
 
-        return this.generateAuthResponse(user.id);
+        return this.generateAuthResponse(user.id, true);
+    }
+
+    async logout(rawToken: string) {
+        if (!rawToken) return { success: true };
+        const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+        await this.db.refreshToken.deleteMany({ where: { token_hash: tokenHash } });
+        return { success: true };
     }
 
     async getPlans() {
@@ -83,7 +91,37 @@ export class AuthService {
         }));
     }
 
-    private async generateAuthResponse(userId: string) {
+    private static readonly REFRESH_TOKEN_TTL_DAYS = 7;
+
+    private async issueRefreshToken(userId: string): Promise<string> {
+        const rawToken = crypto.randomBytes(32).toString('hex');
+        const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+        const expiresAt = new Date(
+            Date.now() + AuthService.REFRESH_TOKEN_TTL_DAYS * 24 * 60 * 60 * 1000,
+        );
+        await this.db.refreshToken.create({
+            data: { user_id: userId, token_hash: tokenHash, expires_at: expiresAt },
+        });
+        return rawToken;
+    }
+
+    async refreshTokens(rawToken: string) {
+        const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+        const stored = await this.db.refreshToken.findUnique({ where: { token_hash: tokenHash } });
+
+        if (!stored || stored.expires_at < new Date()) {
+            if (stored) {
+                await this.db.refreshToken.delete({ where: { id: stored.id } });
+            }
+            throw new UnauthorizedException('Invalid or expired refresh token');
+        }
+
+        // Rotate: delete the consumed token before issuing a new pair
+        await this.db.refreshToken.delete({ where: { id: stored.id } });
+        return this.generateAuthResponse(stored.user_id, true);
+    }
+
+    private async generateAuthResponse(userId: string, withRefreshToken = false) {
         const user = await this.db.user.findUnique({
             where: { id: userId },
             include: {
@@ -110,8 +148,10 @@ export class AuthService {
 
         const payload = { sub: user.id, email: user.email };
         const isPlatformAdmin = isPlatformAdminEmail(user.email);
+        const refreshToken = withRefreshToken ? await this.issueRefreshToken(userId) : undefined;
         return {
-            access_token: this.jwtService.sign(payload),
+            access_token: this.jwtService.sign(payload, { expiresIn: '15m' }),
+            ...(refreshToken && { refresh_token: refreshToken }),
             is_platform_admin: isPlatformAdmin,
             user: {
                 id: user.id,
