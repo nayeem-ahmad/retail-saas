@@ -107,7 +107,7 @@ Track all work here. Check off items as they're completed. Add new items as they
 - [ ] Bulk product import via CSV/Excel
 - [ ] Barcode scanning support in POS (hardware scanner input via keyboard wedge)
 - [x] Stockout guard — prevent selling items with zero stock — already enforced via applyInventoryMovement() in database/inventory.utils.ts:179
-- [ ] Dashboard KPI widgets (revenue today, low stock count, pending orders)
+- [x] Dashboard KPI widgets (revenue today, low stock count, pending orders) — low stock count widget added; revenue covered by Financial Snapshot; active orders shown — done 2026-05-12
 - [x] Proper 404 and error pages in frontend
 
 ### Performance

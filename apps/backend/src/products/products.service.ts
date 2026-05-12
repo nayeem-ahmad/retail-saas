@@ -120,6 +120,22 @@ export class ProductsService {
         });
     }
 
+    async getStats(tenantId: string) {
+        const result = await this.db.$queryRaw<[{ low_stock_count: bigint }]>`
+            SELECT COUNT(*) AS low_stock_count
+            FROM (
+                SELECT p.id
+                FROM "Product" p
+                LEFT JOIN "ProductStock" ps ON ps.product_id = p.id
+                WHERE p.tenant_id = ${tenantId}
+                  AND p.reorder_level IS NOT NULL
+                GROUP BY p.id, p.reorder_level
+                HAVING COALESCE(SUM(ps.quantity), 0) <= p.reorder_level
+            ) sub
+        `;
+        return { lowStockCount: Number(result[0].low_stock_count) };
+    }
+
     private async validateCategorySelection(db: any, tenantId: string, groupId?: string, subgroupId?: string) {
         let resolvedGroupId = groupId;
         let resolvedSubgroupId = subgroupId;
