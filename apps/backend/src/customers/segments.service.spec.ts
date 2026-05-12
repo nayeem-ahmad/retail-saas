@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { getLoggerToken } from 'nestjs-pino';
 import { SegmentsService, SEGMENT_THRESHOLDS } from './segments.service';
 import { DatabaseService } from '../database/database.service';
 
@@ -19,10 +20,13 @@ describe('SegmentsService', () => {
             },
         };
 
+        const mockLogger = { debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() };
+
         const module: TestingModule = await Test.createTestingModule({
             providers: [
                 SegmentsService,
                 { provide: DatabaseService, useValue: db },
+                { provide: getLoggerToken(SegmentsService.name), useValue: mockLogger },
             ],
         }).compile();
 

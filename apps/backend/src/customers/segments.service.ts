@@ -1,5 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { DatabaseService } from '../database/database.service';
 
 export const SEGMENT_THRESHOLDS = {
@@ -12,9 +13,10 @@ export type SegmentCategory = 'New' | 'Regular' | 'At-Risk' | 'VIP';
 
 @Injectable()
 export class SegmentsService {
-    private readonly logger = new Logger(SegmentsService.name);
-
-    constructor(private db: DatabaseService) {}
+    constructor(
+        private db: DatabaseService,
+        @InjectPinoLogger(SegmentsService.name) private readonly logger: PinoLogger,
+    ) {}
 
     classifyCustomer(params: {
         totalSpent: number;
@@ -85,14 +87,14 @@ export class SegmentsService {
             }
         }
 
-        this.logger.debug(`Segmentation complete: ${updated}/${customers.length} customers updated`);
+        this.logger.debug({ updated, total: customers.length }, 'Segmentation complete');
         return { updated, total: customers.length };
     }
 
     @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
     async handleCron() {
         this.logger.debug('Running Customer Segmentation evaluation (all tenants)');
-        await this.runForTenant(null);
-        this.logger.debug('Segmentation evaluation complete');
+        const result = await this.runForTenant(null);
+        this.logger.info(result, 'Segmentation evaluation complete');
     }
 }

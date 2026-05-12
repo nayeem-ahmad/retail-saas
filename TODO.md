@@ -181,3 +181,4 @@ Track all work here. Check off items as they're completed. Add new items as they
 - [x] Add request ID header — `RequestIdMiddleware` propagates or generates UUID per request via x-request-id; exposed in CORS headers — done 2026-05-12
 - [x] Add helmet middleware — `app.use(helmet())` in main.ts sets CSP, HSTS, X-Frame-Options, X-Content-Type-Options, and other security headers — done 2026-05-12
 - [x] Account lockout after N failed login attempts — 5 attempts triggers 15-min lock; fields on User model; tests added — done 2026-05-12
+- [x] Add structured logging (Pino) — nestjs-pino wired globally; pino-http request logs; SegmentsService migrated to PinoLogger — done 2026-05-12

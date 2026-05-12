@@ -2,6 +2,8 @@ import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { RequestIdMiddleware } from './common/request-id.middleware';
+import { Module } from '@nestjs/common';
+import { LoggerModule } from 'nestjs-pino';
 import { DatabaseModule } from './database/database.module';
 import { AuthModule } from './auth/auth.module';
 import { ProductsModule } from './products/products.module';
@@ -41,6 +43,14 @@ import { HealthModule } from './health/health.module';
                 limit: 300,
             },
         ]),
+        LoggerModule.forRoot({
+            pinoHttp: {
+                level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
+                transport: process.env.NODE_ENV !== 'production'
+                    ? { target: 'pino-pretty', options: { singleLine: true } }
+                    : undefined,
+                redact: ['req.headers.authorization'],
+        }),
         DatabaseModule,
         AuthModule,
         ProductsModule,
