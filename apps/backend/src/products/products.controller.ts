@@ -41,6 +41,11 @@ export class ProductsController {
         });
     }
 
+    @Get('stats')
+    getStats(@Tenant() tenant: TenantContext) {
+        return this.productsService.getStats(tenant.tenantId);
+    }
+
     @Get(':id')
     findOne(@Tenant() tenant: TenantContext, @Param('id') id: string) {
         return this.productsService.findOne(tenant.tenantId, id);

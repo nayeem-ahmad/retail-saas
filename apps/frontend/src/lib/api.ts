@@ -53,6 +53,7 @@ export const api = {
         if (params?.uncategorized) query.set('uncategorized', 'true');
         return fetchWithAuth(`/products${query.toString() ? `?${query.toString()}` : ''}`);
     },
+    getProductStats: (): Promise<{ lowStockCount: number }> => fetchWithAuth('/products/stats'),
     createProduct: (data: any) => fetchWithAuth('/products', {
         method: 'POST',
         body: JSON.stringify(data),

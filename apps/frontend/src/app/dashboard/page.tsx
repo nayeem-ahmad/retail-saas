@@ -80,15 +80,17 @@ export default function DashboardPage() {
     const [isFinancialLoading, setIsFinancialLoading] = useState(true);
     const [financialError, setFinancialError] = useState('');
     const [financialTrendError, setFinancialTrendError] = useState('');
+    const [lowStockCount, setLowStockCount] = useState<number | null>(null);
 
     useEffect(() => {
         const fetchData = async () => {
-            const [meRes, productsRes, salesRes, financialRes, trendRes] = await Promise.allSettled([
+            const [meRes, productsRes, salesRes, financialRes, trendRes, statsRes] = await Promise.allSettled([
                 api.getMe(),
                 api.getProducts(),
                 api.getSales(),
                 api.getFinancialKpis(),
                 api.getFinancialTrends(),
+                api.getProductStats(),
             ]);
 
             if (meRes.status === 'fulfilled') {
@@ -113,6 +115,10 @@ export default function DashboardPage() {
                 setFinancialTrendSnapshot(trendRes.value);
             } else {
                 setFinancialTrendError(trendRes.reason instanceof Error ? trendRes.reason.message : 'Financial trends are unavailable right now.');
+            }
+
+            if (statsRes.status === 'fulfilled') {
+                setLowStockCount(statsRes.value.lowStockCount);
             }
 
             if (meRes.status === 'rejected' || productsRes.status === 'rejected' || salesRes.status === 'rejected') {
@@ -198,7 +204,7 @@ export default function DashboardPage() {
                 </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
                 <StatCard
                     title="Total Sales"
                     value={`${totalSalesAmount.toLocaleString()}`}
@@ -216,6 +222,12 @@ export default function DashboardPage() {
                     value={products.length.toString()}
                     trend="In inventory"
                     isPositive={true}
+                />
+                <StatCard
+                    title="Low Stock Items"
+                    value={lowStockCount === null ? '—' : lowStockCount.toString()}
+                    trend={lowStockCount === null ? 'Loading…' : lowStockCount === 0 ? 'All items sufficiently stocked' : `${lowStockCount} item${lowStockCount !== 1 ? 's' : ''} at or below reorder level`}
+                    isPositive={lowStockCount !== null && lowStockCount === 0}
                 />
             </div>
 
