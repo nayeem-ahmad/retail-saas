@@ -4,7 +4,10 @@ import { TenantInterceptor } from '../database/tenant.interceptor';
 import { Tenant, TenantContext } from '../database/tenant.decorator';
 import { CreatePurchaseDto } from './purchase.dto';
 import { PurchasesService } from './purchases.service';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 
+@ApiTags('Purchases')
+@ApiBearerAuth()
 @Controller('purchases')
 @UseGuards(JwtAuthGuard)
 @UseInterceptors(TenantInterceptor)

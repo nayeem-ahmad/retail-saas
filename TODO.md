@@ -67,7 +67,7 @@ Track all work here. Check off items as they're completed. Add new items as they
 - [ ] Add API versioning (`/api/v1/`) before any external integrations are built
 - [ ] Standardize response envelope (`{ data, meta, error }`) across all endpoints
 - [ ] Enforce pagination on all list endpoints (unbounded queries will kill DB under load)
-- [ ] Add Swagger/OpenAPI docs via `@nestjs/swagger`
+- [x] Add Swagger/OpenAPI docs via `@nestjs/swagger` — done 2026-05-12
 - [x] Add request ID header for distributed tracing
 
 ### Data & Compliance
@@ -170,3 +170,4 @@ Track all work here. Check off items as they're completed. Add new items as they
 - [x] Audit all endpoints for missing auth guards — all 26 controllers verified; no unguarded mutations found; added BILLING_WEBHOOK_SECRET to .env.example — done 2026-05-12
 - [x] Deploy rate limiting — `@nestjs/throttler` global guard (300 req/min default); auth endpoints capped at 10 req/min; billing checkout capped at 20 req/min — done 2026-05-12
 - [x] Add input sanitization — global `SanitizePipe` strips HTML tags from all string request body fields; 5 unit tests — done 2026-05-12
+- [x] Add Swagger/OpenAPI docs — `@nestjs/swagger` wired in main.ts; all 26 controllers tagged with @ApiTags + @ApiBearerAuth; UI at /api/docs — done 2026-05-12

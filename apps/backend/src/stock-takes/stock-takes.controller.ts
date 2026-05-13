@@ -4,7 +4,10 @@ import { TenantInterceptor } from '../database/tenant.interceptor';
 import { Tenant, TenantContext } from '../database/tenant.decorator';
 import { CreateStockTakeSessionDto, UpdateStockTakeCountsDto, UpdateStockTakeStatusDto } from './stock-takes.dto';
 import { StockTakesService } from './stock-takes.service';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 
+@ApiTags('Stock Takes')
+@ApiBearerAuth()
 @Controller('stock-takes')
 @UseGuards(JwtAuthGuard)
 @UseInterceptors(TenantInterceptor)

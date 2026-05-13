@@ -4,7 +4,10 @@ import { TenantInterceptor } from '../database/tenant.interceptor';
 import { Tenant, TenantContext } from '../database/tenant.decorator';
 import { CreateProductGroupDto, UpdateProductGroupDto } from './product-group.dto';
 import { ProductGroupsService } from './product-groups.service';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 
+@ApiTags('Product Groups')
+@ApiBearerAuth()
 @Controller('product-groups')
 @UseGuards(JwtAuthGuard)
 @UseInterceptors(TenantInterceptor)
