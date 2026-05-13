@@ -106,7 +106,7 @@ Track all work here. Check off items as they're completed. Add new items as they
 - [ ] Customer-facing invoice/receipt email after a sale
 - [ ] Bulk product import via CSV/Excel
 - [ ] Barcode scanning support in POS (hardware scanner input via keyboard wedge)
-- [ ] Stockout guard — prevent selling items with zero stock
+- [x] Stockout guard — prevent selling items with zero stock — already enforced via applyInventoryMovement() in database/inventory.utils.ts:179
 - [ ] Dashboard KPI widgets (revenue today, low stock count, pending orders)
 - [x] Proper 404 and error pages in frontend
 
@@ -114,7 +114,7 @@ Track all work here. Check off items as they're completed. Add new items as they
 - [ ] Implement Redis caching for hot data (product catalog, active pricing) — Redis is provisioned but unused
 - [ ] Switch large list endpoints to cursor-based pagination
 - [ ] Run `EXPLAIN ANALYZE` on the 10 most frequent queries
-- [ ] Add DB query timeout to prevent runaway queries
+- [x] Add DB query timeout to prevent runaway queries
 - [ ] Enable Next.js Image optimization for product images
 
 ---
