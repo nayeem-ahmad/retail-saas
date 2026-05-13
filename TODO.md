@@ -13,7 +13,7 @@ Track all work here. Check off items as they're completed. Add new items as they
 - [ ] Implement CSRF protection (`@nestjs/csrf` or double-submit cookie pattern)
 - [ ] Deploy rate limiting — Upstash Redis is wired in `.env.example` but not used in code
 - [ ] Add input sanitization (beyond class-validator) to prevent XSS at API boundary
-- [ ] Audit all endpoints for missing auth guards
+- [x] Audit all endpoints for missing auth guards — done 2026-05-12
 - [ ] Implement audit logging table (who changed what, when — needed for billing disputes)
 
 ### Email & Notifications (nothing exists)
@@ -165,3 +165,4 @@ Track all work here. Check off items as they're completed. Add new items as they
 ## COMPLETED
 
 - [x] Ensure `.env` is in `.gitignore` — confirmed present on line 32 of `.gitignore` — done 2026-05-09
+- [x] Audit all endpoints for missing auth guards — all 26 controllers verified; no unguarded mutations found; added BILLING_WEBHOOK_SECRET to .env.example — done 2026-05-12
