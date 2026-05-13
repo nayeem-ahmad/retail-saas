@@ -78,7 +78,7 @@ Track all work here. Check off items as they're completed. Add new items as they
 
 ### Testing
 - [ ] Verify 80% coverage threshold is actually met (no coverage reports in repo)
-- [ ] Fix 2 failing tests in warranty-claims service (TypeScript error: `warrantyClaim` model not recognized in transaction context)
+- [x] Fix 2 failing tests in warranty-claims service (TypeScript error: `warrantyClaim` model not recognized in transaction context) — regenerated Prisma client and added warranty-claims.service.spec.ts
 - [ ] Add E2E tests for critical paths: signup → onboarding → POS sale → billing
 - [ ] Add integration tests for payment webhook handlers
 - [ ] Add load tests for POS endpoint (peak: multiple cashiers × multiple tenants)
