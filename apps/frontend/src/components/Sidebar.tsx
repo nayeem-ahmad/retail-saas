@@ -32,6 +32,8 @@ import {
     CreditCard,
     Crown,
     BarChart3,
+    Settings2,
+    GitMerge,
     type LucideIcon,
 } from 'lucide-react';
 
@@ -97,6 +99,7 @@ const MODULES: NavModule[] = [
             { href: '/dashboard/accounting/vouchers', icon: FileText, label: 'Voucher Entry' },
             { href: '/dashboard/accounting/journal', icon: ClipboardList, label: 'Journal' },
             { href: '/dashboard/accounting/ledger', icon: ClipboardList, label: 'Ledger' },
+            { href: '/dashboard/accounting/reconciliation', icon: GitMerge, label: 'Posting Exceptions' },
         ],
     },
     {
@@ -153,6 +156,7 @@ const MODULES: NavModule[] = [
             { href: '/dashboard/inventory/settings', icon: Settings, label: 'Inventory Settings' },
             { href: '#accounting-setup', icon: Calculator, label: 'Accounting Setup', section: true },
             { href: '/dashboard/accounting/coa', icon: FolderTree, label: 'Chart of Accounts' },
+            { href: '/dashboard/accounting/posting-rules', icon: Settings2, label: 'Posting Rules' },
         ],
     },
 ];
