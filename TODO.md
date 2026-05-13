@@ -9,7 +9,7 @@ Track all work here. Check off items as they're completed. Add new items as they
 ### Security
 - [ ] Remove `.env` from git history and rotate all exposed secrets (SUPABASE_SERVICE_ROLE_KEY, payment credentials)
 - [x] Ensure `.env` is in `.gitignore` and never committed again
-- [ ] Add `helmet` middleware to NestJS app (CSP, HSTS, X-Frame-Options, etc.)
+- [x] Add `helmet` middleware to NestJS app (CSP, HSTS, X-Frame-Options, etc.)
 - [ ] Implement CSRF protection (`@nestjs/csrf` or double-submit cookie pattern)
 - [ ] Deploy rate limiting — Upstash Redis is wired in `.env.example` but not used in code
 - [ ] Add input sanitization (beyond class-validator) to prevent XSS at API boundary
@@ -30,8 +30,8 @@ Track all work here. Check off items as they're completed. Add new items as they
 - [ ] Set up staging environment (separate from prod)
 - [ ] Configure automated database backups (daily minimum, point-in-time recovery)
 - [ ] Verify PgBouncer connection pooling is correctly configured
-- [ ] Add `/health` endpoint with DB connectivity check for Render's health probe
-- [ ] Implement graceful shutdown in NestJS (SIGTERM → drain → exit)
+- [x] Add `/health` endpoint with DB connectivity check for Render's health probe
+- [x] Implement graceful shutdown in NestJS (SIGTERM → drain → exit)
 - [ ] Write and test production deployment runbook
 
 ### Monitoring & Observability
