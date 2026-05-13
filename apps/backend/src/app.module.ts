@@ -1,4 +1,6 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { RequestIdMiddleware } from './common/request-id.middleware';
 import { DatabaseModule } from './database/database.module';
 import { AuthModule } from './auth/auth.module';
@@ -32,6 +34,13 @@ import { HealthModule } from './health/health.module';
 
 @Module({
     imports: [
+        ThrottlerModule.forRoot([
+            {
+                name: 'default',
+                ttl: 60_000,
+                limit: 300,
+            },
+        ]),
         DatabaseModule,
         AuthModule,
         ProductsModule,
@@ -63,7 +72,12 @@ import { HealthModule } from './health/health.module';
         ScheduleModule.forRoot()
     ],
     controllers: [],
-    providers: [],
+    providers: [
+        {
+            provide: APP_GUARD,
+            useClass: ThrottlerGuard,
+        },
+    ],
 })
 export class AppModule implements NestModule {
     configure(consumer: MiddlewareConsumer) {

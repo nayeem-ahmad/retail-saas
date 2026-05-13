@@ -11,6 +11,7 @@ import {
     UseGuards,
     UseInterceptors,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Tenant, TenantContext } from '../database/tenant.decorator';
 import { TenantInterceptor } from '../database/tenant.interceptor';
@@ -33,6 +34,7 @@ export class BillingController {
         return this.billingService.getSummary(req.user.userId, tenant.tenantId);
     }
 
+    @Throttle({ default: { ttl: 60_000, limit: 20 } })
     @Post('checkout-session')
     @UseGuards(JwtAuthGuard)
     @UseInterceptors(TenantInterceptor)
