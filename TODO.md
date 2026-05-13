@@ -38,7 +38,7 @@ Track all work here. Check off items as they're completed. Add new items as they
 
 ### Monitoring & Observability
 - [ ] Integrate Sentry in backend and frontend
-- [ ] Add structured logging (Winston or Pino) — replace bare Logger.debug calls
+- [x] Add structured logging (Winston or Pino) — replace bare Logger.debug calls
 - [ ] Set up uptime monitoring (BetterStack or similar)
 - [ ] Configure alerts for: error rate spikes, payment webhook failures, DB connection exhaustion
 
@@ -58,10 +58,10 @@ Track all work here. Check off items as they're completed. Add new items as they
 ### Auth & Account Management
 - [ ] Password reset flow (email-based expiring token)
 - [ ] Email verification on signup
-- [ ] Account lockout after N failed login attempts
+- [x] Account lockout after N failed login attempts
 - [ ] Session invalidation on password change
 - [ ] Consider TOTP 2FA for OWNER role
-- [ ] Implement refresh token rotation
+- [x] Implement refresh token rotation
 
 ### API Hardening
 - [ ] Add API versioning (`/api/v1/`) before any external integrations are built
@@ -110,6 +110,9 @@ Track all work here. Check off items as they're completed. Add new items as they
 - [ ] Barcode scanning support in POS (hardware scanner input via keyboard wedge)
 - [x] Stockout guard — prevent selling items with zero stock — already enforced via applyInventoryMovement() in database/inventory.utils.ts:179
 - [x] Dashboard KPI widgets (revenue today, low stock count, pending orders) — low stock count widget added; revenue covered by Financial Snapshot; active orders shown — done 2026-05-12
+- [x] Barcode scanning support in POS (hardware scanner input via keyboard wedge)
+- [ ] Stockout guard — prevent selling items with zero stock
+- [ ] Dashboard KPI widgets (revenue today, low stock count, pending orders)
 - [x] Proper 404 and error pages in frontend
 
 ### Performance
@@ -118,6 +121,8 @@ Track all work here. Check off items as they're completed. Add new items as they
 - [ ] Run `EXPLAIN ANALYZE` on the 10 most frequent queries
 - [x] Add DB query timeout to prevent runaway queries
 - [ ] Enable Next.js Image optimization for product images
+- [ ] Add DB query timeout to prevent runaway queries
+- [x] Enable Next.js Image optimization for product images
 
 ---
 

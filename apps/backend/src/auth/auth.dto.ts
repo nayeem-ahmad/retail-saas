@@ -19,3 +19,7 @@ export class CreateStoreDto {
     address?: string;
     planCode?: 'FREE' | 'BASIC' | 'STANDARD' | 'PREMIUM';
 }
+
+export class RefreshTokenDto {
+    refresh_token: string;
+}

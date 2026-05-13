@@ -17,6 +17,7 @@ describe('AuthService', () => {
         user: {
             findUnique: jest.fn(),
             create: jest.fn(),
+            update: jest.fn(),
         },
         accountGroup: { upsert: jest.fn() },
         accountSubgroup: { upsert: jest.fn() },
@@ -31,6 +32,12 @@ describe('AuthService', () => {
         tenantSubscription: { create: jest.fn() },
         userStoreAccess: { create: jest.fn() },
         userStorePermission: { createMany: jest.fn() },
+        refreshToken: {
+            create: jest.fn(),
+            findUnique: jest.fn(),
+            delete: jest.fn(),
+            deleteMany: jest.fn(),
+        },
         $transaction: jest.fn(),
     };
 
@@ -68,6 +75,11 @@ describe('AuthService', () => {
         db.account.upsert.mockResolvedValue({ id: 'account-1', name: 'Cash in Hand' });
         db.userStoreAccess.create.mockResolvedValue({});
         db.userStorePermission.createMany.mockResolvedValue({ count: 22 });
+        db.user.update.mockResolvedValue({});
+        db.refreshToken.create.mockResolvedValue({});
+        db.refreshToken.findUnique.mockResolvedValue(null);
+        db.refreshToken.delete.mockResolvedValue({});
+        db.refreshToken.deleteMany.mockResolvedValue({ count: 0 });
         jwtService.sign.mockReturnValue('jwt-token');
 
         const module: TestingModule = await Test.createTestingModule({
@@ -195,5 +207,83 @@ describe('AuthService', () => {
         const result = await service.getMe('user-1');
 
         expect(result.is_platform_admin).toBe(true);
+    });
+
+    describe('refresh token rotation', () => {
+        const validStoredToken = {
+            id: 'rt-1',
+            user_id: 'user-1',
+            token_hash: expect.any(String),
+            expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        };
+
+        it('login issues a refresh token alongside the access token', async () => {
+            db.user.findUnique
+                .mockResolvedValueOnce({
+                    id: 'user-1',
+                    email: 'owner@example.com',
+                    passwordHash: 'hashed',
+                    failed_login_attempts: 0,
+                    locked_until: null,
+                })
+                .mockResolvedValueOnce(makeUserWithAccess('store-1', 'tenant-1'));
+            (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+
+            const result = await service.login({ email: 'owner@example.com', password: 'correct' });
+
+            expect(result.access_token).toBe('jwt-token');
+            expect(result.refresh_token).toBeDefined();
+            expect(typeof result.refresh_token).toBe('string');
+            expect(db.refreshToken.create).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    data: expect.objectContaining({ user_id: 'user-1' }),
+                }),
+            );
+        });
+
+        it('refreshTokens rotates token and returns new access token', async () => {
+            const futureExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+            db.refreshToken.findUnique.mockResolvedValueOnce({
+                id: 'rt-1',
+                user_id: 'user-1',
+                expires_at: futureExpiry,
+            });
+            db.user.findUnique.mockResolvedValue(makeUserWithAccess('store-1', 'tenant-1'));
+
+            const result = await service.refreshTokens('some-raw-token');
+
+            expect(result.access_token).toBe('jwt-token');
+            expect(result.refresh_token).toBeDefined();
+            expect(db.refreshToken.delete).toHaveBeenCalledWith({ where: { id: 'rt-1' } });
+            expect(db.refreshToken.create).toHaveBeenCalled();
+        });
+
+        it('refreshTokens rejects an expired token and deletes it', async () => {
+            const pastExpiry = new Date(Date.now() - 1000);
+            db.refreshToken.findUnique.mockResolvedValueOnce({
+                id: 'rt-old',
+                user_id: 'user-1',
+                expires_at: pastExpiry,
+            });
+
+            await expect(service.refreshTokens('expired-token')).rejects.toThrow(UnauthorizedException);
+            expect(db.refreshToken.delete).toHaveBeenCalledWith({ where: { id: 'rt-old' } });
+        });
+
+        it('refreshTokens rejects an unknown token', async () => {
+            db.refreshToken.findUnique.mockResolvedValueOnce(null);
+
+            await expect(service.refreshTokens('unknown-token')).rejects.toThrow(UnauthorizedException);
+            expect(db.refreshToken.delete).not.toHaveBeenCalled();
+        });
+
+        it('logout deletes the refresh token by hash', async () => {
+            const result = await service.logout('some-raw-token');
+
+            expect(result).toEqual({ success: true });
+            expect(db.refreshToken.deleteMany).toHaveBeenCalledWith(
+                expect.objectContaining({ where: expect.objectContaining({ token_hash: expect.any(String) }) }),
+            );
+        });
     });
 });
