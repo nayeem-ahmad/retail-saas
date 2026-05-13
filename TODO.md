@@ -108,7 +108,7 @@ Track all work here. Check off items as they're completed. Add new items as they
 - [ ] Barcode scanning support in POS (hardware scanner input via keyboard wedge)
 - [ ] Stockout guard — prevent selling items with zero stock
 - [ ] Dashboard KPI widgets (revenue today, low stock count, pending orders)
-- [ ] Proper 404 and error pages in frontend
+- [x] Proper 404 and error pages in frontend
 
 ### Performance
 - [ ] Implement Redis caching for hot data (product catalog, active pricing) — Redis is provisioned but unused
