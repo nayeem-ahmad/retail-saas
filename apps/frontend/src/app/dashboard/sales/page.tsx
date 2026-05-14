@@ -6,6 +6,7 @@ import { api } from '../../../lib/api';
 import Link from 'next/link';
 import { createColumnHelper, type ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table';
+import { PostingBadge } from '@/components/PostingBadge';
 
 interface Sale {
     id: string;
@@ -18,6 +19,8 @@ interface Sale {
     payments: { payment_method: string; amount: string }[];
     customer?: { name: string };
     note?: string;
+    posting_status?: string | null;
+    voucher_number?: string | null;
 }
 
 const statusColors: Record<string, string> = {
@@ -149,6 +152,17 @@ export default function SalesPage() {
                     size: 150,
                 },
             ),
+            columnHelper.display({
+                id: 'posting',
+                header: 'Voucher',
+                cell: ({ row }) => (
+                    <PostingBadge
+                        status={row.original.posting_status}
+                        voucherNumber={row.original.voucher_number}
+                    />
+                ),
+                size: 120,
+            }),
             columnHelper.display({
                 id: 'actions',
                 header: 'Actions',

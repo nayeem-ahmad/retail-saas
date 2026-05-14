@@ -7,6 +7,7 @@ import { createColumnHelper, type ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table';
 import { api } from '../../../lib/api';
 import CreatePurchaseReturnModal from './CreatePurchaseReturnModal';
+import { PostingBadge } from '@/components/PostingBadge';
 
 interface PurchaseReturnRecord {
     id: string;
@@ -22,6 +23,8 @@ interface PurchaseReturnRecord {
         purchase_number: string;
     } | null;
     items: Array<{ id: string }>;
+    posting_status?: string | null;
+    voucher_number?: string | null;
 }
 
 const columnHelper = createColumnHelper<PurchaseReturnRecord>();
@@ -118,6 +121,17 @@ export default function PurchaseReturnsPage() {
                 },
                 sortingFn: 'datetime',
                 size: 150,
+            }),
+            columnHelper.display({
+                id: 'posting',
+                header: 'Voucher',
+                cell: ({ row }) => (
+                    <PostingBadge
+                        status={row.original.posting_status}
+                        voucherNumber={row.original.voucher_number}
+                    />
+                ),
+                size: 120,
             }),
             columnHelper.display({
                 id: 'actions',
