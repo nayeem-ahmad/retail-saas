@@ -1,4 +1,6 @@
-import { IsBoolean, IsInt, IsNumber, IsOptional, IsString, IsUUID, Min } from 'class-validator';
+import { IsBoolean, IsIn, IsInt, IsNumber, IsOptional, IsString, IsUUID, Min } from 'class-validator';
+
+const COMPOUND_UNIT_TYPES = ['none', 'ft_in', 'dozen_pcs', 'kg_g', 'lb_oz', 'm_cm'] as const;
 
 export class CreateProductDto {
     @IsString()
@@ -52,6 +54,11 @@ export class CreateProductDto {
     @IsInt()
     @Min(0)
     warrantyDurationDays?: number;
+
+    @IsOptional()
+    @IsString()
+    @IsIn(COMPOUND_UNIT_TYPES)
+    unitType?: string;
 }
 
 export class UpdateProductDto {
@@ -103,4 +110,9 @@ export class UpdateProductDto {
     @IsInt()
     @Min(0)
     warrantyDurationDays?: number;
+
+    @IsOptional()
+    @IsString()
+    @IsIn(COMPOUND_UNIT_TYPES)
+    unitType?: string;
 }

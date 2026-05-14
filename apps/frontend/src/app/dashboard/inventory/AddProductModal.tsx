@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { X, Camera, Upload } from 'lucide-react';
+import { X, Camera } from 'lucide-react';
 import { api } from '../../../lib/api';
+import { COMPOUND_UNIT_DEFS, CompoundUnitType } from '../../../lib/compound-units';
 
 interface AddProductModalProps {
     isOpen: boolean;
@@ -26,6 +27,7 @@ export default function AddProductModal({ isOpen, onClose, mode = 'create', init
         image_url: '',
         groupId: '',
         subgroupId: '',
+        unitType: 'none' as CompoundUnitType,
     });
     const [loading, setLoading] = useState(false);
     const [uploading, setUploading] = useState(false);
@@ -67,6 +69,7 @@ export default function AddProductModal({ isOpen, onClose, mode = 'create', init
                 image_url: initialProduct.image_url || '',
                 groupId: initialProduct.group?.id || '',
                 subgroupId: initialProduct.subgroup?.id || '',
+                unitType: (initialProduct.unit_type as CompoundUnitType) || 'none',
             });
         }
 
@@ -84,6 +87,7 @@ export default function AddProductModal({ isOpen, onClose, mode = 'create', init
                 image_url: '',
                 groupId: '',
                 subgroupId: '',
+                unitType: 'none',
             });
         }
     }, [isOpen, mode, initialProduct]);
@@ -126,6 +130,7 @@ export default function AddProductModal({ isOpen, onClose, mode = 'create', init
                 leadTimeDays: parseOptionalInt(formData.leadTimeDays),
                 groupId: formData.groupId || undefined,
                 subgroupId: formData.subgroupId || undefined,
+                unitType: formData.unitType,
             });
             onClose();
         } catch (error) {
@@ -283,6 +288,19 @@ export default function AddProductModal({ isOpen, onClose, mode = 'create', init
                                     onChange={(e) => setFormData({ ...formData, leadTimeDays: e.target.value })}
                                 />
                             </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 ml-1">Quantity Unit</label>
+                            <select
+                                className="w-full bg-gray-50 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-500/10 transition-all font-medium"
+                                value={formData.unitType}
+                                onChange={(e) => setFormData({ ...formData, unitType: e.target.value as CompoundUnitType })}
+                            >
+                                {(Object.keys(COMPOUND_UNIT_DEFS) as CompoundUnitType[]).map((key) => (
+                                    <option key={key} value={key}>{COMPOUND_UNIT_DEFS[key].label}</option>
+                                ))}
+                            </select>
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">

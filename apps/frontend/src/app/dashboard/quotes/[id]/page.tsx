@@ -176,6 +176,18 @@ export default function QuoteDetailsPage() {
         }
     };
 
+    const handleUpdateStatus = async (newStatus: string) => {
+        setActionLoading(true);
+        try {
+            await api.updateQuotationStatus(id as string, newStatus);
+            await loadQuote();
+        } catch (error: any) {
+            alert('Failed to update status: ' + (error.message || 'Error'));
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
     if (loading) {
         return <div className="p-8 font-bold text-gray-400">Loading quote...</div>;
     }
@@ -263,6 +275,24 @@ export default function QuoteDetailsPage() {
                                 <Trash2 className="w-4 h-4 mr-2" />
                                 Delete
                             </button>
+                            {quote.status === 'DRAFT' && (
+                                <button onClick={() => handleUpdateStatus('SENT')} disabled={actionLoading} className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-2.5 rounded-xl font-bold text-sm flex items-center hover:bg-blue-100 transition-all disabled:opacity-50">
+                                    Mark as Sent
+                                </button>
+                            )}
+                            {quote.status === 'SENT' && (
+                                <>
+                                    <button onClick={() => handleUpdateStatus('ACCEPTED')} disabled={actionLoading} className="bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-2.5 rounded-xl font-bold text-sm flex items-center hover:bg-emerald-100 transition-all disabled:opacity-50">
+                                        Mark Accepted
+                                    </button>
+                                    <button onClick={() => handleUpdateStatus('REJECTED')} disabled={actionLoading} className="bg-red-50 border border-red-200 text-red-700 px-4 py-2.5 rounded-xl font-bold text-sm flex items-center hover:bg-red-100 transition-all disabled:opacity-50">
+                                        Mark Rejected
+                                    </button>
+                                    <button onClick={() => handleUpdateStatus('EXPIRED')} disabled={actionLoading} className="bg-gray-100 border border-gray-200 text-gray-600 px-4 py-2.5 rounded-xl font-bold text-sm flex items-center hover:bg-gray-200 transition-all disabled:opacity-50">
+                                        Mark Expired
+                                    </button>
+                                </>
+                            )}
                             {quote.status !== 'REVISED' && quote.status !== 'CONVERTED' && (
                                 <button onClick={handleRevise} disabled={actionLoading} className="bg-amber-100 text-amber-700 px-4 py-2.5 rounded-xl font-bold text-sm flex items-center hover:bg-amber-200 transition-all">
                                     <PlusCircle className="w-4 h-4 mr-2" />

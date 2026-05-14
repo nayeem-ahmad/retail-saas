@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { api } from '../../../../lib/api';
-import { ArrowLeft, User, Phone, Mail, ShoppingBag, CreditCard, MapPin, Building2, FolderTree, Map } from 'lucide-react';
+import Link from 'next/link';
+import { ArrowLeft, User, Phone, Mail, ShoppingBag, CreditCard, MapPin, Building2, FolderTree, Map, BarChart3 } from 'lucide-react';
 
 export default function CustomerProfile() {
     const { id } = useParams();
@@ -136,8 +137,14 @@ export default function CustomerProfile() {
 
             {/* Receipt History */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
-                <div className="p-6 border-b border-gray-100">
+                <div className="p-6 border-b border-gray-100 flex items-center justify-between">
                     <h2 className="text-lg font-black flex items-center"><ShoppingBag className="w-5 h-5 mr-2 text-blue-600" /> Purchase History</h2>
+                    <Link
+                        href={`/dashboard/customers/${id}/history`}
+                        className="flex items-center text-xs font-bold text-blue-600 hover:text-blue-800 transition-colors"
+                    >
+                        <BarChart3 className="w-4 h-4 mr-1" /> View Full Analytics
+                    </Link>
                 </div>
                 <div className="divide-y divide-gray-50">
                     {customer.sales?.length === 0 ? (
