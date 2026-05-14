@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowRight, BookOpen, Calculator, ClipboardList, FileText } from 'lucide-react';
+import { ArrowRight, BookOpen, Calculator, ClipboardList, FileText, Settings, AlertTriangle } from 'lucide-react';
 
 const ACCOUNTING_LINKS = [
     {
@@ -29,6 +29,20 @@ const ACCOUNTING_LINKS = [
         description: 'Navigate into account-level running balances and audit trails from a single report hub.',
         icon: Calculator,
         accent: 'bg-violet-50 text-violet-700 border-violet-100',
+    },
+    {
+        href: '/dashboard/accounting/posting-rules',
+        title: 'Posting Rules',
+        description: 'Configure which accounts are debited and credited for each operational event type.',
+        icon: Settings,
+        accent: 'bg-indigo-50 text-indigo-700 border-indigo-100',
+    },
+    {
+        href: '/dashboard/accounting/reconciliation',
+        title: 'Posting Exceptions',
+        description: 'Monitor and retry failed or skipped auto-posting events for reconciliation.',
+        icon: AlertTriangle,
+        accent: 'bg-rose-50 text-rose-700 border-rose-100',
     },
 ];
 
