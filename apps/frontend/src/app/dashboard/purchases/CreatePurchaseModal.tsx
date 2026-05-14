@@ -1,14 +1,17 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Plus, Search, Trash2, X } from 'lucide-react';
+import { Search, Trash2, X } from 'lucide-react';
 import { api } from '../../../lib/api';
+import { isCompoundUnit, CompoundUnitType, formatCompoundQty } from '../../../lib/compound-units';
+import CompoundUnitInput from '../../../components/CompoundUnitInput';
 
 interface PurchaseProductOption {
     id: string;
     name: string;
     sku?: string | null;
     price: string | number;
+    unit_type?: string;
 }
 
 interface SupplierOption {
@@ -25,6 +28,7 @@ interface PurchaseItemDraft {
     sku: string;
     quantity: number;
     unitCost: number;
+    unitType: string;
 }
 
 interface CreatePurchaseModalProps {
@@ -84,6 +88,7 @@ export default function CreatePurchaseModal({
                     sku: initialProduct.sku || '',
                     quantity: 1,
                     unitCost: Number(initialProduct.price || 0),
+                    unitType: initialProduct.unit_type || 'none',
                 },
             ]);
         } else {
@@ -148,6 +153,7 @@ export default function CreatePurchaseModal({
                     sku: product.sku || '',
                     quantity: 1,
                     unitCost: Number(product.price || 0),
+                    unitType: product.unit_type || 'none',
                 },
             ]);
         }
@@ -311,19 +317,27 @@ export default function CreatePurchaseModal({
                                                     <span className="text-xs text-gray-400 ml-2">{item.sku}</span>
                                                 </td>
                                                 <td className="py-3">
-                                                    <input
-                                                        type="number"
-                                                        min={1}
-                                                        value={item.quantity}
-                                                        onChange={(event) =>
-                                                            updateItem(
-                                                                index,
-                                                                'quantity',
-                                                                Math.max(1, Number(event.target.value) || 1),
-                                                            )
-                                                        }
-                                                        className="w-full text-center bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 text-sm font-bold focus:ring-2 focus:ring-emerald-500/20"
-                                                    />
+                                                    {isCompoundUnit(item.unitType) ? (
+                                                        <CompoundUnitInput
+                                                            unitType={item.unitType as CompoundUnitType}
+                                                            value={item.quantity}
+                                                            onChange={(val) => updateItem(index, 'quantity', Math.max(1, val))}
+                                                        />
+                                                    ) : (
+                                                        <input
+                                                            type="number"
+                                                            min={1}
+                                                            value={item.quantity}
+                                                            onChange={(event) =>
+                                                                updateItem(
+                                                                    index,
+                                                                    'quantity',
+                                                                    Math.max(1, Number(event.target.value) || 1),
+                                                                )
+                                                            }
+                                                            className="w-full text-center bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 text-sm font-bold focus:ring-2 focus:ring-emerald-500/20"
+                                                        />
+                                                    )}
                                                 </td>
                                                 <td className="py-3">
                                                     <input
