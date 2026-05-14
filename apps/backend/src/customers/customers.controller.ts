@@ -20,6 +20,16 @@ export class CustomersController {
         return this.customersService.create(tenant.tenantId, dto);
     }
 
+    @Get('segment-stats')
+    async getSegmentStats(@Tenant() tenant: TenantContext) {
+        return this.customersService.getSegmentStats(tenant.tenantId);
+    }
+
+    @Post('run-segmentation')
+    async runSegmentation(@Tenant() tenant: TenantContext) {
+        return this.segmentsService.runForTenant(tenant.tenantId);
+    }
+
     @Get()
     async findAll(@Tenant() tenant: TenantContext) {
         return this.customersService.findAll(tenant.tenantId);

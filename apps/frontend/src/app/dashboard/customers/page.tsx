@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { Users, Plus, Eye, RefreshCw } from 'lucide-react';
+import { Users, Plus, Eye, RefreshCw, Crown, AlertTriangle, UserCheck } from 'lucide-react';
 import { api } from '../../../lib/api';
 import AddCustomerModal from './AddCustomerModal';
 import Link from 'next/link';
@@ -21,6 +21,17 @@ interface Customer {
     territory?: { name: string } | null;
 }
 
+interface SegmentBreakdown {
+    segment: string;
+    count: number;
+    percentage: number;
+}
+
+interface SegmentStats {
+    total: number;
+    breakdown: SegmentBreakdown[];
+}
+
 const segmentColors: Record<string, string> = {
     VIP: 'bg-emerald-50 text-emerald-700 border-emerald-200',
     'AT-RISK': 'bg-rose-50 text-rose-700 border-rose-200',
@@ -29,17 +40,24 @@ const segmentColors: Record<string, string> = {
     LOYAL: 'bg-amber-50 text-amber-700 border-amber-200',
 };
 
+const segmentCardStyle: Record<string, { bg: string; text: string; bar: string; icon: React.ReactNode }> = {
+    VIP: { bg: 'bg-emerald-50 border-emerald-200', text: 'text-emerald-700', bar: 'bg-emerald-500', icon: <Crown className="w-5 h-5 text-emerald-500" /> },
+    'At-Risk': { bg: 'bg-rose-50 border-rose-200', text: 'text-rose-700', bar: 'bg-rose-500', icon: <AlertTriangle className="w-5 h-5 text-rose-500" /> },
+    Regular: { bg: 'bg-gray-50 border-gray-200', text: 'text-gray-700', bar: 'bg-gray-400', icon: <UserCheck className="w-5 h-5 text-gray-400" /> },
+};
+
 const columnHelper = createColumnHelper<Customer>();
 
 export default function CustomersPage() {
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [evaluating, setEvaluating] = useState(false);
-    const [evalMessage, setEvalMessage] = useState('');
+    const [segmentStats, setSegmentStats] = useState<SegmentStats | null>(null);
+    const [runningSegmentation, setRunningSegmentation] = useState(false);
 
     useEffect(() => {
         loadCustomers();
+        loadSegmentStats();
     }, []);
 
     const loadCustomers = async () => {
@@ -50,6 +68,27 @@ export default function CustomersPage() {
             console.error('Failed to load customers', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const loadSegmentStats = async () => {
+        try {
+            const stats = await api.getCustomerSegmentStats();
+            setSegmentStats(stats);
+        } catch (error) {
+            console.error('Failed to load segment stats', error);
+        }
+    };
+
+    const handleRunSegmentation = async () => {
+        setRunningSegmentation(true);
+        try {
+            await api.runCustomerSegmentation();
+            await Promise.all([loadCustomers(), loadSegmentStats()]);
+        } catch (error) {
+            console.error('Failed to run segmentation', error);
+        } finally {
+            setRunningSegmentation(false);
         }
     };
 
@@ -201,15 +240,15 @@ export default function CustomersPage() {
                             Track profiles, segmentation, and purchase value
                         </p>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center space-x-3">
                         <button
-                            onClick={handleEvaluateSegments}
-                            disabled={evaluating}
-                            className="bg-white border border-gray-200 text-gray-700 px-4 py-2.5 rounded-xl font-bold text-sm flex items-center hover:bg-gray-50 disabled:opacity-60"
-                            title="Re-evaluate customer segments based on spend and activity"
+                            onClick={handleRunSegmentation}
+                            disabled={runningSegmentation}
+                            className="flex items-center px-4 py-2.5 rounded-xl font-bold text-sm border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 transition-all disabled:opacity-50"
+                            title="Re-evaluate customer segments now"
                         >
-                            <RefreshCw className={`w-4 h-4 mr-2 ${evaluating ? 'animate-spin' : ''}`} />
-                            {evaluating ? 'Evaluating...' : 'Re-evaluate Segments'}
+                            <RefreshCw className={`w-4 h-4 mr-2 ${runningSegmentation ? 'animate-spin' : ''}`} />
+                            {runningSegmentation ? 'Running...' : 'Run Segmentation'}
                         </button>
                         <button
                             onClick={() => setIsModalOpen(true)}
@@ -220,6 +259,32 @@ export default function CustomersPage() {
                         </button>
                     </div>
                 </div>
+
+                {/* Segment Stats */}
+                {segmentStats && segmentStats.total > 0 && (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Total Customers</p>
+                            <p className="text-3xl font-black text-gray-900">{segmentStats.total}</p>
+                        </div>
+                        {segmentStats.breakdown.map((seg) => {
+                            const style = segmentCardStyle[seg.segment] ?? segmentCardStyle['Regular'];
+                            return (
+                                <div key={seg.segment} className={`border rounded-2xl p-5 shadow-sm ${style.bg}`}>
+                                    <div className="flex items-center justify-between mb-2">
+                                        <p className={`text-[10px] font-black uppercase tracking-widest ${style.text}`}>{seg.segment}</p>
+                                        {style.icon}
+                                    </div>
+                                    <p className={`text-3xl font-black ${style.text}`}>{seg.count}</p>
+                                    <div className="mt-3 bg-white/60 rounded-full h-1.5 overflow-hidden">
+                                        <div className={`h-full rounded-full ${style.bar}`} style={{ width: `${seg.percentage}%` }} />
+                                    </div>
+                                    <p className={`text-xs font-bold mt-1 ${style.text} opacity-70`}>{seg.percentage}% of total</p>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
 
                 <AddCustomerModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onAdd={handleAddCustomer} />
                 {evalMessage && (

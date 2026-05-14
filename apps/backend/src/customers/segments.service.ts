@@ -2,8 +2,13 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { DatabaseService } from '../database/database.service';
 
-const VIP_THRESHOLD_BDT = 50000;
-const AT_RISK_DAYS = 30;
+export const SEGMENT_THRESHOLDS = {
+    VIP_SPEND_BDT: 50000,
+    AT_RISK_DAYS: 30,
+    NEW_ACCOUNT_DAYS: 30,
+};
+
+export type SegmentCategory = 'New' | 'Regular' | 'At-Risk' | 'VIP';
 
 @Injectable()
 export class SegmentsService {
@@ -11,25 +16,69 @@ export class SegmentsService {
 
     constructor(private db: DatabaseService) {}
 
-    @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
-    async handleCron() {
-        this.logger.debug('Running Customer Segmentation evaluation (all tenants)');
-        const tenants = await this.db.tenant.findMany({ select: { id: true } });
-        for (const tenant of tenants) {
-            await this.evaluateForTenant(tenant.id);
+    classifyCustomer(params: {
+        totalSpent: number;
+        lastPurchaseDate: Date | null;
+        accountCreatedAt: Date;
+        now?: Date;
+    }): SegmentCategory {
+        const now = params.now ?? new Date();
+        const { totalSpent, lastPurchaseDate, accountCreatedAt } = params;
+
+        if (totalSpent > SEGMENT_THRESHOLDS.VIP_SPEND_BDT) return 'VIP';
+
+        const refDate = lastPurchaseDate ?? accountCreatedAt;
+        const daysSince = (now.getTime() - refDate.getTime()) / (1000 * 3600 * 24);
+
+        if (daysSince > SEGMENT_THRESHOLDS.AT_RISK_DAYS) {
+            const accountAgeDays = (now.getTime() - accountCreatedAt.getTime()) / (1000 * 3600 * 24);
+            if (accountAgeDays <= SEGMENT_THRESHOLDS.NEW_ACCOUNT_DAYS && !lastPurchaseDate) return 'New';
+            return 'At-Risk';
         }
-        this.logger.debug('Segmentation evaluation complete');
+
+        if (!lastPurchaseDate) {
+            const accountAgeDays = (now.getTime() - accountCreatedAt.getTime()) / (1000 * 3600 * 24);
+            if (accountAgeDays <= SEGMENT_THRESHOLDS.NEW_ACCOUNT_DAYS) return 'New';
+        }
+
+        return 'Regular';
     }
 
-    async evaluateForTenant(tenantId: string): Promise<{ updated: number }> {
-        const customers = await this.db.customer.findMany({
-            where: { tenant_id: tenantId },
+    async evaluateForTenant(tenantId: string): Promise<{ updated: number; total: number }> {
+        return this.runForTenant(tenantId);
+    }
+
+    async runForTenant(tenantId: string | null, now?: Date): Promise<{ updated: number; total: number }> {
+        const where = tenantId ? { tenant_id: tenantId } : {};
+        const customers = await this.db.customer.findMany({ where });
+
+        const lastSaleRows = await this.db.sale.groupBy({
+            by: ['customer_id'],
+            where: {
+                ...(tenantId ? { tenant_id: tenantId } : {}),
+                customer_id: { not: null },
+            },
+            _max: { created_at: true },
         });
 
+        const lastPurchaseMap = new Map<string, Date>();
+        for (const row of lastSaleRows) {
+            if (row.customer_id && row._max.created_at) {
+                lastPurchaseMap.set(row.customer_id, row._max.created_at);
+            }
+        }
+
+        const effectiveNow = now ?? new Date();
         let updated = 0;
 
         for (const customer of customers) {
-            const segment = await this.classifyCustomer(customer);
+            const segment = this.classifyCustomer({
+                totalSpent: Number(customer.total_spent),
+                lastPurchaseDate: lastPurchaseMap.get(customer.id) ?? null,
+                accountCreatedAt: customer.created_at,
+                now: effectiveNow,
+            });
+
             if (segment !== customer.segment_category) {
                 await this.db.customer.update({
                     where: { id: customer.id },
@@ -39,27 +88,14 @@ export class SegmentsService {
             }
         }
 
-        return { updated };
+        this.logger.debug(`Segmentation complete: ${updated}/${customers.length} customers updated`);
+        return { updated, total: customers.length };
     }
 
-    private async classifyCustomer(customer: { id: string; total_spent: any; created_at: Date; segment_category: string }): Promise<string> {
-        if (Number(customer.total_spent) > VIP_THRESHOLD_BDT) {
-            return 'VIP';
-        }
-
-        const lastSale = await this.db.sale.findFirst({
-            where: { customer_id: customer.id },
-            orderBy: { created_at: 'desc' },
-            select: { created_at: true },
-        });
-
-        const referenceDate = lastSale ? lastSale.created_at : customer.created_at;
-        const daysSince = (Date.now() - referenceDate.getTime()) / (1000 * 3600 * 24);
-
-        if (daysSince > AT_RISK_DAYS) {
-            return 'At-Risk';
-        }
-
-        return 'Regular';
+    @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+    async handleCron() {
+        this.logger.debug('Running Customer Segmentation evaluation (all tenants)');
+        await this.runForTenant(null);
+        this.logger.debug('Segmentation evaluation complete');
     }
 }

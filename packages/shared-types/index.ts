@@ -412,6 +412,39 @@ export interface PurchaseReturn {
   purchase?: Purchase | null;
 }
 
+export const WarrantyClaimStatus = {
+  SUBMITTED: 'SUBMITTED',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
+  REPAIRED: 'REPAIRED',
+  REPLACED: 'REPLACED',
+  COMPLETED: 'COMPLETED',
+} as const;
+export type WarrantyClaimStatus = (typeof WarrantyClaimStatus)[keyof typeof WarrantyClaimStatus];
+
+export interface WarrantyClaim {
+  id: string;
+  tenant_id: string;
+  store_id: string;
+  claim_number: string;
+  serial_number: string;
+  product_id: string;
+  sale_id?: string | null;
+  customer_id?: string | null;
+  status: WarrantyClaimStatus;
+  reason: string;
+  description?: string | null;
+  resolution_notes?: string | null;
+  replacement_serial_number?: string | null;
+  resolved_at?: string | null;
+  created_at: string;
+  updated_at: string;
+  product?: Product | null;
+  sale?: { id: string; serial_number: string } | null;
+  customer?: { id: string; name: string; phone: string } | null;
+  store?: { id: string; name: string } | null;
+}
+
 export const ProductSchema = z.object({
   name: z.string().min(2, "Product name must be at least 2 characters"),
   sku: z.string().min(3, "SKU must be at least 3 characters").optional().or(z.literal("")),
