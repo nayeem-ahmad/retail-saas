@@ -1,8 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
-import { CreateWarrantyClaimDto, UpdateClaimStatusDto } from './warranty-claims.dto';
+import { CreateWarrantyClaimDto, UpdateWarrantyClaimStatusDto } from './warranty-claim.dto';
 
-const VALID_STATUSES = ['OPEN', 'IN_PROGRESS', 'RESOLVED', 'REJECTED', 'CLOSED'];
+const VALID_STATUSES = ['SUBMITTED', 'APPROVED', 'REJECTED', 'REPAIRED', 'REPLACED', 'COMPLETED'];
 
 @Injectable()
 export class WarrantyClaimsService {
@@ -11,158 +11,201 @@ export class WarrantyClaimsService {
     async lookup(tenantId: string, serialNumber: string) {
         const serial = await this.db.productSerial.findFirst({
             where: { tenant_id: tenantId, serial_number: serialNumber },
-            include: {
-                claims: {
-                    orderBy: { created_at: 'desc' },
-                    take: 5,
-                    select: {
-                        id: true,
-                        claim_number: true,
-                        status: true,
-                        created_at: true,
-                        customer_name: true,
-                    },
-                },
-            },
         });
 
-        if (!serial) {
-            throw new NotFoundException(`Serial number "${serialNumber}" not found.`);
-        }
+        if (!serial) throw new NotFoundException(`Serial number "${serialNumber}" not found.`);
 
-        const product = await this.db.product.findFirst({
-            where: { tenant_id: tenantId, id: serial.product_id },
-            select: { id: true, name: true, warranty_enabled: true, warranty_duration_days: true },
+        const product = await this.db.product.findUnique({
+            where: { id: serial.product_id },
         });
 
-        let warrantyExpired = false;
-        let warrantyExpiresAt: Date | null = null;
-
-        if (product?.warranty_enabled && product.warranty_duration_days && serial.sold_at) {
-            warrantyExpiresAt = new Date(serial.sold_at);
-            warrantyExpiresAt.setDate(warrantyExpiresAt.getDate() + product.warranty_duration_days);
-            warrantyExpired = warrantyExpiresAt < new Date();
+        if (!product?.warranty_enabled) {
+            throw new BadRequestException(`Product does not have warranty enabled.`);
         }
+
+        const sale = serial.source_id
+            ? await this.db.sale.findUnique({
+                  where: { id: serial.source_id },
+                  include: { customer: true },
+              })
+            : null;
+
+        const soldAt = serial.sold_at;
+        const warrantyDays = product.warranty_duration_days ?? 0;
+        const expiresAt = soldAt
+            ? new Date(soldAt.getTime() + warrantyDays * 86400_000)
+            : null;
+        const isExpired = expiresAt ? expiresAt < new Date() : false;
+        const isClaimed = serial.status === 'CLAIMED';
 
         return {
             serial,
             product,
-            warrantyExpired,
-            warrantyExpiresAt,
+            sale,
+            customer: sale?.customer ?? null,
+            warrantyDays,
+            soldAt,
+            expiresAt,
+            isExpired,
+            isClaimed,
+            isClaimable: serial.status === 'SOLD' && !isExpired,
         };
     }
 
     async create(tenantId: string, dto: CreateWarrantyClaimDto) {
-        const serial = await this.db.productSerial.findFirst({
-            where: { tenant_id: tenantId, id: dto.serialId },
-        });
+        return this.db.$transaction(async (tx) => {
+            const serial = await tx.productSerial.findFirst({
+                where: { tenant_id: tenantId, serial_number: dto.serialNumber },
+            });
 
-        if (!serial) {
-            throw new NotFoundException('Serial number not found.');
-        }
+            if (!serial) {
+                throw new NotFoundException(`Serial number "${dto.serialNumber}" not found.`);
+            }
 
-        if (serial.status !== 'SOLD') {
-            throw new BadRequestException(`Serial number status is "${serial.status}". Only SOLD serials can have warranty claims.`);
-        }
+            if (serial.status === 'CLAIMED') {
+                throw new BadRequestException(`A warranty claim already exists for serial "${dto.serialNumber}".`);
+            }
 
-        const count = await this.db.warrantyClaim.count({ where: { tenant_id: tenantId } });
-        const claimNumber = `WC-${String(count + 1).padStart(5, '0')}`;
+            if (serial.status !== 'SOLD') {
+                throw new BadRequestException(`Serial "${dto.serialNumber}" is not eligible for a warranty claim (status: ${serial.status}).`);
+            }
 
-        const claim = await this.db.warrantyClaim.create({
-            data: {
-                tenant_id: tenantId,
-                claim_number: claimNumber,
-                serial_id: dto.serialId,
-                customer_name: dto.customerName,
-                customer_phone: dto.customerPhone,
-                issue_description: dto.issueDescription,
-                status: 'OPEN',
-            },
-            include: {
-                serial: {
-                    select: {
-                        serial_number: true,
-                        product_id: true,
-                        sold_at: true,
-                    },
+            const product = await tx.product.findUnique({
+                where: { id: serial.product_id },
+            });
+
+            if (!product?.warranty_enabled) {
+                throw new BadRequestException(`Product does not have warranty enabled.`);
+            }
+
+            if (serial.sold_at && product.warranty_duration_days) {
+                const expiresAt = new Date(
+                    serial.sold_at.getTime() + product.warranty_duration_days * 86400_000,
+                );
+                if (expiresAt < new Date()) {
+                    throw new BadRequestException(
+                        `Warranty expired on ${expiresAt.toLocaleDateString()}.`,
+                    );
+                }
+            }
+
+            const sale = serial.source_id
+                ? await tx.sale.findUnique({ where: { id: serial.source_id } })
+                : null;
+
+            const claimNumber = `WC-${Date.now()}`;
+
+            const claim = await tx.warrantyClaim.create({
+                data: {
+                    tenant_id: tenantId,
+                    store_id: dto.storeId,
+                    claim_number: claimNumber,
+                    serial_number: dto.serialNumber,
+                    product_id: serial.product_id,
+                    sale_id: sale?.id ?? null,
+                    customer_id: sale?.customer_id ?? null,
+                    reason: dto.reason,
+                    description: dto.description ?? null,
+                    status: 'SUBMITTED',
                 },
-            },
-        });
+                include: { product: true, sale: true, customer: true, store: true },
+            });
 
-        await this.db.productSerial.update({
-            where: { id: dto.serialId },
-            data: { claim_reference: claimNumber },
-        });
+            await tx.productSerial.updateMany({
+                where: { tenant_id: tenantId, serial_number: dto.serialNumber },
+                data: { status: 'CLAIMED', claim_reference: claim.id },
+            });
 
-        return claim;
+            return claim;
+        });
     }
 
-    async findAll(tenantId: string, params?: { status?: string; from?: string; to?: string }) {
-        const where: any = { tenant_id: tenantId };
-
-        if (params?.status) where.status = params.status;
-        if (params?.from || params?.to) {
-            where.created_at = {};
-            if (params.from) where.created_at.gte = new Date(params.from);
-            if (params.to) where.created_at.lte = new Date(params.to);
-        }
-
+    async findAll(tenantId: string) {
         return this.db.warrantyClaim.findMany({
-            where,
+            where: { tenant_id: tenantId },
+            include: { product: true, sale: true, customer: true, store: true },
             orderBy: { created_at: 'desc' },
-            include: {
-                serial: {
-                    select: {
-                        serial_number: true,
-                        product_id: true,
-                        sold_at: true,
-                    },
-                },
-            },
         });
     }
 
     async findOne(tenantId: string, id: string) {
-        const claim = await this.db.warrantyClaim.findFirst({
-            where: { tenant_id: tenantId, id },
-            include: {
-                serial: {
-                    select: {
-                        serial_number: true,
-                        product_id: true,
-                        sold_at: true,
-                        status: true,
-                    },
-                },
-            },
+        const claim = await this.db.warrantyClaim.findUnique({
+            where: { id },
+            include: { product: true, sale: true, customer: true, store: true },
         });
 
-        if (!claim) throw new NotFoundException('Warranty claim not found.');
-
-        const product = claim.serial
-            ? await this.db.product.findFirst({
-                  where: { tenant_id: tenantId, id: claim.serial.product_id },
-                  select: { id: true, name: true, warranty_enabled: true, warranty_duration_days: true },
-              })
-            : null;
-
-        return { ...claim, product };
-    }
-
-    async updateStatus(tenantId: string, id: string, dto: UpdateClaimStatusDto) {
-        if (!VALID_STATUSES.includes(dto.status)) {
-            throw new BadRequestException(`Invalid status. Must be one of: ${VALID_STATUSES.join(', ')}`);
+        if (!claim || claim.tenant_id !== tenantId) {
+            throw new NotFoundException('Warranty claim not found.');
         }
 
-        const claim = await this.db.warrantyClaim.findFirst({ where: { tenant_id: tenantId, id } });
-        if (!claim) throw new NotFoundException('Warranty claim not found.');
+        return claim;
+    }
 
-        return this.db.warrantyClaim.update({
-            where: { id },
-            data: {
-                status: dto.status,
-                resolution_notes: dto.resolutionNotes ?? claim.resolution_notes,
-            },
+    async updateStatus(tenantId: string, id: string, dto: UpdateWarrantyClaimStatusDto) {
+        return this.db.$transaction(async (tx) => {
+            const claim = await tx.warrantyClaim.findUnique({ where: { id } });
+
+            if (!claim || claim.tenant_id !== tenantId) {
+                throw new NotFoundException('Warranty claim not found.');
+            }
+
+            if (!VALID_STATUSES.includes(dto.status)) {
+                throw new BadRequestException(`Invalid status "${dto.status}".`);
+            }
+
+            let replacementSerial: string | null = claim.replacement_serial_number;
+
+            if (dto.status === 'REPLACED') {
+                const repSerial = dto.replacementSerialNumber?.trim();
+                if (!repSerial) {
+                    throw new BadRequestException('A replacement serial number is required when status is REPLACED.');
+                }
+
+                const replacementRecord = await tx.productSerial.findFirst({
+                    where: { tenant_id: tenantId, serial_number: repSerial },
+                });
+
+                if (!replacementRecord) {
+                    throw new NotFoundException(`Replacement serial "${repSerial}" not found.`);
+                }
+
+                if (replacementRecord.product_id !== claim.product_id) {
+                    throw new BadRequestException(
+                        `Replacement serial "${repSerial}" belongs to a different product.`,
+                    );
+                }
+
+                if (replacementRecord.status !== 'IN_STOCK') {
+                    throw new BadRequestException(
+                        `Replacement serial "${repSerial}" is not available (status: ${replacementRecord.status}).`,
+                    );
+                }
+
+                await tx.productSerial.updateMany({
+                    where: { tenant_id: tenantId, serial_number: repSerial },
+                    data: {
+                        status: 'SOLD',
+                        source_type: 'WARRANTY_REPLACEMENT',
+                        source_id: claim.id,
+                        sold_at: new Date(),
+                    },
+                });
+
+                replacementSerial = repSerial;
+            }
+
+            const isResolved = ['REPAIRED', 'REPLACED', 'COMPLETED', 'REJECTED'].includes(dto.status);
+
+            return tx.warrantyClaim.update({
+                where: { id },
+                data: {
+                    status: dto.status,
+                    resolution_notes: dto.resolutionNotes ?? claim.resolution_notes,
+                    replacement_serial_number: replacementSerial,
+                    resolved_at: isResolved && !claim.resolved_at ? new Date() : claim.resolved_at,
+                },
+                include: { product: true, sale: true, customer: true, store: true },
+            });
         });
     }
 }

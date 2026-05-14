@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { DatabaseModule } from '../database/database.module';
-import { WarrantyClaimsController } from './warranty-claims.controller';
 import { WarrantyClaimsService } from './warranty-claims.service';
+import { WarrantyClaimsController } from './warranty-claims.controller';
 
 @Module({
     imports: [DatabaseModule],

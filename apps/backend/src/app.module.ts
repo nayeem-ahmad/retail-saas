@@ -23,17 +23,18 @@ import { WarehouseTransfersModule } from './warehouse-transfers/warehouse-transf
 import { InventoryShrinkageModule } from './inventory-shrinkage/inventory-shrinkage.module';
 import { StockTakesModule } from './stock-takes/stock-takes.module';
 import { InventoryReportsModule } from './inventory-reports/inventory-reports.module';
+import { SalesReportsModule } from './sales-reports/sales-reports.module';
 import { BillingModule } from './billing/billing.module';
 import { AdminTenantsModule } from './admin-tenants/admin-tenants.module';
 import { WarrantyClaimsModule } from './warranty-claims/warranty-claims.module';
 
 @Module({
     imports: [
-        DatabaseModule, 
-        AuthModule, 
-        ProductsModule, 
-        AssetsModule, 
-        SalesModule, 
+        DatabaseModule,
+        AuthModule,
+        ProductsModule,
+        AssetsModule,
+        SalesModule,
         CustomersModule,
         CustomerGroupsModule,
         TerritoriesModule,
@@ -52,6 +53,7 @@ import { WarrantyClaimsModule } from './warranty-claims/warranty-claims.module';
         InventoryShrinkageModule,
         StockTakesModule,
         InventoryReportsModule,
+        SalesReportsModule,
         BillingModule,
         AdminTenantsModule,
         WarrantyClaimsModule,

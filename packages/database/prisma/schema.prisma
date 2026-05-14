@@ -117,7 +117,7 @@ model Tenant {
   name       String
   owner_id   String
   created_at DateTime @default(now())
-   
+
   // Relations
   owner      User     @relation("TenantOwner", fields: [owner_id], references: [id])
   stores     Store[]
@@ -125,7 +125,7 @@ model Tenant {
   users      TenantUser[]
   subscription TenantSubscription?
   billingEvents BillingEvent[]
-   
+
   products   Product[]
   productGroups ProductGroup[]
   productSubgroups ProductSubgroup[]
@@ -181,7 +181,7 @@ model Store {
   name      String
   address   String?
   created_at DateTime @default(now())
-   
+
   // Relations
   tenant          Tenant              @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
   sales           Sale[]
@@ -197,6 +197,7 @@ model Store {
   productPrices   ProductPrice[]
   fundTransfersSource      FundTransfer[] @relation("FundTransferSourceStore")
   fundTransfersDestination FundTransfer[] @relation("FundTransferDestinationStore")
+  warrantyClaims  WarrantyClaim[]
 }
 
 model Warehouse {
@@ -277,8 +278,9 @@ model Product {
   safety_stock Int?
   lead_time_days Int?
   image_url   String?
+  unit_type   String   @default("none")
   created_at  DateTime @default(now())
-  
+
   // Relations
   tenant      Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
   group       ProductGroup? @relation(fields: [group_id], references: [id])
@@ -295,6 +297,7 @@ model Product {
   quoteItems  QuotationItem[]
   purchaseItems PurchaseItem[]
   prices      ProductPrice[]
+  warrantyClaims WarrantyClaim[]
 
   @@unique([tenant_id, sku])
   @@index([tenant_id, group_id])
@@ -657,7 +660,7 @@ model Sale {
   status         String
   note           String?
   created_at     DateTime @default(now())
-  
+
   // Relations
   tenant         Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
   store          Store    @relation(fields: [store_id], references: [id])
@@ -666,7 +669,8 @@ model Sale {
   items          SaleItem[]
   payments       PaymentRecord[]
   returns        SalesReturn[]
-  
+  warrantyClaims WarrantyClaim[]
+
   @@unique([tenant_id, serial_number])
 }
 
@@ -695,6 +699,7 @@ model Customer {
   sales            Sale[]
   salesOrders      SalesOrder[]
   quotations       Quotation[]
+  warrantyClaims   WarrantyClaim[]
 
   @@unique([tenant_id, phone])
   @@unique([tenant_id, customer_code])
@@ -1222,4 +1227,36 @@ model FundTransfer {
   @@index([tenant_id, status, created_at])
   @@index([tenant_id, source_store_id])
   @@index([tenant_id, destination_store_id])
+}
+
+// Warranty claim statuses: SUBMITTED, APPROVED, REJECTED, REPAIRED, REPLACED, COMPLETED
+model WarrantyClaim {
+  id                       String    @id @default(uuid())
+  tenant_id                String
+  store_id                 String
+  claim_number             String
+  serial_number            String
+  product_id               String
+  sale_id                  String?
+  customer_id              String?
+  status                   String    @default("SUBMITTED")
+  reason                   String
+  description              String?
+  resolution_notes         String?
+  replacement_serial_number String?
+  resolved_at              DateTime?
+  created_at               DateTime  @default(now())
+  updated_at               DateTime  @updatedAt
+
+  tenant           Tenant    @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  store            Store     @relation(fields: [store_id], references: [id])
+  sale             Sale?     @relation(fields: [sale_id], references: [id])
+  customer         Customer? @relation(fields: [customer_id], references: [id])
+  product          Product   @relation(fields: [product_id], references: [id])
+
+  @@unique([tenant_id, claim_number])
+  @@index([tenant_id, status, created_at])
+  @@index([tenant_id, serial_number])
+  @@index([tenant_id, product_id])
+  @@index([tenant_id, customer_id])
 }

@@ -158,9 +158,10 @@ export class SalesService {
     async findAll(tenantId: string) {
         const sales = await this.db.sale.findMany({
             where: { tenant_id: tenantId },
-            include: { 
+            include: {
                 items: { include: { product: true } },
-                payments: true
+                payments: true,
+                customer: true,
             },
             orderBy: { created_at: 'desc' },
         });
@@ -201,8 +202,9 @@ export class SalesService {
         const sale = await this.db.sale.findFirst({
             where: { id, tenant_id: tenantId },
             include: {
-                items: { include: { product: true } },
-                payments: true
+                items: { include: { product: true, returns: true } },
+                payments: true,
+                customer: true,
             },
         });
 

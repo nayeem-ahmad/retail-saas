@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ShoppingCart, Search, Package, Trash2, Plus, Minus, CreditCard, ChevronRight, Store, X, Banknote, CheckCircle, AlertCircle, XCircle } from 'lucide-react';
+import { ShoppingCart, Search, Package, Trash2, Plus, Minus, CreditCard, ChevronRight, Store, X, Banknote, CheckCircle, AlertCircle, XCircle, Printer } from 'lucide-react';
 import { api } from '../../../lib/api';
+import { printPOSReceipt } from '../../../lib/pos-receipt-printer';
 
 type Notification = { id: string; type: 'success' | 'error' | 'info'; message: string };
 
@@ -17,6 +18,7 @@ export default function POSPage() {
     const [cashAmount, setCashAmount] = useState<number>(0);
     const [bkashAmount, setBkashAmount] = useState<number>(0);
     const [cardAmount, setCardAmount] = useState<number>(0);
+    const [lastSale, setLastSale] = useState<any>(null);
 
     const addNotification = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
         const id = Date.now().toString();
@@ -192,7 +194,8 @@ export default function POSPage() {
                 })),
                 payments
             };
-            await api.createSale(saleData);
+            const sale = await api.createSale(saleData);
+            setLastSale({ sale, cart: [...cart], payments, subtotal, tax, total, totalPaid, changeDue });
             addNotification('Sale completed successfully!', 'success');
             setCart([]);
             setShowCheckout(false);
@@ -201,6 +204,29 @@ export default function POSPage() {
             console.error('Checkout failed', error);
             addNotification('Checkout failed. Please check stock levels.', 'error');
         }
+    };
+
+    const handlePrintReceipt = async (saleSnapshot: typeof lastSale) => {
+        if (!saleSnapshot) return;
+        const { sale, cart: saleCart, payments, subtotal: sub, tax: taxAmt, total: tot, totalPaid: paid, changeDue: change } = saleSnapshot;
+
+        await printPOSReceipt({
+            invoiceId: sale?.id || '',
+            serialNumber: sale?.serial_number || '',
+            date: sale?.created_at ? new Date(sale.created_at).toLocaleString() : new Date().toLocaleString(),
+            items: saleCart.map((item: any) => ({
+                name: item.name,
+                sku: item.sku,
+                quantity: item.quantity,
+                unitPrice: parseFloat(item.price),
+            })),
+            payments: payments.map((p: any) => ({ method: p.paymentMethod, amount: p.amount })),
+            subtotal: sub,
+            tax: taxAmt,
+            total: tot,
+            amountPaid: paid,
+            changeDue: change,
+        });
     };
 
     const filteredProducts = products.filter(p =>
@@ -361,6 +387,54 @@ export default function POSPage() {
                     </button>
                 </div>
             </div>
+
+            {/* Print Receipt Modal */}
+            {lastSale && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
+                    <div className="bg-white w-[420px] rounded-3xl shadow-2xl overflow-hidden">
+                        <div className="p-6 border-b border-gray-100 bg-green-50/50 flex items-center space-x-4">
+                            <div className="p-3 bg-green-100 rounded-2xl text-green-600">
+                                <CheckCircle className="w-7 h-7" />
+                            </div>
+                            <div>
+                                <h2 className="text-xl font-black tracking-tight text-gray-900">Sale Complete!</h2>
+                                <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mt-0.5">{lastSale.sale?.serial_number}</p>
+                            </div>
+                        </div>
+                        <div className="p-6 space-y-4">
+                            <div className="bg-gray-50 rounded-2xl p-4 space-y-2">
+                                <div className="flex justify-between text-xs font-bold text-gray-500 uppercase tracking-widest">
+                                    <span>Total</span>
+                                    <span className="text-gray-900">{lastSale.total.toFixed(2)}</span>
+                                </div>
+                                <div className="flex justify-between text-xs font-bold text-gray-500 uppercase tracking-widest">
+                                    <span>Paid</span>
+                                    <span className="text-gray-900">{lastSale.totalPaid.toFixed(2)}</span>
+                                </div>
+                                <div className="flex justify-between text-xs font-bold text-green-600 uppercase tracking-widest pt-1 border-t border-gray-200">
+                                    <span>Change Due</span>
+                                    <span>{lastSale.changeDue.toFixed(2)}</span>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => handlePrintReceipt(lastSale)}
+                                className="w-full bg-gray-900 hover:bg-blue-600 text-white py-4 rounded-2xl font-black text-sm uppercase tracking-widest shadow-lg flex items-center justify-center space-x-3 transition-all hover:-translate-y-0.5"
+                            >
+                                <Printer className="w-5 h-5" />
+                                <span>Print POS Receipt</span>
+                            </button>
+                        </div>
+                        <div className="px-6 pb-6">
+                            <button
+                                onClick={() => setLastSale(null)}
+                                className="w-full py-3 rounded-2xl font-black text-xs uppercase tracking-widest text-gray-400 hover:text-gray-900 hover:bg-gray-50 transition-all"
+                            >
+                                Skip &amp; Continue
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Checkout Modal */}
             {showCheckout && (

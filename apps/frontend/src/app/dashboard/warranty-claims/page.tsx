@@ -1,85 +1,93 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { createColumnHelper, type ColumnDef } from '@tanstack/react-table';
-import { ShieldCheck, Search, Plus, X } from 'lucide-react';
-import { DataTable } from '@/components/data-table';
+import { useState, useEffect, useMemo } from 'react';
+import { ShieldCheck, Plus, X, Search, CheckCircle, XCircle, Clock, Wrench, RefreshCw } from 'lucide-react';
 import { api } from '../../../lib/api';
+import { createColumnHelper } from '@tanstack/react-table';
+import { DataTable } from '@/components/data-table';
+import type { WarrantyClaim } from '@retail-saas/shared-types';
 
-interface SerialLookupResult {
-    serial: {
-        id: string;
-        serial_number: string;
-        product_id: string;
-        status: string;
-        sold_at?: string | null;
-        claim_reference?: string | null;
-        claims: Array<{ id: string; claim_number: string; status: string; created_at: string; customer_name: string }>;
-    };
-    product?: { id: string; name: string; warranty_enabled: boolean; warranty_duration_days?: number | null } | null;
-    warrantyExpired: boolean;
-    warrantyExpiresAt?: string | null;
-}
-
-interface WarrantyClaim {
-    id: string;
-    claim_number: string;
-    status: string;
-    customer_name: string;
-    customer_phone?: string | null;
-    issue_description: string;
-    resolution_notes?: string | null;
-    created_at: string;
-    serial?: { serial_number: string; product_id: string; sold_at?: string | null } | null;
-}
-
-const STATUS_COLORS: Record<string, string> = {
-    OPEN: 'bg-amber-50 text-amber-700 border-amber-200',
-    IN_PROGRESS: 'bg-blue-50 text-blue-700 border-blue-200',
-    RESOLVED: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+const STATUS_STYLES: Record<string, string> = {
+    SUBMITTED: 'bg-blue-50 text-blue-700 border-blue-200',
+    APPROVED: 'bg-emerald-50 text-emerald-700 border-emerald-200',
     REJECTED: 'bg-red-50 text-red-700 border-red-200',
-    CLOSED: 'bg-gray-50 text-gray-500 border-gray-200',
+    REPAIRED: 'bg-purple-50 text-purple-700 border-purple-200',
+    REPLACED: 'bg-amber-50 text-amber-700 border-amber-200',
+    COMPLETED: 'bg-gray-50 text-gray-700 border-gray-200',
 };
 
-const VALID_STATUSES = ['OPEN', 'IN_PROGRESS', 'RESOLVED', 'REJECTED', 'CLOSED'];
+const STATUS_ICONS: Record<string, React.ReactNode> = {
+    SUBMITTED: <Clock className="w-3 h-3" />,
+    APPROVED: <CheckCircle className="w-3 h-3" />,
+    REJECTED: <XCircle className="w-3 h-3" />,
+    REPAIRED: <Wrench className="w-3 h-3" />,
+    REPLACED: <RefreshCw className="w-3 h-3" />,
+    COMPLETED: <CheckCircle className="w-3 h-3" />,
+};
+
+const NEXT_STATUSES: Record<string, string[]> = {
+    SUBMITTED: ['APPROVED', 'REJECTED'],
+    APPROVED: ['REPAIRED', 'REPLACED', 'COMPLETED'],
+    REPAIRED: ['COMPLETED'],
+    REPLACED: ['COMPLETED'],
+    REJECTED: [],
+    COMPLETED: [],
+};
+
+type LookupResult = {
+    serial: any;
+    product: any;
+    customer: any;
+    sale: any;
+    warrantyDays: number;
+    soldAt: string | null;
+    expiresAt: string | null;
+    isExpired: boolean;
+    isClaimed: boolean;
+    isClaimable: boolean;
+};
 
 const columnHelper = createColumnHelper<WarrantyClaim>();
 
 export default function WarrantyClaimsPage() {
     const [claims, setClaims] = useState<WarrantyClaim[]>([]);
     const [loading, setLoading] = useState(true);
-    const [statusFilter, setStatusFilter] = useState('');
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [statusModalClaim, setStatusModalClaim] = useState<WarrantyClaim | null>(null);
 
+    // New claim form state
     const [serialInput, setSerialInput] = useState('');
-    const [lookupResult, setLookupResult] = useState<SerialLookupResult | null>(null);
+    const [lookupResult, setLookupResult] = useState<LookupResult | null>(null);
     const [lookupError, setLookupError] = useState('');
     const [lookupLoading, setLookupLoading] = useState(false);
+    const [reason, setReason] = useState('');
+    const [description, setDescription] = useState('');
+    const [submitting, setSubmitting] = useState(false);
 
-    const [form, setForm] = useState({ customerName: '', customerPhone: '', issueDescription: '' });
-    const [formMessage, setFormMessage] = useState('');
-    const [formLoading, setFormLoading] = useState(false);
+    // Status update state
+    const [newStatus, setNewStatus] = useState('');
+    const [resolutionNotes, setResolutionNotes] = useState('');
+    const [replacementSerial, setReplacementSerial] = useState('');
+    const [statusUpdating, setStatusUpdating] = useState(false);
 
-    const [updateModal, setUpdateModal] = useState<{ claim: WarrantyClaim; status: string; notes: string } | null>(null);
-    const [updateLoading, setUpdateLoading] = useState(false);
+    const storeId = typeof window !== 'undefined' ? localStorage.getItem('store_id') ?? '' : '';
 
     useEffect(() => {
-        void loadClaims();
-    }, [statusFilter]);
+        loadClaims();
+    }, []);
 
     const loadClaims = async () => {
-        setLoading(true);
         try {
-            const data = await api.getWarrantyClaims({ status: statusFilter || undefined });
+            const data = await api.getWarrantyClaims();
             setClaims(data);
-        } catch (error) {
-            console.error('Failed to load warranty claims', error);
+        } catch (err) {
+            console.error('Failed to load warranty claims', err);
         } finally {
             setLoading(false);
         }
     };
 
-    const handleLookup = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleLookup = async () => {
         if (!serialInput.trim()) return;
         setLookupLoading(true);
         setLookupError('');
@@ -87,354 +95,406 @@ export default function WarrantyClaimsPage() {
         try {
             const result = await api.lookupWarrantySerial(serialInput.trim());
             setLookupResult(result);
-        } catch (error: any) {
-            setLookupError(error.message || 'Serial number not found.');
+        } catch (err: any) {
+            setLookupError(err.message ?? 'Serial number not found.');
         } finally {
             setLookupLoading(false);
         }
     };
 
-    const handleCreate = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!lookupResult) return;
-        setFormLoading(true);
-        setFormMessage('');
+    const handleSubmitClaim = async () => {
+        if (!lookupResult?.isClaimable || !reason.trim()) return;
+        setSubmitting(true);
         try {
-            await api.createWarrantyClaim({
-                serialId: lookupResult.serial.id,
-                customerName: form.customerName,
-                customerPhone: form.customerPhone || undefined,
-                issueDescription: form.issueDescription,
+            const claim = await api.createWarrantyClaim({
+                storeId,
+                serialNumber: serialInput.trim(),
+                reason: reason.trim(),
+                description: description.trim() || undefined,
             });
-            setFormMessage('Warranty claim created successfully.');
-            setForm({ customerName: '', customerPhone: '', issueDescription: '' });
-            setLookupResult(null);
-            setSerialInput('');
-            await loadClaims();
-        } catch (error: any) {
-            setFormMessage(error.message || 'Failed to create claim.');
+            setClaims((prev) => [claim, ...prev]);
+            closeModal();
+        } catch (err: any) {
+            setLookupError(err.message ?? 'Failed to submit claim.');
         } finally {
-            setFormLoading(false);
+            setSubmitting(false);
         }
     };
 
-    const handleUpdateStatus = async () => {
-        if (!updateModal) return;
-        setUpdateLoading(true);
+    const handleStatusUpdate = async () => {
+        if (!statusModalClaim || !newStatus) return;
+        setStatusUpdating(true);
         try {
-            await api.updateWarrantyClaimStatus(updateModal.claim.id, {
-                status: updateModal.status,
-                resolutionNotes: updateModal.notes || undefined,
+            const updated = await api.updateWarrantyClaimStatus(statusModalClaim.id, {
+                status: newStatus,
+                resolutionNotes: resolutionNotes.trim() || undefined,
+                replacementSerialNumber: newStatus === 'REPLACED' ? replacementSerial.trim() || undefined : undefined,
             });
-            setUpdateModal(null);
-            await loadClaims();
-        } catch (error: any) {
-            console.error('Failed to update status', error);
+            setClaims((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+            setStatusModalClaim(null);
+            setNewStatus('');
+            setResolutionNotes('');
+            setReplacementSerial('');
+        } catch (err: any) {
+            console.error('Status update failed', err);
         } finally {
-            setUpdateLoading(false);
+            setStatusUpdating(false);
         }
     };
 
-    const columns: ColumnDef<WarrantyClaim, any>[] = useMemo(
+    const closeModal = () => {
+        setIsModalOpen(false);
+        setSerialInput('');
+        setLookupResult(null);
+        setLookupError('');
+        setReason('');
+        setDescription('');
+    };
+
+    const openStatusModal = (claim: WarrantyClaim) => {
+        setStatusModalClaim(claim);
+        setNewStatus(NEXT_STATUSES[claim.status]?.[0] ?? '');
+        setResolutionNotes('');
+        setReplacementSerial('');
+    };
+
+    const columns = useMemo(
         () => [
             columnHelper.accessor('claim_number', {
                 header: 'Claim #',
-                cell: (info) => <span className="text-sm font-black text-gray-900">{info.getValue()}</span>,
-                size: 130,
+                cell: (info) => (
+                    <span className="font-mono text-sm font-medium text-gray-900">
+                        {info.getValue()}
+                    </span>
+                ),
             }),
-            columnHelper.accessor((row) => row.serial?.serial_number ?? '-', {
-                id: 'serial_number',
-                header: 'Serial #',
-                cell: (info) => <span className="text-sm font-mono text-gray-700">{info.getValue()}</span>,
-                size: 160,
+            columnHelper.accessor('serial_number', {
+                header: 'Serial Number',
+                cell: (info) => (
+                    <span className="font-mono text-sm text-gray-700">{info.getValue()}</span>
+                ),
             }),
-            columnHelper.accessor('customer_name', {
+            columnHelper.accessor('replacement_serial_number', {
+                header: 'Replacement Serial',
+                cell: (info) => {
+                    const v = info.getValue();
+                    return v ? (
+                        <span className="font-mono text-sm text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">
+                            {v}
+                        </span>
+                    ) : (
+                        <span className="text-gray-400 text-sm">—</span>
+                    );
+                },
+            }),
+            columnHelper.display({
+                id: 'product',
+                header: 'Product',
+                cell: ({ row }) => (
+                    <span className="text-sm text-gray-900">{row.original.product?.name ?? '—'}</span>
+                ),
+            }),
+            columnHelper.display({
+                id: 'customer',
                 header: 'Customer',
-                cell: (info) => <span className="text-sm text-gray-700">{info.getValue()}</span>,
-                size: 160,
+                cell: ({ row }) => (
+                    <span className="text-sm text-gray-700">{row.original.customer?.name ?? '—'}</span>
+                ),
             }),
-            columnHelper.accessor('issue_description', {
-                header: 'Issue',
-                cell: (info) => <span className="text-sm text-gray-600 line-clamp-2">{info.getValue()}</span>,
-                size: 240,
+            columnHelper.accessor('reason', {
+                header: 'Reason',
+                cell: (info) => <span className="text-sm text-gray-700">{info.getValue()}</span>,
             }),
             columnHelper.accessor('status', {
                 header: 'Status',
                 cell: (info) => {
-                    const status = info.getValue();
+                    const s = info.getValue();
                     return (
-                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${STATUS_COLORS[status] ?? 'bg-gray-50 text-gray-700 border-gray-200'}`}>
-                            {status.replace('_', ' ')}
+                        <span
+                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${STATUS_STYLES[s] ?? 'bg-gray-50 text-gray-600 border-gray-200'}`}
+                        >
+                            {STATUS_ICONS[s]}
+                            {s}
                         </span>
                     );
                 },
-                size: 130,
             }),
             columnHelper.accessor('created_at', {
-                header: 'Created',
-                cell: (info) => {
-                    const d = new Date(info.getValue());
-                    return (
-                        <div>
-                            <span className="text-sm text-gray-600">{d.toLocaleDateString()}</span>
-                            <span className="text-xs text-gray-400 block">{d.toLocaleTimeString()}</span>
-                        </div>
-                    );
-                },
-                sortingFn: 'datetime',
-                size: 150,
+                header: 'Date',
+                cell: (info) => (
+                    <span className="text-sm text-gray-500">
+                        {new Date(info.getValue()).toLocaleDateString()}
+                    </span>
+                ),
             }),
             columnHelper.display({
                 id: 'actions',
-                header: 'Actions',
-                cell: (info) => {
-                    const row = info.row.original;
+                header: '',
+                cell: ({ row }) => {
+                    const claim = row.original;
+                    const next = NEXT_STATUSES[claim.status] ?? [];
+                    if (next.length === 0) return null;
                     return (
                         <button
-                            onClick={() => setUpdateModal({ claim: row, status: row.status, notes: row.resolution_notes ?? '' })}
-                            className="text-sm font-black text-blue-700 hover:text-blue-900"
+                            onClick={() => openStatusModal(claim)}
+                            className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
                         >
-                            Update
+                            Update status
                         </button>
                     );
                 },
-                size: 90,
             }),
-        ],
-        [],
-    );
-
-    const filterPresets = useMemo(
-        () => [
-            { label: 'Open', filters: [{ id: 'status', value: 'OPEN' }] },
-            { label: 'In Progress', filters: [{ id: 'status', value: 'IN_PROGRESS' }] },
-            { label: 'Resolved', filters: [{ id: 'status', value: 'RESOLVED' }] },
         ],
         [],
     );
 
     return (
-        <div className="overflow-y-auto h-full bg-[#f3f4f6] p-6 font-sans text-gray-900">
-            <div className="max-w-[1400px] mx-auto space-y-6">
-                <div className="flex items-center justify-between">
+        <div className="p-6 max-w-7xl mx-auto">
+            <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                    <ShieldCheck className="w-6 h-6 text-indigo-600" />
                     <div>
-                        <h1 className="text-2xl font-black tracking-tight">Warranty Claims</h1>
-                        <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mt-0.5">
-                            Look up serial numbers and manage warranty claims
-                        </p>
+                        <h1 className="text-xl font-semibold text-gray-900">Warranty Claims</h1>
+                        <p className="text-sm text-gray-500">Manage customer warranty claim submissions</p>
                     </div>
-                    <select
-                        value={statusFilter}
-                        onChange={(e) => setStatusFilter(e.target.value)}
-                        className="bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-bold text-gray-700"
-                    >
-                        <option value="">All Statuses</option>
-                        {VALID_STATUSES.map((s) => (
-                            <option key={s} value={s}>{s.replace('_', ' ')}</option>
-                        ))}
-                    </select>
                 </div>
-
-                {/* Serial Lookup */}
-                <div className="bg-white border border-gray-100 rounded-2xl p-6 space-y-4">
-                    <div className="flex items-center gap-2">
-                        <Search className="w-5 h-5 text-blue-600" />
-                        <h2 className="font-black text-lg">Serial Number Lookup</h2>
-                    </div>
-                    <form onSubmit={handleLookup} className="flex gap-3">
-                        <input
-                            value={serialInput}
-                            onChange={(e) => setSerialInput(e.target.value)}
-                            className="flex-1 bg-gray-50 border-none rounded-xl py-3 px-4 text-sm font-medium font-mono"
-                            placeholder="Enter serial number..."
-                        />
-                        <button
-                            type="submit"
-                            disabled={lookupLoading}
-                            className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-xl font-bold text-sm shadow-lg shadow-blue-200 disabled:opacity-60"
-                        >
-                            {lookupLoading ? 'Searching...' : 'Lookup'}
-                        </button>
-                        {lookupResult && (
-                            <button
-                                type="button"
-                                onClick={() => { setLookupResult(null); setSerialInput(''); setLookupError(''); }}
-                                className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-3 rounded-xl font-bold text-sm"
-                            >
-                                <X className="w-4 h-4" />
-                            </button>
-                        )}
-                    </form>
-
-                    {lookupError && (
-                        <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700 font-bold">
-                            {lookupError}
-                        </div>
-                    )}
-
-                    {lookupResult && (
-                        <div className="space-y-4">
-                            {/* Serial Info */}
-                            <div className="bg-gray-50 rounded-xl p-4 grid md:grid-cols-4 gap-4">
-                                <div>
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Serial #</p>
-                                    <p className="text-sm font-black font-mono text-gray-900">{lookupResult.serial.serial_number}</p>
-                                </div>
-                                <div>
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Product</p>
-                                    <p className="text-sm font-bold text-gray-900">{lookupResult.product?.name ?? '-'}</p>
-                                </div>
-                                <div>
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Status</p>
-                                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${lookupResult.serial.status === 'SOLD' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-50 text-gray-700 border-gray-200'}`}>
-                                        {lookupResult.serial.status}
-                                    </span>
-                                </div>
-                                <div>
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Warranty</p>
-                                    {!lookupResult.product?.warranty_enabled ? (
-                                        <span className="text-sm text-gray-400 font-bold">Not covered</span>
-                                    ) : lookupResult.warrantyExpired ? (
-                                        <span className="text-sm text-red-600 font-black">Expired</span>
-                                    ) : (
-                                        <span className="text-sm text-emerald-600 font-black">
-                                            Valid{lookupResult.warrantyExpiresAt ? ` until ${new Date(lookupResult.warrantyExpiresAt).toLocaleDateString()}` : ''}
-                                        </span>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Previous Claims */}
-                            {lookupResult.serial.claims.length > 0 && (
-                                <div>
-                                    <p className="text-xs font-black uppercase tracking-widest text-gray-400 mb-2">Previous Claims</p>
-                                    <div className="space-y-2">
-                                        {lookupResult.serial.claims.map((c) => (
-                                            <div key={c.id} className="flex items-center gap-3 text-sm bg-gray-50 rounded-xl px-4 py-2.5">
-                                                <span className="font-black text-gray-900">{c.claim_number}</span>
-                                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${STATUS_COLORS[c.status] ?? 'bg-gray-50 text-gray-700 border-gray-200'}`}>{c.status}</span>
-                                                <span className="text-gray-500">{c.customer_name}</span>
-                                                <span className="text-gray-400 ml-auto">{new Date(c.created_at).toLocaleDateString()}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* New Claim Form */}
-                            {lookupResult.serial.status === 'SOLD' && (
-                                <form onSubmit={handleCreate} className="space-y-4 border-t border-gray-100 pt-4">
-                                    <div className="flex items-center gap-2">
-                                        <Plus className="w-4 h-4 text-gray-600" />
-                                        <p className="font-black text-sm">New Claim for this Serial</p>
-                                    </div>
-                                    {formMessage && (
-                                        <div className="text-sm font-bold text-gray-700 bg-gray-50 rounded-xl px-4 py-3">{formMessage}</div>
-                                    )}
-                                    <div className="grid md:grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 ml-1">Customer Name</label>
-                                            <input
-                                                required
-                                                value={form.customerName}
-                                                onChange={(e) => setForm((f) => ({ ...f, customerName: e.target.value }))}
-                                                className="w-full bg-gray-50 border-none rounded-xl py-3 px-4 text-sm font-medium"
-                                                placeholder="Full name"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 ml-1">Phone (optional)</label>
-                                            <input
-                                                value={form.customerPhone}
-                                                onChange={(e) => setForm((f) => ({ ...f, customerPhone: e.target.value }))}
-                                                className="w-full bg-gray-50 border-none rounded-xl py-3 px-4 text-sm font-medium"
-                                                placeholder="+1 555 000 0000"
-                                            />
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 ml-1">Issue Description</label>
-                                        <textarea
-                                            required
-                                            value={form.issueDescription}
-                                            onChange={(e) => setForm((f) => ({ ...f, issueDescription: e.target.value }))}
-                                            className="w-full bg-gray-50 border-none rounded-xl py-3 px-4 text-sm font-medium resize-none"
-                                            rows={3}
-                                            placeholder="Describe the problem..."
-                                        />
-                                    </div>
-                                    <div className="flex justify-end">
-                                        <button
-                                            type="submit"
-                                            disabled={formLoading}
-                                            className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow-lg shadow-emerald-200 disabled:opacity-60"
-                                        >
-                                            {formLoading ? 'Submitting...' : 'Submit Claim'}
-                                        </button>
-                                    </div>
-                                </form>
-                            )}
-                        </div>
-                    )}
-                </div>
-
-                {/* Claims Table */}
-                <DataTable<WarrantyClaim>
-                    tableId="warranty-claims"
-                    columns={columns}
-                    data={claims}
-                    title="Warranty Claims"
-                    isLoading={loading}
-                    emptyMessage="No warranty claims yet"
-                    emptyIcon={<ShieldCheck className="w-16 h-16 text-gray-200" />}
-                    searchPlaceholder="Search claims..."
-                    filterPresets={filterPresets}
-                />
+                <button
+                    onClick={() => setIsModalOpen(true)}
+                    className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
+                >
+                    <Plus className="w-4 h-4" />
+                    New Claim
+                </button>
             </div>
 
-            {/* Update Status Modal */}
-            {updateModal && (
-                <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
-                        <div className="flex items-center justify-between">
-                            <h3 className="font-black text-lg">Update Claim Status</h3>
-                            <button onClick={() => setUpdateModal(null)} className="p-1.5 rounded-lg hover:bg-gray-100">
-                                <X className="w-4 h-4" />
+            {loading ? (
+                <div className="text-center py-16 text-gray-400">Loading claims...</div>
+            ) : (
+                <DataTable tableId="warranty-claims" title="Warranty Claims" columns={columns} data={claims} />
+            )}
+
+            {/* New Claim Modal */}
+            {isModalOpen && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg">
+                        <div className="flex items-center justify-between p-5 border-b">
+                            <h2 className="text-lg font-semibold text-gray-900">Submit Warranty Claim</h2>
+                            <button onClick={closeModal} className="text-gray-400 hover:text-gray-600">
+                                <X className="w-5 h-5" />
                             </button>
                         </div>
-                        <p className="text-sm text-gray-500 font-mono">{updateModal.claim.claim_number}</p>
-                        <div>
-                            <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 ml-1">Status</label>
-                            <select
-                                value={updateModal.status}
-                                onChange={(e) => setUpdateModal((m) => m ? { ...m, status: e.target.value } : null)}
-                                className="w-full bg-gray-50 border-none rounded-xl py-3 px-4 text-sm font-medium"
+
+                        <div className="p-5 space-y-4">
+                            {/* Serial number lookup */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Serial Number
+                                </label>
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        value={serialInput}
+                                        onChange={(e) => {
+                                            setSerialInput(e.target.value);
+                                            setLookupResult(null);
+                                            setLookupError('');
+                                        }}
+                                        onKeyDown={(e) => e.key === 'Enter' && handleLookup()}
+                                        placeholder="Enter serial number"
+                                        className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                    />
+                                    <button
+                                        onClick={handleLookup}
+                                        disabled={lookupLoading || !serialInput.trim()}
+                                        className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium disabled:opacity-50 transition-colors"
+                                    >
+                                        <Search className="w-4 h-4" />
+                                        {lookupLoading ? 'Looking up...' : 'Look up'}
+                                    </button>
+                                </div>
+                                {lookupError && (
+                                    <p className="text-red-600 text-xs mt-1">{lookupError}</p>
+                                )}
+                            </div>
+
+                            {/* Lookup result */}
+                            {lookupResult && (
+                                <div
+                                    className={`rounded-lg border p-4 text-sm space-y-1.5 ${
+                                        lookupResult.isClaimable
+                                            ? 'border-emerald-200 bg-emerald-50'
+                                            : 'border-red-200 bg-red-50'
+                                    }`}
+                                >
+                                    <p className="font-medium text-gray-900">
+                                        {lookupResult.product?.name}
+                                    </p>
+                                    {lookupResult.customer && (
+                                        <p className="text-gray-600">
+                                            Customer: {lookupResult.customer.name} ({lookupResult.customer.phone})
+                                        </p>
+                                    )}
+                                    {lookupResult.soldAt && (
+                                        <p className="text-gray-600">
+                                            Sold: {new Date(lookupResult.soldAt).toLocaleDateString()} &nbsp;·&nbsp;
+                                            Warranty: {lookupResult.warrantyDays} days
+                                        </p>
+                                    )}
+                                    {lookupResult.expiresAt && (
+                                        <p className="text-gray-600">
+                                            Expires: {new Date(lookupResult.expiresAt).toLocaleDateString()}
+                                        </p>
+                                    )}
+                                    {lookupResult.isClaimed && (
+                                        <p className="text-red-600 font-medium">
+                                            A claim has already been submitted for this serial.
+                                        </p>
+                                    )}
+                                    {lookupResult.isExpired && !lookupResult.isClaimed && (
+                                        <p className="text-red-600 font-medium">Warranty has expired.</p>
+                                    )}
+                                    {lookupResult.isClaimable && (
+                                        <p className="text-emerald-700 font-medium">
+                                            Eligible for warranty claim.
+                                        </p>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Claim form — only shown after a valid lookup */}
+                            {lookupResult?.isClaimable && (
+                                <>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Reason <span className="text-red-500">*</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={reason}
+                                            onChange={(e) => setReason(e.target.value)}
+                                            placeholder="e.g. Defective screen, not powering on"
+                                            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Additional Details
+                                        </label>
+                                        <textarea
+                                            value={description}
+                                            onChange={(e) => setDescription(e.target.value)}
+                                            rows={3}
+                                            placeholder="Optional additional information"
+                                            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                                        />
+                                    </div>
+                                </>
+                            )}
+                        </div>
+
+                        <div className="flex justify-end gap-3 p-5 border-t">
+                            <button
+                                onClick={closeModal}
+                                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
                             >
-                                {VALID_STATUSES.map((s) => (
-                                    <option key={s} value={s}>{s.replace('_', ' ')}</option>
-                                ))}
-                            </select>
+                                Cancel
+                            </button>
+                            {lookupResult?.isClaimable && (
+                                <button
+                                    onClick={handleSubmitClaim}
+                                    disabled={submitting || !reason.trim()}
+                                    className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+                                >
+                                    {submitting ? 'Submitting...' : 'Submit Claim'}
+                                </button>
+                            )}
                         </div>
-                        <div>
-                            <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 ml-1">Resolution Notes</label>
-                            <textarea
-                                value={updateModal.notes}
-                                onChange={(e) => setUpdateModal((m) => m ? { ...m, notes: e.target.value } : null)}
-                                className="w-full bg-gray-50 border-none rounded-xl py-3 px-4 text-sm font-medium resize-none"
-                                rows={3}
-                                placeholder="Optional notes..."
-                            />
+                    </div>
+                </div>
+            )}
+
+            {/* Status Update Modal */}
+            {statusModalClaim && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
+                        <div className="flex items-center justify-between p-5 border-b">
+                            <h2 className="text-lg font-semibold text-gray-900">Update Claim Status</h2>
+                            <button
+                                onClick={() => setStatusModalClaim(null)}
+                                className="text-gray-400 hover:text-gray-600"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
                         </div>
-                        <div className="flex justify-end gap-3 pt-2">
-                            <button onClick={() => setUpdateModal(null)} className="px-4 py-2.5 rounded-xl font-bold text-sm text-gray-700 bg-gray-100 hover:bg-gray-200">
+                        <div className="p-5 space-y-4">
+                            <p className="text-sm text-gray-600">
+                                Claim <span className="font-mono font-medium">{statusModalClaim.claim_number}</span>
+                                &nbsp;·&nbsp;Serial{' '}
+                                <span className="font-mono font-medium">{statusModalClaim.serial_number}</span>
+                            </p>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    New Status
+                                </label>
+                                <select
+                                    value={newStatus}
+                                    onChange={(e) => setNewStatus(e.target.value)}
+                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                >
+                                    {NEXT_STATUSES[statusModalClaim.status]?.map((s) => (
+                                        <option key={s} value={s}>
+                                            {s}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            {newStatus === 'REPLACED' && (
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Replacement Serial Number <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={replacementSerial}
+                                        onChange={(e) => setReplacementSerial(e.target.value)}
+                                        placeholder="Serial number of the unit being given out"
+                                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                    />
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        Must be an in-stock unit of the same product.
+                                    </p>
+                                </div>
+                            )}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Resolution Notes
+                                </label>
+                                <textarea
+                                    value={resolutionNotes}
+                                    onChange={(e) => setResolutionNotes(e.target.value)}
+                                    rows={3}
+                                    placeholder="Describe the resolution or next steps"
+                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                                />
+                            </div>
+                        </div>
+                        <div className="flex justify-end gap-3 p-5 border-t">
+                            <button
+                                onClick={() => setStatusModalClaim(null)}
+                                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
+                            >
                                 Cancel
                             </button>
                             <button
-                                onClick={handleUpdateStatus}
-                                disabled={updateLoading}
-                                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl font-bold text-sm shadow-lg shadow-blue-200 disabled:opacity-60"
+                                onClick={handleStatusUpdate}
+                                disabled={
+                                    statusUpdating ||
+                                    !newStatus ||
+                                    (newStatus === 'REPLACED' && !replacementSerial.trim())
+                                }
+                                className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
                             >
-                                {updateLoading ? 'Saving...' : 'Save'}
+                                {statusUpdating ? 'Saving...' : 'Save'}
                             </button>
                         </div>
                     </div>
