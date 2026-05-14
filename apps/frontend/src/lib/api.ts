@@ -250,9 +250,18 @@ export const api = {
     getSales: () => fetchWithAuth('/sales'),
     getCustomers: () => fetchWithAuth('/customers'),
     getCustomer: (id: string) => fetchWithAuth(`/customers/${id}`),
+    getCustomerPurchaseHistory: (id: string, params?: { page?: number; limit?: number; from?: string; to?: string }) => {
+        const query = new URLSearchParams();
+        if (params?.page) query.set('page', String(params.page));
+        if (params?.limit) query.set('limit', String(params.limit));
+        if (params?.from) query.set('from', params.from);
+        if (params?.to) query.set('to', params.to);
+        return fetchWithAuth(`/customers/${id}/history${query.toString() ? `?${query.toString()}` : ''}`);
+    },
     getCustomerHistory: (id: string) => fetchWithAuth(`/customers/${id}/history`),
     getCustomerSegmentStats: () => fetchWithAuth('/customers/segment-stats'),
     runCustomerSegmentation: () => fetchWithAuth('/customers/run-segmentation', { method: 'POST' }),
+    evaluateCustomerSegments: () => fetchWithAuth('/customers/segments/evaluate', { method: 'POST' }),
     createCustomer: (data: any) => fetchWithAuth('/customers', {
         method: 'POST',
         body: JSON.stringify(data),

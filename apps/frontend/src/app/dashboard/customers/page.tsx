@@ -97,6 +97,20 @@ export default function CustomersPage() {
         loadCustomers();
     };
 
+    const handleEvaluateSegments = async () => {
+        setEvaluating(true);
+        setEvalMessage('');
+        try {
+            const result = await api.evaluateCustomerSegments();
+            setEvalMessage(`Segmentation complete — ${result.updated} customer(s) updated.`);
+            await loadCustomers();
+        } catch (error: any) {
+            setEvalMessage(error.message || 'Failed to evaluate segments.');
+        } finally {
+            setEvaluating(false);
+        }
+    };
+
     const columns: ColumnDef<Customer, any>[] = useMemo(
         () => [
             columnHelper.accessor('customer_code', {
@@ -273,6 +287,9 @@ export default function CustomersPage() {
                 )}
 
                 <AddCustomerModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onAdd={handleAddCustomer} />
+                {evalMessage && (
+                    <div className="bg-white border border-gray-100 rounded-xl px-4 py-3 text-sm font-bold text-gray-700">{evalMessage}</div>
+                )}
 
                 <DataTable<Customer>
                     tableId="customers"
