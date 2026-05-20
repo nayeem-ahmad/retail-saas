@@ -52,7 +52,7 @@ jobs:
       - run: npx prisma db push --schema=packages/database/prisma/schema.prisma --skip-generate
       - name: Run backend unit + integration tests with coverage
         run: |
-          npx jest --testPathPatterns="src/" --passWithNoTests --coverage \
+          npx jest --testPathPatterns="src/" --passWithNoTests --coverage --forceExit \
             --testPathIgnorePatterns="src/accounting/bootstrap-accounting.spec.ts" \
             --testPathIgnorePatterns="src/accounting/accounting.controller.spec.ts" \
             --testPathIgnorePatterns="src/customers/customers.service.spec.ts"
@@ -75,9 +75,12 @@ jobs:
           node-version: '20'
           cache: 'npm'
       - run: npm install
+      - name: List discovered frontend tests
+        run: npx jest --listTests --testPathIgnorePatterns="e2e/"
+        working-directory: apps/frontend
       - name: Run frontend unit tests
         run: |
-          npx jest --passWithNoTests \
+          npx jest --passWithNoTests --forceExit \
             --testPathIgnorePatterns="e2e/" \
             --testPathIgnorePatterns="src/app/dashboard/page.test.tsx" \
             --testPathIgnorePatterns="src/app/dashboard/pos/page.test.tsx" \
