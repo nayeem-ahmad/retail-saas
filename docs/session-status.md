@@ -27,14 +27,21 @@ Working through GitHub issues in priority order. Issues marked ✅ are closed/do
 **Pending action (user):** Add `RESEND_API_KEY` and `EMAIL_FROM` to production env vars.
 
 ## Session 2 — CRITICAL: Infrastructure + Monitoring
-- [ ] #52 Upgrade Render plan (manual — user action needed)
-- [ ] #53 Set up staging environment
-- [ ] #54 Configure automated DB backups
-- [ ] #55 Verify PgBouncer config
-- [ ] #56 Production deployment runbook
-- [ ] #57 Integrate Sentry (backend + frontend)
-- [ ] #58 Set up uptime monitoring
-- [ ] #59 Configure alerts
+- [ ] #52 Upgrade Render plan — **USER ACTION**: Change `plan: free` → `standard` in render.yaml for backend/frontend, redeploy
+- [x] #53 Staging environment — staging services added to render.yaml (deploy from `staging` branch)
+- [x] #54 DB backups — scripts/backup-db.sh + docs/ops/deployment-runbook.md; **USER ACTION**: enable Supabase PITR in dashboard
+- [x] #55 PgBouncer config — directUrl added to schema.prisma; docs/ops/pgbouncer-config.md
+- [x] #56 Production deployment runbook — docs/ops/deployment-runbook.md
+- [x] #57 Sentry — @sentry/nestjs in backend (instrument.ts), @sentry/nextjs in frontend (3 config files + global-error.tsx)
+- [x] #58 Uptime monitoring — /health endpoint (db check + latency); docs/ops/uptime-monitoring.md (BetterStack setup guide)
+- [x] #59 Alerts — Sentry alert rules documented, Render notifications guide, DB connection alert guide
+
+**Pending user actions:**
+1. Upgrade Render plan from `free` to `standard` (change in render.yaml, then redeploy)
+2. Enable Supabase Point-in-Time Recovery: Dashboard → Database → Backups → Enable PITR
+3. Set up BetterStack uptime monitor pointing at /health (see docs/ops/uptime-monitoring.md)
+4. Set Sentry alert rules in Sentry dashboard (see docs/ops/uptime-monitoring.md)
+5. Add SENTRY_DSN, NEXT_PUBLIC_SENTRY_DSN, SENTRY_ORG, SENTRY_PROJECT to Render env vars
 
 ## Session 3 — HIGH: Auth + API Hardening + Compliance
 - [ ] #67 Email verification on signup

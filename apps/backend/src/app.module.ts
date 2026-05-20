@@ -1,9 +1,11 @@
 import { Module } from '@nestjs/common';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { ScheduleModule } from '@nestjs/schedule';
+import { SentryModule } from '@sentry/nestjs/setup';
 import { DatabaseModule } from './database/database.module';
 import { EmailModule } from './email/email.module';
 import { AuditModule } from './audit/audit.module';
+import { HealthModule } from './health/health.module';
 import { AuthModule } from './auth/auth.module';
 import { PasswordResetModule } from './password-reset/password-reset.module';
 import { InvitationsModule } from './invitations/invitations.module';
@@ -36,11 +38,13 @@ import { WarrantyClaimsModule } from './warranty-claims/warranty-claims.module';
 
 @Module({
     imports: [
+        SentryModule.forRoot(),
         ThrottlerModule.forRoot([{ ttl: 60_000, limit: 20 }]),
         ScheduleModule.forRoot(),
         DatabaseModule,
         EmailModule,
         AuditModule,
+        HealthModule,
         AuthModule,
         PasswordResetModule,
         InvitationsModule,
