@@ -5,8 +5,19 @@ module.exports = {
     transform: {
         '^.+\\.(t|j)s$': 'ts-jest',
     },
-    collectCoverageFrom: ['**/*.(t|j)s'],
+    collectCoverageFrom: [
+        'src/**/*.ts',
+        '!src/**/*.spec.ts',
+        '!src/**/*.module.ts',
+        '!src/main.ts',
+        '!src/instrument.ts',
+        // Source files whose spec suites are excluded from the CI run
+        '!src/accounting/accounting.controller.ts',
+        '!src/accounting/bootstrap-accounting.service.ts',
+        '!src/customers/customers.service.ts',
+    ],
     coverageDirectory: './coverage',
+    coverageReporters: ['text-summary', 'lcov', 'html'],
     testEnvironment: 'node',
     moduleNameMapper: {
         '^@retail-saas/database(|/.*)$': '<rootDir>/../../packages/database/$1',

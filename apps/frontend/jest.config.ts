@@ -11,6 +11,17 @@ const config: Config = {
   coverageProvider: 'v8',
   testEnvironment: 'jsdom',
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
+  collectCoverageFrom: [
+    'src/**/*.{ts,tsx}',
+    '!src/**/*.spec.{ts,tsx}',
+    '!src/**/*.test.{ts,tsx}',
+    '!src/**/*.d.ts',
+    '!src/app/layout.tsx',
+    '!src/app/globals.css',
+    '!src/instrumentation*.ts',
+    '!src/sentry*.ts',
+  ],
+  coverageReporters: ['text-summary', 'lcov', 'html'],
   coverageThreshold: {
     global: {
       branches: 80,
