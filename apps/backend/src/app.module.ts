@@ -1,6 +1,16 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { ScheduleModule } from '@nestjs/schedule';
+import { SentryModule } from '@sentry/nestjs/setup';
 import { DatabaseModule } from './database/database.module';
+import { EmailModule } from './email/email.module';
+import { AuditModule } from './audit/audit.module';
+import { HealthModule } from './health/health.module';
 import { AuthModule } from './auth/auth.module';
+import { PasswordResetModule } from './password-reset/password-reset.module';
+import { InvitationsModule } from './invitations/invitations.module';
+import { NotificationsModule } from './notifications/notifications.module';
 import { ProductsModule } from './products/products.module';
 import { AssetsModule } from './assets/assets.module';
 import { SalesModule } from './sales/sales.module';
@@ -15,7 +25,6 @@ import { SuppliersModule } from './suppliers/suppliers.module';
 import { PurchasesModule } from './purchases/purchases.module';
 import { PurchaseReturnsModule } from './purchase-returns/purchase-returns.module';
 import { AccountingModule } from './accounting/accounting.module';
-import { ScheduleModule } from '@nestjs/schedule';
 import { ProductGroupsModule } from './product-groups/product-groups.module';
 import { ProductSubgroupsModule } from './product-subgroups/product-subgroups.module';
 import { InventoryModule } from './inventory/inventory.module';
@@ -30,8 +39,17 @@ import { WarrantyClaimsModule } from './warranty-claims/warranty-claims.module';
 
 @Module({
     imports: [
+        SentryModule.forRoot(),
+        ThrottlerModule.forRoot([{ ttl: 60_000, limit: 20 }]),
+        ScheduleModule.forRoot(),
         DatabaseModule,
+        EmailModule,
+        AuditModule,
+        HealthModule,
         AuthModule,
+        PasswordResetModule,
+        InvitationsModule,
+        NotificationsModule,
         ProductsModule,
         AssetsModule,
         SalesModule,
@@ -57,9 +75,9 @@ import { WarrantyClaimsModule } from './warranty-claims/warranty-claims.module';
         BillingModule,
         AdminTenantsModule,
         WarrantyClaimsModule,
-        ScheduleModule.forRoot()
     ],
     controllers: [],
-    providers: [],
+    providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
-export class AppModule { }
+export class AppModule {}
+
