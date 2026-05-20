@@ -36,9 +36,7 @@ describe('BillingController — webhook integration', () => {
         }
     }
 
-    beforeEach(async () => {
-        jest.resetAllMocks();
-
+    beforeAll(async () => {
         const module: TestingModule = await Test.createTestingModule({
             controllers: [BillingController],
             providers: [
@@ -56,7 +54,13 @@ describe('BillingController — webhook integration', () => {
         await app.init();
     });
 
-    afterEach(() => app.close());
+    afterAll(async () => {
+        await app.close();
+    });
+
+    beforeEach(() => {
+        jest.resetAllMocks();
+    });
 
     describe('POST /billing/webhooks/manual', () => {
         it('activates subscription with a valid webhook secret', async () => {
