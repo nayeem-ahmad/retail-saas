@@ -134,6 +134,12 @@ const MODULES: NavModule[] = [
         href: '/dashboard/billing',
     },
     {
+        key: 'account-settings',
+        icon: Settings,
+        label: 'Account Settings',
+        href: '/dashboard/settings',
+    },
+    {
         key: 'admin',
         icon: ShieldCheck,
         label: 'Platform Admin',

@@ -1,7 +1,7 @@
-import { Controller, Post, Body, UseGuards, Request, Get, Query, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Patch, Body, UseGuards, Request, Get, Query, HttpCode, HttpStatus } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
-import { SignupDto, LoginDto, CreateStoreDto } from './auth.dto';
+import { SignupDto, LoginDto, CreateStoreDto, UpdateProfileDto, ChangePasswordDto } from './auth.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { TotpService } from './totp.service';
 
@@ -63,6 +63,20 @@ export class AuthController {
     @Get('me')
     async getMe(@Request() req) {
         return this.authService.getMe(req.user.userId);
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Patch('me')
+    async updateProfile(@Request() req, @Body() dto: UpdateProfileDto) {
+        return this.authService.updateProfile(req.user.userId, dto);
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Throttle({ default: { ttl: 60_000, limit: 5 } })
+    @Post('change-password')
+    async changePassword(@Request() req, @Body() dto: ChangePasswordDto) {
+        await this.authService.changePassword(req.user.userId, dto);
+        return { message: 'Password changed successfully' };
     }
 
     // #67 Email verification

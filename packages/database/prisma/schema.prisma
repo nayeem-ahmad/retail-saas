@@ -118,6 +118,7 @@ model User {
   passwordResetTokens       PasswordResetToken[]
   emailVerificationTokens   EmailVerificationToken[]
   sentInvitations           UserInvitation[]        @relation("InvitationSender")
+  feedbacks                 Feedback[]
 }
 
 model PasswordResetToken {
@@ -230,6 +231,7 @@ model Tenant {
   postingEvents     PostingEvent[]
   warrantyClaims    WarrantyClaim[]
   invitations       UserInvitation[]
+  feedbacks         Feedback[]
 }
 
 model TenantUser {
@@ -1308,4 +1310,19 @@ model WarrantyClaim {
   @@index([tenant_id, serial_number])
   @@index([tenant_id, product_id])
   @@index([tenant_id, customer_id])
+}
+
+model Feedback {
+  id         String   @id @default(cuid())
+  tenantId   String
+  userId     String
+  type       String   // 'bug' | 'feature' | 'general'
+  message    String
+  page       String?
+  createdAt  DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@map("feedbacks")
 }

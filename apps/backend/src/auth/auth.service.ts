@@ -5,7 +5,7 @@ import { EmailService } from '../email/email.service';
 import { bootstrapDefaultAccountingForTenant } from '@retail-saas/database';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
-import { SignupDto, LoginDto } from './auth.dto';
+import { SignupDto, LoginDto, UpdateProfileDto, ChangePasswordDto } from './auth.dto';
 import { isPlatformAdminEmail } from './platform-admin.util';
 import { ROLE_DEFAULT_PERMISSIONS, UserRole } from '@retail-saas/shared-types';
 
@@ -218,16 +218,59 @@ export class AuthService {
             throw new UnauthorizedException('User not found');
         }
 
+        const totpSecret = (user as any).totp_secret as string | null | undefined;
+        const twoFactorEnabled = !!totpSecret && !totpSecret.startsWith('pending:');
+
         return {
             id: user.id,
             email: user.email,
             name: user.name,
             is_platform_admin: isPlatformAdminEmail(user.email),
             email_verified: !!user.email_verified_at,
+            two_factor_enabled: twoFactorEnabled,
             tenants: user.tenantMembers.map((membership) =>
                 this.mapTenantMembership(membership, user.storeAccess),
             ),
         };
+    }
+
+    async updateProfile(userId: string, dto: UpdateProfileDto) {
+        const data: { name?: string } = {};
+        if (dto.name !== undefined) data.name = dto.name.trim();
+
+        const user = await this.db.user.update({
+            where: { id: userId },
+            data,
+            select: { id: true, email: true, name: true },
+        });
+
+        return { id: user.id, email: user.email, name: user.name };
+    }
+
+    async changePassword(userId: string, dto: ChangePasswordDto) {
+        const user = await this.db.user.findUnique({
+            where: { id: userId },
+            select: { passwordHash: true },
+        });
+
+        if (!user) throw new UnauthorizedException('User not found');
+
+        const valid = await bcrypt.compare(dto.currentPassword, user.passwordHash);
+        if (!valid) throw new BadRequestException('Current password is incorrect');
+
+        if (dto.currentPassword === dto.newPassword) {
+            throw new BadRequestException('New password must differ from your current password');
+        }
+
+        if (dto.newPassword.length < 8) {
+            throw new BadRequestException('New password must be at least 8 characters');
+        }
+
+        const newHash = await bcrypt.hash(dto.newPassword, 10);
+        await this.db.user.update({
+            where: { id: userId },
+            data: { passwordHash: newHash },
+        });
     }
 
     async setupStore(userId: string, dto: { name: string; address?: string; planCode?: 'FREE' | 'BASIC' | 'STANDARD' | 'PREMIUM' }) {

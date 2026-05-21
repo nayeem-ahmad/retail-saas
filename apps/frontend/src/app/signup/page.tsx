@@ -152,6 +152,13 @@ export default function SignupPage() {
                             </div>
                         </div>
 
+                        <p className="md:col-span-2 text-xs text-gray-400 text-center leading-relaxed">
+                            By creating a workspace you agree to our{' '}
+                            <Link href="/terms" className="text-blue-600 hover:underline font-medium">Terms of Service</Link>
+                            {' '}and{' '}
+                            <Link href="/privacy" className="text-blue-600 hover:underline font-medium">Privacy Policy</Link>.
+                        </p>
+
                         <div className="md:col-span-2">
                             <button type="submit" disabled={isLoading} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl shadow-lg shadow-blue-200 active:scale-[0.98] transition-all duration-200 flex items-center justify-center space-x-2 disabled:opacity-70 disabled:cursor-not-allowed group">
                                 {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><span>Create workspace</span><ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" /></>}
