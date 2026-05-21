@@ -5,6 +5,7 @@ import { createColumnHelper, type ColumnDef } from '@tanstack/react-table';
 import { AlertTriangle } from 'lucide-react';
 import { DataTable } from '@/components/data-table';
 import { api } from '../../../../../lib/api';
+import { formatBDT } from '../../../../../lib/format';
 
 interface ShrinkageSummaryRow {
     warehouseName: string;
