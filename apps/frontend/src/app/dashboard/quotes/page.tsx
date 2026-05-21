@@ -85,7 +85,7 @@ export default function QuotesPage() {
             </head>
             <body>
                 <h1>${quote.quote_number} (v${quote.version})</h1>
-                <div class="subtitle">Created: ${new Date(quote.created_at).toLocaleString()} | Status: ${quote.status} | Valid Until: ${quote.valid_until ? new Date(quote.valid_until).toLocaleDateString() : 'Open'}</div>
+                <div class="subtitle">Created: ${new Date(quote.created_at).toLocaleString()} | Status: ${quote.status} | Valid Until: ${quote.valid_until ? formatDate(quote.valid_until) : 'Open'}</div>
                 <p><strong>Customer:</strong> ${quote.customer?.name || 'Walk-in'}</p>
                 <table>
                     <thead><tr><th>Product</th><th>Qty</th><th>Unit Price</th><th>Subtotal</th></tr></thead>

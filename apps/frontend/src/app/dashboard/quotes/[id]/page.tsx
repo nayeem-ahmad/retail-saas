@@ -5,7 +5,7 @@ import { ArrowLeft, Package, FileText, ClipboardList, PlusCircle, Printer, Penci
 import Link from 'next/link';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { api } from '../../../../lib/api';
-import { formatBDT } from '../../../../lib/format';
+import { formatBDT, formatDate } from '../../../../lib/format';
 
 interface EditQuoteItem {
     productId: string;
@@ -251,7 +251,7 @@ export default function QuoteDetailsPage() {
                                     STATUS: {quote.status}
                                 </span>
                                 <span className="text-sm font-bold text-gray-400">
-                                    Expires: {quote.valid_until ? new Date(quote.valid_until).toLocaleDateString() : 'Never'}
+                                    Expires: {quote.valid_until ? formatDate(quote.valid_until) : 'Never'}
                                 </span>
                             </div>
                         </div>

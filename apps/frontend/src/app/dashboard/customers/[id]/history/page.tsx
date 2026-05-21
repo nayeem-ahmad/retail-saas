@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { api } from '../../../../../lib/api';
-import { formatBDT } from '../../../../../lib/format';
+import { formatBDT, formatDate } from '../../../../../lib/format';
 import {
     ArrowLeft, ShoppingBag, TrendingUp, Calendar, Clock, Package, BarChart3, Search,
 } from 'lucide-react';
@@ -151,7 +151,7 @@ export default function PurchaseHistoryPage() {
                     <div>
                         <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Purchase Timeline</p>
                         <p className="text-sm font-bold text-gray-700 mt-0.5">
-                            {new Date(summary.firstPurchase).toLocaleDateString('en-BD')} — {new Date(summary.lastPurchase).toLocaleDateString('en-BD')}
+                            {formatDate(summary.firstPurchase)} — {formatDate(summary.lastPurchase)}
                         </p>
                     </div>
                 </div>
