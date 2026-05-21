@@ -1,6 +1,6 @@
 # Session Status
 
-## Last updated: Session 6 (2026-05-21)
+## Last updated: Session 8 (2026-05-21)
 
 ## Completed
 - feat(80-2,80-3): Customer segment evaluation & paginated purchase history
@@ -82,11 +82,17 @@ Working through GitHub issues in priority order. Issues marked ✅ are closed/do
 - [ ] #86 In-app contextual help / tooltips — tooltip component for COA, posting rules, stock takes
 - [ ] #87 Demo/sandbox account — seed script + demo login on landing page
 
-## Session 7 — IMPORTANT: Marketing polish + UX (in progress)
-- [ ] #84 Pricing page — dedicated /pricing with full 4-tier feature comparison table
-- [ ] #86 Contextual help / tooltips — reusable HelpTooltip component; wire into COA, posting rules, stock takes, POS
-- [ ] #87 Demo sandbox — admin seed script + "Try Demo" button on landing/login pages
-- [ ] #186 Dependency vulnerability scanning — add npm audit --audit-level=high to CI workflow
+## Session 7 — IMPORTANT: Marketing polish + UX ✅ (PR #206, merged)
+- [x] #84 Pricing page — /pricing with 4-tier comparison table, monthly/yearly toggle, 14-feature matrix, FAQ, footer
+- [x] #86 Contextual help / tooltips — HelpTooltip component; wired into COA, vouchers, stock takes, POS
+- [x] #87 Demo sandbox — seed-demo.ts + POST /auth/demo + Try Demo button on login + landing page hero CTA
+- [x] #186 Dependency vulnerability scanning — npm audit --audit-level=high CI job (non-blocking)
+
+## Session 8 — UX gaps + legal pages (in progress)
+- [ ] #67 Email verification frontend page — /verify-email?token= page calling GET /api/v1/auth/verify-email
+- [ ] #77/#78 Terms of Service + Privacy Policy pages — /terms and /privacy with full content; linked from footer/signup
+- [ ] Account settings page — /dashboard/settings: change password, TOTP 2FA setup/disable UI, profile name update
+- [ ] #103 In-app feedback widget — floating feedback button → modal → POST to backend (stored in DB or emailed)
 
 **Note:** Email system (#45–51), monitoring (#57–59), auth hardening (#67–69), API hardening (#70–72), compliance (#73–76), testing (#79–82) all completed in Sessions 1–4.
 

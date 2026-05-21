@@ -40,6 +40,7 @@ import { BillingModule } from './billing/billing.module';
 import { AdminTenantsModule } from './admin-tenants/admin-tenants.module';
 import { WarrantyClaimsModule } from './warranty-claims/warranty-claims.module';
 import { AccountModule } from './account/account.module';
+import { FeedbackModule } from './feedback/feedback.module';
 
 @Module({
     imports: [
@@ -82,6 +83,7 @@ import { AccountModule } from './account/account.module';
         AdminTenantsModule,
         WarrantyClaimsModule,
         AccountModule,
+        FeedbackModule,
     ],
     controllers: [],
     providers: [

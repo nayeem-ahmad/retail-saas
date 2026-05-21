@@ -111,6 +111,20 @@ ${invoiceUrl ? `<p><a href="${invoiceUrl}">View Invoice</a></p>` : ''}`,
         });
     }
 
+    async sendFeedbackNotification(to: string, id: string, type: string, message: string, page?: string): Promise<void> {
+        const typeLabel = type === 'bug' ? '🐛 Bug' : type === 'feature' ? '✨ Feature Request' : '💬 General';
+        await this.send({
+            to,
+            subject: `[Feedback] ${typeLabel}`,
+            html: `<h2>New Feedback Submitted</h2>
+<p><strong>ID:</strong> ${id}</p>
+<p><strong>Type:</strong> ${typeLabel}</p>
+${page ? `<p><strong>Page:</strong> ${page}</p>` : ''}
+<p><strong>Message:</strong></p>
+<blockquote>${message.replace(/\n/g, '<br>')}</blockquote>`,
+        });
+    }
+
     private async send(opts: { to: string; subject: string; html: string }): Promise<void> {
         if (!this.resend) {
             this.logger.log(`[EMAIL] To: ${opts.to} | Subject: ${opts.subject}`);

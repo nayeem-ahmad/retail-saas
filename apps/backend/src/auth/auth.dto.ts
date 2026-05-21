@@ -19,3 +19,12 @@ export class CreateStoreDto {
     address?: string;
     planCode?: 'FREE' | 'BASIC' | 'STANDARD' | 'PREMIUM';
 }
+
+export class UpdateProfileDto {
+    name?: string;
+}
+
+export class ChangePasswordDto {
+    currentPassword: string;
+    newPassword: string;
+}
