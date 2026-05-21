@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { AlertCircle, Receipt, Search, Undo2, X } from 'lucide-react';
 import { api } from '../../../lib/api';
-import { formatBDT } from '../../../lib/format';
+import { formatBDT, formatDate } from '../../../lib/format';
 
 interface PurchaseReturnItem {
     id: string;
@@ -265,7 +265,7 @@ export default function CreatePurchaseReturnModal({
                                                         </span>
                                                     </div>
                                                     <p className="text-xs text-gray-500 mt-2">
-                                                        {new Date(purchase.created_at).toLocaleDateString()} · {purchase.items.length} items
+                                                        {formatDate(purchase.created_at)} · {purchase.items.length} items
                                                     </p>
                                                 </button>
                                             );
@@ -298,7 +298,7 @@ export default function CreatePurchaseReturnModal({
                                         <div>
                                             <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1">Purchase Date</span>
                                             <span className="text-sm font-bold text-gray-700">
-                                                {new Date(selectedPurchase.created_at).toLocaleDateString()}
+                                                {formatDate(selectedPurchase.created_at)}
                                             </span>
                                         </div>
                                         <div>

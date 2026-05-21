@@ -4,7 +4,7 @@ import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowUpRight, BadgeCheck, CreditCard, Loader2, RotateCcw } from 'lucide-react';
 import { api } from '../../../lib/api';
-import { formatBDT } from '../../../lib/format';
+import { formatBDT, formatDate } from '../../../lib/format';
 import { redirectTo } from '../../../lib/browser';
 
 type PlanCode = 'FREE' | 'BASIC' | 'STANDARD' | 'PREMIUM';
@@ -213,7 +213,7 @@ function BillingPageContent() {
                                     <p className="mt-1 text-lg font-black text-gray-900">{summary.subscription?.status || 'UNASSIGNED'}</p>
                                     <p className="mt-1 text-xs text-gray-500">
                                         {summary.subscription
-                                            ? `Current period ends ${new Date(summary.subscription.current_period_end).toLocaleDateString()}`
+                                            ? `Current period ends ${formatDate(summary.subscription.current_period_end)}`
                                             : 'Create a subscription to unlock plan-based access.'}
                                     </p>
                                 </div>

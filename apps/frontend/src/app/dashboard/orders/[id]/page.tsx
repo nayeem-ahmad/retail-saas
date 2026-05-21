@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { ArrowLeft, Package, DollarSign, Printer, Save, Pencil, X, Trash2, Search, PackageCheck } from 'lucide-react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { api } from '../../../../lib/api';
-import { formatBDT } from '../../../../lib/format';
+import { formatBDT, formatDate } from '../../../../lib/format';
 
 interface EditItem {
     productId: string;
@@ -384,7 +384,7 @@ export default function OrderDetailsPage() {
                     )}
                     {order.delivery_date && (
                         <div className="section">
-                            <strong>Delivery Date:</strong> {new Date(order.delivery_date).toLocaleDateString()}
+                            <strong>Delivery Date:</strong> {formatDate(order.delivery_date)}
                         </div>
                     )}
                 </div>
@@ -583,7 +583,7 @@ export default function OrderDetailsPage() {
                         {order.delivery_date && (
                             <div className="mt-4 pt-4 border-t border-gray-100">
                                 <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Delivery Date</span>
-                                <p className="text-sm font-black mt-1">{new Date(order.delivery_date).toLocaleDateString()}</p>
+                                <p className="text-sm font-black mt-1">{formatDate(order.delivery_date)}</p>
                             </div>
                         )}
                     </div>
@@ -627,7 +627,7 @@ export default function OrderDetailsPage() {
                                         <div key={dep.id} className="flex justify-between items-center p-3 border border-emerald-100 bg-emerald-50 rounded-xl">
                                             <div>
                                                 <p className="text-xs font-black uppercase text-emerald-700">{dep.payment_method}</p>
-                                                <p className="text-[10px] font-bold text-emerald-600/60 mt-0.5">{new Date(dep.created_at).toLocaleDateString()}</p>
+                                                <p className="text-[10px] font-bold text-emerald-600/60 mt-0.5">{formatDate(dep.created_at)}</p>
                                             </div>
                                             <span className="font-black text-emerald-700">{formatBDT(Number(dep.amount))}</span>
                                         </div>

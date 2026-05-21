@@ -7,7 +7,7 @@ import { ArrowLeft, Calculator, Filter, ReceiptText, Wallet } from 'lucide-react
 import { createColumnHelper, type ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '../../../../components/data-table';
 import { api } from '../../../../lib/api';
-import { formatBDT } from '../../../../lib/format';
+import { formatBDT, formatDate } from '../../../../lib/format';
 
 type LedgerAccount = {
     id: string;
@@ -187,7 +187,7 @@ function AccountingLedgerPageContent() {
         () => [
             columnHelper.accessor('date', {
                 header: 'Date',
-                cell: (info) => <span className="text-sm font-bold text-gray-700">{new Date(info.getValue()).toLocaleDateString()}</span>,
+                cell: (info) => <span className="text-sm font-bold text-gray-700">{formatDate(info.getValue())}</span>,
                 size: 120,
             }),
             columnHelper.accessor('voucher_number', {

@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, BookText } from 'lucide-react';
 import { api } from '../../../../../lib/api';
-import { formatBDT } from '../../../../../lib/format';
+import { formatBDT, formatDate } from '../../../../../lib/format';
 
 type VoucherDetail = {
     id: string;
@@ -103,7 +103,7 @@ export default function VoucherDetailPage() {
                         <section className="grid gap-4 md:grid-cols-4">
                             <DetailStat label="Voucher #" value={voucher.voucher_number} />
                             <DetailStat label="Type" value={voucher.voucher_type.replaceAll('_', ' ')} />
-                            <DetailStat label="Date" value={new Date(voucher.date).toLocaleDateString()} />
+                            <DetailStat label="Date" value={formatDate(voucher.date)} />
                             <DetailStat label="Reference" value={voucher.reference_number || 'Not provided'} />
                         </section>
 
