@@ -98,7 +98,7 @@ export default function HomePage() {
                     <span className="text-xl font-black tracking-tight text-blue-600">RetailSaaS</span>
                     <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-600">
                         <a href="#features" className="hover:text-gray-900 transition-colors">Features</a>
-                        <a href="#pricing" className="hover:text-gray-900 transition-colors">Pricing</a>
+                        <Link href="/pricing" className="hover:text-gray-900 transition-colors">Pricing</Link>
                         <a href="#testimonials" className="hover:text-gray-900 transition-colors">Reviews</a>
                     </nav>
                     <div className="flex items-center gap-3">
@@ -257,6 +257,14 @@ export default function HomePage() {
                                 </Link>
                             </div>
                         ))}
+                    </div>
+                    <div className="text-center mt-8">
+                        <Link
+                            href="/pricing"
+                            className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-semibold text-sm transition-colors"
+                        >
+                            See full pricing &amp; feature comparison <ArrowRight className="w-4 h-4" />
+                        </Link>
                     </div>
                 </div>
             </section>
