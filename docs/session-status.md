@@ -59,11 +59,11 @@ Working through GitHub issues in priority order. Issues marked ✅ are closed/do
 1. Set FIELD_ENCRYPTION_KEY in Render env (32 random bytes as hex)
 2. Create frontend /verify-email page to call GET /api/v1/auth/verify-email?token=
 
-## Session 4 — HIGH: Testing
-- [ ] #79 Verify 80% coverage threshold
-- [ ] #80 E2E tests for critical paths
-- [ ] #81 Integration tests for payment webhooks
-- [ ] #82 POS load tests
+## Session 4 — HIGH: Testing ✅
+- [x] #79 Coverage threshold verified — jest.config.js fixed (collectCoverageFrom src/**/*.ts, coverageReporters text-summary+lcov+html); CI uploads lcov+html artifacts; frontend jest.config.ts updated similarly
+- [x] #80 E2E tests (Playwright) — playwright.config.ts + e2e/{auth,pos,billing}.spec.ts; CI job (test-e2e) runs on main push or 'run-e2e' label
+- [x] #81 Payment webhook integration tests — billing.service.spec.ts expanded (IPN, cancel, yearly cycle, role guard, confirm checkout, getSummary, cancelAtPeriodEnd, reference mismatch); billing.controller.spec.ts added (supertest)
+- [x] #82 POS load tests — load-tests/pos-sale.js (k6): ramp 1→50 VUs, p95<2s threshold, multi-tenant scenario
 
 ## Session 5 — IMPORTANT: Marketing + Localization + Performance
 - [ ] #83 Real marketing/landing page
