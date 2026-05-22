@@ -40,6 +40,7 @@ import {
     HelpCircle,
     Gift,
     Tag,
+    MessageSquare,
     type LucideIcon,
 } from 'lucide-react';
 import { useBranding } from '@/lib/branding';
@@ -201,6 +202,7 @@ const MODULES: NavModule[] = [
             { href: '/dashboard/settings/branding', icon: Palette, label: 'Branding' },
             { href: '/dashboard/settings/tax', icon: Receipt, label: 'Tax / VAT' },
             { href: '/dashboard/settings/loyalty', icon: Gift, label: 'Loyalty Program' },
+            { href: '/dashboard/settings/sms', icon: MessageSquare, label: 'SMS Notifications' },
         ],
     },
     {

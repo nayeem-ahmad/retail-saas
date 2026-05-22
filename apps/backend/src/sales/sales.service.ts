@@ -5,12 +5,17 @@ import { applyInventoryMovement, resolveWarehouseId } from '../database/inventor
 import { autoPostFromRules } from '../accounting/posting.utils';
 import { cursorPaginate, CursorPaginatedResult } from '../common/pagination.dto';
 import { EmailService } from '../email/email.service';
+import { SmsService } from '../sms/sms.service';
 
 @Injectable()
 export class SalesService {
     private readonly logger = new Logger(SalesService.name);
 
-    constructor(private db: DatabaseService, private emailService: EmailService) { }
+    constructor(
+        private db: DatabaseService,
+        private emailService: EmailService,
+        private smsService: SmsService,
+    ) { }
 
     async create(tenantId: string, dto: CreateSaleDto) {
         const result = await this.db.$transaction(async (tx) => {
@@ -160,27 +165,53 @@ export class SalesService {
 
         // Fire-and-forget receipt email (after transaction commits)
         if (dto.customerId) {
-            this.sendReceiptEmail(tenantId, dto.customerId, Number(result.total_amount));
+            this.sendReceiptEmail(tenantId, dto.customerId, Number(result.total_amount), result.serial_number);
         }
 
         return result;
     }
 
-    private sendReceiptEmail(tenantId: string, customerId: string, totalAmount: number): void {
+    private sendReceiptEmail(tenantId: string, customerId: string, totalAmount: number, serialNumber: string): void {
         Promise.all([
-            this.db.customer.findUnique({ where: { id: customerId }, select: { email: true } }),
-            this.db.tenant.findUnique({ where: { id: tenantId }, select: { name: true } }),
+            this.db.customer.findUnique({
+                where: { id: customerId },
+                select: { email: true, name: true, phone: true },
+            }),
+            this.db.tenant.findUnique({
+                where: { id: tenantId },
+                select: { name: true, sms_on_sale: true },
+            }),
         ])
             .then(([customer, tenant]) => {
-                if (!customer?.email || !tenant) return;
-                return this.emailService.sendBillingInvoice(
-                    customer.email,
-                    tenant.name,
-                    totalAmount,
-                    'BDT',
-                );
+                if (!tenant) return;
+
+                const tasks: Promise<void>[] = [];
+
+                if (customer?.email) {
+                    tasks.push(
+                        this.emailService.sendBillingInvoice(
+                            customer.email,
+                            tenant.name,
+                            totalAmount,
+                            'BDT',
+                        ),
+                    );
+                }
+
+                if (tenant.sms_on_sale && customer?.phone) {
+                    tasks.push(
+                        this.smsService.sendSaleReceipt(
+                            customer.phone,
+                            customer.name ?? 'Customer',
+                            totalAmount,
+                            serialNumber,
+                        ),
+                    );
+                }
+
+                return Promise.all(tasks);
             })
-            .catch((e) => this.logger.warn(`Failed to send receipt email for customer ${customerId}: ${e}`));
+            .catch((e) => this.logger.warn(`Failed to send receipt notifications for customer ${customerId}: ${e}`));
     }
 
     async findAll(

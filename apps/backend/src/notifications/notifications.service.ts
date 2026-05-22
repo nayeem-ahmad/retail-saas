@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { DatabaseService } from '../database/database.service';
 import { EmailService } from '../email/email.service';
+import { SmsService } from '../sms/sms.service';
 
 @Injectable()
 export class NotificationsService {
@@ -10,6 +11,7 @@ export class NotificationsService {
     constructor(
         private db: DatabaseService,
         private email: EmailService,
+        private sms: SmsService,
     ) {}
 
     // Run daily at 08:00
@@ -64,16 +66,18 @@ export class NotificationsService {
             tenant_id: string;
             tenant_name: string;
             owner_email: string;
+            sms_on_low_stock: boolean;
             product_name: string;
             sku: string;
             total_qty: bigint;
             reorder_level: number;
         }>>`
             SELECT
-                t.id           AS tenant_id,
-                t.name         AS tenant_name,
-                u.email        AS owner_email,
-                p.name         AS product_name,
+                t.id                    AS tenant_id,
+                t.name                  AS tenant_name,
+                u.email                 AS owner_email,
+                t.sms_on_low_stock,
+                p.name                  AS product_name,
                 p.sku,
                 COALESCE(SUM(ps.quantity), 0)                           AS total_qty,
                 COALESCE(p.reorder_level, COALESCE(inv.default_reorder_level, 10)) AS reorder_level
@@ -82,16 +86,26 @@ export class NotificationsService {
             JOIN "Product" p ON p.tenant_id = t.id
             LEFT JOIN "ProductStock" ps ON ps.product_id = p.id
             LEFT JOIN "InventorySettings" inv ON inv.tenant_id = t.id
-            GROUP BY t.id, t.name, u.email, p.id, p.name, p.sku, p.reorder_level, inv.default_reorder_level
+            GROUP BY t.id, t.name, u.email, t.sms_on_low_stock, p.id, p.name, p.sku, p.reorder_level, inv.default_reorder_level
             HAVING COALESCE(SUM(ps.quantity), 0) <= COALESCE(p.reorder_level, COALESCE(inv.default_reorder_level, 10))
             ORDER BY t.id, total_qty ASC
         `;
 
         // Group by tenant and send one email per tenant
-        const byTenant = new Map<string, { name: string; email: string; items: Array<{ name: string; sku: string; quantity: number; reorderPoint: number }> }>();
+        const byTenant = new Map<string, {
+            name: string;
+            email: string;
+            smsOnLowStock: boolean;
+            items: Array<{ name: string; sku: string; quantity: number; reorderPoint: number }>;
+        }>();
         for (const row of rows) {
             if (!byTenant.has(row.tenant_id)) {
-                byTenant.set(row.tenant_id, { name: row.tenant_name, email: row.owner_email, items: [] });
+                byTenant.set(row.tenant_id, {
+                    name: row.tenant_name,
+                    email: row.owner_email,
+                    smsOnLowStock: row.sms_on_low_stock,
+                    items: [],
+                });
             }
             byTenant.get(row.tenant_id)!.items.push({
                 name: row.product_name,
@@ -101,14 +115,45 @@ export class NotificationsService {
             });
         }
 
-        for (const [tenantId, { name, email, items }] of byTenant) {
+        for (const [tenantId, { name, email, smsOnLowStock, items }] of byTenant) {
             try {
                 await this.email.sendLowStockAlert(email, name, items.slice(0, 50));
                 this.logger.log(`Low stock alert sent for tenant ${tenantId} (${items.length} items)`);
             } catch (err) {
                 this.logger.error(`Failed low stock alert for tenant ${tenantId}: ${err}`);
             }
+
+            // Send SMS low-stock alerts if enabled and the tenant owner has a phone number
+            if (smsOnLowStock) {
+                const ownerPhone = await this.getTenantOwnerPhone(tenantId);
+                if (ownerPhone) {
+                    for (const item of items.slice(0, 20)) {
+                        try {
+                            await this.sms.sendLowStockAlert(ownerPhone, item.name, item.quantity);
+                        } catch (err) {
+                            this.logger.error(
+                                `Failed SMS low stock alert for tenant ${tenantId}, product ${item.name}: ${err}`,
+                            );
+                        }
+                    }
+                }
+            }
         }
+    }
+
+    /**
+     * Look up the phone number for the owner of a tenant.
+     * Returns null if the owner has no phone on record.
+     */
+    private async getTenantOwnerPhone(tenantId: string): Promise<string | null> {
+        const tenant = await this.db.tenant.findUnique({
+            where: { id: tenantId },
+            select: { owner: { select: { id: true } } },
+        });
+        if (!tenant?.owner) return null;
+        // User model does not currently have a phone field; return null.
+        // When a phone field is added to User, replace this with the actual lookup.
+        return null;
     }
 
     // #74 Data retention — runs daily at 03:00

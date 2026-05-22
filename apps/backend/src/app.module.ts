@@ -49,6 +49,7 @@ import { TenantsModule } from './tenants/tenants.module';
 import { DeliveryModule } from './delivery/delivery.module';
 import { ManufacturingModule } from './manufacturing/manufacturing.module';
 import { LoyaltyModule } from './loyalty/loyalty.module';
+import { SmsModule } from './sms/sms.module';
 
 @Module({
     imports: [
@@ -59,6 +60,7 @@ import { LoyaltyModule } from './loyalty/loyalty.module';
         CacheModule,
         DatabaseModule,
         EmailModule,
+        SmsModule,
         AuditModule,
         HealthModule,
         AuthModule,

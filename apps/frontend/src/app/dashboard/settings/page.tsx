@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { CheckCircle, XCircle, Loader2, ShieldCheck, ShieldOff, Eye, EyeOff, Palette, Receipt, Gift } from 'lucide-react';
+import { CheckCircle, XCircle, Loader2, ShieldCheck, ShieldOff, Eye, EyeOff, Palette, Receipt, Gift, MessageSquare } from 'lucide-react';
 import { api, fetchWithAuth } from '@/lib/api';
 
 /* ------------------------------------------------------------------ */
@@ -574,6 +574,12 @@ export default function AccountSettingsPage() {
             icon: Gift,
             label: 'Loyalty Program',
             description: 'Configure points earn & redeem rates',
+        },
+        {
+            href: '/dashboard/settings/sms',
+            icon: MessageSquare,
+            label: 'SMS Notifications',
+            description: 'Send sale receipts and low stock alerts via SMS',
         },
     ];
 
