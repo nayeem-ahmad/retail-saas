@@ -25,10 +25,7 @@ import {
     UpdatePostingRuleDto,
     ListPostingExceptionsQueryDto,
 } from './accounting.dto';
-import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 
-@ApiTags('Accounting')
-@ApiBearerAuth()
 @Controller('accounting')
 @UseGuards(JwtAuthGuard, TenantRoleGuard, SubscriptionAccessGuard)
 @UseInterceptors(TenantInterceptor)

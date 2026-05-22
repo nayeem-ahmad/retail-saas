@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
+import { AppLogger } from '../common/app-logger.service';
 import { DatabaseService } from '../database/database.service';
 
 export const SEGMENT_THRESHOLDS = {
@@ -15,7 +15,7 @@ export type SegmentCategory = 'New' | 'Regular' | 'At-Risk' | 'VIP';
 export class SegmentsService {
     constructor(
         private db: DatabaseService,
-        @InjectPinoLogger(SegmentsService.name) private readonly logger: PinoLogger,
+        private readonly logger: AppLogger,
     ) {}
 
     classifyCustomer(params: {

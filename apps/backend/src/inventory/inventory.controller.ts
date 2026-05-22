@@ -12,10 +12,7 @@ import {
     UpdateWarehouseDto,
 } from './inventory.dto';
 import { InventoryService } from './inventory.service';
-import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 
-@ApiTags('Inventory')
-@ApiBearerAuth()
 @Controller('inventory')
 @UseGuards(JwtAuthGuard)
 @UseInterceptors(TenantInterceptor)

@@ -4,10 +4,7 @@ import { TenantInterceptor } from '../database/tenant.interceptor';
 import { Tenant, TenantContext } from '../database/tenant.decorator';
 import { CreateSupplierDto } from './supplier.dto';
 import { SuppliersService } from './suppliers.service';
-import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 
-@ApiTags('Suppliers')
-@ApiBearerAuth()
 @Controller('suppliers')
 @UseGuards(JwtAuthGuard)
 @UseInterceptors(TenantInterceptor)

@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { getLoggerToken } from 'nestjs-pino';
 import { SegmentsService, SEGMENT_THRESHOLDS } from './segments.service';
+import { AppLogger } from '../common/app-logger.service';
 import { DatabaseService } from '../database/database.service';
 
 const NOW = new Date('2026-05-08T00:00:00Z');
@@ -26,7 +26,7 @@ describe('SegmentsService', () => {
             providers: [
                 SegmentsService,
                 { provide: DatabaseService, useValue: db },
-                { provide: getLoggerToken(SegmentsService.name), useValue: mockLogger },
+                { provide: AppLogger, useValue: mockLogger },
             ],
         }).compile();
 

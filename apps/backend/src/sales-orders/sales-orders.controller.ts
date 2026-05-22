@@ -4,10 +4,7 @@ import { CreateSalesOrderDto, UpdateSalesOrderDto, UpdateOrderStatusDto, AddDepo
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { TenantInterceptor } from '../database/tenant.interceptor';
 import { Tenant, TenantContext } from '../database/tenant.decorator';
-import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 
-@ApiTags('Sales Orders')
-@ApiBearerAuth()
 @Controller('sales-orders')
 @UseGuards(JwtAuthGuard)
 @UseInterceptors(TenantInterceptor)

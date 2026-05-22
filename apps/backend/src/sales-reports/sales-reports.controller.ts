@@ -6,10 +6,7 @@ import { TenantInterceptor } from '../database/tenant.interceptor';
 import { Tenant, TenantContext } from '../database/tenant.decorator';
 import { GetConsolidatedReportDto, GetSalesByProductDto, GetSalesSummaryDto } from './sales-reports.dto';
 import { SalesReportsService } from './sales-reports.service';
-import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 
-@ApiTags('Sales Reports')
-@ApiBearerAuth()
 @Controller('sales-reports')
 @UseGuards(JwtAuthGuard, SubscriptionAccessGuard)
 @UseInterceptors(TenantInterceptor)
