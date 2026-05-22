@@ -17,6 +17,7 @@ interface Customer {
     customer_type?: string | null;
     total_spent?: string | number | null;
     segment_category?: string | null;
+    loyalty_points?: number | null;
     created_at: string;
     customerGroup?: { name: string } | null;
     territory?: { name: string } | null;
@@ -179,6 +180,20 @@ export default function CustomersPage() {
                 ),
                 sortingFn: (a, b) => Number(a.getValue('total_spent') || 0) - Number(b.getValue('total_spent') || 0),
                 size: 120,
+            }),
+            columnHelper.accessor('loyalty_points', {
+                header: 'Points',
+                cell: (info) => {
+                    const pts = info.getValue();
+                    if (pts == null) return <span className="text-sm text-gray-400">—</span>;
+                    return (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-purple-50 border border-purple-200 px-2.5 py-0.5 text-xs font-bold text-purple-700">
+                            {Number(pts).toLocaleString()} pts
+                        </span>
+                    );
+                },
+                sortingFn: (a, b) => Number(a.getValue('loyalty_points') || 0) - Number(b.getValue('loyalty_points') || 0),
+                size: 110,
             }),
             columnHelper.accessor('segment_category', {
                 header: 'Segment',

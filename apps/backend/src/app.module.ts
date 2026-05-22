@@ -48,6 +48,7 @@ import { StorefrontModule } from './storefront/storefront.module';
 import { TenantsModule } from './tenants/tenants.module';
 import { DeliveryModule } from './delivery/delivery.module';
 import { ManufacturingModule } from './manufacturing/manufacturing.module';
+import { LoyaltyModule } from './loyalty/loyalty.module';
 
 @Module({
     imports: [
@@ -97,6 +98,7 @@ import { ManufacturingModule } from './manufacturing/manufacturing.module';
         TenantsModule,
         DeliveryModule,
         ManufacturingModule,
+        LoyaltyModule,
     ],
     controllers: [],
     providers: [

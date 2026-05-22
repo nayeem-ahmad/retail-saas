@@ -38,6 +38,7 @@ import {
     Cog,
     Receipt,
     HelpCircle,
+    Gift,
     type LucideIcon,
 } from 'lucide-react';
 import { useBranding } from '@/lib/branding';
@@ -85,6 +86,7 @@ const MODULES: NavModule[] = [
             { href: '/dashboard/quotes',            icon: FileText,        label: 'Sales Quotations' },
             { href: '/dashboard/warranty-claims',   icon: ShieldCheck,     label: 'Warranty Claims' },
             { href: '/dashboard/cashier-sessions',  icon: Clock,           label: 'Cashier Sessions' },
+            { href: '/dashboard/loyalty',           icon: Gift,            label: 'Loyalty Points' },
         ],
     },
     {
@@ -196,6 +198,7 @@ const MODULES: NavModule[] = [
             { href: '#branding-setup', icon: Palette, label: 'Branding', section: true },
             { href: '/dashboard/settings/branding', icon: Palette, label: 'Branding' },
             { href: '/dashboard/settings/tax', icon: Receipt, label: 'Tax / VAT' },
+            { href: '/dashboard/settings/loyalty', icon: Gift, label: 'Loyalty Program' },
         ],
     },
     {

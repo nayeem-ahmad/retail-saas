@@ -197,6 +197,10 @@ model Tenant {
   default_vat_rate     Decimal? @db.Decimal(5, 2)  // e.g. 15.00 for 15% BD VAT
   vat_registration_no  String?                      // NBR VAT registration number
   business_tin         String?                      // Tax Identification Number
+  loyalty_points_enabled Boolean  @default(false)
+  loyalty_earn_rate      Decimal? @db.Decimal(8, 4)  // points per BDT (e.g. 1.0 = 1 point per ৳1)
+  loyalty_redeem_rate    Decimal? @db.Decimal(8, 4)  // BDT value per point (e.g. 0.01 = 1 point = ৳0.01)
+  loyalty_min_redeem     Int?                          // minimum points required to redeem
 
   // Relations
   owner      User     @relation("TenantOwner", fields: [owner_id], references: [id])
@@ -247,6 +251,7 @@ model Tenant {
   storefrontOrders  StorefrontOrder[]
   bomRecipes      BomRecipe[]
   productionJobs  ProductionJob[]
+  loyaltyTransactions LoyaltyTransaction[]
 }
 
 model TenantUser {
@@ -768,6 +773,7 @@ model Customer {
   total_spent          Decimal       @default(0) @db.Decimal(12, 2)
   nid                  String?
   segment_category     String        @default("Regular")
+  loyalty_points       Int           @default(0)
   created_at           DateTime      @default(now())
   deleted_at           DateTime?
 
@@ -779,6 +785,7 @@ model Customer {
   salesOrders      SalesOrder[]
   quotations       Quotation[]
   warrantyClaims   WarrantyClaim[]
+  loyaltyTransactions LoyaltyTransaction[]
 
   @@unique([tenant_id, phone])
   @@unique([tenant_id, customer_code])
@@ -1485,4 +1492,22 @@ model ProductionJob {
   @@index([tenantId])
   @@index([tenantId, status])
   @@map("production_jobs")
+}
+
+model LoyaltyTransaction {
+  id          String   @id @default(cuid())
+  tenantId    String
+  customerId  String
+  saleId      String?
+  type        String   // EARN | REDEEM | ADJUST
+  points      Int      // positive = earn, negative = redeem/adjust
+  description String?
+  created_at  DateTime @default(now())
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, customerId])
+  @@index([customerId])
+  @@map("loyalty_transactions")
 }
