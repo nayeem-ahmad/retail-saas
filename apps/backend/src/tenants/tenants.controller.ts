@@ -50,4 +50,17 @@ export class TenantsController {
     ) {
         return this.tenantsService.updateTaxSettings(tenant.tenantId, dto);
     }
+
+    @Get('sms-settings')
+    async getSmsSettings(@Tenant() tenant: TenantContext) {
+        return this.tenantsService.getSmsSettings(tenant.tenantId);
+    }
+
+    @Patch('sms-settings')
+    async updateSmsSettings(
+        @Tenant() tenant: TenantContext,
+        @Body() dto: { sms_enabled?: boolean; sms_on_sale?: boolean; sms_on_low_stock?: boolean },
+    ) {
+        return this.tenantsService.updateSmsSettings(tenant.tenantId, dto);
+    }
 }

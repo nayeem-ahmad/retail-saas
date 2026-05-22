@@ -112,4 +112,34 @@ export class TenantsService {
             },
         });
     }
+
+    async getSmsSettings(tenantId: string) {
+        return this.db.tenant.findUnique({
+            where: { id: tenantId },
+            select: {
+                sms_enabled: true,
+                sms_on_sale: true,
+                sms_on_low_stock: true,
+            },
+        });
+    }
+
+    async updateSmsSettings(
+        tenantId: string,
+        dto: { sms_enabled?: boolean; sms_on_sale?: boolean; sms_on_low_stock?: boolean },
+    ) {
+        return this.db.tenant.update({
+            where: { id: tenantId },
+            data: {
+                ...(dto.sms_enabled !== undefined ? { sms_enabled: dto.sms_enabled } : {}),
+                ...(dto.sms_on_sale !== undefined ? { sms_on_sale: dto.sms_on_sale } : {}),
+                ...(dto.sms_on_low_stock !== undefined ? { sms_on_low_stock: dto.sms_on_low_stock } : {}),
+            },
+            select: {
+                sms_enabled: true,
+                sms_on_sale: true,
+                sms_on_low_stock: true,
+            },
+        });
+    }
 }
