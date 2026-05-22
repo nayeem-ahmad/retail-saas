@@ -36,6 +36,8 @@ import {
     Palette,
     Factory,
     Cog,
+    Receipt,
+    HelpCircle,
     type LucideIcon,
 } from 'lucide-react';
 import { useBranding } from '@/lib/branding';
@@ -193,7 +195,14 @@ const MODULES: NavModule[] = [
             { href: '/dashboard/accounting/posting-rules', icon: Settings, label: 'Posting Rules' },
             { href: '#branding-setup', icon: Palette, label: 'Branding', section: true },
             { href: '/dashboard/settings/branding', icon: Palette, label: 'Branding' },
+            { href: '/dashboard/settings/tax', icon: Receipt, label: 'Tax / VAT' },
         ],
+    },
+    {
+        key: 'help',
+        icon: HelpCircle,
+        label: 'Help',
+        href: '/dashboard/help',
     },
 ];
 

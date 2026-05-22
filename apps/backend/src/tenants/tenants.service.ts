@@ -60,6 +60,33 @@ export class TenantsService {
         });
     }
 
+    async getTaxSettings(tenantId: string) {
+        return this.db.tenant.findUnique({
+            where: { id: tenantId },
+            select: {
+                default_vat_rate: true,
+                vat_registration_no: true,
+                business_tin: true,
+            },
+        });
+    }
+
+    async updateTaxSettings(tenantId: string, dto: { default_vat_rate?: number | null; vat_registration_no?: string | null; business_tin?: string | null }) {
+        return this.db.tenant.update({
+            where: { id: tenantId },
+            data: {
+                ...(dto.default_vat_rate !== undefined ? { default_vat_rate: dto.default_vat_rate } : {}),
+                ...(dto.vat_registration_no !== undefined ? { vat_registration_no: dto.vat_registration_no || null } : {}),
+                ...(dto.business_tin !== undefined ? { business_tin: dto.business_tin || null } : {}),
+            },
+            select: {
+                default_vat_rate: true,
+                vat_registration_no: true,
+                business_tin: true,
+            },
+        });
+    }
+
     async updateBranding(tenantId: string, dto: UpdateBrandingDto) {
         return this.db.tenant.update({
             where: { id: tenantId },

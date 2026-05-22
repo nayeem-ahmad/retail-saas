@@ -37,4 +37,17 @@ export class TenantsController {
     ) {
         return this.tenantsService.updateBranding(tenant.tenantId, dto);
     }
+
+    @Get('tax-settings')
+    async getTaxSettings(@Tenant() tenant: TenantContext) {
+        return this.tenantsService.getTaxSettings(tenant.tenantId);
+    }
+
+    @Patch('tax-settings')
+    async updateTaxSettings(
+        @Tenant() tenant: TenantContext,
+        @Body() dto: { default_vat_rate?: number | null; vat_registration_no?: string | null; business_tin?: string | null },
+    ) {
+        return this.tenantsService.updateTaxSettings(tenant.tenantId, dto);
+    }
 }
