@@ -242,6 +242,8 @@ model Tenant {
   invitations       UserInvitation[]
   feedbacks         Feedback[]
   storefrontOrders  StorefrontOrder[]
+  bomRecipes      BomRecipe[]
+  productionJobs  ProductionJob[]
 }
 
 model TenantUser {
@@ -382,6 +384,8 @@ model Product {
   prices      ProductPrice[]
   warrantyClaims WarrantyClaim[]
   storefrontOrderItems StorefrontOrderItem[]
+  bomRecipe    BomRecipe?
+  bomComponents BomComponent[] @relation("BomComponent")
 
   @@unique([tenant_id, sku])
   @@index([tenant_id, group_id])
@@ -1424,4 +1428,57 @@ model DeliveryOrder {
   @@index([tenantId])
   @@index([tenantId, status])
   @@map("delivery_orders")
+}
+
+// Bill of Materials: defines what components go into making 1 unit of a product
+model BomRecipe {
+  id           String   @id @default(cuid())
+  tenantId     String
+  productId    String   @unique  // the manufactured/output product
+  outputQty    Int      @default(1)
+  notes        String?
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  tenant    Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  product   Product      @relation(fields: [productId], references: [id])
+  components BomComponent[]
+  productionJobs ProductionJob[]
+
+  @@index([tenantId])
+  @@map("bom_recipes")
+}
+
+model BomComponent {
+  id        String   @id @default(cuid())
+  recipeId  String
+  productId String   // the raw material / component product
+  quantity  Decimal  @db.Decimal(12, 4)
+
+  recipe    BomRecipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  product   Product   @relation("BomComponent", fields: [productId], references: [id])
+
+  @@map("bom_components")
+}
+
+// A production run: manufacture N units of a product
+model ProductionJob {
+  id           String   @id @default(cuid())
+  tenantId     String
+  recipeId     String
+  productId    String   // output product (denormalised for easy querying)
+  quantity     Int
+  status       String   @default("DRAFT")  // DRAFT | IN_PROGRESS | COMPLETED | CANCELLED
+  notes        String?
+  startedAt    DateTime?
+  completedAt  DateTime?
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  tenant  Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  recipe  BomRecipe @relation(fields: [recipeId], references: [id])
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@map("production_jobs")
 }

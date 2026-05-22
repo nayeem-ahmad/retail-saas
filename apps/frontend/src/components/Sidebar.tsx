@@ -34,6 +34,8 @@ import {
     BarChart3,
     Globe,
     Palette,
+    Factory,
+    Cog,
     type LucideIcon,
 } from 'lucide-react';
 import { useBranding } from '@/lib/branding';
@@ -88,6 +90,14 @@ const MODULES: NavModule[] = [
         icon: MapPin,
         label: 'Delivery',
         href: '/dashboard/delivery',
+    },
+    {
+        key: 'manufacturing',
+        icon: Factory,
+        label: 'Manufacturing',
+        children: [
+            { href: '/dashboard/manufacturing', icon: Cog, label: 'Jobs & BOM' },
+        ],
     },
     {
         key: 'purchase',
