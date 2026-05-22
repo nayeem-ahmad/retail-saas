@@ -45,6 +45,11 @@ jest.mock('lucide-react', () => {
         BarChart3: icon,
         Globe: icon,
         Palette: icon,
+        Factory: icon,
+        Cog: icon,
+        Receipt: icon,
+        HelpCircle: icon,
+        Boxes: icon,
     };
 });
 

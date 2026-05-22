@@ -194,6 +194,9 @@ model Tenant {
   brand_logo_url       String?
   brand_favicon_url    String?
   brand_business_name  String?
+  default_vat_rate     Decimal? @db.Decimal(5, 2)  // e.g. 15.00 for 15% BD VAT
+  vat_registration_no  String?                      // NBR VAT registration number
+  business_tin         String?                      // Tax Identification Number
 
   // Relations
   owner      User     @relation("TenantOwner", fields: [owner_id], references: [id])
@@ -356,6 +359,7 @@ model Product {
   name        String
   sku         String?
   price       Decimal  @default(0) @db.Decimal(12, 2)
+  vat_rate    Decimal? @db.Decimal(5, 2)  // product-specific VAT rate; null = use tenant default
   warranty_enabled Boolean @default(false)
   warranty_duration_days Int?
   reorder_level Int?
