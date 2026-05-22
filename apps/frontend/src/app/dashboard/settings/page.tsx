@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { CheckCircle, XCircle, Loader2, ShieldCheck, ShieldOff, Eye, EyeOff, Palette, Receipt } from 'lucide-react';
+import { CheckCircle, XCircle, Loader2, ShieldCheck, ShieldOff, Eye, EyeOff, Palette, Receipt, Gift } from 'lucide-react';
 import { api, fetchWithAuth } from '@/lib/api';
 
 /* ------------------------------------------------------------------ */
@@ -568,6 +568,12 @@ export default function AccountSettingsPage() {
             icon: Receipt,
             label: 'Tax / VAT',
             description: 'VAT rate, BIN, and NBR compliance settings',
+        },
+        {
+            href: '/dashboard/settings/loyalty',
+            icon: Gift,
+            label: 'Loyalty Program',
+            description: 'Configure points earn & redeem rates',
         },
     ];
 
