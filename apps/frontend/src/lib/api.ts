@@ -2,6 +2,51 @@ const DEFAULT_PROD_API_BASE = 'https://retail-saas-backend.onrender.com';
 const API_BASE = (process.env.NEXT_PUBLIC_API_BASE
     || (process.env.NODE_ENV === 'production' ? DEFAULT_PROD_API_BASE : 'http://localhost:4000')) + '/api/v1';
 
+export async function fetchBlobWithAuth(endpoint: string, options: RequestInit = {}): Promise<{ blob: Blob; filename: string }> {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+    const tenantId = typeof window !== 'undefined' ? localStorage.getItem('tenant_id') : null;
+    const storeId = typeof window !== 'undefined' ? localStorage.getItem('store_id') : null;
+
+    const headers = new Headers(options.headers);
+    if (token) {
+        headers.set('Authorization', `Bearer ${token}`);
+    }
+    if (tenantId) {
+        headers.set('x-tenant-id', tenantId);
+    }
+    if (storeId) {
+        headers.set('x-store-id', storeId);
+    }
+
+    const response = await fetch(`${API_BASE}${endpoint}`, {
+        ...options,
+        headers,
+    });
+
+    if (!response.ok) {
+        let message = `API error: ${response.statusText}`;
+        try {
+            const errorBody = await response.json();
+            const apiMessage = Array.isArray(errorBody?.message)
+                ? errorBody.message.join(', ')
+                : errorBody?.message || errorBody?.error;
+            if (apiMessage) {
+                message = apiMessage;
+            }
+        } catch {
+            // Fall back to the response status text when no JSON error payload is available.
+        }
+        throw new Error(message);
+    }
+
+    const disposition = response.headers.get('Content-Disposition') ?? '';
+    const filenameMatch = disposition.match(/filename="([^"]+)"/);
+    const filename = filenameMatch ? filenameMatch[1] : 'export';
+
+    const blob = await response.blob();
+    return { blob, filename };
+}
+
 export async function fetchWithAuth(endpoint: string, options: RequestInit = {}) {
     const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
     const tenantId = typeof window !== 'undefined' ? localStorage.getItem('tenant_id') : null;
@@ -228,6 +273,12 @@ export const api = {
         if (params?.to) query.set('to', params.to);
         return fetchWithAuth(`/sales-reports/by-product${query.toString() ? `?${query.toString()}` : ''}`);
     },
+    getConsolidatedReport: (params?: { from?: string; to?: string }) => {
+        const query = new URLSearchParams();
+        if (params?.from) query.set('from', params.from);
+        if (params?.to) query.set('to', params.to);
+        return fetchWithAuth(`/sales-reports/consolidated${query.toString() ? `?${query.toString()}` : ''}`);
+    },
     getShrinkageSummary: (params?: { warehouseId?: string; reasonId?: string; productId?: string; groupId?: string; subgroupId?: string; from?: string; to?: string }) => {
         const query = new URLSearchParams();
         if (params?.warehouseId) query.set('warehouseId', params.warehouseId);
@@ -411,6 +462,13 @@ export const api = {
     retryPostingException: (id: string) => fetchWithAuth(`/accounting/reconciliation/posting-exceptions/${id}/retry`, {
         method: 'POST',
     }),
+    exportAccountingLedger: (params: { format: 'tally' | 'quickbooks'; from?: string; to?: string }) => {
+        const query = new URLSearchParams();
+        query.set('format', params.format);
+        if (params.from) query.set('from', params.from);
+        if (params.to) query.set('to', params.to);
+        return fetchBlobWithAuth(`/accounting/export?${query.toString()}`);
+    },
     getReturns: () => fetchWithAuth('/sales-returns'),
     getReturn: (id: string) => fetchWithAuth(`/sales-returns/${id}`),
     createReturn: (data: any) => fetchWithAuth('/sales-returns', {
