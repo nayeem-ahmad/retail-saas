@@ -30,6 +30,7 @@ COPY --from=builder /app/package.json ./
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/apps/backend/package.json ./apps/backend/
 COPY --from=builder /app/apps/backend/dist ./apps/backend/dist
+COPY --from=builder /app/apps/backend/scripts ./apps/backend/scripts
 COPY --from=builder /app/packages/database ./packages/database
 COPY --from=builder /app/packages/shared-types ./packages/shared-types
 
