@@ -10,8 +10,9 @@ const API_BASE = (process.env.NEXT_PUBLIC_API_BASE
     || (process.env.NODE_ENV === 'production' ? 'https://retail-saas-backend.onrender.com' : 'http://localhost:4000')) + '/api/v1';
 
 async function storeAuthResponse(res: any) {
-    localStorage.setItem('access_token', res.access_token);
-    const meRes = res.tenants ? res : await api.getMe();
+    const data = res.data ? res.data : res;
+    localStorage.setItem('access_token', data.access_token);
+    const meRes = data.tenants ? data : await api.getMe();
     if (meRes.tenants && meRes.tenants.length > 0) {
         const primaryTenant = meRes.tenants[0];
         localStorage.setItem('tenant_id', primaryTenant.id);
