@@ -608,9 +608,10 @@ export const api = {
         method: 'POST',
         body: JSON.stringify(data),
         headers: { 'Content-Type': 'application/json' },
-    }).then(res => {
-        if (!res.ok) throw new Error('Login failed');
-        return res.json();
+    }).then(async res => {
+        const body = await res.json().catch(() => null);
+        if (!res.ok) throw new Error(body?.message || 'Login failed');
+        return body && 'data' in body ? body.data : body;
     }),
     signup: (data: any) => fetch(`${API_BASE}/auth/signup`, {
         method: 'POST',
@@ -619,12 +620,12 @@ export const api = {
     }).then(async res => {
         const body = await res.json().catch(() => null);
         if (!res.ok) throw new Error(body?.message || 'Signup failed');
-        return body;
+        return body && 'data' in body ? body.data : body;
     }),
     getSubscriptionPlans: () => fetch(`${API_BASE}/auth/plans`).then(async res => {
         const body = await res.json().catch(() => null);
         if (!res.ok) throw new Error(body?.message || 'Failed to load plans');
-        return body;
+        return body && 'data' in body ? body.data : body;
     }),
     getBillingSummary: () => fetchWithAuth('/billing/summary'),
     createBillingCheckoutSession: (data: any) => fetchWithAuth('/billing/checkout-session', {

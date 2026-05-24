@@ -180,3 +180,5 @@ Track all work here. Check off items as they're completed. Add new items as they
 - [x] Password reset flow — PasswordResetToken model, POST /auth/forgot-password + POST /auth/reset-password; invalidates all refresh tokens on reset; 1-hour token TTL — done 2026-05-15
 - [x] CSRF protection — CsrfMiddleware validates Origin/Referer on state-changing requests against FRONTEND_URL/BACKEND_PUBLIC_URL; applied globally — done 2026-05-15
 - [x] Soft deletes — deleted_at on Product, Customer, Supplier; all findMany/findFirst queries filter deleted_at: null; remove() now sets deleted_at instead of hard-deleting; migration 20260515000000 — done 2026-05-15
+- [x] Fix login and signup responses to unwrap data from NestJS global TransformInterceptor — done 2026-05-24
+

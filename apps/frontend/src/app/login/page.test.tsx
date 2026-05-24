@@ -8,6 +8,11 @@ jest.mock('next/navigation', () => ({
       push: jest.fn(),
     };
   },
+  useSearchParams() {
+    return {
+      get: jest.fn().mockReturnValue(null),
+    };
+  },
 }));
 
 // Mock API layer
