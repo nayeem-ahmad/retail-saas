@@ -19,6 +19,7 @@ export default function AddProductModal({ isOpen, onClose, mode = 'create', init
         sku: '',
         price: '',
         initialStock: '',
+        isFeatured: false,
         warrantyEnabled: false,
         warrantyDurationDays: '',
         reorderLevel: '',
@@ -61,6 +62,7 @@ export default function AddProductModal({ isOpen, onClose, mode = 'create', init
                 sku: initialProduct.sku || '',
                 price: String(initialProduct.price ?? ''),
                 initialStock: '',
+                isFeatured: Boolean(initialProduct.is_featured),
                 warrantyEnabled: Boolean(initialProduct.warranty_enabled),
                 warrantyDurationDays: initialProduct.warranty_duration_days != null ? String(initialProduct.warranty_duration_days) : '',
                 reorderLevel: initialProduct.reorder_level != null ? String(initialProduct.reorder_level) : '',
@@ -79,6 +81,7 @@ export default function AddProductModal({ isOpen, onClose, mode = 'create', init
                 sku: '',
                 price: '',
                 initialStock: '',
+                isFeatured: false,
                 warrantyEnabled: false,
                 warrantyDurationDays: '',
                 reorderLevel: '',
@@ -123,6 +126,7 @@ export default function AddProductModal({ isOpen, onClose, mode = 'create', init
                 ...formData,
                 price: parseFloat(formData.price),
                 initialStock: mode === 'create' ? parseInt(formData.initialStock) || 0 : undefined,
+                isFeatured: formData.isFeatured,
                 warrantyEnabled: formData.warrantyEnabled,
                 warrantyDurationDays: formData.warrantyEnabled ? parseOptionalInt(formData.warrantyDurationDays) : undefined,
                 reorderLevel: parseOptionalInt(formData.reorderLevel),
@@ -142,7 +146,7 @@ export default function AddProductModal({ isOpen, onClose, mode = 'create', init
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden animate-in fade-in zoom-in duration-200 flex flex-col">
                 <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
                     <h2 className="text-xl font-bold tracking-tight text-gray-900">{mode === 'edit' ? 'Edit Product' : 'Add New Product'}</h2>
                     <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-white transition-all">
@@ -150,10 +154,10 @@ export default function AddProductModal({ isOpen, onClose, mode = 'create', init
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-8 space-y-6">
-                    <div className="space-y-4">
+                <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+                    <div className="space-y-4 overflow-y-auto px-6 py-5">
                         {/* Image Upload */}
-                        <div className="flex justify-center mb-6">
+                        <div className="flex justify-center mb-4">
                             <div className="relative group">
                                 <div className="w-24 h-24 bg-gray-100 rounded-2xl border-2 border-dashed border-gray-200 flex items-center justify-center overflow-hidden transition-all group-hover:border-blue-400">
                                     {formData.image_url ? (
@@ -215,6 +219,18 @@ export default function AddProductModal({ isOpen, onClose, mode = 'create', init
                                     onChange={(e) => setFormData({ ...formData, price: e.target.value })}
                                 />
                             </div>
+                        </div>
+
+                        <div className="bg-blue-50 rounded-xl p-3 border border-blue-100">
+                            <label className="flex items-center gap-2 text-sm font-bold text-blue-900">
+                                <input
+                                    type="checkbox"
+                                    checked={formData.isFeatured}
+                                    onChange={(e) => setFormData({ ...formData, isFeatured: e.target.checked })}
+                                    className="rounded border-blue-300"
+                                />
+                                Mark product as Featured (shows in Trending)
+                            </label>
                         </div>
 
                         <div>
@@ -351,7 +367,7 @@ export default function AddProductModal({ isOpen, onClose, mode = 'create', init
                         </div>
                     </div>
 
-                    <div className="pt-4 flex space-x-3">
+                    <div className="border-t border-gray-100 px-6 py-4 flex space-x-3 bg-white">
                         <button
                             type="button"
                             onClick={onClose}

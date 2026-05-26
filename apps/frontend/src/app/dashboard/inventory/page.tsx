@@ -16,6 +16,7 @@ interface Product {
     name: string;
     sku?: string | null;
     price: string | number;
+    is_featured?: boolean;
     image_url?: string | null;
     warranty_enabled?: boolean;
     warranty_duration_days?: number | null;

@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
-import { AlertCircle, CheckCircle, Minus, Package, Plus, ShoppingCart, X } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { AlertCircle, CheckCircle, Minus, Package, Plus, Search, ShoppingCart, X } from 'lucide-react';
 import { formatBDT } from '@/lib/format';
 
 const API_BASE =
@@ -11,16 +11,6 @@ const API_BASE =
         (process.env.NODE_ENV === 'production'
             ? 'https://retail-saas-backend.onrender.com'
             : 'http://localhost:4000')) + '/api/v1';
-
-const DEFAULT_HERO_IMAGE =
-    'https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&q=80&w=1600';
-
-const CATEGORY_FALLBACKS = [
-    'https://images.unsplash.com/photo-1617137984095-74e4e5e3613f?auto=format&fit=crop&q=80&w=800',
-    'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=80&w=800',
-    'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?auto=format&fit=crop&q=80&w=800',
-    'https://images.unsplash.com/photo-1509319117193-57bab727e09d?auto=format&fit=crop&q=80&w=800',
-];
 
 interface Product {
     id: string;
@@ -43,11 +33,8 @@ interface StorefrontData {
     tenant: {
         name: string;
         storefront_banner: string | null;
-        storefront_hero_image: string | null;
-        storefront_hero_headline: string | null;
     };
     categories: Category[];
-    trending_products: Product[];
     all_products: Product[];
 }
 
@@ -64,8 +51,11 @@ function formatOptionalPrice(value: string | number | null | undefined) {
     return value === null || value === undefined ? null : formatBDT(toNumber(value));
 }
 
-export default function StorefrontPage() {
+export default function StorefrontShopPage() {
     const params = useParams();
+    const pathname = usePathname();
+    const router = useRouter();
+    const searchParams = useSearchParams();
     const slug = params?.slug as string;
 
     const [data, setData] = useState<StorefrontData | null>(null);
@@ -100,6 +90,118 @@ export default function StorefrontPage() {
             .catch(() => setNotFound(true))
             .finally(() => setLoading(false));
     }, [slug]);
+
+    const sortOption = useMemo(() => {
+        const sortParam = searchParams.get('sort');
+        if (
+            sortParam === 'price_asc'
+            || sortParam === 'price_desc'
+            || sortParam === 'name_asc'
+            || sortParam === 'newest'
+        ) {
+            return sortParam;
+        }
+        return 'newest';
+    }, [searchParams]);
+
+    const searchQuery = searchParams.get('q') || '';
+
+    const availableCategories = useMemo(() => {
+        if (!data) return [];
+
+        const categoryNameSet = new Set<string>();
+        data.categories.forEach((category) => categoryNameSet.add(category.name));
+        data.all_products.forEach((product) => {
+            if (product.group_name) {
+                categoryNameSet.add(product.group_name);
+            }
+        });
+
+        return ['ALL', ...Array.from(categoryNameSet)];
+    }, [data]);
+
+    const computedMaxPrice = useMemo(() => {
+        if (!data || data.all_products.length === 0) return 0;
+        return data.all_products.reduce((max, product) => {
+            const currentPrice = toNumber(product.selling_price);
+            return Math.max(currentPrice, max);
+        }, 0);
+    }, [data]);
+
+    const activeCategoryFilter = useMemo(() => {
+        if (!data) return 'ALL';
+
+        const categoryParam = searchParams.get('category');
+        if (!categoryParam) return 'ALL';
+
+        const selectedCategory = data.categories.find((category) => category.id === categoryParam);
+        if (selectedCategory) {
+            return selectedCategory.name;
+        }
+
+        return categoryParam;
+    }, [data, searchParams]);
+
+    const maxPriceFilter = useMemo(() => {
+        const maxParam = searchParams.get('max');
+        const parsed = maxParam ? Number(maxParam) : Number.NaN;
+
+        if (Number.isFinite(parsed) && parsed >= 0) {
+            return computedMaxPrice > 0 ? Math.min(parsed, computedMaxPrice) : parsed;
+        }
+
+        return computedMaxPrice;
+    }, [computedMaxPrice, searchParams]);
+
+    const updateQueryParams = (updates: Record<string, string | null>) => {
+        const nextParams = new URLSearchParams(searchParams.toString());
+
+        Object.entries(updates).forEach(([key, value]) => {
+            if (!value) {
+                nextParams.delete(key);
+                return;
+            }
+            nextParams.set(key, value);
+        });
+
+        const nextQuery = nextParams.toString();
+        router.replace(nextQuery ? `${pathname}?${nextQuery}` : pathname, { scroll: false });
+    };
+
+    const visibleProducts = useMemo(() => {
+        if (!data) return [];
+
+        let filteredProducts = data.all_products;
+
+        if (activeCategoryFilter !== 'ALL') {
+            filteredProducts = filteredProducts.filter((product) => product.group_name === activeCategoryFilter);
+        }
+
+        if (searchQuery.trim().length > 0) {
+            const normalizedQuery = searchQuery.toLowerCase();
+            filteredProducts = filteredProducts.filter((product) => {
+                const productName = product.name.toLowerCase();
+                const groupName = (product.group_name || '').toLowerCase();
+                return productName.includes(normalizedQuery) || groupName.includes(normalizedQuery);
+            });
+        }
+
+        filteredProducts = filteredProducts.filter((product) => toNumber(product.selling_price) <= maxPriceFilter);
+
+        if (sortOption === 'price_asc') {
+            return [...filteredProducts].sort((a, b) => toNumber(a.selling_price) - toNumber(b.selling_price));
+        }
+
+        if (sortOption === 'price_desc') {
+            return [...filteredProducts].sort((a, b) => toNumber(b.selling_price) - toNumber(a.selling_price));
+        }
+
+        if (sortOption === 'name_asc') {
+            return [...filteredProducts].sort((a, b) => a.name.localeCompare(b.name));
+        }
+
+        return filteredProducts;
+    }, [activeCategoryFilter, data, maxPriceFilter, searchQuery, sortOption]);
 
     const addToCart = (product: Product) => {
         setCart((prev) => {
@@ -136,8 +238,8 @@ export default function StorefrontPage() {
     const cartTotal = cart.reduce((total, item) => total + toNumber(item.product.selling_price) * item.quantity, 0);
     const cartCount = cart.reduce((count, item) => count + item.quantity, 0);
 
-    const handleCheckout = async (e: React.SyntheticEvent<HTMLFormElement>) => {
-        e.preventDefault();
+    const handleCheckout = async (event: React.SyntheticEvent<HTMLFormElement>) => {
+        event.preventDefault();
         setSubmitting(true);
         setOrderError(null);
 
@@ -202,9 +304,6 @@ export default function StorefrontPage() {
         );
     }
 
-    const heroImage = data.tenant.storefront_hero_image || DEFAULT_HERO_IMAGE;
-    const heroHeadline = data.tenant.storefront_hero_headline || 'New Season Arrivals';
-
     return (
         <div className="min-h-screen bg-white text-gray-900 selection:bg-black selection:text-white">
             {data.tenant.storefront_banner && (
@@ -221,8 +320,8 @@ export default function StorefrontPage() {
                         </Link>
 
                         <nav className="hidden md:flex items-center gap-8 text-sm font-medium">
-                            <a href="#top" className="text-gray-900 hover:text-gray-600 transition-colors">Home</a>
-                            <Link href={`/store/${slug}/shop`} className="text-gray-500 hover:text-gray-900 transition-colors">Shop</Link>
+                            <Link href={`/store/${slug}`} className="text-gray-500 hover:text-gray-900 transition-colors">Home</Link>
+                            <Link href={`/store/${slug}/shop`} className="text-gray-900 hover:text-gray-600 transition-colors">Shop</Link>
                             <a href="#contact" className="text-gray-500 hover:text-gray-900 transition-colors">Contact</a>
                         </nav>
 
@@ -263,189 +362,170 @@ export default function StorefrontPage() {
                 </div>
             )}
 
-            <main id="top">
-                <section className="relative min-h-[78vh] flex items-center overflow-hidden bg-gray-900">
-                    <div className="absolute inset-0">
-                        <img src={heroImage} alt={heroHeadline} className="w-full h-full object-cover opacity-70" />
-                        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/55 to-black/20" />
+            <main className="py-14 sm:py-16">
+                <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="mb-8">
+                        <h1 className="text-4xl sm:text-5xl font-black tracking-tight">Shop</h1>
+                        <p className="text-gray-500 mt-2">
+                            {activeCategoryFilter === 'ALL' ? 'Browse the full storefront catalog.' : `Browsing ${activeCategoryFilter}`}
+                        </p>
                     </div>
 
-                    <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 lg:py-32 w-full">
-                        <div className="max-w-3xl">
-                            <p className="text-white/80 uppercase tracking-[0.35em] text-xs sm:text-sm mb-5">Seasonal collection</p>
-                            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black text-white tracking-tight leading-[0.95]">
-                                {heroHeadline}
-                            </h1>
-                            <p className="mt-6 max-w-2xl text-base sm:text-lg lg:text-xl text-white/80 leading-8">
-                                Discover the latest arrivals, curated categories, and featured products for your store.
-                            </p>
-                            <div className="mt-10 flex flex-col sm:flex-row gap-4">
-                                <Link href={`/store/${slug}/shop`} className="inline-flex items-center justify-center rounded-full bg-white px-8 py-4 text-base font-bold text-gray-900 transition-transform hover:scale-[1.02]">
-                                    Shop Now
-                                </Link>
-                                <a href="#categories" className="inline-flex items-center justify-center rounded-full border border-white/25 px-8 py-4 text-base font-semibold text-white/90 hover:bg-white/10 transition-colors">
-                                    Browse Categories
-                                </a>
+                    <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-8 items-start">
+                        <aside className="bg-gray-50 border border-gray-200 rounded-2xl p-6 lg:sticky lg:top-28 space-y-7">
+                            <div>
+                                <h2 className="text-xl font-bold">Filters</h2>
                             </div>
-                        </div>
-                    </div>
-                </section>
 
-                <section id="categories" className="py-20 bg-white">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                        <div className="mb-10">
-                            <h2 className="text-3xl font-bold tracking-tight">Shop by Category</h2>
-                            <p className="text-gray-500 mt-2">Featured categories from your catalog.</p>
-                        </div>
+                            <div className="space-y-3">
+                                <h3 className="text-sm font-bold uppercase tracking-wide text-gray-500">Categories</h3>
+                                <div className="space-y-2.5">
+                                    {availableCategories.map((category) => {
+                                        const isActive = activeCategoryFilter === category;
+                                        return (
+                                            <button
+                                                key={category}
+                                                type="button"
+                                                onClick={() => {
+                                                    if (category === 'ALL') {
+                                                        updateQueryParams({ category: null });
+                                                        return;
+                                                    }
 
-                        {data.categories.length === 0 ? (
-                            <div className="text-center py-16 text-gray-400 border border-dashed border-gray-200 rounded-2xl">
-                                <Package className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                                <p className="text-lg font-medium">No featured categories yet.</p>
+                                                    const matchedCategory = data.categories.find((item) => item.name === category);
+                                                    updateQueryParams({ category: matchedCategory?.id || category });
+                                                }}
+                                                className="flex w-full items-center gap-2 text-left"
+                                            >
+                                                <span className={`inline-flex w-4 h-4 rounded-full border ${isActive ? 'border-blue-600 bg-blue-600' : 'border-gray-300 bg-white'}`} />
+                                                <span className={`text-sm ${isActive ? 'text-gray-900 font-semibold' : 'text-gray-500'}`}>
+                                                    {category === 'ALL' ? 'All' : category}
+                                                </span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
                             </div>
-                        ) : (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                                {data.categories.map((category, index) => (
-                                    <Link
-                                        key={category.id}
-                                        id={`category-${category.id}`}
-                                        href={`/store/${slug}/shop?category=${category.id}`}
-                                        className="group relative rounded-2xl overflow-hidden aspect-square shadow-sm hover:shadow-xl transition-all duration-300"
-                                    >
-                                        <img
-                                            src={category.image_url || CATEGORY_FALLBACKS[index % CATEGORY_FALLBACKS.length]}
-                                            alt={category.name}
-                                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+
+                            <div className="space-y-3">
+                                <h3 className="text-sm font-bold uppercase tracking-wide text-gray-500">Price Range</h3>
+                                <input
+                                    type="range"
+                                    min={0}
+                                    max={Math.max(Math.ceil(computedMaxPrice), 1)}
+                                    value={Math.min(maxPriceFilter, Math.max(Math.ceil(computedMaxPrice), 1))}
+                                    onChange={(event) => {
+                                        const nextValue = Number(event.target.value);
+                                        const resetValue = Math.max(Math.ceil(computedMaxPrice), 1);
+                                        updateQueryParams({
+                                            max: nextValue >= resetValue ? null : String(nextValue),
+                                        });
+                                    }}
+                                    className="w-full accent-blue-600"
+                                />
+                                <div className="flex items-center justify-between text-sm font-medium text-gray-500">
+                                    <span>{formatBDT(0)}</span>
+                                    <span>{formatBDT(maxPriceFilter)}</span>
+                                </div>
+                            </div>
+                        </aside>
+
+                        <div>
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+                                <p className="text-sm text-gray-500">
+                                    Showing {visibleProducts.length} product{visibleProducts.length === 1 ? '' : 's'}
+                                </p>
+
+                                <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+                                    <label htmlFor="shop-search" className="relative block">
+                                        <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                                        <input
+                                            id="shop-search"
+                                            type="search"
+                                            placeholder="Search products"
+                                            value={searchQuery}
+                                            onChange={(event) => updateQueryParams({ q: event.target.value.trim() ? event.target.value : null })}
+                                            className="h-11 w-full sm:w-64 rounded-xl border border-gray-200 bg-white pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
                                         />
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                                        <div className="absolute bottom-6 left-6 right-6">
-                                            <h3 className="text-2xl font-bold text-white mb-1">{category.name}</h3>
-                                            <p className="text-gray-300 font-medium">{category.count} products</p>
-                                        </div>
-                                    </Link>
-                                ))}
+                                    </label>
+
+                                    <select
+                                        value={sortOption}
+                                        onChange={(event) => updateQueryParams({ sort: event.target.value === 'newest' ? null : event.target.value })}
+                                        className="h-11 rounded-xl border border-gray-200 bg-white px-3 text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                    >
+                                        <option value="newest">Newest</option>
+                                        <option value="price_asc">Price: Low to High</option>
+                                        <option value="price_desc">Price: High to Low</option>
+                                        <option value="name_asc">Name: A to Z</option>
+                                    </select>
+                                </div>
                             </div>
-                        )}
-                    </div>
-                </section>
 
-                <section className="py-20 bg-gray-50 border-y border-gray-100">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                        <div className="mb-10">
-                            <h2 className="text-3xl font-bold tracking-tight">Trending Now</h2>
-                            <p className="text-gray-500 mt-2">Featured products from the store.</p>
-                        </div>
+                            {visibleProducts.length === 0 ? (
+                                <div className="text-center py-16 text-gray-400 border border-dashed border-gray-200 rounded-2xl">
+                                    <Package className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                                    <p className="text-lg font-medium">No products match your current filters.</p>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                                    {visibleProducts.map((product) => {
+                                        const price = toNumber(product.selling_price);
+                                        const comparePrice = toNumber(product.compare_at_price);
+                                        const onSale = comparePrice > price;
 
-                        {data.trending_products.length === 0 ? (
-                            <div className="text-center py-16 text-gray-400 border border-dashed border-gray-200 rounded-2xl bg-white">
-                                <Package className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                                <p className="text-lg font-medium">No trending products available yet.</p>
-                            </div>
-                        ) : (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                                {data.trending_products.map((product) => {
-                                    const price = toNumber(product.selling_price);
-                                    const comparePrice = toNumber(product.compare_at_price);
-                                    const onSale = comparePrice > price;
+                                        return (
+                                            <article key={product.id} className="bg-white rounded-2xl shadow-sm hover:shadow-lg transition-shadow border border-gray-100 overflow-hidden flex flex-col">
+                                                <div className="relative aspect-[4/5] bg-gray-100 overflow-hidden">
+                                                    {product.image_url ? (
+                                                        <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+                                                            <Package className="w-12 h-12 text-gray-300" />
+                                                        </div>
+                                                    )}
 
-                                    return (
-                                        <article key={product.id} className="group flex flex-col bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300">
-                                            <div className="relative aspect-[4/5] bg-gray-100 overflow-hidden">
-                                                {onSale && (
-                                                    <div className="absolute top-4 left-4 z-10 bg-black text-white text-xs font-bold px-3 py-1.5 rounded-full tracking-wide shadow-sm">
-                                                        Sale
+                                                    {onSale && (
+                                                        <div className="absolute top-4 left-4 bg-white text-black text-xs font-bold px-3 py-1.5 rounded-full shadow-sm">
+                                                            Sale
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                <div className="p-5 flex flex-col flex-1">
+                                                    <div className="text-sm text-gray-500 mb-1.5 font-medium">{product.group_name || 'Category'}</div>
+                                                    <h3 className="font-semibold text-gray-900 leading-snug mb-3">{product.name}</h3>
+                                                    <div className="flex items-center gap-2 mt-auto pt-2 border-t border-gray-50">
+                                                        <span className="font-black text-lg">{formatBDT(price)}</span>
+                                                        {onSale && (
+                                                            <span className="text-sm text-gray-400 line-through">{formatOptionalPrice(product.compare_at_price)}</span>
+                                                        )}
                                                     </div>
-                                                )}
-
-                                                {product.image_url ? (
-                                                    <img
-                                                        src={product.image_url}
-                                                        alt={product.name}
-                                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                                    />
-                                                ) : (
-                                                    <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center group-hover:scale-105 transition-transform duration-500">
-                                                        <Package className="w-12 h-12 text-gray-300" />
-                                                    </div>
-                                                )}
-
-                                                <div className="absolute bottom-4 left-4 right-4 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
                                                     <button
                                                         type="button"
                                                         onClick={() => addToCart(product)}
                                                         disabled={product.stock_quantity <= 0}
-                                                        className="w-full bg-black/90 backdrop-blur text-white font-semibold py-3 rounded-xl hover:bg-black transition-colors disabled:bg-gray-400"
+                                                        className="mt-4 inline-flex items-center justify-center rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white hover:bg-blue-700 transition-colors disabled:bg-gray-300"
                                                     >
                                                         {product.stock_quantity > 0 ? 'Add to Cart' : 'Out of Stock'}
                                                     </button>
                                                 </div>
-                                            </div>
-
-                                            <div className="p-5 flex flex-col flex-1">
-                                                <div className="text-sm text-gray-500 mb-1.5 font-medium">{product.group_name || 'Category'}</div>
-                                                <h3 className="font-bold text-gray-900 leading-snug mb-3 line-clamp-2">{product.name}</h3>
-                                                <div className="flex items-center gap-2 mt-auto pt-2 border-t border-gray-50">
-                                                    <span className="font-black text-lg">{formatBDT(price)}</span>
-                                                    {onSale && (
-                                                        <span className="text-sm text-gray-400 line-through">{formatOptionalPrice(product.compare_at_price)}</span>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </article>
-                                    );
-                                })}
-                            </div>
-                        )}
+                                            </article>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </section>
-
             </main>
 
-            <footer id="contact" className="bg-gray-900 text-white pt-20 pb-10">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
-                        <div className="col-span-1 md:col-span-2">
-                            <Link href={`/store/${slug}`} className="text-2xl font-black tracking-tighter mb-6 block">
-                                {data.tenant.name}
-                            </Link>
-                            <p className="text-gray-400 max-w-md leading-relaxed">
-                                Curating the best products for your lifestyle. Quality, style, and excellent customer service guaranteed.
-                            </p>
-                        </div>
-
-                        <div>
-                            <h4 className="font-bold text-lg mb-6">Shop</h4>
-                            <ul className="space-y-4 text-gray-400">
-                                <li>
-                                    <Link href={`/store/${slug}/shop`} className="hover:text-white transition-colors">
-                                        All Products
-                                    </Link>
-                                </li>
-                                {data.categories.slice(0, 4).map((category) => (
-                                    <li key={category.id}>
-                                        <Link href={`/store/${slug}/shop?category=${category.id}`} className="hover:text-white transition-colors">
-                                            {category.name}
-                                        </Link>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-
-                        <div>
-                            <h4 className="font-bold text-lg mb-6">Customer Service</h4>
-                            <ul className="space-y-4 text-gray-400">
-                                <li><a href="#contact" className="hover:text-white transition-colors">Contact Us</a></li>
-                                <li><a href="#contact" className="hover:text-white transition-colors">Shipping Info</a></li>
-                                <li><a href="#contact" className="hover:text-white transition-colors">Returns</a></li>
-                                <li><a href="#contact" className="hover:text-white transition-colors">FAQ</a></li>
-                            </ul>
-                        </div>
-                    </div>
-
-                    <div className="pt-8 border-t border-gray-800 text-center md:text-left flex flex-col md:flex-row justify-between items-center text-gray-400 text-sm">
-                        <p>© {new Date().getFullYear()} {data.tenant.name}. All rights reserved.</p>
-                        <p className="mt-4 md:mt-0">Powered by <span className="font-semibold text-white">StoreCraft</span></p>
-                    </div>
+            <footer id="contact" className="bg-gray-900 text-white py-12 mt-16">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-sm text-gray-400 flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <p>© {new Date().getFullYear()} {data.tenant.name}. All rights reserved.</p>
+                    <Link href={`/store/${slug}`} className="text-white hover:text-gray-200 transition-colors">
+                        Back to Home
+                    </Link>
                 </div>
             </footer>
 

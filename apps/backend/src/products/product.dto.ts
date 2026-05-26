@@ -59,6 +59,10 @@ export class CreateProductDto {
     @IsString()
     @IsIn(COMPOUND_UNIT_TYPES)
     unitType?: string;
+
+    @IsOptional()
+    @IsBoolean()
+    isFeatured?: boolean;
 }
 
 export class UpdateProductDto {
@@ -115,4 +119,8 @@ export class UpdateProductDto {
     @IsString()
     @IsIn(COMPOUND_UNIT_TYPES)
     unitType?: string;
+
+    @IsOptional()
+    @IsBoolean()
+    isFeatured?: boolean;
 }

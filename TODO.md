@@ -164,7 +164,10 @@ Track all work here. Check off items as they're completed. Add new items as they
 
 ## COMPLETED
 - [x] Storefront UI Redesign (Story 50.1) — done 2026-05-26
-
+- [x] Storefront Shop moved to separate route `/store/[slug]/shop`; homepage now links to dedicated Shop page — done 2026-05-26
+- [x] Product Featured toggle added to inventory Add/Edit Product modal; modal height/scroll improved so top and bottom controls remain visible — done 2026-05-26
+- [x] Storefront Shop page now includes filter sidebar, sorting dropdown, and basic search — done 2026-05-26
+- [x] Storefront Shop filter/sort/search state now syncs to URL query params for shareable links — done 2026-05-26
 
 - [x] Ensure `.env` is in `.gitignore` — confirmed present on line 32 of `.gitignore` — done 2026-05-09
 - [x] Audit all endpoints for missing auth guards — all 26 controllers verified; no unguarded mutations found; added BILLING_WEBHOOK_SECRET to .env.example — done 2026-05-12
@@ -184,4 +187,3 @@ Track all work here. Check off items as they're completed. Add new items as they
 - [x] Soft deletes — deleted_at on Product, Customer, Supplier; all findMany/findFirst queries filter deleted_at: null; remove() now sets deleted_at instead of hard-deleting; migration 20260515000000 — done 2026-05-15
 - [x] Fix login and signup responses to unwrap data from NestJS global TransformInterceptor — done 2026-05-24
 - [x] Fix delivery page "Failed to load deliveries" — root cause: fetchWithAuth already parses+unwraps JSON, so calling .json() on returned object threw TypeError; also fixed double /api/v1 prefix in delivery, manufacturing, settings/reports, settings/tax, settings/sms pages — done 2026-05-24
-
