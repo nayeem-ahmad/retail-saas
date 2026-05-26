@@ -14,7 +14,7 @@ export default function TaxSettingsPage() {
     const [error, setError] = useState('');
 
     useEffect(() => {
-        fetchWithAuth('/api/v1/tenants/tax-settings')
+        fetchWithAuth('/tenants/tax-settings')
             .then(r => r.json())
             .then(json => {
                 const d = json?.data ?? json;
@@ -36,7 +36,7 @@ export default function TaxSettingsPage() {
                 setError('VAT rate must be a number between 0 and 100');
                 return;
             }
-            const res = await fetchWithAuth('/api/v1/tenants/tax-settings', {
+            const res = await fetchWithAuth('/tenants/tax-settings', {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

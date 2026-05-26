@@ -54,7 +54,7 @@ export default function ReportSettingsPage() {
     const [error, setError] = useState('');
 
     useEffect(() => {
-        fetchWithAuth('/api/v1/tenants/report-settings')
+        fetchWithAuth('/tenants/report-settings')
             .then((r) => r.json())
             .then((json) => {
                 const d = json?.data ?? json;
@@ -75,7 +75,7 @@ export default function ReportSettingsPage() {
         setError('');
         setSuccess(false);
         try {
-            const res = await fetchWithAuth('/api/v1/tenants/report-settings', {
+            const res = await fetchWithAuth('/tenants/report-settings', {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

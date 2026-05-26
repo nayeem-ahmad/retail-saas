@@ -62,9 +62,7 @@ export default function DeliveryPage() {
         try {
             const params = new URLSearchParams({ page: String(page), limit: '20' });
             if (statusFilter) params.set('status', statusFilter);
-            const res = await fetchWithAuth(`/api/v1/delivery?${params}`);
-            const json = await res.json();
-            const data = json?.data ?? json;
+            const data = await fetchWithAuth(`/delivery?${params}`);
             setOrders(data.items ?? []);
             setTotal(data.total ?? 0);
             setPages(data.pages ?? 1);
@@ -121,17 +119,13 @@ export default function DeliveryPage() {
             if (!editingId && form.saleId) body.saleId = form.saleId;
             if (editingId) body.status = form.status;
 
-            const url = editingId ? `/api/v1/delivery/${editingId}` : '/api/v1/delivery';
+            const url = editingId ? `/delivery/${editingId}` : '/delivery';
             const method = editingId ? 'PATCH' : 'POST';
-            const res = await fetchWithAuth(url, {
+            await fetchWithAuth(url, {
                 method,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body),
             });
-            if (!res.ok) {
-                const err = await res.json().catch(() => ({}));
-                throw new Error(err?.message ?? 'Save failed');
-            }
             setShowModal(false);
             load();
         } catch (e: any) {
@@ -144,7 +138,7 @@ export default function DeliveryPage() {
     async function handleCancel(id: string) {
         if (!confirm('Cancel this delivery?')) return;
         try {
-            await fetchWithAuth(`/api/v1/delivery/${id}`, { method: 'DELETE' });
+            await fetchWithAuth(`/delivery/${id}`, { method: 'DELETE' });
             load();
         } catch {
             alert('Failed to cancel delivery');

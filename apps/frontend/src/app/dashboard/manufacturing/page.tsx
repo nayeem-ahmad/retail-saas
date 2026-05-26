@@ -149,7 +149,7 @@ function BomTab() {
         setLoading(true);
         setError('');
         try {
-            const res = await fetchWithAuth('/api/v1/manufacturing/bom');
+            const res = await fetchWithAuth('/manufacturing/bom');
             const json = await res.json();
             setBoms(json?.data ?? json ?? []);
         } catch {
@@ -557,7 +557,7 @@ function JobsTab() {
                 quantity: form.quantity,
                 notes: form.notes || undefined,
             };
-            const res = await fetchWithAuth('/api/v1/manufacturing/jobs', {
+            const res = await fetchWithAuth('/manufacturing/jobs', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body),

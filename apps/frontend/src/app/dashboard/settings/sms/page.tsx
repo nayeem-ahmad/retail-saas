@@ -54,7 +54,7 @@ export default function SmsSettingsPage() {
     const [error, setError] = useState('');
 
     useEffect(() => {
-        fetchWithAuth('/api/v1/tenants/sms-settings')
+        fetchWithAuth('/tenants/sms-settings')
             .then((r) => r.json())
             .then((json) => {
                 const d = json?.data ?? json;
@@ -75,7 +75,7 @@ export default function SmsSettingsPage() {
         setError('');
         setSuccess(false);
         try {
-            const res = await fetchWithAuth('/api/v1/tenants/sms-settings', {
+            const res = await fetchWithAuth('/tenants/sms-settings', {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(settings),
