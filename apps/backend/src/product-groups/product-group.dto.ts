@@ -1,4 +1,4 @@
-import { IsOptional, IsString } from 'class-validator';
+import { IsOptional, IsString, IsBoolean } from 'class-validator';
 
 export class CreateProductGroupDto {
     @IsString()
@@ -7,6 +7,14 @@ export class CreateProductGroupDto {
     @IsOptional()
     @IsString()
     description?: string;
+
+    @IsOptional()
+    @IsBoolean()
+    is_featured?: boolean;
+
+    @IsOptional()
+    @IsString()
+    image_url?: string;
 }
 
 export class UpdateProductGroupDto {
@@ -17,4 +25,12 @@ export class UpdateProductGroupDto {
     @IsOptional()
     @IsString()
     description?: string;
+
+    @IsOptional()
+    @IsBoolean()
+    is_featured?: boolean;
+
+    @IsOptional()
+    @IsString()
+    image_url?: string;
 }

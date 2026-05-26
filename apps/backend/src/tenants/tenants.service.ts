@@ -5,7 +5,7 @@ import { UpdateBrandingDto } from './update-branding.dto';
 
 @Injectable()
 export class TenantsService {
-    constructor(private db: DatabaseService) {}
+    constructor(private readonly db: DatabaseService) {}
 
     async updateStorefrontSettings(tenantId: string, dto: StorefrontSettingsDto) {
         // Validate slug format if provided
@@ -18,19 +18,24 @@ export class TenantsService {
             }
         }
 
+            const data: Record<string, string | boolean | null> = {};
+            if (dto.storefront_slug !== undefined) data.storefront_slug = dto.storefront_slug || null;
+            if (dto.storefront_enabled !== undefined) data.storefront_enabled = dto.storefront_enabled;
+            if (dto.storefront_banner !== undefined) data.storefront_banner = dto.storefront_banner || null;
+            if (dto.storefront_hero_image !== undefined) data.storefront_hero_image = dto.storefront_hero_image || null;
+            if (dto.storefront_hero_headline !== undefined) data.storefront_hero_headline = dto.storefront_hero_headline || null;
+
         return this.db.tenant.update({
             where: { id: tenantId },
-            data: {
-                ...(dto.storefront_slug !== undefined ? { storefront_slug: dto.storefront_slug || null } : {}),
-                ...(dto.storefront_enabled !== undefined ? { storefront_enabled: dto.storefront_enabled } : {}),
-                ...(dto.storefront_banner !== undefined ? { storefront_banner: dto.storefront_banner || null } : {}),
-            },
+                data,
             select: {
                 id: true,
                 name: true,
                 storefront_slug: true,
                 storefront_enabled: true,
                 storefront_banner: true,
+                storefront_hero_image: true,
+                storefront_hero_headline: true,
             },
         });
     }
@@ -44,6 +49,8 @@ export class TenantsService {
                 storefront_slug: true,
                 storefront_enabled: true,
                 storefront_banner: true,
+                storefront_hero_image: true,
+                storefront_hero_headline: true,
             },
         });
     }
@@ -72,13 +79,14 @@ export class TenantsService {
     }
 
     async updateTaxSettings(tenantId: string, dto: { default_vat_rate?: number | null; vat_registration_no?: string | null; business_tin?: string | null }) {
+        const data: Record<string, number | string | null> = {};
+        if (dto.default_vat_rate !== undefined) data.default_vat_rate = dto.default_vat_rate;
+        if (dto.vat_registration_no !== undefined) data.vat_registration_no = dto.vat_registration_no || null;
+        if (dto.business_tin !== undefined) data.business_tin = dto.business_tin || null;
+
         return this.db.tenant.update({
             where: { id: tenantId },
-            data: {
-                ...(dto.default_vat_rate !== undefined ? { default_vat_rate: dto.default_vat_rate } : {}),
-                ...(dto.vat_registration_no !== undefined ? { vat_registration_no: dto.vat_registration_no || null } : {}),
-                ...(dto.business_tin !== undefined ? { business_tin: dto.business_tin || null } : {}),
-            },
+            data,
             select: {
                 default_vat_rate: true,
                 vat_registration_no: true,
@@ -88,22 +96,15 @@ export class TenantsService {
     }
 
     async updateBranding(tenantId: string, dto: UpdateBrandingDto) {
+        const data: Record<string, string | null> = {};
+        if (dto.brand_primary_color !== undefined) data.brand_primary_color = dto.brand_primary_color || null;
+        if (dto.brand_logo_url !== undefined) data.brand_logo_url = dto.brand_logo_url || null;
+        if (dto.brand_favicon_url !== undefined) data.brand_favicon_url = dto.brand_favicon_url || null;
+        if (dto.brand_business_name !== undefined) data.brand_business_name = dto.brand_business_name || null;
+
         return this.db.tenant.update({
             where: { id: tenantId },
-            data: {
-                ...(dto.brand_primary_color !== undefined
-                    ? { brand_primary_color: dto.brand_primary_color || null }
-                    : {}),
-                ...(dto.brand_logo_url !== undefined
-                    ? { brand_logo_url: dto.brand_logo_url || null }
-                    : {}),
-                ...(dto.brand_favicon_url !== undefined
-                    ? { brand_favicon_url: dto.brand_favicon_url || null }
-                    : {}),
-                ...(dto.brand_business_name !== undefined
-                    ? { brand_business_name: dto.brand_business_name || null }
-                    : {}),
-            },
+            data,
             select: {
                 brand_primary_color: true,
                 brand_logo_url: true,
@@ -128,13 +129,14 @@ export class TenantsService {
         tenantId: string,
         dto: { sms_enabled?: boolean; sms_on_sale?: boolean; sms_on_low_stock?: boolean },
     ) {
+        const data: Record<string, boolean> = {};
+        if (dto.sms_enabled !== undefined) data.sms_enabled = dto.sms_enabled;
+        if (dto.sms_on_sale !== undefined) data.sms_on_sale = dto.sms_on_sale;
+        if (dto.sms_on_low_stock !== undefined) data.sms_on_low_stock = dto.sms_on_low_stock;
+
         return this.db.tenant.update({
             where: { id: tenantId },
-            data: {
-                ...(dto.sms_enabled !== undefined ? { sms_enabled: dto.sms_enabled } : {}),
-                ...(dto.sms_on_sale !== undefined ? { sms_on_sale: dto.sms_on_sale } : {}),
-                ...(dto.sms_on_low_stock !== undefined ? { sms_on_low_stock: dto.sms_on_low_stock } : {}),
-            },
+            data,
             select: {
                 sms_enabled: true,
                 sms_on_sale: true,
@@ -158,13 +160,14 @@ export class TenantsService {
         tenantId: string,
         dto: { report_weekly_enabled?: boolean; report_monthly_enabled?: boolean; report_email?: string | null },
     ) {
+        const data: Record<string, boolean | string | null> = {};
+        if (dto.report_weekly_enabled !== undefined) data.report_weekly_enabled = dto.report_weekly_enabled;
+        if (dto.report_monthly_enabled !== undefined) data.report_monthly_enabled = dto.report_monthly_enabled;
+        if (dto.report_email !== undefined) data.report_email = dto.report_email || null;
+
         return this.db.tenant.update({
             where: { id: tenantId },
-            data: {
-                ...(dto.report_weekly_enabled !== undefined ? { report_weekly_enabled: dto.report_weekly_enabled } : {}),
-                ...(dto.report_monthly_enabled !== undefined ? { report_monthly_enabled: dto.report_monthly_enabled } : {}),
-                ...(dto.report_email !== undefined ? { report_email: dto.report_email || null } : {}),
-            },
+            data,
             select: {
                 report_weekly_enabled: true,
                 report_monthly_enabled: true,

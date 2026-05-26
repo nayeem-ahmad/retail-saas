@@ -59,4 +59,12 @@ export class StorefrontSettingsDto {
     @IsOptional()
     @IsString()
     storefront_banner?: string;
+
+    @IsOptional()
+    @IsString()
+    storefront_hero_image?: string;
+
+    @IsOptional()
+    @IsString()
+    storefront_hero_headline?: string;
 }

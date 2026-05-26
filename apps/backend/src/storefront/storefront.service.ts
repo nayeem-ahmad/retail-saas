@@ -9,7 +9,7 @@ import { paginate } from '../common/pagination.dto';
 
 @Injectable()
 export class StorefrontService {
-    constructor(private db: DatabaseService) {}
+    constructor(private readonly db: DatabaseService) {}
 
     async getStorefront(slug: string) {
         const tenant = await this.db.tenant.findFirst({
@@ -21,6 +21,8 @@ export class StorefrontService {
                 id: true,
                 name: true,
                 storefront_banner: true,
+                storefront_hero_image: true,
+                storefront_hero_headline: true,
             },
         });
 
@@ -28,7 +30,77 @@ export class StorefrontService {
             throw new NotFoundException('Storefront not found or not available');
         }
 
-        const products = await this.db.product.findMany({
+        // Fetch featured categories only
+        const featuredCategories = await this.db.productGroup.findMany({
+            where: {
+                tenant_id: tenant.id,
+                is_featured: true,
+            },
+            select: {
+                id: true,
+                name: true,
+                image_url: true,
+                products: {
+                    where: {
+                        deleted_at: null,
+                        stocks: {
+                            some: {
+                                quantity: { gt: 0 },
+                            },
+                        },
+                    },
+                    select: { id: true },
+                },
+            },
+        });
+
+        const categories = featuredCategories.map((cat) => ({
+            id: cat.id,
+            name: cat.name,
+            image_url: cat.image_url,
+            count: cat.products.length,
+        }));
+
+        // Fetch featured products (trending)
+        const trendingProducts = await this.db.product.findMany({
+            where: {
+                tenant_id: tenant.id,
+                is_featured: true,
+                deleted_at: null,
+                stocks: {
+                    some: {
+                        quantity: { gt: 0 },
+                    },
+                },
+            },
+            select: {
+                id: true,
+                name: true,
+                price: true,
+                compare_at_price: true,
+                image_url: true,
+                group: {
+                    select: { name: true },
+                },
+                stocks: {
+                    select: { quantity: true },
+                },
+            },
+            take: 8,
+        });
+
+        const trending_products = trendingProducts.map((p) => ({
+            id: p.id,
+            name: p.name,
+            selling_price: p.price,
+            compare_at_price: p.compare_at_price,
+            image_url: p.image_url,
+            group_name: p.group?.name || 'Uncategorized',
+            stock_quantity: p.stocks.reduce((sum, s) => sum + s.quantity, 0),
+        }));
+
+        // Fetch all products for Shop page
+        const allProducts = await this.db.product.findMany({
             where: {
                 tenant_id: tenant.id,
                 deleted_at: null,
@@ -42,55 +114,38 @@ export class StorefrontService {
                 id: true,
                 name: true,
                 price: true,
+                compare_at_price: true,
                 image_url: true,
                 group: {
-                    select: {
-                        name: true,
-                    }
+                    select: { name: true },
                 },
                 stocks: {
-                    select: {
-                        quantity: true,
-                    },
+                    select: { quantity: true },
                 },
             },
             orderBy: { name: 'asc' },
         });
 
-        // Aggregate stock quantity across all warehouses
-        const productsWithStock = products.map((p) => ({
+        const all_products = allProducts.map((p) => ({
             id: p.id,
             name: p.name,
             selling_price: p.price,
+            compare_at_price: p.compare_at_price,
             image_url: p.image_url,
             group_name: p.group?.name || 'Uncategorized',
             stock_quantity: p.stocks.reduce((sum, s) => sum + s.quantity, 0),
         }));
 
-        // Group by category (ProductGroup)
-        const categoryMap = new Map<string, number>();
-        for (const p of productsWithStock) {
-            const count = categoryMap.get(p.group_name) || 0;
-            categoryMap.set(p.group_name, count + 1);
-        }
-        
-        const categories = Array.from(categoryMap.entries()).map(([name, count], index) => ({
-            id: `c${index + 1}`,
-            name,
-            count
-        }));
-
-        // For now, just take the first 4 as trending
-        const trending_products = productsWithStock.slice(0, 4);
-
         return {
             tenant: {
                 name: tenant.name,
                 storefront_banner: tenant.storefront_banner,
+                storefront_hero_image: tenant.storefront_hero_image,
+                storefront_hero_headline: tenant.storefront_hero_headline,
             },
             categories,
             trending_products,
-            all_products: productsWithStock,
+            all_products,
         };
     }
 
@@ -133,7 +188,10 @@ export class StorefrontService {
 
         // Validate stock for all items
         for (const item of dto.items) {
-            const product = productMap.get(item.productId)!;
+            const product = productMap.get(item.productId);
+            if (!product) {
+                throw new BadRequestException(`Product not found: ${item.productId}`);
+            }
             const totalStock = product.stocks.reduce((sum, s) => sum + s.quantity, 0);
             if (totalStock < item.quantity) {
                 throw new BadRequestException(
@@ -145,7 +203,10 @@ export class StorefrontService {
         // Calculate total
         let totalAmount = 0;
         for (const item of dto.items) {
-            const product = productMap.get(item.productId)!;
+            const product = productMap.get(item.productId);
+            if (!product) {
+                throw new BadRequestException(`Product not found: ${item.productId}`);
+            }
             totalAmount += Number(product.price) * item.quantity;
         }
 
@@ -163,7 +224,7 @@ export class StorefrontService {
                         create: dto.items.map((item) => ({
                             productId: item.productId,
                             quantity: item.quantity,
-                            priceAtOrder: Number(productMap.get(item.productId)!.price),
+                            priceAtOrder: Number(productMap.get(item.productId)?.price ?? 0),
                         })),
                     },
                 },

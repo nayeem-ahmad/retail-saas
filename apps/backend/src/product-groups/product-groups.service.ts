@@ -4,7 +4,7 @@ import { CreateProductGroupDto, UpdateProductGroupDto } from './product-group.dt
 
 @Injectable()
 export class ProductGroupsService {
-    constructor(private db: DatabaseService) {}
+    constructor(private readonly db: DatabaseService) {}
 
     async create(tenantId: string, dto: CreateProductGroupDto) {
         const existing = await this.db.productGroup.findUnique({

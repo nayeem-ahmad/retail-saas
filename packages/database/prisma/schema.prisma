@@ -190,6 +190,8 @@ model Tenant {
   storefront_slug      String?  @unique
   storefront_enabled   Boolean  @default(false)
   storefront_banner    String?
+  storefront_hero_image String?
+  storefront_hero_headline String?
   brand_primary_color  String?
   brand_logo_url       String?
   brand_favicon_url    String?
@@ -336,6 +338,8 @@ model ProductGroup {
   tenant_id  String
   name       String
   description String?
+  is_featured Boolean  @default(false)
+  image_url  String?
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
@@ -373,6 +377,8 @@ model Product {
   name        String
   sku         String?
   price       Decimal  @default(0) @db.Decimal(12, 2)
+  compare_at_price Decimal? @db.Decimal(12, 2)  // original price for sale display
+  is_featured Boolean  @default(false)
   vat_rate    Decimal? @db.Decimal(5, 2)  // product-specific VAT rate; null = use tenant default
   warranty_enabled Boolean @default(false)
   warranty_duration_days Int?

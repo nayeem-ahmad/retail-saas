@@ -4,10 +4,11 @@ import { useEffect, useState } from 'react';
 import { Settings, Globe, ToggleLeft, ToggleRight, Save, ExternalLink } from 'lucide-react';
 import { fetchWithAuth } from '@/lib/api';
 
-const API_BASE =
-    typeof window !== 'undefined'
-        ? (process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:3000')
-        : '';
+const isBrowser = Boolean(globalThis.window);
+
+const API_BASE = isBrowser
+    ? (process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:3000')
+    : '';
 
 interface StorefrontSettings {
     id: string;
@@ -15,15 +16,18 @@ interface StorefrontSettings {
     storefront_slug: string | null;
     storefront_enabled: boolean;
     storefront_banner: string | null;
+    storefront_hero_image: string | null;
+    storefront_hero_headline: string | null;
 }
 
 export default function StorefrontSettingsPage() {
-    const [settings, setSettings] = useState<StorefrontSettings | null>(null);
     const [loading, setLoading] = useState(true);
 
     const [slug, setSlug] = useState('');
     const [enabled, setEnabled] = useState(false);
     const [banner, setBanner] = useState('');
+    const [heroImage, setHeroImage] = useState('');
+    const [heroHeadline, setHeroHeadline] = useState('');
     const [saving, setSaving] = useState(false);
     const [saveError, setSaveError] = useState<string | null>(null);
     const [saveSuccess, setSaveSuccess] = useState(false);
@@ -31,16 +35,17 @@ export default function StorefrontSettingsPage() {
     useEffect(() => {
         fetchWithAuth('/tenants/storefront-settings')
             .then((data: StorefrontSettings) => {
-                setSettings(data);
                 setSlug(data.storefront_slug || '');
                 setEnabled(data.storefront_enabled ?? false);
                 setBanner(data.storefront_banner || '');
+                setHeroImage(data.storefront_hero_image || '');
+                setHeroHeadline(data.storefront_hero_headline || '');
             })
             .catch((err) => console.error('Failed to load settings', err))
             .finally(() => setLoading(false));
     }, []);
 
-    const handleSave = async (e: React.FormEvent) => {
+    const handleSave = async (e: React.SyntheticEvent<HTMLFormElement>) => {
         e.preventDefault();
         setSaving(true);
         setSaveError(null);
@@ -54,12 +59,15 @@ export default function StorefrontSettingsPage() {
                     storefront_slug: slug.trim() || null,
                     storefront_enabled: enabled,
                     storefront_banner: banner.trim() || null,
+                    storefront_hero_image: heroImage.trim() || null,
+                    storefront_hero_headline: heroHeadline.trim() || null,
                 }),
             });
-            setSettings(updated);
             setSlug(updated.storefront_slug || '');
             setEnabled(updated.storefront_enabled ?? false);
             setBanner(updated.storefront_banner || '');
+            setHeroImage(updated.storefront_hero_image || '');
+            setHeroHeadline(updated.storefront_hero_headline || '');
             setSaveSuccess(true);
             setTimeout(() => setSaveSuccess(false), 3000);
         } catch (err: any) {
@@ -70,9 +78,7 @@ export default function StorefrontSettingsPage() {
     };
 
     const publicStoreUrl =
-        typeof window !== 'undefined' && slug
-            ? `${window.location.origin}/store/${slug}`
-            : null;
+        isBrowser && slug ? `${globalThis.window.location.origin}/store/${slug}` : null;
 
     return (
         <div className="h-full overflow-auto p-6">
@@ -120,12 +126,13 @@ export default function StorefrontSettingsPage() {
 
                         {/* Store Slug */}
                         <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                            <label htmlFor="store-slug" className="block text-sm font-semibold text-gray-700 mb-1.5">
                                 Store Slug
                             </label>
                             <div className="flex items-center space-x-2">
                                 <span className="text-sm text-gray-400 whitespace-nowrap">/store/</span>
                                 <input
+                                    id="store-slug"
                                     type="text"
                                     value={slug}
                                     onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 50))}
@@ -162,11 +169,11 @@ export default function StorefrontSettingsPage() {
 
                         {/* Banner Text */}
                         <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                            <label htmlFor="store-banner" className="block text-sm font-semibold text-gray-700 mb-1.5">
                                 Banner Text
-                                <span className="ml-2 text-xs font-normal text-gray-400">(optional)</span>
                             </label>
                             <textarea
+                                id="store-banner"
                                 value={banner}
                                 onChange={(e) => setBanner(e.target.value)}
                                 placeholder="Free delivery on orders over ৳500!"
@@ -176,6 +183,43 @@ export default function StorefrontSettingsPage() {
                             <p className="text-xs text-gray-400 mt-1">
                                 Shown as a banner at the top of your storefront.
                             </p>
+                            <p className="text-xs text-gray-400 mt-1">Optional.</p>
+                        </div>
+
+                        <div>
+                            <label htmlFor="store-hero-headline" className="block text-sm font-semibold text-gray-700 mb-1.5">
+                                Hero Headline
+                            </label>
+                            <input
+                                id="store-hero-headline"
+                                type="text"
+                                value={heroHeadline}
+                                onChange={(e) => setHeroHeadline(e.target.value)}
+                                placeholder="New Season Arrivals"
+                                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                            <p className="text-xs text-gray-400 mt-1">
+                                Used as the main headline in the storefront hero.
+                            </p>
+                            <p className="text-xs text-gray-400 mt-1">Optional.</p>
+                        </div>
+
+                        <div>
+                            <label htmlFor="store-hero-image" className="block text-sm font-semibold text-gray-700 mb-1.5">
+                                Hero Image URL
+                            </label>
+                            <input
+                                id="store-hero-image"
+                                type="url"
+                                value={heroImage}
+                                onChange={(e) => setHeroImage(e.target.value)}
+                                placeholder="https://..."
+                                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                            <p className="text-xs text-gray-400 mt-1">
+                                If empty, the storefront uses a default Unsplash hero image.
+                            </p>
+                            <p className="text-xs text-gray-400 mt-1">Optional.</p>
                         </div>
 
                         {saveError && (
