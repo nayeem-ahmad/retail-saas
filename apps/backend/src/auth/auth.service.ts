@@ -4,17 +4,24 @@ import { JwtService } from '@nestjs/jwt';
 import { EmailService } from '../email/email.service';
 import { bootstrapDefaultAccountingForTenant } from '@retail-saas/database';
 import * as bcrypt from 'bcrypt';
-import * as crypto from 'crypto';
+import * as crypto from 'node:crypto';
 import { SignupDto, LoginDto, UpdateProfileDto, ChangePasswordDto } from './auth.dto';
 import { isPlatformAdminEmail } from './platform-admin.util';
 import { ROLE_DEFAULT_PERMISSIONS, UserRole } from '@retail-saas/shared-types';
 
+type TenantProvisionDto = {
+    tenantName: string;
+    storeName: string;
+    address?: string;
+    planCode?: 'FREE' | 'BASIC' | 'STANDARD' | 'PREMIUM';
+};
+
 @Injectable()
 export class AuthService {
     constructor(
-        private db: DatabaseService,
-        private jwtService: JwtService,
-        private email: EmailService,
+        private readonly db: DatabaseService,
+        private readonly jwtService: JwtService,
+        private readonly email: EmailService,
     ) { }
 
     async signup(dto: SignupDto) {
@@ -68,7 +75,17 @@ export class AuthService {
             throw new UnauthorizedException('Invalid credentials');
         }
 
-        const isPasswordValid = await bcrypt.compare(dto.password, user.passwordHash);
+        if (!user.passwordHash) {
+            throw new UnauthorizedException('Invalid credentials');
+        }
+
+        let isPasswordValid = false;
+        try {
+            isPasswordValid = await bcrypt.compare(dto.password, user.passwordHash);
+        } catch (error: any) {
+            console.warn(`[AuthService] Password verification failed for ${dto.email}:`, error?.message);
+            throw new UnauthorizedException('Invalid credentials');
+        }
 
         if (!isPasswordValid) {
             throw new UnauthorizedException('Invalid credentials');
@@ -175,6 +192,9 @@ export class AuthService {
             throw new UnauthorizedException('User not found');
         }
 
+        const tenantMembers = (user.tenantMembers ?? []).filter((membership) => membership?.tenant);
+        const storeAccess = user.storeAccess ?? [];
+
         const payload = { sub: user.id, email: user.email, tv: user.token_version };
         const isPlatformAdmin = isPlatformAdminEmail(user.email);
         return {
@@ -187,8 +207,8 @@ export class AuthService {
                 is_platform_admin: isPlatformAdmin,
                 email_verified: !!user.email_verified_at,
             },
-            tenants: user.tenantMembers.map((membership) =>
-                this.mapTenantMembership(membership, user.storeAccess),
+            tenants: tenantMembers.map((membership) =>
+                this.mapTenantMembership(membership, storeAccess),
             ),
         };
     }
@@ -218,6 +238,9 @@ export class AuthService {
             throw new UnauthorizedException('User not found');
         }
 
+        const tenantMembers = (user.tenantMembers ?? []).filter((membership) => membership?.tenant);
+        const storeAccess = user.storeAccess ?? [];
+
         const totpSecret = (user as any).totp_secret as string | null | undefined;
         const twoFactorEnabled = !!totpSecret && !totpSecret.startsWith('pending:');
 
@@ -228,8 +251,8 @@ export class AuthService {
             is_platform_admin: isPlatformAdminEmail(user.email),
             email_verified: !!user.email_verified_at,
             two_factor_enabled: twoFactorEnabled,
-            tenants: user.tenantMembers.map((membership) =>
-                this.mapTenantMembership(membership, user.storeAccess),
+            tenants: tenantMembers.map((membership) =>
+                this.mapTenantMembership(membership, storeAccess),
             ),
         };
     }
@@ -298,14 +321,14 @@ export class AuthService {
     private async provisionTenant(
         tx: any,
         userId: string,
-        dto: { tenantName: string; storeName: string; address?: string; planCode?: 'FREE' | 'BASIC' | 'STANDARD' | 'PREMIUM' },
+        dto: TenantProvisionDto,
     ) {
         const planCode = dto.planCode ?? 'FREE';
         const plan = await tx.subscriptionPlan.findUnique({
             where: { code: planCode },
         });
 
-        if (!plan || !plan.is_active) {
+        if (!plan?.is_active) {
             throw new BadRequestException('Selected subscription plan is not available.');
         }
 

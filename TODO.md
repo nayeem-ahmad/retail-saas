@@ -163,11 +163,14 @@ Track all work here. Check off items as they're completed. Add new items as they
 ---
 
 ## COMPLETED
+
+- [x] Harden auth login response against malformed password hashes and orphaned tenant membership rows — login now returns invalid credentials instead of 500 and ignores broken membership records — done 2026-05-27
 - [x] Storefront UI Redesign (Story 50.1) — done 2026-05-26
 - [x] Storefront Shop moved to separate route `/store/[slug]/shop`; homepage now links to dedicated Shop page — done 2026-05-26
 - [x] Product Featured toggle added to inventory Add/Edit Product modal; modal height/scroll improved so top and bottom controls remain visible — done 2026-05-26
 - [x] Storefront Shop page now includes filter sidebar, sorting dropdown, and basic search — done 2026-05-26
 - [x] Storefront Shop filter/sort/search state now syncs to URL query params for shareable links — done 2026-05-26
+- [x] Updated Story 50.1 artifact to reflect shipped storefront scope, dedicated Shop page, and shareable filter/sort/search behavior — done 2026-05-27
 
 - [x] Ensure `.env` is in `.gitignore` — confirmed present on line 32 of `.gitignore` — done 2026-05-09
 - [x] Audit all endpoints for missing auth guards — all 26 controllers verified; no unguarded mutations found; added BILLING_WEBHOOK_SECRET to .env.example — done 2026-05-12
