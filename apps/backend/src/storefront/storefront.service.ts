@@ -43,6 +43,11 @@ export class StorefrontService {
                 name: true,
                 price: true,
                 image_url: true,
+                group: {
+                    select: {
+                        name: true,
+                    }
+                },
                 stocks: {
                     select: {
                         quantity: true,
@@ -58,15 +63,34 @@ export class StorefrontService {
             name: p.name,
             selling_price: p.price,
             image_url: p.image_url,
+            group_name: p.group?.name || 'Uncategorized',
             stock_quantity: p.stocks.reduce((sum, s) => sum + s.quantity, 0),
         }));
+
+        // Group by category (ProductGroup)
+        const categoryMap = new Map<string, number>();
+        for (const p of productsWithStock) {
+            const count = categoryMap.get(p.group_name) || 0;
+            categoryMap.set(p.group_name, count + 1);
+        }
+        
+        const categories = Array.from(categoryMap.entries()).map(([name, count], index) => ({
+            id: `c${index + 1}`,
+            name,
+            count
+        }));
+
+        // For now, just take the first 4 as trending
+        const trending_products = productsWithStock.slice(0, 4);
 
         return {
             tenant: {
                 name: tenant.name,
                 storefront_banner: tenant.storefront_banner,
             },
-            products: productsWithStock,
+            categories,
+            trending_products,
+            all_products: productsWithStock,
         };
     }
 
