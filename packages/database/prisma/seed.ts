@@ -328,21 +328,25 @@ async function main() {
         {
             name: 'Beverages',
             description: 'Coffee, tea, water, and drinks',
+            image_url: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=1200&h=800&fit=crop',
             subgroups: ['Coffee', 'Tea', 'Drinks'],
         },
         {
             name: 'Groceries',
             description: 'Daily pantry and dry goods',
+            image_url: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=1200&h=800&fit=crop',
             subgroups: ['Grains', 'Spices', 'Dairy'],
         },
         {
             name: 'Snacks & Bakery',
             description: 'Snacks, chocolate, and bakery items',
+            image_url: 'https://images.unsplash.com/photo-1483695028939-5bb13f8648b0?w=1200&h=800&fit=crop',
             subgroups: ['Snacks', 'Bakery'],
         },
         {
             name: 'Accessories',
             description: 'Consumables and accessories',
+            image_url: 'https://images.unsplash.com/photo-1556740738-b6a63e27c4df?w=1200&h=800&fit=crop',
             subgroups: ['Supplies'],
         },
     ];
@@ -353,11 +357,12 @@ async function main() {
     for (const def of productGroupDefs) {
         const group = await prisma.productGroup.upsert({
             where: { tenant_id_name: { tenant_id: tenant.id, name: def.name } },
-            update: { description: def.description },
+            update: { description: def.description, image_url: def.image_url },
             create: {
                 tenant_id: tenant.id,
                 name: def.name,
                 description: def.description,
+                image_url: def.image_url,
             },
         });
         productGroups.set(def.name, group);
