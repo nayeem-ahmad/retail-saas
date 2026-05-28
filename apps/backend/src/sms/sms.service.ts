@@ -3,64 +3,56 @@ import { Injectable, Logger } from '@nestjs/common';
 @Injectable()
 export class SmsService {
     private readonly logger = new Logger(SmsService.name);
-    private readonly apiUrl: string | null;
-    private readonly apiToken: string;
+    private readonly apiKey: string | null;
     private readonly senderId: string;
+    private readonly baseUrl = 'http://bulksmsbd.net/api/smsapi';
 
     constructor() {
-        this.apiUrl = process.env.SMS_API_URL ?? null;
-        this.apiToken = process.env.SMS_API_TOKEN ?? '';
-        this.senderId = process.env.SMS_SENDER_ID ?? '';
+        this.apiKey = process.env.SMS_API_KEY ?? null;
+        this.senderId = process.env.SMS_SENDER_ID ?? '8809617621294';
 
-        if (!this.apiUrl) {
-            this.logger.warn('SMS_API_URL not set — SMS messages will be logged only');
+        if (!this.apiKey) {
+            this.logger.warn('SMS_API_KEY not set — SMS messages will be logged only');
         }
     }
 
-    /**
-     * Normalize a Bangladeshi phone number to the 880XXXXXXXXXX format.
-     * Strips non-digits; if the result starts with 0, replaces with 880.
-     */
+    // Normalize Bangladeshi number to 880XXXXXXXXXX format
     private normalizePhone(phone: string): string {
         const digits = phone.replace(/\D/g, '');
-        if (digits.startsWith('0')) {
-            return '880' + digits.slice(1);
-        }
-        return digits;
+        return digits.startsWith('0') ? '880' + digits.slice(1) : digits;
     }
 
-    /**
-     * Fire-and-forget SMS send. Catches and logs errors rather than propagating them.
-     */
-    async sendSms(to: string, message: string): Promise<void> {
-        const contact = this.normalizePhone(to);
+    async sendSms(to: string | string[], message: string): Promise<void> {
+        const numbers = (Array.isArray(to) ? to : [to])
+            .map((n) => this.normalizePhone(n))
+            .join(',');
 
-        if (!this.apiUrl) {
-            this.logger.log(`[SMS] To: ${contact} | Message: ${message}`);
+        if (!this.apiKey) {
+            this.logger.log(`[SMS] To: ${numbers} | Message: ${message}`);
             return;
         }
 
         try {
-            const response = await fetch(this.apiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    api_token: this.apiToken,
-                    senderid: this.senderId,
-                    type: 'text',
-                    contacts: contact,
-                    msg: message,
-                }),
+            const params = new URLSearchParams({
+                api_key: this.apiKey,
+                type: 'text',
+                number: numbers,
+                senderid: this.senderId,
+                message,
             });
+
+            const response = await fetch(`${this.baseUrl}?${params.toString()}`);
 
             if (!response.ok) {
                 const body = await response.text().catch(() => '');
-                this.logger.error(
-                    `SMS API returned ${response.status} for ${contact}: ${body}`,
-                );
+                this.logger.error(`SMS API returned ${response.status} for ${numbers}: ${body}`);
+                return;
             }
+
+            const result = await response.text().catch(() => '');
+            this.logger.debug(`SMS sent to ${numbers}: ${result}`);
         } catch (err) {
-            this.logger.error(`Failed to send SMS to ${contact}: ${err}`);
+            this.logger.error(`Failed to send SMS to ${numbers}: ${err}`);
         }
     }
 
@@ -71,7 +63,7 @@ export class SmsService {
         saleRef: string,
     ): Promise<void> {
         const message =
-            `Dear ${customerName}, your purchase of ৳${saleTotal.toFixed(2)} ` +
+            `Dear ${customerName}, your purchase of BDT ${saleTotal.toFixed(2)} ` +
             `(Ref: ${saleRef}) has been confirmed. Thank you!`;
         await this.sendSms(phone, message);
     }
@@ -81,8 +73,7 @@ export class SmsService {
         productName: string,
         currentStock: number,
     ): Promise<void> {
-        const message =
-            `Low stock alert: ${productName} has only ${currentStock} units remaining.`;
+        const message = `Low stock alert: ${productName} has only ${currentStock} units remaining.`;
         await this.sendSms(phone, message);
     }
 

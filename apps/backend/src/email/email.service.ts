@@ -1,21 +1,29 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Resend } from 'resend';
+import * as nodemailer from 'nodemailer';
 
 @Injectable()
 export class EmailService {
     private readonly logger = new Logger(EmailService.name);
-    private readonly resend: Resend | null;
+    private readonly transporter: nodemailer.Transporter | null;
     private readonly from: string;
     private readonly frontendUrl: string;
 
     constructor() {
-        const apiKey = process.env.RESEND_API_KEY;
-        this.resend = apiKey ? new Resend(apiKey) : null;
+        const smtpUser = process.env.SMTP_USER;
+        const smtpPass = process.env.SMTP_PASS;
         this.from = process.env.EMAIL_FROM || 'noreply@yourdomain.com';
         this.frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
 
-        if (!apiKey) {
-            this.logger.warn('RESEND_API_KEY not set — emails will be logged only');
+        if (smtpUser && smtpPass) {
+            this.transporter = nodemailer.createTransport({
+                host: process.env.SMTP_HOST || 'smtp-relay.brevo.com',
+                port: parseInt(process.env.SMTP_PORT || '587', 10),
+                secure: false,
+                auth: { user: smtpUser, pass: smtpPass },
+            });
+        } else {
+            this.transporter = null;
+            this.logger.warn('SMTP_USER/SMTP_PASS not set — emails will be logged only');
         }
     }
 
@@ -126,7 +134,7 @@ ${invoiceUrl ? `<p><a href="${invoiceUrl}">View Invoice</a></p>` : ''}`,
     }
 
     async sendFeedbackNotification(to: string, id: string, type: string, message: string, page?: string): Promise<void> {
-        const typeLabel = type === 'bug' ? '🐛 Bug' : type === 'feature' ? '✨ Feature Request' : '💬 General';
+        const typeLabel = type === 'bug' ? 'Bug' : type === 'feature' ? 'Feature Request' : 'General';
         await this.send({
             to,
             subject: `[Feedback] ${typeLabel}`,
@@ -140,12 +148,12 @@ ${page ? `<p><strong>Page:</strong> ${page}</p>` : ''}
     }
 
     private async send(opts: { to: string; subject: string; html: string }): Promise<void> {
-        if (!this.resend) {
+        if (!this.transporter) {
             this.logger.log(`[EMAIL] To: ${opts.to} | Subject: ${opts.subject}`);
             return;
         }
         try {
-            await this.resend.emails.send({ from: this.from, ...opts });
+            await this.transporter.sendMail({ from: this.from, ...opts });
         } catch (err) {
             this.logger.error(`Failed to send email to ${opts.to}: ${err}`);
         }
