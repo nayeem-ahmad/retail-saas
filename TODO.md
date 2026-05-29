@@ -103,6 +103,12 @@ Track all work here. Check off items as they're completed. Add new items as they
 - [ ] Date format localization (BD convention)
 - [ ] Bangla number formatting option
 
+### Accounting Reports
+- [ ] Profit & Loss account (income statement) — revenue vs expenses, net profit/loss for a date range
+- [ ] Balance sheet — assets, liabilities, and equity snapshot at a given date
+- [ ] Cashbook — cash receipts and payments ledger with running balance
+- [ ] Bankbook — bank account receipts and payments ledger with running balance
+
 ### Product Completeness
 - [ ] Customer-facing invoice/receipt email after a sale
 - [ ] Bulk product import via CSV/Excel
