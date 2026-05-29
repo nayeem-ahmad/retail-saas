@@ -1,26 +1,29 @@
+import { IsOptional, IsString, IsInt, Min, Max } from 'class-validator';
+import { Type } from 'class-transformer';
+
 export class ListAdminTenantsQueryDto {
-    search?: string;
-    planCode?: 'FREE' | 'BASIC' | 'STANDARD' | 'PREMIUM';
-    status?: 'ACTIVE' | 'PAST_DUE' | 'CANCELLED' | 'TRIALING';
+    @IsOptional() @IsString() search?: string;
+    @IsOptional() @IsString() planCode?: 'FREE' | 'BASIC' | 'STANDARD' | 'PREMIUM';
+    @IsOptional() @IsString() status?: 'ACTIVE' | 'PAST_DUE' | 'CANCELLED' | 'TRIALING';
 }
 
 export class UpdateAdminTenantSubscriptionDto {
-    planCode?: 'FREE' | 'BASIC' | 'STANDARD' | 'PREMIUM';
-    status?: 'ACTIVE' | 'PAST_DUE' | 'CANCELLED' | 'TRIALING';
-    billingCycle?: 'MONTHLY' | 'YEARLY';
-    cancelAtPeriodEnd?: boolean;
+    @IsOptional() @IsString() planCode?: 'FREE' | 'BASIC' | 'STANDARD' | 'PREMIUM';
+    @IsOptional() @IsString() status?: 'ACTIVE' | 'PAST_DUE' | 'CANCELLED' | 'TRIALING';
+    @IsOptional() @IsString() billingCycle?: 'MONTHLY' | 'YEARLY';
+    @IsOptional() cancelAtPeriodEnd?: boolean;
 }
 
 export class SuspendTenantDto {
-    reason?: string;
+    @IsOptional() @IsString() reason?: string;
 }
 
 export class ListAdminUsersQueryDto {
-    search?: string;
-    page?: number;
-    limit?: number;
+    @IsOptional() @IsString() search?: string;
+    @IsOptional() @Type(() => Number) @IsInt() @Min(1) page?: number;
+    @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(100) limit?: number;
 }
 
 export class PromoteUserDto {
-    userId: string;
+    @IsString() userId: string;
 }
