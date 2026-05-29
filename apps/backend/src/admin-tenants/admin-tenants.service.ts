@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { BillingService } from '../billing/billing.service';
 import { DatabaseService } from '../database/database.service';
+import { AuditService } from '../audit/audit.service';
 import {
     ListAdminTenantsQueryDto,
     ListAdminUsersQueryDto,
@@ -15,6 +16,7 @@ export class AdminTenantsService {
         private readonly db: DatabaseService,
         private readonly billingService: BillingService,
         private readonly jwtService: JwtService,
+        private readonly auditService: AuditService,
     ) {}
 
     async listTenants(query: ListAdminTenantsQueryDto) {
@@ -137,7 +139,7 @@ export class AdminTenantsService {
         return result;
     }
 
-    async suspendTenant(tenantId: string, dto: SuspendTenantDto) {
+    async suspendTenant(tenantId: string, dto: SuspendTenantDto, adminUserId: string) {
         const existing = await this.db.tenantSubscription.findUnique({
             where: { tenant_id: tenantId },
         });
@@ -149,6 +151,10 @@ export class AdminTenantsService {
         await this.db.tenantSubscription.update({
             where: { tenant_id: tenantId },
             data: { status: 'CANCELLED' },
+        });
+
+        await this.auditService.log('tenant.suspend', 'Tenant', { userId: adminUserId }, tenantId, {
+            reason: dto.reason ?? null,
         });
 
         return { success: true, reason: dto.reason ?? null };
@@ -178,6 +184,11 @@ export class AdminTenantsService {
 
         const token = this.jwtService.sign(payload, { expiresIn: '1h' });
 
+        await this.auditService.log('tenant.impersonate', 'Tenant', { userId: adminUserId }, tenantId, {
+            impersonated_user_id: tenant.owner.id,
+            impersonated_user_email: tenant.owner.email,
+        });
+
         return {
             access_token: token,
             expires_in: 3600,
@@ -197,7 +208,14 @@ export class AdminTenantsService {
                 }),
                 this.db.tenant.count({
                     where: {
-                        created_at: { gte: new Date(new Date().setDate(1)) },
+                        created_at: {
+                            gte: (() => {
+                                const d = new Date();
+                                d.setDate(1);
+                                d.setHours(0, 0, 0, 0);
+                                return d;
+                            })(),
+                        },
                     },
                 }),
             ]);
@@ -268,7 +286,7 @@ export class AdminTenantsService {
         };
     }
 
-    async promoteUser(userId: string) {
+    async promoteUser(userId: string, adminUserId: string) {
         const user = await this.db.user.findUnique({ where: { id: userId } });
         if (!user) throw new NotFoundException('User not found');
 
@@ -277,16 +295,24 @@ export class AdminTenantsService {
             data: { is_platform_admin: true },
         });
 
+        await this.auditService.log('user.promote', 'User', { userId: adminUserId }, userId, {
+            target_email: user.email,
+        });
+
         return { success: true, userId, is_platform_admin: true };
     }
 
-    async demoteUser(userId: string) {
+    async demoteUser(userId: string, adminUserId: string) {
         const user = await this.db.user.findUnique({ where: { id: userId } });
         if (!user) throw new NotFoundException('User not found');
 
         await this.db.user.update({
             where: { id: userId },
             data: { is_platform_admin: false },
+        });
+
+        await this.auditService.log('user.demote', 'User', { userId: adminUserId }, userId, {
+            target_email: user.email,
         });
 
         return { success: true, userId, is_platform_admin: false };
