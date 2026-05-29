@@ -118,6 +118,8 @@ export const msMessages: MessageDictionary = {
             orders: 'Pesanan',
             storefrontSettings: 'Tetapan',
             tenants: 'Penyewa',
+            overview: 'Gambaran Keseluruhan',
+            users: 'Pengguna',
             customers: 'Pelanggan',
             customerGroups: 'Kumpulan Pelanggan',
             territories: 'Wilayah',

@@ -693,6 +693,24 @@ export const api = {
         body: JSON.stringify(data),
         headers: { 'Content-Type': 'application/json' },
     }),
+    suspendTenant: (tenantId: string, reason?: string) => fetchWithAuth(`/admin/tenants/${tenantId}/suspend`, {
+        method: 'PATCH',
+        body: JSON.stringify({ reason }),
+        headers: { 'Content-Type': 'application/json' },
+    }),
+    impersonateTenant: (tenantId: string) => fetchWithAuth(`/admin/tenants/${tenantId}/impersonate`, {
+        method: 'POST',
+    }),
+    getAdminMetrics: () => fetchWithAuth('/admin/metrics'),
+    getAdminUsers: (params?: { search?: string; page?: number; limit?: number }) => {
+        const query = new URLSearchParams();
+        if (params?.search) query.set('search', params.search);
+        if (params?.page) query.set('page', String(params.page));
+        if (params?.limit) query.set('limit', String(params.limit));
+        return fetchWithAuth(`/admin/users${query.toString() ? `?${query.toString()}` : ''}`);
+    },
+    promoteUser: (userId: string) => fetchWithAuth(`/admin/users/${userId}/promote`, { method: 'POST' }),
+    demoteUser: (userId: string) => fetchWithAuth(`/admin/users/${userId}/promote`, { method: 'DELETE' }),
     getMe: () => fetchWithAuth('/auth/me'),
     updateProfile: (data: { name?: string; preferred_locale?: 'en' | 'bn' | 'ms' }) => fetchWithAuth('/auth/me', {
         method: 'PATCH',

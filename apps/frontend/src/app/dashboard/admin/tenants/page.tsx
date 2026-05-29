@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Building2, Loader2, Search, ShieldCheck, Users } from 'lucide-react';
+import { Building2, Loader2, Search, ShieldCheck, Users, UserX, LogIn, CheckCircle } from 'lucide-react';
 import { api } from '../../../../lib/api';
 import { formatDate } from '../../../../lib/format';
 
@@ -40,8 +40,11 @@ export default function AdminTenantsPage() {
     const [planCode, setPlanCode] = useState('');
     const [status, setStatus] = useState('');
     const [error, setError] = useState('');
+    const [toast, setToast] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+    const [isSuspending, setIsSuspending] = useState(false);
+    const [isImpersonating, setIsImpersonating] = useState(false);
 
     const loadTenants = async () => {
         setIsLoading(true);
@@ -105,6 +108,11 @@ export default function AdminTenantsPage() {
         setDraft(subscriptionForm);
     }, [subscriptionForm]);
 
+    const showToast = (msg: string) => {
+        setToast(msg);
+        setTimeout(() => setToast(''), 3500);
+    };
+
     const saveSubscription = async () => {
         if (!selectedTenant) return;
 
@@ -125,6 +133,43 @@ export default function AdminTenantsPage() {
         }
     };
 
+    const suspendTenant = async () => {
+        if (!selectedTenant) return;
+        if (!window.confirm(`Suspend "${selectedTenant.name}"? This sets their subscription to CANCELLED and blocks access.`)) return;
+
+        setIsSuspending(true);
+        setError('');
+        try {
+            await api.suspendTenant(selectedTenant.id, 'Suspended by platform admin');
+            await selectTenant(selectedTenant.id);
+            await loadTenants();
+            showToast(`${selectedTenant.name} has been suspended.`);
+        } catch (err: any) {
+            setError(err.message || 'Failed to suspend tenant.');
+        } finally {
+            setIsSuspending(false);
+        }
+    };
+
+    const impersonate = async () => {
+        if (!selectedTenant) return;
+
+        setIsImpersonating(true);
+        setError('');
+        try {
+            const res: any = await api.impersonateTenant(selectedTenant.id);
+            localStorage.setItem('access_token', res.access_token);
+            const firstTenantId = selectedTenant.id;
+            localStorage.setItem('tenant_id', firstTenantId);
+            showToast(`Now impersonating ${res.impersonated_user.email} · token expires in 1 hour`);
+            setTimeout(() => { window.location.href = '/dashboard'; }, 1500);
+        } catch (err: any) {
+            setError(err.message || 'Failed to impersonate tenant.');
+        } finally {
+            setIsImpersonating(false);
+        }
+    };
+
     return (
         <div className="overflow-y-auto h-full bg-[#f3f4f6] p-6 font-sans text-gray-900">
             <div className="max-w-7xl mx-auto space-y-6">
@@ -134,6 +179,12 @@ export default function AdminTenantsPage() {
                         Platform-admin oversight for subscription health, owner assignment, and workspace footprint
                     </p>
                 </div>
+
+                {toast && (
+                    <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 flex items-center gap-2 text-sm font-semibold text-emerald-700">
+                        <CheckCircle className="w-4 h-4 shrink-0" /> {toast}
+                    </div>
+                )}
 
                 {error && (
                     <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
@@ -225,6 +276,27 @@ export default function AdminTenantsPage() {
                                         <p className="mt-1 text-sm font-black text-gray-900">{selectedTenant.owner?.name || 'Unknown owner'}</p>
                                         <p className="text-xs text-gray-500">{selectedTenant.owner?.email || 'No owner email'}</p>
                                     </div>
+                                </div>
+
+                                <div className="flex flex-wrap gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={impersonate}
+                                        disabled={isImpersonating}
+                                        className="inline-flex items-center gap-2 rounded-2xl bg-indigo-600 px-4 py-2.5 text-sm font-black text-white shadow-lg shadow-indigo-200 transition hover:bg-indigo-700 disabled:opacity-60"
+                                    >
+                                        {isImpersonating ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogIn className="w-4 h-4" />}
+                                        Impersonate Owner
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={suspendTenant}
+                                        disabled={isSuspending || selectedTenant.subscription?.status === 'CANCELLED'}
+                                        className="inline-flex items-center gap-2 rounded-2xl bg-red-50 px-4 py-2.5 text-sm font-black text-red-600 transition hover:bg-red-100 disabled:opacity-60"
+                                    >
+                                        {isSuspending ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserX className="w-4 h-4" />}
+                                        {selectedTenant.subscription?.status === 'CANCELLED' ? 'Already Suspended' : 'Suspend Tenant'}
+                                    </button>
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

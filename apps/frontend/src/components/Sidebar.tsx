@@ -182,7 +182,9 @@ function buildModules(t: ReturnType<typeof useI18n>['t']): NavModule[] {
         icon: ShieldCheck,
         label: t.sidebar.modules.admin,
         children: [
+            { href: '/dashboard/admin', icon: LayoutDashboard, label: t.sidebar.items.overview },
             { href: '/dashboard/admin/tenants', icon: Crown, label: t.sidebar.items.tenants },
+            { href: '/dashboard/admin/users', icon: Users, label: t.sidebar.items.users },
         ],
     },
     {
