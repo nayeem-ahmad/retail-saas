@@ -2,8 +2,18 @@ const DEFAULT_PROD_API_BASE = 'https://retail-saas-backend.onrender.com';
 // In dev (remote container) use a relative path so browser calls go to the
 // Next.js dev server which proxies them to the backend via next.config rewrites.
 // In production keep the explicit backend URL.
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE
-    || (process.env.NODE_ENV === 'production' ? DEFAULT_PROD_API_BASE + '/api/v1' : '/api/v1');
+function normalizeApiBase(rawBase?: string) {
+    const base = rawBase?.trim().replace(/\/$/, '');
+
+    if (!base) {
+        return null;
+    }
+
+    return base.endsWith('/api/v1') ? base : `${base}/api/v1`;
+}
+
+const API_BASE = normalizeApiBase(process.env.NEXT_PUBLIC_API_BASE)
+    || (process.env.NODE_ENV === 'production' ? `${DEFAULT_PROD_API_BASE}/api/v1` : '/api/v1');
 
 export async function fetchBlobWithAuth(endpoint: string, options: RequestInit = {}): Promise<{ blob: Blob; filename: string }> {
     const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
