@@ -172,7 +172,7 @@ Track all work here. Check off items as they're completed. Add new items as they
 - [ ] Manufacturing / BOM module (Premium tier)
 - [ ] Delivery / fulfillment management
 - [ ] Offline-capable POS (service worker + IndexedDB sync)
-- [ ] Multi-branch consolidated reporting
+- [x] Multi-branch consolidated reporting
 - [ ] Third-party accounting exports (Tally/QuickBooks format)
 - [ ] Public API + API key management for enterprise customers
 - [ ] White-label option
@@ -181,6 +181,7 @@ Track all work here. Check off items as they're completed. Add new items as they
 
 ## COMPLETED
 
+- [x] Multi-branch consolidated reporting + branch-level report — VIEW_CONSOLIDATED_REPORTS permission enforced (OWNER/ACCOUNTANT only); new GET /sales-reports/branch-report endpoint; Branch Report frontend page at /dashboard/reports/branch-report with store selector, KPIs, top products, daily breakdown, and company revenue comparison — done 2026-06-09
 - [x] Storefront customer sign up / sign in — new `POST /storefront/:slug/auth/signup` and `POST /storefront/:slug/auth/login` endpoints; Customer model now has optional `user_id` link to User; StorefrontOrder tracks `customerUserId` for authenticated orders; frontend sign-in and sign-up pages at `/store/[slug]/auth/signin` and `/store/[slug]/auth/signup`; header on both storefront pages shows account menu / Sign In button; checkout pre-fills and attaches auth token when signed in; migration `20260609000000_customer_user_link` — done 2026-06-09
 - [x] Multiple POS counters per store — PosCounter model + migration, counter_id on Sale and CashierSession, CountersModule (CRUD API), counter selection in cashier-session open-shift UI, counter_id forwarded to sale payload, POS Counters settings page — done 2026-06-09
 - [x] Add posting-rule seed data for all event/condition combinations (credit sales, mobile wallets, inventory discrepancy, inter/intra-store transfers) — done 2026-06-08

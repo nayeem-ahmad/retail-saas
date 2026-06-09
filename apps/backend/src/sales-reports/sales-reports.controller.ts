@@ -2,13 +2,15 @@ import { Controller, Get, Query, UseGuards, UseInterceptors } from '@nestjs/comm
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RequiresPlan } from '../auth/subscription-access.decorator';
 import { SubscriptionAccessGuard } from '../auth/subscription-access.guard';
+import { TenantRoleGuard } from '../auth/tenant-role.guard';
+import { TenantRoles } from '../auth/tenant-roles.decorator';
 import { TenantInterceptor } from '../database/tenant.interceptor';
 import { Tenant, TenantContext } from '../database/tenant.decorator';
-import { GetConsolidatedReportDto, GetMonthlySalesByCustomerDto, GetSalesByCustomerDto, GetSalesByProductDto, GetSalesSummaryDto } from './sales-reports.dto';
+import { GetBranchReportDto, GetConsolidatedReportDto, GetMonthlySalesByCustomerDto, GetSalesByCustomerDto, GetSalesByProductDto, GetSalesSummaryDto } from './sales-reports.dto';
 import { SalesReportsService } from './sales-reports.service';
 
 @Controller('sales-reports')
-@UseGuards(JwtAuthGuard, SubscriptionAccessGuard)
+@UseGuards(JwtAuthGuard, TenantRoleGuard, SubscriptionAccessGuard)
 @UseInterceptors(TenantInterceptor)
 @RequiresPlan('BASIC')
 export class SalesReportsController {
@@ -25,8 +27,15 @@ export class SalesReportsController {
     }
 
     @Get('consolidated')
+    @TenantRoles('OWNER', 'ACCOUNTANT')
     getConsolidatedReport(@Tenant() tenant: TenantContext, @Query() query: GetConsolidatedReportDto) {
         return this.service.getConsolidatedReport(tenant.tenantId, query);
+    }
+
+    @Get('branch-report')
+    @TenantRoles('OWNER', 'MANAGER', 'ACCOUNTANT')
+    getBranchReport(@Tenant() tenant: TenantContext, @Query() query: GetBranchReportDto) {
+        return this.service.getBranchReport(tenant.tenantId, query);
     }
 
     @Get('by-customer')

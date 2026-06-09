@@ -73,3 +73,16 @@ export class GetMonthlySalesByCustomerDto {
     @IsUUID()
     customerId?: string;
 }
+
+export class GetBranchReportDto {
+    @IsUUID()
+    storeId: string;
+
+    @IsOptional()
+    @IsString()
+    from?: string;
+
+    @IsOptional()
+    @IsString()
+    to?: string;
+}

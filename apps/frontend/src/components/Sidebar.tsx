@@ -150,6 +150,7 @@ function buildModules(t: ReturnType<typeof useI18n>['t']): NavModule[] {
             { href: '/dashboard/sales/reports/summary', icon: TrendingUp, label: t.sidebar.items.salesSummary, advancedOnly: true },
             { href: '/dashboard/sales/reports/products', icon: Package, label: t.sidebar.items.salesByProduct, advancedOnly: true },
             { href: '/dashboard/reports/consolidated', icon: BarChart3, label: t.sidebar.items.consolidated, advancedOnly: true },
+            { href: '/dashboard/reports/branch-report', icon: BarChart3, label: t.sidebar.items.branchReport, advancedOnly: true },
             { href: '#inventory-reports', icon: Package, label: t.sidebar.sections.inventory, section: true, advancedOnly: true },
             { href: '/dashboard/inventory/reports/reorder', icon: TrendingUp, label: t.sidebar.items.reorderReport, advancedOnly: true },
             { href: '/dashboard/inventory/reports/shrinkage', icon: AlertTriangle, label: t.sidebar.items.shrinkageReport, advancedOnly: true },
