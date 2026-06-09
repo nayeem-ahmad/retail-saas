@@ -22,7 +22,21 @@ describe('AuthService', () => {
         },
         accountGroup: { upsert: jest.fn() },
         accountSubgroup: { upsert: jest.fn() },
-        account: { upsert: jest.fn() },
+        account: {
+            upsert: jest.fn(),
+            findMany: jest.fn().mockResolvedValue([
+                { id: 'cash-id', name: 'Cash in Hand' },
+                { id: 'bank-id', name: 'Main Bank Account' },
+                { id: 'revenue-id', name: 'Sales Revenue' },
+                { id: 'payable-id', name: 'Purchase Payable' },
+                { id: 'expense-id', name: 'General Operating Expense' },
+            ]),
+        },
+        postingRule: {
+            findFirst: jest.fn().mockResolvedValue(null),
+            create: jest.fn().mockResolvedValue({}),
+            update: jest.fn().mockResolvedValue({}),
+        },
         subscriptionPlan: {
             findUnique: jest.fn(),
             findMany: jest.fn(),
@@ -80,6 +94,13 @@ describe('AuthService', () => {
         db.accountGroup.upsert.mockResolvedValue({ id: 'group-1', name: 'Current Assets' });
         db.accountSubgroup.upsert.mockResolvedValue({ id: 'subgroup-1', name: 'Cash and Bank' });
         db.account.upsert.mockResolvedValue({ id: 'account-1', name: 'Cash in Hand' });
+        db.account.findMany.mockResolvedValue([
+            { id: 'cash-id', name: 'Cash in Hand' },
+            { id: 'bank-id', name: 'Main Bank Account' },
+            { id: 'revenue-id', name: 'Sales Revenue' },
+            { id: 'payable-id', name: 'Purchase Payable' },
+            { id: 'expense-id', name: 'General Operating Expense' },
+        ]);
         db.userStoreAccess.create.mockResolvedValue({});
         db.userStorePermission.createMany.mockResolvedValue({ count: 22 });
         db.emailVerificationToken.deleteMany.mockResolvedValue({ count: 0 });

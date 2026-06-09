@@ -70,6 +70,12 @@ describe('SalesService', () => {
         findMany: jest.fn(),
         findFirst: jest.fn(),
       },
+      customer: {
+        findUnique: jest.fn().mockResolvedValue({ email: 'cust@example.com', name: 'Customer 1', phone: '123456789' }),
+      },
+      tenant: {
+        findUnique: jest.fn().mockResolvedValue({ name: 'Tenant 1', sms_on_sale: true }),
+      },
     };
 
     const module: TestingModule = await Test.createTestingModule({
