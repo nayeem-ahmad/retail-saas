@@ -35,8 +35,9 @@ export class AdminTenantsController {
     suspendTenant(
         @Param('tenantId') tenantId: string,
         @Body() dto: SuspendTenantDto,
+        @Request() req: any,
     ) {
-        return this.adminTenantsService.suspendTenant(tenantId, dto);
+        return this.adminTenantsService.suspendTenant(tenantId, dto, req.user.userId);
     }
 
     @Post(':tenantId/impersonate')

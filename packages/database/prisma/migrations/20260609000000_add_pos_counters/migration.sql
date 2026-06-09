@@ -1,3 +1,5 @@
+ALTER TYPE "StorePermission" ADD VALUE IF NOT EXISTS 'MANAGE_COUNTERS';
+
 -- CreateTable
 CREATE TABLE "PosCounter" (
     "id" TEXT NOT NULL,

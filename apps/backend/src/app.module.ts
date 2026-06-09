@@ -51,7 +51,9 @@ import { ManufacturingModule } from './manufacturing/manufacturing.module';
 import { LoyaltyModule } from './loyalty/loyalty.module';
 import { SmsModule } from './sms/sms.module';
 import { DiscountCodesModule } from './discount-codes/discount-codes.module';
+import { EmployeesModule } from './employees/employees.module';
 import { CountersModule } from './counters/counters.module';
+import { AttendanceModule } from './attendance/attendance.module';
 
 @Module({
     imports: [
@@ -104,7 +106,9 @@ import { CountersModule } from './counters/counters.module';
         ManufacturingModule,
         LoyaltyModule,
         DiscountCodesModule,
+        EmployeesModule,
         CountersModule,
+        AttendanceModule,
     ],
     controllers: [],
     providers: [
