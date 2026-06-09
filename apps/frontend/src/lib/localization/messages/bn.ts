@@ -137,6 +137,8 @@ export const bnMessages: MessageDictionary = {
             employees: 'কর্মচারী',
             departments: 'বিভাগ',
             designations: 'পদবী',
+            attendance: 'উপস্থিতি',
+            leaves: 'ছুটি',
         },
         sections: {
             sales: 'বিক্রয়',

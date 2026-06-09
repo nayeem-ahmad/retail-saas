@@ -822,6 +822,43 @@ export const api = {
         headers: { 'Content-Type': 'application/json' },
     }),
     unlinkEmployeeUser: (id: string) => fetchWithAuth(`/employees/${id}/link-user`, { method: 'DELETE' }),
+    // Attendance
+    getAttendance: (params?: { employeeId?: string; startDate?: string; endDate?: string; status?: string; page?: number; limit?: number }) => {
+        const q = new URLSearchParams();
+        if (params?.employeeId) q.set('employeeId', params.employeeId);
+        if (params?.startDate) q.set('startDate', params.startDate);
+        if (params?.endDate) q.set('endDate', params.endDate);
+        if (params?.status) q.set('status', params.status);
+        if (params?.page) q.set('page', String(params.page));
+        if (params?.limit) q.set('limit', String(params.limit));
+        return fetchWithAuth(`/attendance?${q}`);
+    },
+    upsertAttendance: (data: any) => fetchWithAuth('/attendance', { method: 'POST', body: JSON.stringify(data) }),
+    deleteAttendance: (id: string) => fetchWithAuth(`/attendance/${id}`, { method: 'DELETE' }),
+    getAttendanceSummary: (employeeId: string, year: number, month: number) =>
+        fetchWithAuth(`/attendance/summary/${employeeId}?year=${year}&month=${month}`),
+    // Leave Types
+    getLeaveTypes: () => fetchWithAuth('/attendance/leave-types'),
+    createLeaveType: (data: any) => fetchWithAuth('/attendance/leave-types', { method: 'POST', body: JSON.stringify(data) }),
+    updateLeaveType: (id: string, data: any) => fetchWithAuth(`/attendance/leave-types/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    deleteLeaveType: (id: string) => fetchWithAuth(`/attendance/leave-types/${id}`, { method: 'DELETE' }),
+    // Leave Balances
+    getLeaveBalances: (employeeId: string) => fetchWithAuth(`/attendance/leave-balances/${employeeId}`),
+    setLeaveBalance: (data: any) => fetchWithAuth('/attendance/leave-balances', { method: 'POST', body: JSON.stringify(data) }),
+    // Leave Requests
+    getLeaveRequests: (params?: { employeeId?: string; status?: string; page?: number; limit?: number }) => {
+        const q = new URLSearchParams();
+        if (params?.employeeId) q.set('employeeId', params.employeeId);
+        if (params?.status) q.set('status', params.status);
+        if (params?.page) q.set('page', String(params.page));
+        if (params?.limit) q.set('limit', String(params.limit));
+        return fetchWithAuth(`/attendance/leave-requests?${q}`);
+    },
+    createLeaveRequest: (data: any) => fetchWithAuth('/attendance/leave-requests', { method: 'POST', body: JSON.stringify(data) }),
+    reviewLeaveRequest: (id: string, data: { status: string; approver_note?: string }) =>
+        fetchWithAuth(`/attendance/leave-requests/${id}/review`, { method: 'PATCH', body: JSON.stringify(data) }),
+    cancelLeaveRequest: (id: string) =>
+        fetchWithAuth(`/attendance/leave-requests/${id}/cancel`, { method: 'PATCH' }),
     // In-app notifications
     getNotifications: () => fetchWithAuth('/notifications'),
     getNotificationUnreadCount: () => fetchWithAuth('/notifications/unread-count'),

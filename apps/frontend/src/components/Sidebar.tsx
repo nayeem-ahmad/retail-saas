@@ -42,6 +42,7 @@ import {
     Tag,
     MessageSquare,
     UserCog,
+    CalendarOff,
     type LucideIcon,
 } from 'lucide-react';
 import { useBranding } from '@/lib/branding';
@@ -172,6 +173,8 @@ function buildModules(t: ReturnType<typeof useI18n>['t']): NavModule[] {
         label: t.sidebar.modules.hr,
         children: [
             { href: '/dashboard/employees', icon: Users, label: t.sidebar.items.employees },
+            { href: '/dashboard/attendance', icon: Clock, label: t.sidebar.items.attendance },
+            { href: '/dashboard/leaves', icon: CalendarOff, label: t.sidebar.items.leaves },
         ],
     },
     {

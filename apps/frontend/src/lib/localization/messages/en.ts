@@ -135,6 +135,8 @@ export const enMessages = {
             employees: 'Employees',
             departments: 'Departments',
             designations: 'Designations',
+            attendance: 'Attendance',
+            leaves: 'Leaves',
         },
         sections: {
             sales: 'Sales',
