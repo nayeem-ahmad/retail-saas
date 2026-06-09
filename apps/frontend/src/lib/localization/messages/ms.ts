@@ -113,6 +113,7 @@ export const msMessages: MessageDictionary = {
             salesSummary: 'Ringkasan Jualan',
             salesByProduct: 'Jualan Mengikut Produk',
             consolidated: 'Disatukan',
+            branchReport: 'Laporan Cawangan',
             reorderReport: 'Laporan Pesanan Semula',
             shrinkageReport: 'Laporan Susut',
             valuation: 'Penilaian',

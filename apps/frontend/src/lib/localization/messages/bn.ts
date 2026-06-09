@@ -113,6 +113,7 @@ export const bnMessages: MessageDictionary = {
             salesSummary: 'বিক্রয় সারাংশ',
             salesByProduct: 'পণ্যভিত্তিক বিক্রয়',
             consolidated: 'কনসোলিডেটেড',
+            branchReport: 'শাখা রিপোর্ট',
             reorderReport: 'রি-অর্ডার রিপোর্ট',
             shrinkageReport: 'শ্রিংকেজ রিপোর্ট',
             valuation: 'মূল্যায়ন',

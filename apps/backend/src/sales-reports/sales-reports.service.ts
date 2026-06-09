@@ -1,6 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
-import { GetConsolidatedReportDto, GetMonthlySalesByCustomerDto, GetSalesByCustomerDto, GetSalesByProductDto, GetSalesSummaryDto } from './sales-reports.dto';
+import { GetBranchReportDto, GetConsolidatedReportDto, GetMonthlySalesByCustomerDto, GetSalesByCustomerDto, GetSalesByProductDto, GetSalesSummaryDto } from './sales-reports.dto';
 
 @Injectable()
 export class SalesReportsService {
@@ -315,6 +315,109 @@ export class SalesReportsService {
                 avgOrderValue: totalOrders > 0 ? totalRevenue / totalOrders : 0,
             },
             rows,
+        };
+    }
+
+    async getBranchReport(tenantId: string, query: GetBranchReportDto) {
+        const dateFilter = buildDateWindow(query.from, query.to);
+
+        const store = await this.db.store.findFirst({
+            where: { id: query.storeId, tenant_id: tenantId },
+        });
+
+        if (!store) {
+            throw new NotFoundException('Store not found');
+        }
+
+        const [branchSales, branchReturns, companyTotals, saleItems] = await Promise.all([
+            this.db.sale.findMany({
+                where: { tenant_id: tenantId, status: 'COMPLETED', store_id: query.storeId, ...dateFilter },
+                select: { id: true, total_amount: true, created_at: true },
+            }),
+            this.db.salesReturn.findMany({
+                where: { tenant_id: tenantId, store_id: query.storeId, ...dateFilter },
+                select: { total_refund: true, created_at: true },
+            }),
+            this.db.sale.aggregate({
+                where: { tenant_id: tenantId, status: 'COMPLETED', ...dateFilter },
+                _sum: { total_amount: true },
+                _count: { id: true },
+            }),
+            this.db.saleItem.findMany({
+                where: {
+                    sale: { tenant_id: tenantId, status: 'COMPLETED', store_id: query.storeId, ...dateFilter },
+                },
+                select: {
+                    product_id: true,
+                    quantity: true,
+                    price_at_sale: true,
+                    product: { select: { id: true, name: true } },
+                },
+            }),
+        ]);
+
+        const branchRevenue = branchSales.reduce((sum, s) => sum + Number(s.total_amount), 0);
+        const branchReturnsTotal = branchReturns.reduce((sum, r) => sum + Number(r.total_refund), 0);
+        const branchTransactions = branchSales.length;
+        const companyRevenue = Number(companyTotals._sum.total_amount ?? 0);
+        const revenueShare = companyRevenue > 0 ? (branchRevenue / companyRevenue) * 100 : 0;
+
+        const productMap = new Map<string, { name: string; unitsSold: number; revenue: number }>();
+        for (const item of saleItems) {
+            const existing = productMap.get(item.product_id) ?? {
+                name: item.product.name,
+                unitsSold: 0,
+                revenue: 0,
+            };
+            existing.unitsSold += item.quantity;
+            existing.revenue += item.quantity * Number(item.price_at_sale);
+            productMap.set(item.product_id, existing);
+        }
+        const topProducts = Array.from(productMap.values())
+            .sort((a, b) => b.revenue - a.revenue)
+            .slice(0, 5);
+
+        const dayMap = new Map<string, { transactions: number; grossRevenue: number; returns: number }>();
+        for (const sale of branchSales) {
+            const day = sale.created_at.toISOString().slice(0, 10);
+            const existing = dayMap.get(day) ?? { transactions: 0, grossRevenue: 0, returns: 0 };
+            existing.transactions += 1;
+            existing.grossRevenue += Number(sale.total_amount);
+            dayMap.set(day, existing);
+        }
+        for (const ret of branchReturns) {
+            const day = ret.created_at.toISOString().slice(0, 10);
+            const existing = dayMap.get(day) ?? { transactions: 0, grossRevenue: 0, returns: 0 };
+            existing.returns += Number(ret.total_refund);
+            dayMap.set(day, existing);
+        }
+        const daily = Array.from(dayMap.entries())
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([date, data]) => ({
+                date,
+                transactions: data.transactions,
+                gross_revenue: data.grossRevenue,
+                returns: data.returns,
+                net_revenue: data.grossRevenue - data.returns,
+            }));
+
+        return {
+            store: { id: store.id, name: store.name },
+            period: { from: query.from ?? null, to: query.to ?? null },
+            summary: {
+                revenue: branchRevenue,
+                transactions: branchTransactions,
+                returns: branchReturnsTotal,
+                net_revenue: branchRevenue - branchReturnsTotal,
+                avg_order: branchTransactions > 0 ? branchRevenue / branchTransactions : 0,
+            },
+            company_comparison: {
+                company_revenue: companyRevenue,
+                company_transactions: companyTotals._count.id,
+                revenue_share: revenueShare,
+            },
+            top_products: topProducts,
+            daily,
         };
     }
 

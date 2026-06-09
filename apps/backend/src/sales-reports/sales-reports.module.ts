@@ -1,12 +1,13 @@
 import { Module } from '@nestjs/common';
 import { DatabaseModule } from '../database/database.module';
 import { SubscriptionAccessGuard } from '../auth/subscription-access.guard';
+import { TenantRoleGuard } from '../auth/tenant-role.guard';
 import { SalesReportsController } from './sales-reports.controller';
 import { SalesReportsService } from './sales-reports.service';
 
 @Module({
     imports: [DatabaseModule],
     controllers: [SalesReportsController],
-    providers: [SalesReportsService, SubscriptionAccessGuard],
+    providers: [SalesReportsService, SubscriptionAccessGuard, TenantRoleGuard],
 })
 export class SalesReportsModule {}

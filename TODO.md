@@ -172,7 +172,7 @@ Track all work here. Check off items as they're completed. Add new items as they
 - [ ] Manufacturing / BOM module (Premium tier)
 - [ ] Delivery / fulfillment management
 - [ ] Offline-capable POS (service worker + IndexedDB sync)
-- [ ] Multi-branch consolidated reporting
+- [x] Multi-branch consolidated reporting
 - [ ] Third-party accounting exports (Tally/QuickBooks format)
 - [ ] Public API + API key management for enterprise customers
 - [ ] White-label option
@@ -187,16 +187,12 @@ Track all work here. Check off items as they're completed. Add new items as they
 
 ## COMPLETED
 
+- [x] Multi-branch consolidated reporting + branch-level report — VIEW_CONSOLIDATED_REPORTS permission enforced (OWNER/ACCOUNTANT only); new GET /sales-reports/branch-report endpoint; Branch Report frontend page at /dashboard/reports/branch-report with store selector, KPIs, top products, daily breakdown, and company revenue comparison — done 2026-06-09
 - [x] Transactional emails: billing invoices, payment confirmations, payment failures — EmailService injected into BillingService; invoice email sent on ACTIVE paid plan; failure email sent on PAST_DUE; fire-and-forget so SMTP errors never block payment flow; 13 new unit tests covering all paths — done 2026-06-09
-
 - [x] Implement audit logging table — migration `20260609020000_add_audit_log_table`; AuditService with `log()` and `query()` methods; AuditController `GET /audit-logs` (tenant-scoped); wired into AuthService (signup, login, login-fail, logout, password-change), PasswordResetService (reset-requested, reset-completed), and BillingService (subscription-changed) — done 2026-06-09
-
 - [x] Confirmed `.env` never in git history — only placeholder `.env.example` committed; no real secrets exposed, no rotation required — done 2026-06-09
-
 - [x] Persist production Prisma enum alignment after VPS redeploy — added `MANAGE_COUNTERS` to Prisma `StorePermission` and guarded the POS counters migration enum change with `IF NOT EXISTS` so source control now matches the live VPS schema — done 2026-06-09
-
 - [x] Storefront loyalty points — customers earn points automatically on every authenticated order; can redeem points for a discount at checkout; points balance displayed in checkout with toggle; `GET /storefront/:slug` now exposes loyalty program settings; `placeOrder` handles earn/redeem in a single DB transaction — done 2026-06-09
-
 - [x] Storefront customer sign up / sign in — new `POST /storefront/:slug/auth/signup` and `POST /storefront/:slug/auth/login` endpoints; Customer model now has optional `user_id` link to User; StorefrontOrder tracks `customerUserId` for authenticated orders; frontend sign-in and sign-up pages at `/store/[slug]/auth/signin` and `/store/[slug]/auth/signup`; header on both storefront pages shows account menu / Sign In button; checkout pre-fills and attaches auth token when signed in; migration `20260609000000_customer_user_link` — done 2026-06-09
 - [x] Multiple POS counters per store — PosCounter model + migration, counter_id on Sale and CashierSession, CountersModule (CRUD API), counter selection in cashier-session open-shift UI, counter_id forwarded to sale payload, POS Counters settings page — done 2026-06-09
 - [x] Add posting-rule seed data for all event/condition combinations (credit sales, mobile wallets, inventory discrepancy, inter/intra-store transfers) — done 2026-06-08

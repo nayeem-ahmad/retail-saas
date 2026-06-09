@@ -514,6 +514,21 @@ export const api = {
         if (params?.customerId) query.set('customerId', params.customerId);
         return fetchWithAuth(`/sales-reports/monthly-by-customer${query.toString() ? `?${query.toString()}` : ''}`);
     },
+    getBranchReport: (params: { storeId: string; from?: string; to?: string }) => {
+        const query = new URLSearchParams();
+        query.set('storeId', params.storeId);
+        if (params.from) query.set('from', params.from);
+        if (params.to) query.set('to', params.to);
+        return fetchWithAuth(`/sales-reports/branch-report?${query.toString()}`);
+    },
+    getStores: () => {
+        const tenantId = typeof window !== 'undefined' ? localStorage.getItem('tenant_id') : null;
+        return fetchWithAuth('/auth/me').then((me: any) => {
+            if (!tenantId || !me?.tenants) return [];
+            const tenant = me.tenants.find((t: any) => t.id === tenantId);
+            return tenant?.stores ?? [];
+        });
+    },
     exportAccountingLedger: (params: { format: 'tally' | 'quickbooks'; from?: string; to?: string }) => {
         const query = new URLSearchParams();
         query.set('format', params.format);

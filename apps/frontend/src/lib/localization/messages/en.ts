@@ -111,6 +111,7 @@ export const enMessages = {
             salesSummary: 'Sales Summary',
             salesByProduct: 'Sales by Product',
             consolidated: 'Consolidated',
+            branchReport: 'Branch Report',
             reorderReport: 'Reorder Report',
             shrinkageReport: 'Shrinkage Report',
             valuation: 'Valuation',
