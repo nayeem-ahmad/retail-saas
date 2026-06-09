@@ -7,14 +7,14 @@ Track all work here. Check off items as they're completed. Add new items as they
 ## CRITICAL — Blocking commercial launch
 
 ### Security
-- [ ] Remove `.env` from git history and rotate all exposed secrets (SUPABASE_SERVICE_ROLE_KEY, payment credentials)
+- [x] Remove `.env` from git history and rotate all exposed secrets — confirmed `.env` was never committed; only `.env.example` with placeholder values exists in history; no real secrets were exposed — done 2026-06-09
 - [x] Ensure `.env` is in `.gitignore` and never committed again
 - [x] Add `helmet` middleware to NestJS app (CSP, HSTS, X-Frame-Options, etc.) — done 2026-05-12
 - [x] Implement CSRF protection — Origin-header validation middleware; rejects state-changing requests from untrusted origins — done 2026-05-15
 - [x] Deploy rate limiting — Upstash Redis is wired in `.env.example` but not used in code — done 2026-05-12
 - [x] Add input sanitization (beyond class-validator) to prevent XSS at API boundary — done 2026-05-12
 - [x] Audit all endpoints for missing auth guards — done 2026-05-12
-- [ ] Implement audit logging table (who changed what, when — needed for billing disputes)
+- [x] Implement audit logging table (who changed what, when — needed for billing disputes) — done 2026-06-09
 
 ### Email & Notifications
 - [x] Integrate email service (Resend) — done 2026-05-15
@@ -186,6 +186,10 @@ Track all work here. Check off items as they're completed. Add new items as they
 ---
 
 ## COMPLETED
+
+- [x] Implement audit logging table — migration `20260609020000_add_audit_log_table`; AuditService with `log()` and `query()` methods; AuditController `GET /audit-logs` (tenant-scoped); wired into AuthService (signup, login, login-fail, logout, password-change), PasswordResetService (reset-requested, reset-completed), and BillingService (subscription-changed) — done 2026-06-09
+
+- [x] Confirmed `.env` never in git history — only placeholder `.env.example` committed; no real secrets exposed, no rotation required — done 2026-06-09
 
 - [x] Persist production Prisma enum alignment after VPS redeploy — added `MANAGE_COUNTERS` to Prisma `StorePermission` and guarded the POS counters migration enum change with `IF NOT EXISTS` so source control now matches the live VPS schema — done 2026-06-09
 

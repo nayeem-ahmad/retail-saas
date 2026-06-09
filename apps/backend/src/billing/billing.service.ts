@@ -7,6 +7,7 @@ import {
     UnauthorizedException,
 } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
+import { AuditService } from '../audit/audit.service';
 import {
     BillingCallbackDto,
     ConfirmCheckoutDto,
@@ -22,7 +23,10 @@ type PlanCode = 'FREE' | 'BASIC' | 'STANDARD' | 'PREMIUM';
 
 @Injectable()
 export class BillingService {
-    constructor(private readonly db: DatabaseService) {}
+    constructor(
+        private readonly db: DatabaseService,
+        private readonly audit: AuditService,
+    ) {}
 
     async getSummary(userId: string, tenantId: string) {
         const membership = await this.requireTenantMembership(userId, tenantId);
@@ -327,6 +331,14 @@ export class BillingService {
             },
             include: { plan: true },
         });
+
+        this.audit.log(
+            'SUBSCRIPTION_CHANGED',
+            'TenantSubscription',
+            { tenantId: input.tenantId },
+            input.tenantId,
+            { planCode: input.planCode, status: input.status ?? 'ACTIVE', providerName: input.providerName },
+        ).catch(() => {});
 
         return {
             tenant,
