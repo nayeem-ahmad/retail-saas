@@ -254,3 +254,5 @@ Track all work here. Check off items as they're completed. Add new items as they
 - [x] Soft deletes — deleted_at on Product, Customer, Supplier; all findMany/findFirst queries filter deleted_at: null; remove() now sets deleted_at instead of hard-deleting; migration 20260515000000 — done 2026-05-15
 - [x] Fix login and signup responses to unwrap data from NestJS global TransformInterceptor — done 2026-05-24
 - [x] Fix delivery page "Failed to load deliveries" — root cause: fetchWithAuth already parses+unwraps JSON, so calling .json() on returned object threw TypeError; also fixed double /api/v1 prefix in delivery, manufacturing, settings/reports, settings/tax, settings/sms pages — done 2026-05-24
+- [x] Reorganized left sidebar navigation: distributed Setup and Reports inside respective module menus (Sales, Accounting, Inventory), took Delivery under Sales module, hid Manufacturing menu, expanded Accounting Overview and Products page sub-options in the left menu, and renamed Account Settings to Settings (removing duplicate settings dropdown) — done 2026-06-10
+
