@@ -1079,7 +1079,23 @@ async function main() {
         empCodeCounter++;
     }
 
-    // ── 14. Summary ──────────────────────────────────────────────────────────
+    // ── 14. Leave types (HR seed) ─────────────────────────────────────────────
+    const leaveTypeData = [
+        { name: 'Annual Leave', days_per_year: 15 },
+        { name: 'Sick Leave', days_per_year: 10 },
+        { name: 'Casual Leave', days_per_year: 7 },
+        { name: 'Unpaid Leave', days_per_year: 0 },
+    ];
+
+    for (const lt of leaveTypeData) {
+        await prisma.leaveType.upsert({
+            where: { tenant_id_name: { tenant_id: tenant.id, name: lt.name } },
+            update: { days_per_year: lt.days_per_year },
+            create: { tenant_id: tenant.id, name: lt.name, days_per_year: lt.days_per_year },
+        });
+    }
+
+    // ── 15. Summary ──────────────────────────────────────────────────────────
     const productCount    = await prisma.product.count({ where: { tenant_id: tenant.id } });
     const customerCount    = await prisma.customer.count({ where: { tenant_id: tenant.id } });
     const saleCount        = await prisma.sale.count({ where: { tenant_id: tenant.id } });

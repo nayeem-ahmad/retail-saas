@@ -489,6 +489,69 @@ export interface Employee {
   user?: { id: string; email: string; name?: string | null } | null;
 }
 
+export const AttendanceStatus = {
+  PRESENT: 'PRESENT',
+  ABSENT: 'ABSENT',
+  HALF_DAY: 'HALF_DAY',
+  HOLIDAY: 'HOLIDAY',
+} as const;
+export type AttendanceStatus = (typeof AttendanceStatus)[keyof typeof AttendanceStatus];
+
+export const LeaveRequestStatus = {
+  PENDING: 'PENDING',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
+  CANCELLED: 'CANCELLED',
+} as const;
+export type LeaveRequestStatus = (typeof LeaveRequestStatus)[keyof typeof LeaveRequestStatus];
+
+export interface LeaveType {
+  id: string;
+  tenant_id: string;
+  name: string;
+  days_per_year: number;
+  created_at: string;
+}
+
+export interface LeaveBalance {
+  id: string;
+  employee_id: string;
+  leave_type_id: string;
+  year: number;
+  total_days: number;
+  used_days: number;
+  leave_type?: LeaveType;
+}
+
+export interface AttendanceRecord {
+  id: string;
+  employee_id: string;
+  date: string;
+  clock_in?: string | null;
+  clock_out?: string | null;
+  status: AttendanceStatus;
+  notes?: string | null;
+  employee?: { id: string; name: string; employee_code: string } | null;
+}
+
+export interface LeaveRequest {
+  id: string;
+  employee_id: string;
+  leave_type_id: string;
+  start_date: string;
+  end_date: string;
+  days: number;
+  reason?: string | null;
+  status: LeaveRequestStatus;
+  approved_by?: string | null;
+  approved_at?: string | null;
+  approver_note?: string | null;
+  created_at: string;
+  employee?: { id: string; name: string; employee_code: string } | null;
+  leave_type?: LeaveType | null;
+  approver?: { id: string; name?: string | null; email: string } | null;
+}
+
 export const ProductSchema = z.object({
   name: z.string().min(2, "Product name must be at least 2 characters"),
   sku: z.string().min(3, "SKU must be at least 3 characters").optional().or(z.literal("")),

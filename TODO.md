@@ -179,7 +179,7 @@ Track all work here. Check off items as they're completed. Add new items as they
 
 ### HR (Epic 60–63)
 - [x] Basic employee management — Employee profiles (code, name, phone, email, NID encrypted, DOJ, department, designation, status), Department and Designation models, full CRUD API, link/unlink system user account — done 2026-06-09
-- [ ] Attendance & Leave management (Epic 61) — POS clock-in/out, shift definition, leave requests + approval, leave balance tracking
+- [x] Attendance & Leave management (Epic 61) — AttendanceRecord, LeaveType, LeaveBalance, LeaveRequest models + migration; AttendanceModule with full CRUD API (upsert attendance, leave type management, leave balance set/query, leave request create/review/cancel, attendance summary); registered in AppModule — done 2026-06-09
 - [ ] Payroll & Salary management (Epic 62) — salary profiles, loan/advance management, monthly payroll generation, PDF payslips
 - [ ] HR Payroll analytics (Epic 63)
 

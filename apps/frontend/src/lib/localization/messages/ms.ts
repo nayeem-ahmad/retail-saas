@@ -137,6 +137,8 @@ export const msMessages: MessageDictionary = {
             employees: 'Pekerja',
             departments: 'Jabatan',
             designations: 'Jawatan',
+            attendance: 'Kehadiran',
+            leaves: 'Cuti',
         },
         sections: {
             sales: 'Jualan',

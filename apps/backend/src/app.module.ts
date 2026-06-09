@@ -53,6 +53,7 @@ import { SmsModule } from './sms/sms.module';
 import { DiscountCodesModule } from './discount-codes/discount-codes.module';
 import { EmployeesModule } from './employees/employees.module';
 import { CountersModule } from './counters/counters.module';
+import { AttendanceModule } from './attendance/attendance.module';
 
 @Module({
     imports: [
@@ -107,6 +108,7 @@ import { CountersModule } from './counters/counters.module';
         DiscountCodesModule,
         EmployeesModule,
         CountersModule,
+        AttendanceModule,
     ],
     controllers: [],
     providers: [

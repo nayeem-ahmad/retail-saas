@@ -77,6 +77,20 @@ enum EmployeeStatus {
   INACTIVE
 }
 
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  HALF_DAY
+  HOLIDAY
+}
+
+enum LeaveRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
 enum PostingRuleEventType {
   sale
   sale_return
@@ -130,6 +144,7 @@ model User {
   storefrontCustomer        Customer?
   storefrontOrders          StorefrontOrder[]
   employee                  Employee?
+  approvedLeaves            LeaveRequest[] @relation("LeaveApprover")
 }
 
 model PasswordResetToken {
@@ -280,6 +295,10 @@ model Tenant {
   departments     Department[]
   designations    Designation[]
   employees       Employee[]
+  leaveTypes        LeaveType[]
+  attendanceRecords AttendanceRecord[]
+  leaveBalances     LeaveBalance[]
+  leaveRequests     LeaveRequest[]
 }
 
 model TenantUser {
@@ -1664,10 +1683,94 @@ model Employee {
   department  Department?  @relation(fields: [department_id], references: [id])
   designation Designation? @relation(fields: [designation_id], references: [id])
   user        User?        @relation(fields: [user_id], references: [id])
+  attendanceRecords AttendanceRecord[]
+  leaveBalances     LeaveBalance[]
+  leaveRequests     LeaveRequest[]
 
   @@unique([tenant_id, employee_code])
   @@unique([tenant_id, phone])
   @@index([tenant_id, status, deleted_at])
   @@index([tenant_id, department_id])
   @@index([tenant_id, designation_id])
+}
+
+model LeaveType {
+  id            String    @id @default(uuid())
+  tenant_id     String
+  name          String
+  days_per_year Float     @default(0)
+  created_at    DateTime  @default(now())
+  deleted_at    DateTime?
+
+  tenant    Tenant         @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  balances  LeaveBalance[]
+  requests  LeaveRequest[]
+
+  @@unique([tenant_id, name])
+  @@index([tenant_id, deleted_at])
+}
+
+model LeaveBalance {
+  id            String   @id @default(uuid())
+  tenant_id     String
+  employee_id   String
+  leave_type_id String
+  year          Int
+  total_days    Float    @default(0)
+  used_days     Float    @default(0)
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  tenant     Tenant     @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  employee   Employee   @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+  leave_type LeaveType  @relation(fields: [leave_type_id], references: [id])
+
+  @@unique([tenant_id, employee_id, leave_type_id, year])
+  @@index([tenant_id, employee_id])
+}
+
+model AttendanceRecord {
+  id          String           @id @default(uuid())
+  tenant_id   String
+  employee_id String
+  date        DateTime         @db.Date
+  clock_in    DateTime?
+  clock_out   DateTime?
+  status      AttendanceStatus @default(PRESENT)
+  notes       String?
+  created_at  DateTime         @default(now())
+  updated_at  DateTime         @updatedAt
+
+  tenant   Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  employee Employee @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+
+  @@unique([tenant_id, employee_id, date])
+  @@index([tenant_id, date])
+  @@index([tenant_id, employee_id, date])
+}
+
+model LeaveRequest {
+  id            String             @id @default(uuid())
+  tenant_id     String
+  employee_id   String
+  leave_type_id String
+  start_date    DateTime           @db.Date
+  end_date      DateTime           @db.Date
+  days          Float
+  reason        String?
+  status        LeaveRequestStatus @default(PENDING)
+  approved_by   String?
+  approved_at   DateTime?
+  approver_note String?
+  created_at    DateTime           @default(now())
+  updated_at    DateTime           @updatedAt
+  deleted_at    DateTime?
+
+  tenant     Tenant     @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  employee   Employee   @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+  leave_type LeaveType  @relation(fields: [leave_type_id], references: [id])
+  approver   User?      @relation("LeaveApprover", fields: [approved_by], references: [id])
+
+  @@index([tenant_id, employee_id, status])
+  @@index([tenant_id, status, start_date])
 }
