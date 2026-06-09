@@ -70,6 +70,9 @@ enum StorePermission {
   // User Management
   MANAGE_USERS
   MANAGE_USER_STORE_ACCESS
+
+  // POS Counters
+  MANAGE_COUNTERS
 }
 
 enum EmployeeStatus {
