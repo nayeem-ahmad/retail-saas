@@ -5,6 +5,7 @@ import { JwtService } from '@nestjs/jwt';
 import { AuthService } from './auth.service';
 import { DatabaseService } from '../database/database.service';
 import { EmailService } from '../email/email.service';
+import { AuditService } from '../audit/audit.service';
 
 jest.mock('bcrypt', () => ({
     hash: jest.fn().mockResolvedValue('hashed-password'),
@@ -22,7 +23,21 @@ describe('AuthService', () => {
         },
         accountGroup: { upsert: jest.fn() },
         accountSubgroup: { upsert: jest.fn() },
-        account: { upsert: jest.fn() },
+        account: {
+            upsert: jest.fn(),
+            findMany: jest.fn().mockResolvedValue([
+                { id: 'cash-id', name: 'Cash in Hand' },
+                { id: 'bank-id', name: 'Main Bank Account' },
+                { id: 'revenue-id', name: 'Sales Revenue' },
+                { id: 'payable-id', name: 'Purchase Payable' },
+                { id: 'expense-id', name: 'General Operating Expense' },
+            ]),
+        },
+        postingRule: {
+            findFirst: jest.fn().mockResolvedValue(null),
+            create: jest.fn().mockResolvedValue({}),
+            update: jest.fn().mockResolvedValue({}),
+        },
         subscriptionPlan: {
             findUnique: jest.fn(),
             findMany: jest.fn(),
@@ -44,6 +59,10 @@ describe('AuthService', () => {
     const emailService = {
         sendWelcome: jest.fn().mockResolvedValue(undefined),
         sendEmailVerification: jest.fn().mockResolvedValue(undefined),
+    };
+
+    const auditService = {
+        log: jest.fn().mockResolvedValue(undefined),
     };
 
     const makeUserWithAccess = (storeId: string, tenantId: string) => ({
@@ -80,11 +99,19 @@ describe('AuthService', () => {
         db.accountGroup.upsert.mockResolvedValue({ id: 'group-1', name: 'Current Assets' });
         db.accountSubgroup.upsert.mockResolvedValue({ id: 'subgroup-1', name: 'Cash and Bank' });
         db.account.upsert.mockResolvedValue({ id: 'account-1', name: 'Cash in Hand' });
+        db.account.findMany.mockResolvedValue([
+            { id: 'cash-id', name: 'Cash in Hand' },
+            { id: 'bank-id', name: 'Main Bank Account' },
+            { id: 'revenue-id', name: 'Sales Revenue' },
+            { id: 'payable-id', name: 'Purchase Payable' },
+            { id: 'expense-id', name: 'General Operating Expense' },
+        ]);
         db.userStoreAccess.create.mockResolvedValue({});
         db.userStorePermission.createMany.mockResolvedValue({ count: 22 });
         db.emailVerificationToken.deleteMany.mockResolvedValue({ count: 0 });
         db.emailVerificationToken.create.mockResolvedValue({});
         jwtService.sign.mockReturnValue('jwt-token');
+        auditService.log.mockResolvedValue(undefined);
 
         const module: TestingModule = await Test.createTestingModule({
             providers: [
@@ -92,6 +119,7 @@ describe('AuthService', () => {
                 { provide: DatabaseService, useValue: db },
                 { provide: JwtService, useValue: jwtService },
                 { provide: EmailService, useValue: emailService },
+                { provide: AuditService, useValue: auditService },
             ],
         }).compile();
 
@@ -228,19 +256,25 @@ describe('AuthService', () => {
     });
 
     it('marks nayeem.ahmad@gmail.com as platform admin in auth responses', async () => {
-        db.user.findUnique.mockResolvedValue({
-            id: 'user-1',
-            email: 'nayeem.ahmad@gmail.com',
-            name: 'Nayeem Ahmad',
-            preferred_locale: 'en',
-            token_version: 0,
-            email_verified_at: null,
-            storeAccess: [],
-            tenantMembers: [],
-        });
+        const oldAdminEmails = process.env.PLATFORM_ADMIN_EMAILS;
+        process.env.PLATFORM_ADMIN_EMAILS = 'nayeem.ahmad@gmail.com';
+        try {
+            db.user.findUnique.mockResolvedValue({
+                id: 'user-1',
+                email: 'nayeem.ahmad@gmail.com',
+                name: 'Nayeem Ahmad',
+                preferred_locale: 'en',
+                token_version: 0,
+                email_verified_at: null,
+                storeAccess: [],
+                tenantMembers: [],
+            });
 
-        const result = await service.getMe('user-1');
+            const result = await service.getMe('user-1');
 
-        expect(result.is_platform_admin).toBe(true);
+            expect(result.is_platform_admin).toBe(true);
+        } finally {
+            process.env.PLATFORM_ADMIN_EMAILS = oldAdminEmails;
+        }
     });
 });

@@ -1,4 +1,4 @@
-import { Controller, Delete, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { Controller, Delete, Get, Param, Post, Query, Request, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PlatformAdminGuard } from '../auth/platform-admin.guard';
 import { AdminTenantsService } from './admin-tenants.service';
@@ -15,12 +15,12 @@ export class AdminUsersController {
     }
 
     @Post(':userId/promote')
-    promoteUser(@Param('userId') userId: string) {
-        return this.adminTenantsService.promoteUser(userId);
+    promoteUser(@Param('userId') userId: string, @Request() req: any) {
+        return this.adminTenantsService.promoteUser(userId, req.user.userId);
     }
 
     @Delete(':userId/promote')
-    demoteUser(@Param('userId') userId: string) {
-        return this.adminTenantsService.demoteUser(userId);
+    demoteUser(@Param('userId') userId: string, @Request() req: any) {
+        return this.adminTenantsService.demoteUser(userId, req.user.userId);
     }
 }
