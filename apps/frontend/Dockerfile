@@ -27,6 +27,7 @@ RUN npx prisma generate --schema=packages/database/prisma/schema.prisma
 ARG NEXT_PUBLIC_API_BASE
 ARG NEXT_PUBLIC_API_URL
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_OPTIONS="--max-old-space-size=1536"
 ENV NEXT_PUBLIC_API_BASE=${NEXT_PUBLIC_API_BASE}
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 RUN npm run build --workspace=@retail-saas/frontend
