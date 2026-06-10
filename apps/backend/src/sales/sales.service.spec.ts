@@ -111,7 +111,7 @@ describe('SalesService', () => {
       tx.saleItem.create.mockResolvedValue({});
       tx.productStock.updateMany.mockResolvedValue({ count: 1 });
 
-      const result = await service.create('tenant-1', {
+      const result = await service.create('tenant-1', 'user-1', {
         storeId: 'store-1',
         totalAmount: 30,
         amountPaid: 30,
@@ -143,7 +143,7 @@ describe('SalesService', () => {
       (applyInventoryMovement as jest.Mock).mockRejectedValueOnce(new BadRequestException('Insufficient stock'));
 
       await expect(
-        service.create('tenant-1', {
+        service.create('tenant-1', 'user-1', {
           storeId: 'store-1',
           totalAmount: 15,
           amountPaid: 15,
@@ -158,7 +158,7 @@ describe('SalesService', () => {
       tx.productStock.updateMany.mockResolvedValue({ count: 1 });
       tx.customer.update.mockResolvedValue({});
 
-      await service.create('tenant-1', {
+      await service.create('tenant-1', 'user-1', {
         storeId: 'store-1',
         customerId: 'cust-1',
         totalAmount: 50,
@@ -177,7 +177,7 @@ describe('SalesService', () => {
       tx.saleItem.create.mockResolvedValue({});
       tx.productStock.updateMany.mockResolvedValue({ count: 1 });
 
-      await service.create('tenant-1', {
+      await service.create('tenant-1', 'user-1', {
         storeId: 'store-1',
         totalAmount: 20,
         amountPaid: 20,
@@ -195,7 +195,7 @@ describe('SalesService', () => {
       tx.saleItem.create.mockResolvedValue({});
       tx.productStock.updateMany.mockResolvedValue({ count: 1 });
 
-      await service.create('tenant-1', {
+      await service.create('tenant-1', 'user-1', {
         storeId: 'store-1',
         totalAmount: 100,
         amountPaid: 100,
@@ -223,7 +223,7 @@ describe('SalesService', () => {
       tx.saleItem.create.mockResolvedValue({});
       tx.productStock.updateMany.mockResolvedValue({ count: 1 });
 
-      await service.create('tenant-1', {
+      await service.create('tenant-1', 'user-1', {
         storeId: 'store-1',
         totalAmount: 20,
         amountPaid: 20,
@@ -244,7 +244,7 @@ describe('SalesService', () => {
         { id: 'prod-B', name: 'Product B', warranty_enabled: false },
       ]);
 
-      await service.create('tenant-1', {
+      await service.create('tenant-1', 'user-1', {
         storeId: 'store-1',
         totalAmount: 50,
         amountPaid: 50,
@@ -271,7 +271,7 @@ describe('SalesService', () => {
       });
 
       await expect(
-        service.create('tenant-1', {
+        service.create('tenant-1', 'user-1', {
           storeId: 'store-1',
           totalAmount: 100,
           amountPaid: 100,

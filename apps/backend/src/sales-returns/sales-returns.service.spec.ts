@@ -73,7 +73,7 @@ describe('SalesReturnsService', () => {
       db.sale.findUnique.mockResolvedValue(mockSale);
       db.salesReturn.create.mockResolvedValue({ id: 'return-99' });
 
-      await service.create('tenant-1', {
+      await service.create('tenant-1', 'user-1', {
           storeId: 'store-1',
           saleId: 'sale-1',
           items: [
@@ -106,7 +106,7 @@ describe('SalesReturnsService', () => {
     };
     db.sale.findUnique.mockResolvedValue(mockSale);
 
-    await expect(service.create('tenant-1', {
+    await expect(service.create('tenant-1', 'user-1', {
         storeId: 'store-1',
         saleId: 'sale-1',
         items: [{ saleItemId: 'item-1', quantity: 2 }] // Attempting to return 2 but only 1 left.
@@ -115,7 +115,7 @@ describe('SalesReturnsService', () => {
 
   it('create() should throw if sale not found', async () => {
     db.sale.findUnique.mockResolvedValue(null);
-    await expect(service.create('tenant-1', { saleId: 'fake' } as any)).rejects.toThrow(BadRequestException);
+    await expect(service.create('tenant-1', 'user-1', { saleId: 'fake' } as any)).rejects.toThrow(BadRequestException);
   });
 
   it('findAll() should return all returns for a tenant', async () => {

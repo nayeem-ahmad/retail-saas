@@ -93,7 +93,7 @@ describe('SalesQuotationsService', () => {
       db.quotation.findUnique.mockResolvedValue(confirmedQuote);
       ordersService.create.mockResolvedValue({ id: 'order-99' });
 
-      const result = await service.convertToOrder('tenant-1', 'quote-2');
+      const result = await service.convertToOrder('tenant-1', 'user-1', 'quote-2');
       
       expect(ordersService.create).toHaveBeenCalled();
       expect(db.quotation.update).toHaveBeenCalledWith({
@@ -105,7 +105,7 @@ describe('SalesQuotationsService', () => {
 
   it('convertToOrder() should throw if already converted', async () => {
       db.quotation.findUnique.mockResolvedValue({ status: 'CONVERTED' });
-      await expect(service.convertToOrder('tenant-1', 'fake-id')).rejects.toThrow(BadRequestException);
+      await expect(service.convertToOrder('tenant-1', 'user-1', 'fake-id')).rejects.toThrow(BadRequestException);
   });
 
   it('findAll() should return all quotes for a tenant', async () => {

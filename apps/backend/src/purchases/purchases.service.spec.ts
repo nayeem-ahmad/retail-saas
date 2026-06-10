@@ -82,7 +82,7 @@ describe('PurchasesService', () => {
         tx.purchase.create.mockResolvedValue({ id: 'purchase-1' });
         tx.purchase.findFirst.mockResolvedValue({ id: 'purchase-1', items: [] });
 
-        const result = await service.create('tenant-1', {
+        const result = await service.create('tenant-1', 'user-1', {
             storeId: 'store-1',
             items: [{ productId: 'prod-1', quantity: 4, unitCost: 8.5 }],
             taxAmount: 2,
@@ -142,7 +142,7 @@ describe('PurchasesService', () => {
         tx.purchase.create.mockResolvedValue({ id: 'purchase-2' });
         tx.purchase.findFirst.mockResolvedValue({ id: 'purchase-2', supplier_id: 'sup-1' });
 
-        await service.create('tenant-1', {
+        await service.create('tenant-1', 'user-1', {
             storeId: 'store-1',
             newSupplier: { name: 'Fresh Farms', phone: '01700000000' },
             items: [{ productId: 'prod-1', quantity: 1, unitCost: 5 }],
@@ -161,7 +161,7 @@ describe('PurchasesService', () => {
         db.product.findMany.mockResolvedValue([]);
 
         await expect(
-            service.create('tenant-1', {
+            service.create('tenant-1', 'user-1', {
                 storeId: 'store-1',
                 items: [{ productId: 'missing', quantity: 1, unitCost: 1 }],
             }),

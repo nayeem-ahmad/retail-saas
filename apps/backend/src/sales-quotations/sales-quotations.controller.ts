@@ -43,7 +43,7 @@ export class SalesQuotationsController {
 
     @Post(':id/convert')
     async convertToOrder(@Tenant() tenant: TenantContext, @Param('id') id: string) {
-        return this.quotationsService.convertToOrder(tenant.tenantId, id);
+        return this.quotationsService.convertToOrder(tenant.tenantId, tenant.userId, id);
     }
 
     @Delete(':id')

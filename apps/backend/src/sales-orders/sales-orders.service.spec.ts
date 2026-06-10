@@ -66,7 +66,7 @@ describe('SalesOrdersService', () => {
     };
     db.salesOrder.create.mockResolvedValue({ id: 'order-1' });
 
-    const result = await service.create('tenant-1', mockOrder);
+    const result = await service.create('tenant-1', 'user-1', mockOrder);
     expect(db.salesOrder.create).toHaveBeenCalled();
     expect(result).toEqual({ id: 'order-1' });
   });

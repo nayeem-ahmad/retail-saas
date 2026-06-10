@@ -82,7 +82,7 @@ export class SalesQuotationsService {
         });
     }
 
-    async convertToOrder(tenantId: string, id: string) {
+    async convertToOrder(tenantId: string, userId: string, id: string) {
         const quote = await this.db.quotation.findUnique({
              where: { id, tenant_id: tenantId },
              include: { items: true }
@@ -92,7 +92,7 @@ export class SalesQuotationsService {
         if (quote.status === 'CONVERTED') throw new BadRequestException('Already converted');
 
         // Call the SalesOrdersService natively
-        const newOrder = await this.ordersService.create(tenantId, {
+        const newOrder = await this.ordersService.create(tenantId, userId, {
             storeId: quote.store_id,
             customerId: quote.customer_id || undefined,
             totalAmount: Number(quote.total_amount),

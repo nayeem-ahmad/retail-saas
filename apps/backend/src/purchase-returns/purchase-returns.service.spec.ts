@@ -99,7 +99,7 @@ describe('PurchaseReturnsService', () => {
         tx.purchaseReturn.create.mockResolvedValue({ id: 'pret-1', return_number: 'PRET-00001' });
         tx.purchaseReturn.findFirst.mockResolvedValue({ id: 'pret-1', return_number: 'PRET-00001' });
 
-        const result = await service.create('tenant-1', {
+        const result = await service.create('tenant-1', 'user-1', {
             storeId: 'store-1',
             purchaseId: 'purchase-1',
             items: [{ purchaseItemId: 'item-1', quantity: 2 }],
@@ -145,7 +145,7 @@ describe('PurchaseReturnsService', () => {
         });
 
         await expect(
-            service.create('tenant-1', {
+            service.create('tenant-1', 'user-1', {
                 storeId: 'store-1',
                 purchaseId: 'purchase-1',
                 items: [{ purchaseItemId: 'missing-item', quantity: 1 }],
@@ -171,7 +171,7 @@ describe('PurchaseReturnsService', () => {
         });
 
         await expect(
-            service.create('tenant-1', {
+            service.create('tenant-1', 'user-1', {
                 storeId: 'store-1',
                 purchaseId: 'purchase-1',
                 items: [{ purchaseItemId: 'item-1', quantity: 3 }],
@@ -193,7 +193,7 @@ describe('PurchaseReturnsService', () => {
         (applyInventoryMovement as jest.Mock).mockRejectedValueOnce(new BadRequestException('Insufficient stock'));
 
         await expect(
-            service.create('tenant-1', {
+            service.create('tenant-1', 'user-1', {
                 storeId: 'store-1',
                 purchaseId: 'purchase-1',
                 items: [{ purchaseItemId: 'item-1', quantity: 2 }],
