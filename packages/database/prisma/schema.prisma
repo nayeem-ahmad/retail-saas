@@ -270,6 +270,7 @@ model Tenant {
   suppliers  Supplier[]
   purchases  Purchase[]
   purchaseOrders PurchaseOrder[]
+  purchaseQuotations PurchaseQuotation[]
   customers  Customer[]
   customerGroups CustomerGroup[]
   territories    Territory[]
@@ -334,6 +335,7 @@ model Store {
   quotations      Quotation[]
   purchases       Purchase[]
   purchaseOrders  PurchaseOrder[]
+  purchaseQuotations PurchaseQuotation[]
   cashierSessions CashierSession[]
   warehouses      Warehouse[]
   userStoreAccess UserStoreAccess[]
@@ -466,6 +468,7 @@ model Product {
   quoteItems  QuotationItem[]
   purchaseItems PurchaseItem[]
   purchaseOrderItems PurchaseOrderItem[]
+  purchaseQuotationItems PurchaseQuotationItem[]
   prices      ProductPrice[]
   warrantyClaims WarrantyClaim[]
   storefrontOrderItems StorefrontOrderItem[]
@@ -726,6 +729,7 @@ model Supplier {
   purchases   Purchase[]
   purchaseReturns PurchaseReturn[]
   purchaseOrders PurchaseOrder[]
+  purchaseQuotations PurchaseQuotation[]
 
   @@unique([tenant_id, name])
 }
@@ -843,6 +847,41 @@ model PurchaseOrderItem {
 
   purchaseOrder PurchaseOrder @relation(fields: [po_id], references: [id], onDelete: Cascade)
   product       Product       @relation(fields: [product_id], references: [id])
+}
+
+model PurchaseQuotation {
+  id              String    @id @default(uuid())
+  tenant_id       String
+  store_id        String
+  supplier_id     String?
+  rfq_number      String
+  status          String    @default("DRAFT")
+  valid_until     DateTime?
+  total_amount    Decimal   @default(0) @db.Decimal(12, 2)
+  notes           String?
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
+
+  tenant   Tenant    @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  store    Store     @relation(fields: [store_id], references: [id])
+  supplier Supplier? @relation(fields: [supplier_id], references: [id])
+  items    PurchaseQuotationItem[]
+
+  @@unique([tenant_id, rfq_number])
+  @@index([tenant_id, created_at])
+  @@index([tenant_id, status])
+}
+
+model PurchaseQuotationItem {
+  id         String  @id @default(uuid())
+  rfq_id     String
+  product_id String
+  quantity   Int
+  unit_cost  Decimal @db.Decimal(12, 2)
+  line_total Decimal @db.Decimal(12, 2)
+
+  purchaseQuotation PurchaseQuotation @relation(fields: [rfq_id], references: [id], onDelete: Cascade)
+  product           Product           @relation(fields: [product_id], references: [id])
 }
 
 model Sale {

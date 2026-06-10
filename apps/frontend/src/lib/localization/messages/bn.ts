@@ -99,6 +99,7 @@ export const bnMessages: MessageDictionary = {
             jobsBom: 'জবস ও BOM',
             purchases: 'ক্রয়',
             purchaseOrders: 'ক্রয় অর্ডার',
+            purchaseQuotations: 'ক্রয় কোটেশন',
             purchaseReturns: 'ক্রয় রিটার্ন',
             suppliers: 'সরবরাহকারী',
             overview: 'সারসংক্ষেপ',

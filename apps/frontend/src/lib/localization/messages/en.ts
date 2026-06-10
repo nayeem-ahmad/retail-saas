@@ -97,6 +97,7 @@ export const enMessages = {
             jobsBom: 'Jobs & BOM',
             purchases: 'Purchases',
             purchaseOrders: 'Purchase Orders',
+            purchaseQuotations: 'Purchase Quotations',
             purchaseReturns: 'Purchase Returns',
             suppliers: 'Suppliers',
             overview: 'Overview',

@@ -99,6 +99,7 @@ export const msMessages: MessageDictionary = {
             jobsBom: 'Kerja & BOM',
             purchases: 'Pembelian',
             purchaseOrders: 'Pesanan Pembelian',
+            purchaseQuotations: 'Sebut Harga Pembelian',
             purchaseReturns: 'Pulangan Pembelian',
             suppliers: 'Pembekal',
             overview: 'Gambaran Keseluruhan',
