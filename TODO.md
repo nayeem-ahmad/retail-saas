@@ -119,6 +119,13 @@ Track all work here. Check off items as they're completed. Add new items as they
 - [x] Customer-wise sales summary — total orders, revenue, and average order value per customer for a selected period — done 2026-05-29
 - [x] Month-by-month sales metrics per customer — monthly breakdown of order count, revenue, and trend per customer — done 2026-05-29
 
+### Purchase Quotations / RFQ (Epic 23)
+- [x] PurchaseQuotation + PurchaseQuotationItem schema + migration — done 2026-06-10
+- [x] RFQ Creation API (POST /purchase-quotations) with auto-numbered RFQ# — done 2026-06-10
+- [x] RFQ status workflow (DRAFT → SENT → RECEIVED → ACCEPTED/REJECTED → CONVERTED) — done 2026-06-10
+- [x] Convert to PO (POST /purchase-quotations/:id/convert) — done 2026-06-10
+- [x] RFQ list page, detail page, create modal; sidebar link under Purchase module — done 2026-06-10
+
 ### Purchase Orders (Epic 22)
 - [x] PurchaseOrder + PurchaseOrderItem schema + migration — done 2026-06-10
 - [x] PO Creation API (POST /purchase-orders) with auto-numbered PO# — done 2026-06-10
