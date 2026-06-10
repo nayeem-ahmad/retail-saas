@@ -301,7 +301,7 @@ export class AuthService {
         const newHash = await bcrypt.hash(dto.newPassword, 10);
         await this.db.user.update({
             where: { id: userId },
-            data: { passwordHash: newHash },
+            data: { passwordHash: newHash, token_version: { increment: 1 } },
         });
         this.audit.log('PASSWORD_CHANGED', 'User', { userId }, userId).catch(() => {});
     }

@@ -60,7 +60,7 @@ Track all work here. Check off items as they're completed. Add new items as they
 - [x] Password reset flow (email-based expiring token) — done 2026-05-15
 - [ ] Email verification on signup
 - [x] Account lockout after N failed login attempts
-- [ ] Session invalidation on password change
+- [x] Session invalidation on password change — done 2026-06-09
 - [ ] Consider TOTP 2FA for OWNER role
 - [x] Implement refresh token rotation
 
@@ -188,6 +188,8 @@ Track all work here. Check off items as they're completed. Add new items as they
 ## COMPLETED
 
 - [x] Multi-branch consolidated reporting + branch-level report — VIEW_CONSOLIDATED_REPORTS permission enforced (OWNER/ACCOUNTANT only); new GET /sales-reports/branch-report endpoint; Branch Report frontend page at /dashboard/reports/branch-report with store selector, KPIs, top products, daily breakdown, and company revenue comparison — done 2026-06-09
+- [x] Session invalidation on password change — changePassword() now increments token_version alongside the password hash; JWT strategy already checked tv so all existing sessions are immediately invalidated; 7 new unit tests — done 2026-06-09
+
 - [x] Dunning management — BillingSchedulerService daily cron (09:00) finds PAST_DUE subscriptions past the grace period (default 7 days, DUNNING_GRACE_DAYS env), downgrades them to FREE/CANCELLED, sends sendSubscriptionCancelled email, logs audit event; 11 unit tests; DUNNING_GRACE_DAYS configurable — done 2026-06-09
 - [x] Transactional emails: billing invoices, payment confirmations, payment failures — EmailService injected into BillingService; invoice email sent on ACTIVE paid plan; failure email sent on PAST_DUE; fire-and-forget so SMTP errors never block payment flow; 13 new unit tests covering all paths — done 2026-06-09
 - [x] Implement audit logging table — migration `20260609020000_add_audit_log_table`; AuditService with `log()` and `query()` methods; AuditController `GET /audit-logs` (tenant-scoped); wired into AuthService (signup, login, login-fail, logout, password-change), PasswordResetService (reset-requested, reset-completed), and BillingService (subscription-changed) — done 2026-06-09

@@ -277,4 +277,87 @@ describe('AuthService', () => {
             process.env.PLATFORM_ADMIN_EMAILS = oldAdminEmails;
         }
     });
+
+    // --- changePassword: session invalidation ---
+
+    describe('changePassword', () => {
+        const userId = 'user-1';
+        const currentPassword = 'OldPass1!';
+        const newPassword = 'NewPass1!';
+        const hashedCurrent = 'hashed-current';
+
+        beforeEach(() => {
+            (bcrypt.hash as jest.Mock).mockResolvedValue('hashed-password');
+            (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+            db.user.findUnique.mockResolvedValue({ passwordHash: hashedCurrent });
+            db.user.update.mockResolvedValue({});
+            auditService.log.mockResolvedValue(undefined);
+        });
+
+        it('increments token_version alongside the password hash on a successful change', async () => {
+            await service.changePassword(userId, { currentPassword, newPassword });
+
+            expect(db.user.update).toHaveBeenCalledWith({
+                where: { id: userId },
+                data: {
+                    passwordHash: 'hashed-password',
+                    token_version: { increment: 1 },
+                },
+            });
+        });
+
+        it('invalidates all existing sessions by incrementing token_version', async () => {
+            await service.changePassword(userId, { currentPassword, newPassword });
+
+            const updateCall = db.user.update.mock.calls[0][0];
+            expect(updateCall.data.token_version).toEqual({ increment: 1 });
+        });
+
+        it('rejects when current password is wrong', async () => {
+            (bcrypt.compare as jest.Mock).mockResolvedValue(false);
+
+            await expect(
+                service.changePassword(userId, { currentPassword: 'wrong', newPassword }),
+            ).rejects.toThrow('Current password is incorrect');
+
+            expect(db.user.update).not.toHaveBeenCalled();
+        });
+
+        it('rejects when new password equals current password', async () => {
+            await expect(
+                service.changePassword(userId, { currentPassword, newPassword: currentPassword }),
+            ).rejects.toThrow('New password must differ');
+
+            expect(db.user.update).not.toHaveBeenCalled();
+        });
+
+        it('rejects when new password is shorter than 8 characters', async () => {
+            await expect(
+                service.changePassword(userId, { currentPassword, newPassword: 'short' }),
+            ).rejects.toThrow('at least 8 characters');
+
+            expect(db.user.update).not.toHaveBeenCalled();
+        });
+
+        it('rejects when user is not found', async () => {
+            db.user.findUnique.mockResolvedValue(null);
+
+            await expect(
+                service.changePassword(userId, { currentPassword, newPassword }),
+            ).rejects.toThrow('User not found');
+        });
+
+        it('logs a PASSWORD_CHANGED audit event on success', async () => {
+            await service.changePassword(userId, { currentPassword, newPassword });
+
+            await new Promise(process.nextTick);
+
+            expect(auditService.log).toHaveBeenCalledWith(
+                'PASSWORD_CHANGED',
+                'User',
+                { userId },
+                userId,
+            );
+        });
+    });
 });
