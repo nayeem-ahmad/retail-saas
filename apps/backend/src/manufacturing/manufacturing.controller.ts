@@ -17,6 +17,8 @@ import {
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { TenantInterceptor } from '../database/tenant.interceptor';
 import { Tenant, TenantContext } from '../database/tenant.decorator';
+import { SubscriptionAccessGuard } from '../auth/subscription-access.guard';
+import { RequiresPlan } from '../auth/subscription-access.decorator';
 import { ManufacturingService } from './manufacturing.service';
 import {
     CreateBomDto,
@@ -25,7 +27,8 @@ import {
 } from './manufacturing.dto';
 
 @Controller('manufacturing')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, SubscriptionAccessGuard)
+@RequiresPlan('STANDARD')
 @UseInterceptors(TenantInterceptor)
 export class ManufacturingController {
     constructor(private readonly manufacturingService: ManufacturingService) {}

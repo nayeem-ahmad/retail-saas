@@ -15,6 +15,8 @@ import { IsString, IsNotEmpty, MaxLength } from 'class-validator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Tenant, TenantContext } from '../database/tenant.decorator';
 import { TenantInterceptor } from '../database/tenant.interceptor';
+import { SubscriptionAccessGuard } from '../auth/subscription-access.guard';
+import { RequiresFeature } from '../auth/subscription-access.decorator';
 import { ApiKeysService } from './api-keys.service';
 
 class CreateApiKeyDto {
@@ -25,7 +27,8 @@ class CreateApiKeyDto {
 }
 
 @Controller('api-keys')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, SubscriptionAccessGuard)
+@RequiresFeature('apiAccess')
 @UseInterceptors(TenantInterceptor)
 export class ApiKeysController {
     constructor(private readonly apiKeysService: ApiKeysService) {}
