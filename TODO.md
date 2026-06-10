@@ -49,7 +49,7 @@ Track all work here. Check off items as they're completed. Add new items as they
 - [ ] Add refund processing flow
 - [ ] Test all payment webhooks end-to-end in staging (SSL Wireless, bKash, Nagad IPN)
 - [ ] Add idempotency keys to webhook handlers (prevent duplicate processing on retry)
-- [ ] Audit `SubscriptionAccessGuard` — verify it correctly gates all premium features
+- [x] Audit `SubscriptionAccessGuard` — verify it correctly gates all premium features — done 2026-06-09
 - [ ] Build billing portal page (tenants view invoices and billing history)
 
 ---
@@ -188,6 +188,8 @@ Track all work here. Check off items as they're completed. Add new items as they
 ## COMPLETED
 
 - [x] Multi-branch consolidated reporting + branch-level report — VIEW_CONSOLIDATED_REPORTS permission enforced (OWNER/ACCOUNTANT only); new GET /sales-reports/branch-report endpoint; Branch Report frontend page at /dashboard/reports/branch-report with store selector, KPIs, top products, daily breakdown, and company revenue comparison — done 2026-06-09
+- [x] Audit `SubscriptionAccessGuard` — found ManufacturingController, AttendanceController, ApiKeysController unprotected; added SubscriptionAccessGuard + @RequiresPlan('STANDARD') to manufacturing and attendance, @RequiresFeature('apiAccess') to api-keys; 16 controller integration tests covering STANDARD/PREMIUM allow, BASIC/FREE/PAST_DUE reject, non-member 401 — done 2026-06-09
+
 - [x] Session invalidation on password change — changePassword() now increments token_version alongside the password hash; JWT strategy already checked tv so all existing sessions are immediately invalidated; 7 new unit tests — done 2026-06-09
 
 - [x] Dunning management — BillingSchedulerService daily cron (09:00) finds PAST_DUE subscriptions past the grace period (default 7 days, DUNNING_GRACE_DAYS env), downgrades them to FREE/CANCELLED, sends sendSubscriptionCancelled email, logs audit event; 11 unit tests; DUNNING_GRACE_DAYS configurable — done 2026-06-09
