@@ -118,6 +118,11 @@ enum PostingEventStatus {
   skipped
 }
 
+enum DepreciationMethod {
+  STRAIGHT_LINE
+  DECLINING_BALANCE
+}
+
 model User {
   id                String    @id @default(uuid())
   email             String    @unique
@@ -306,6 +311,12 @@ model Tenant {
   attendanceRecords AttendanceRecord[]
   leaveBalances     LeaveBalance[]
   leaveRequests     LeaveRequest[]
+  fiscalPeriods    FiscalPeriod[]
+  accountBudgets   AccountBudget[]
+  costCenters      CostCenter[]
+  fixedAssets      FixedAsset[]
+  recurringJournals RecurringJournal[]
+  bankReconciliations BankReconciliation[]
 }
 
 model TenantUser {
@@ -1068,6 +1079,8 @@ model Account {
   voucherDetails VoucherDetail[]
   debitPostingRules PostingRule[] @relation("PostingRuleDebitAccount")
   creditPostingRules PostingRule[] @relation("PostingRuleCreditAccount")
+  budgets        AccountBudget[]
+  recurringJournalLines RecurringJournalLine[]
 
   @@unique([tenant_id, name])
   @@index([tenant_id])
@@ -1184,9 +1197,12 @@ model VoucherDetail {
 
   voucher       Voucher  @relation(fields: [voucher_id], references: [id], onDelete: Cascade)
   account       Account  @relation(fields: [account_id], references: [id])
+  cost_center_id String?
+  costCenter     CostCenter? @relation("VoucherDetailCostCenter", fields: [cost_center_id], references: [id])
 
   @@index([voucher_id])
   @@index([account_id])
+  @@index([cost_center_id])
   @@map("voucher_details")
 }
 
@@ -1888,4 +1904,169 @@ model LeaveRequest {
 
   @@index([tenant_id, employee_id, status])
   @@index([tenant_id, status, start_date])
+}
+
+model FiscalPeriod {
+  id                String   @id @default(uuid())
+  tenant_id         String
+  year              Int
+  month             Int
+  period_label      String
+  start_date        DateTime
+  end_date          DateTime
+  is_locked         Boolean  @default(false)
+  locked_at         DateTime?
+  locked_by_user_id String?
+
+  tenant            Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+
+  @@unique([tenant_id, year, month])
+  @@index([tenant_id])
+  @@map("fiscal_periods")
+}
+
+model AccountBudget {
+  id          String   @id @default(uuid())
+  tenant_id   String
+  account_id  String
+  fiscal_year Int
+  month       Int?
+  amount      Decimal  @db.Decimal(12, 2)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  tenant      Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  account     Account  @relation(fields: [account_id], references: [id], onDelete: Cascade)
+
+  @@unique([tenant_id, account_id, fiscal_year, month])
+  @@index([tenant_id, fiscal_year])
+  @@map("account_budgets")
+}
+
+model CostCenter {
+  id         String   @id @default(uuid())
+  tenant_id  String
+  code       String
+  name       String
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  tenant         Tenant          @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  voucherDetails VoucherDetail[] @relation("VoucherDetailCostCenter")
+
+  @@unique([tenant_id, code])
+  @@index([tenant_id])
+  @@map("cost_centers")
+}
+
+model FixedAsset {
+  id                       String             @id @default(uuid())
+  tenant_id                String
+  asset_code               String
+  name                     String
+  purchase_date            DateTime
+  cost                     Decimal            @db.Decimal(12, 2)
+  residual_value           Decimal            @db.Decimal(12, 2) @default(0)
+  useful_life_months       Int
+  depreciation_method      DepreciationMethod @default(STRAIGHT_LINE)
+  accumulated_depreciation Decimal            @db.Decimal(12, 2) @default(0)
+  disposal_date            DateTime?
+  asset_account_id         String?
+  depreciation_account_id  String?
+  is_active                Boolean            @default(true)
+  created_at               DateTime           @default(now())
+  updated_at               DateTime           @updatedAt
+
+  tenant              Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  depreciationEntries AssetDepreciationEntry[]
+
+  @@unique([tenant_id, asset_code])
+  @@index([tenant_id])
+  @@map("fixed_assets")
+}
+
+model AssetDepreciationEntry {
+  id                   String   @id @default(uuid())
+  asset_id             String
+  period_year          Int
+  period_month         Int
+  depreciation_amount  Decimal  @db.Decimal(12, 2)
+  voucher_id           String?
+  created_at           DateTime @default(now())
+
+  asset   FixedAsset @relation(fields: [asset_id], references: [id], onDelete: Cascade)
+
+  @@unique([asset_id, period_year, period_month])
+  @@index([asset_id])
+  @@map("asset_depreciation_entries")
+}
+
+model RecurringJournal {
+  id               String   @id @default(uuid())
+  tenant_id        String
+  name             String
+  description      String?
+  frequency        String
+  next_due_date    DateTime
+  last_run_date    DateTime?
+  is_active        Boolean  @default(true)
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+
+  tenant           Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  lines            RecurringJournalLine[]
+
+  @@index([tenant_id])
+  @@index([tenant_id, next_due_date, is_active])
+  @@map("recurring_journals")
+}
+
+model RecurringJournalLine {
+  id                    String  @id @default(uuid())
+  recurring_journal_id  String
+  account_id            String
+  debit_amount          Decimal @db.Decimal(12, 2) @default(0)
+  credit_amount         Decimal @db.Decimal(12, 2) @default(0)
+  comment               String?
+
+  recurringJournal RecurringJournal @relation(fields: [recurring_journal_id], references: [id], onDelete: Cascade)
+  account          Account          @relation(fields: [account_id], references: [id])
+
+  @@index([recurring_journal_id])
+  @@map("recurring_journal_lines")
+}
+
+model BankReconciliation {
+  id                        String   @id @default(uuid())
+  tenant_id                 String
+  account_id                String
+  statement_date            DateTime
+  statement_closing_balance Decimal  @db.Decimal(12, 2)
+  status                    String   @default("OPEN")
+  created_at                DateTime @default(now())
+  updated_at                DateTime @updatedAt
+
+  tenant  Tenant @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  entries BankStatementEntry[]
+
+  @@index([tenant_id, account_id])
+  @@map("bank_reconciliations")
+}
+
+model BankStatementEntry {
+  id                        String   @id @default(uuid())
+  reconciliation_id         String
+  entry_date                DateTime
+  description               String?
+  amount                    Decimal  @db.Decimal(12, 2)
+  entry_type                String
+  is_matched                Boolean  @default(false)
+  matched_voucher_detail_id String?
+  created_at                DateTime @default(now())
+
+  reconciliation BankReconciliation @relation(fields: [reconciliation_id], references: [id], onDelete: Cascade)
+
+  @@index([reconciliation_id])
+  @@map("bank_statement_entries")
 }
