@@ -28,6 +28,26 @@ import {
     BalanceSheetQueryDto,
     CashbookQueryDto,
     BankbookQueryDto,
+    TrialBalanceQueryDto,
+    ArAgingQueryDto,
+    ApAgingQueryDto,
+    ComparativePLQueryDto,
+    VatTaxReportQueryDto,
+    FinancialRatiosQueryDto,
+    CashFlowQueryDto,
+    FiscalPeriodsQueryDto,
+    LockFiscalPeriodDto,
+    ImportOpeningBalancesDto,
+    UpsertBudgetDto,
+    BudgetVsActualQueryDto,
+    CreateCostCenterDto,
+    CostCenterPLQueryDto,
+    CreateFixedAssetDto,
+    RunDepreciationDto,
+    CreateRecurringJournalDto,
+    CreateBankReconciliationDto,
+    ImportBankStatementDto,
+    MatchBankEntryDto,
 } from './accounting.dto';
 
 @Controller('accounting')
@@ -129,7 +149,7 @@ export class AccountingController {
 
     @Post('vouchers')
     createVoucher(@Tenant() tenant: TenantContext, @Body() dto: CreateVoucherDto) {
-        return this.accountingService.createVoucher(tenant.tenantId, dto);
+        return this.accountingService.createVoucher(tenant.tenantId, dto, 1, tenant.userId);
     }
 
     @Get('dashboard/kpis')
@@ -198,5 +218,165 @@ export class AccountingController {
     @Get('reports/bankbook')
     getBankbook(@Tenant() tenant: TenantContext, @Query() query: BankbookQueryDto) {
         return this.accountingService.getBankbook(tenant.tenantId, query);
+    }
+
+    @Get('reports/trial-balance')
+    getTrialBalance(@Tenant() tenant: TenantContext, @Query() query: TrialBalanceQueryDto) {
+        return this.accountingService.getTrialBalance(tenant.tenantId, query);
+    }
+
+    @Get('reports/ar-aging')
+    getArAging(@Tenant() tenant: TenantContext, @Query() query: ArAgingQueryDto) {
+        return this.accountingService.getArAging(tenant.tenantId, query);
+    }
+
+    @Get('reports/ap-aging')
+    getApAging(@Tenant() tenant: TenantContext, @Query() query: ApAgingQueryDto) {
+        return this.accountingService.getApAging(tenant.tenantId, query);
+    }
+
+    @Get('reports/comparative-pl')
+    getComparativePL(@Tenant() tenant: TenantContext, @Query() query: ComparativePLQueryDto) {
+        return this.accountingService.getComparativePL(tenant.tenantId, query);
+    }
+
+    @Get('reports/vat-tax')
+    getVatTaxReport(@Tenant() tenant: TenantContext, @Query() query: VatTaxReportQueryDto) {
+        return this.accountingService.getVatTaxReport(tenant.tenantId, query);
+    }
+
+    @Get('reports/financial-ratios')
+    getFinancialRatios(@Tenant() tenant: TenantContext, @Query() query: FinancialRatiosQueryDto) {
+        return this.accountingService.getFinancialRatios(tenant.tenantId, query);
+    }
+
+    @Get('reports/cash-flow')
+    getCashFlow(@Tenant() tenant: TenantContext, @Query() query: CashFlowQueryDto) {
+        return this.accountingService.getCashFlow(tenant.tenantId, query);
+    }
+
+    // Feature 8: Fiscal Period Locking
+    @Get('settings/fiscal-periods')
+    listFiscalPeriods(@Tenant() tenant: TenantContext, @Query() query: FiscalPeriodsQueryDto) {
+        return this.accountingService.listFiscalPeriods(tenant.tenantId, query);
+    }
+
+    @Post('settings/fiscal-periods/lock')
+    @TenantRoles('OWNER', 'ACCOUNTANT')
+    lockFiscalPeriod(@Tenant() tenant: TenantContext, @Body() dto: LockFiscalPeriodDto) {
+        return this.accountingService.lockFiscalPeriod(tenant.tenantId, dto, tenant.userId);
+    }
+
+    @Post('settings/fiscal-periods/unlock')
+    @TenantRoles('OWNER')
+    unlockFiscalPeriod(@Tenant() tenant: TenantContext, @Body() dto: LockFiscalPeriodDto) {
+        return this.accountingService.unlockFiscalPeriod(tenant.tenantId, dto, tenant.userId);
+    }
+
+    // Feature 9: Opening Balance Import
+    @Post('opening-balances')
+    @TenantRoles('OWNER', 'ACCOUNTANT')
+    importOpeningBalances(@Tenant() tenant: TenantContext, @Body() dto: ImportOpeningBalancesDto) {
+        return this.accountingService.importOpeningBalances(tenant.tenantId, dto);
+    }
+
+    // Feature 10: Budget vs Actual
+    @Post('budgets')
+    @TenantRoles('OWNER', 'ACCOUNTANT')
+    upsertBudget(@Tenant() tenant: TenantContext, @Body() dto: UpsertBudgetDto) {
+        return this.accountingService.upsertBudget(tenant.tenantId, dto);
+    }
+
+    @Get('reports/budget-vs-actual')
+    getBudgetVsActual(@Tenant() tenant: TenantContext, @Query() query: BudgetVsActualQueryDto) {
+        return this.accountingService.getBudgetVsActual(tenant.tenantId, query);
+    }
+
+    // Feature 11: Cost Centers
+    @Get('cost-centers')
+    listCostCenters(@Tenant() tenant: TenantContext) {
+        return this.accountingService.listCostCenters(tenant.tenantId);
+    }
+
+    @Post('cost-centers')
+    @TenantRoles('OWNER', 'ACCOUNTANT')
+    createCostCenter(@Tenant() tenant: TenantContext, @Body() dto: CreateCostCenterDto) {
+        return this.accountingService.createCostCenter(tenant.tenantId, dto);
+    }
+
+    @Get('reports/cost-center-pl')
+    getCostCenterPL(@Tenant() tenant: TenantContext, @Query() query: CostCenterPLQueryDto) {
+        return this.accountingService.getCostCenterPL(tenant.tenantId, query);
+    }
+
+    // Feature 12: Fixed Assets
+    @Get('fixed-assets')
+    listFixedAssets(@Tenant() tenant: TenantContext) {
+        return this.accountingService.listFixedAssets(tenant.tenantId);
+    }
+
+    @Post('fixed-assets')
+    @TenantRoles('OWNER', 'ACCOUNTANT')
+    createFixedAsset(@Tenant() tenant: TenantContext, @Body() dto: CreateFixedAssetDto) {
+        return this.accountingService.createFixedAsset(tenant.tenantId, dto);
+    }
+
+    @Post('fixed-assets/run-depreciation')
+    @TenantRoles('OWNER', 'ACCOUNTANT')
+    runDepreciation(@Tenant() tenant: TenantContext, @Body() dto: RunDepreciationDto) {
+        return this.accountingService.runDepreciation(tenant.tenantId, dto);
+    }
+
+    @Get('fixed-assets/:id/schedule')
+    getDepreciationSchedule(@Tenant() tenant: TenantContext, @Param('id') id: string) {
+        return this.accountingService.getDepreciationSchedule(tenant.tenantId, id);
+    }
+
+    // Feature 13: Recurring Journals
+    @Get('recurring-journals')
+    listRecurringJournals(@Tenant() tenant: TenantContext) {
+        return this.accountingService.listRecurringJournals(tenant.tenantId);
+    }
+
+    @Post('recurring-journals')
+    @TenantRoles('OWNER', 'ACCOUNTANT')
+    createRecurringJournal(@Tenant() tenant: TenantContext, @Body() dto: CreateRecurringJournalDto) {
+        return this.accountingService.createRecurringJournal(tenant.tenantId, dto);
+    }
+
+    @Post('recurring-journals/:id/post')
+    @TenantRoles('OWNER', 'ACCOUNTANT')
+    postRecurringJournal(@Tenant() tenant: TenantContext, @Param('id') id: string) {
+        return this.accountingService.postRecurringJournal(tenant.tenantId, id);
+    }
+
+    // Feature 14: Bank Reconciliation
+    @Post('bank-reconciliations')
+    @TenantRoles('OWNER', 'ACCOUNTANT')
+    createBankReconciliation(@Tenant() tenant: TenantContext, @Body() dto: CreateBankReconciliationDto) {
+        return this.accountingService.createBankReconciliation(tenant.tenantId, dto);
+    }
+
+    @Post('bank-reconciliations/import')
+    @TenantRoles('OWNER', 'ACCOUNTANT')
+    importBankStatementEntries(@Tenant() tenant: TenantContext, @Body() dto: ImportBankStatementDto) {
+        return this.accountingService.importBankStatementEntries(tenant.tenantId, dto);
+    }
+
+    @Post('bank-reconciliations/:id/auto-match')
+    @TenantRoles('OWNER', 'ACCOUNTANT')
+    autoMatchBankEntries(@Tenant() tenant: TenantContext, @Param('id') id: string) {
+        return this.accountingService.autoMatchBankEntries(tenant.tenantId, id);
+    }
+
+    @Post('bank-reconciliations/match-entry')
+    @TenantRoles('OWNER', 'ACCOUNTANT')
+    matchBankEntry(@Tenant() tenant: TenantContext, @Body() dto: MatchBankEntryDto) {
+        return this.accountingService.matchBankEntry(tenant.tenantId, dto);
+    }
+
+    @Get('bank-reconciliations/:id/report')
+    getBankReconciliationReport(@Tenant() tenant: TenantContext, @Param('id') id: string) {
+        return this.accountingService.getBankReconciliationReport(tenant.tenantId, id);
     }
 }

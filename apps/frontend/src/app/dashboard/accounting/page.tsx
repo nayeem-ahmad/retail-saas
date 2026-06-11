@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react';
 import Link from 'next/link';
-import { ArrowRight, BookOpen, Calculator, ClipboardList, Download, FileText, Settings, AlertTriangle, ChevronDown, TrendingUp, LayoutDashboard, Landmark } from 'lucide-react';
+import { ArrowRight, BookOpen, Calculator, ClipboardList, Download, FileText, Settings, AlertTriangle, ChevronDown, TrendingUp, LayoutDashboard, Landmark, Scale, Clock, Building2, Cpu, RefreshCw, GitMerge, Lock, Upload, Target, BarChart3, Waves } from 'lucide-react';
 import { HelpTooltip } from '@/components/HelpTooltip';
 import { api } from '@/lib/api';
 
@@ -49,6 +49,48 @@ const ACCOUNTING_LINKS = [
         icon: AlertTriangle,
         accent: 'bg-rose-50 text-rose-700 border-rose-100',
     },
+    {
+        href: '/dashboard/accounting/fiscal-periods',
+        title: 'Fiscal Periods',
+        description: 'Lock closed months and fiscal years to prevent backdated voucher entry.',
+        icon: Lock,
+        accent: 'bg-slate-50 text-slate-700 border-slate-100',
+    },
+    {
+        href: '/dashboard/accounting/opening-balances',
+        title: 'Opening Balances',
+        description: 'Import account opening balances when migrating from another system.',
+        icon: Upload,
+        accent: 'bg-teal-50 text-teal-700 border-teal-100',
+    },
+    {
+        href: '/dashboard/accounting/cost-centers',
+        title: 'Cost Centers',
+        description: 'Tag voucher lines by department or branch for segment-level P&L reporting.',
+        icon: Building2,
+        accent: 'bg-cyan-50 text-cyan-700 border-cyan-100',
+    },
+    {
+        href: '/dashboard/accounting/fixed-assets',
+        title: 'Fixed Assets',
+        description: 'Asset register with auto-calculated depreciation schedules and journal postings.',
+        icon: Cpu,
+        accent: 'bg-orange-50 text-orange-700 border-orange-100',
+    },
+    {
+        href: '/dashboard/accounting/recurring-journals',
+        title: 'Recurring Journals',
+        description: 'Schedule repeating journal entries — rent, salaries, subscriptions.',
+        icon: RefreshCw,
+        accent: 'bg-purple-50 text-purple-700 border-purple-100',
+    },
+    {
+        href: '/dashboard/accounting/reconciliation/bank',
+        title: 'Bank Reconciliation',
+        description: 'Import bank statements and match entries against bookkeeping records.',
+        icon: GitMerge,
+        accent: 'bg-blue-50 text-blue-700 border-blue-100',
+    },
 ];
 
 const REPORT_LINKS = [
@@ -79,6 +121,62 @@ const REPORT_LINKS = [
         description: 'Bank deposits and withdrawals ledger with running balance.',
         icon: Landmark,
         accent: 'bg-violet-50 text-violet-700 border-violet-100',
+    },
+    {
+        href: '/dashboard/accounting/reports/trial-balance',
+        title: 'Trial Balance',
+        description: 'All accounts with debit/credit totals and closing balance — standard pre-audit report.',
+        icon: Scale,
+        accent: 'bg-slate-50 text-slate-700 border-slate-100',
+    },
+    {
+        href: '/dashboard/accounting/reports/comparative-pl',
+        title: 'Comparative P&L',
+        description: 'Side-by-side: current period, previous period, and same month last year.',
+        icon: BarChart3,
+        accent: 'bg-emerald-50 text-emerald-700 border-emerald-100',
+    },
+    {
+        href: '/dashboard/accounting/reports/ar-aging',
+        title: 'AR Aging',
+        description: 'Receivables bucketed by 0–30 / 31–60 / 61–90 / 90+ days.',
+        icon: Clock,
+        accent: 'bg-sky-50 text-sky-700 border-sky-100',
+    },
+    {
+        href: '/dashboard/accounting/reports/ap-aging',
+        title: 'AP Aging',
+        description: 'Payables bucketed by age — know which suppliers are due for payment.',
+        icon: Clock,
+        accent: 'bg-amber-50 text-amber-700 border-amber-100',
+    },
+    {
+        href: '/dashboard/accounting/reports/vat-tax',
+        title: 'VAT / Tax Report',
+        description: 'Output VAT collected, input VAT paid, and net payable to NBR.',
+        icon: FileText,
+        accent: 'bg-rose-50 text-rose-700 border-rose-100',
+    },
+    {
+        href: '/dashboard/accounting/reports/budget-vs-actual',
+        title: 'Budget vs. Actual',
+        description: 'Compare planned budget against actual activity with variance analysis.',
+        icon: Target,
+        accent: 'bg-indigo-50 text-indigo-700 border-indigo-100',
+    },
+    {
+        href: '/dashboard/accounting/reports/cash-flow',
+        title: 'Cash Flow Statement',
+        description: 'Operating, investing, and financing activities — net change in cash.',
+        icon: Waves,
+        accent: 'bg-teal-50 text-teal-700 border-teal-100',
+    },
+    {
+        href: '/dashboard/accounting/reports/financial-ratios',
+        title: 'Financial Ratios',
+        description: 'Current ratio, margins, DSO, DPO — key performance indicators at a glance.',
+        icon: Calculator,
+        accent: 'bg-purple-50 text-purple-700 border-purple-100',
     },
 ];
 

@@ -920,4 +920,101 @@ export const api = {
     getNotificationUnreadCount: () => fetchWithAuth('/notifications/unread-count'),
     markNotificationRead: (id: string) => fetchWithAuth(`/notifications/${id}/read`, { method: 'PATCH' }),
     markAllNotificationsRead: () => fetchWithAuth('/notifications/read-all', { method: 'PATCH' }),
+    // Accounting — Mid-Size Features
+    getTrialBalance: (params?: { asOfDate?: string }) => {
+        const q = new URLSearchParams();
+        if (params?.asOfDate) q.set('asOfDate', params.asOfDate);
+        return fetchWithAuth(`/accounting/reports/trial-balance${q.toString() ? `?${q}` : ''}`);
+    },
+    getArAging: (params?: { asOfDate?: string }) => {
+        const q = new URLSearchParams();
+        if (params?.asOfDate) q.set('asOfDate', params.asOfDate);
+        return fetchWithAuth(`/accounting/reports/ar-aging${q.toString() ? `?${q}` : ''}`);
+    },
+    getApAging: (params?: { asOfDate?: string }) => {
+        const q = new URLSearchParams();
+        if (params?.asOfDate) q.set('asOfDate', params.asOfDate);
+        return fetchWithAuth(`/accounting/reports/ap-aging${q.toString() ? `?${q}` : ''}`);
+    },
+    getComparativePL: (params?: { from?: string; to?: string }) => {
+        const q = new URLSearchParams();
+        if (params?.from) q.set('from', params.from);
+        if (params?.to) q.set('to', params.to);
+        return fetchWithAuth(`/accounting/reports/comparative-pl${q.toString() ? `?${q}` : ''}`);
+    },
+    getVatTaxReport: (params?: { from?: string; to?: string }) => {
+        const q = new URLSearchParams();
+        if (params?.from) q.set('from', params.from);
+        if (params?.to) q.set('to', params.to);
+        return fetchWithAuth(`/accounting/reports/vat-tax${q.toString() ? `?${q}` : ''}`);
+    },
+    getFinancialRatios: (params?: { asOfDate?: string; from?: string; to?: string }) => {
+        const q = new URLSearchParams();
+        if (params?.asOfDate) q.set('asOfDate', params.asOfDate);
+        if (params?.from) q.set('from', params.from);
+        if (params?.to) q.set('to', params.to);
+        return fetchWithAuth(`/accounting/reports/financial-ratios${q.toString() ? `?${q}` : ''}`);
+    },
+    getCashFlow: (params?: { from?: string; to?: string }) => {
+        const q = new URLSearchParams();
+        if (params?.from) q.set('from', params.from);
+        if (params?.to) q.set('to', params.to);
+        return fetchWithAuth(`/accounting/reports/cash-flow${q.toString() ? `?${q}` : ''}`);
+    },
+    // Fiscal Periods
+    getFiscalPeriods: (params?: { year?: number }) => {
+        const q = new URLSearchParams();
+        if (params?.year) q.set('year', String(params.year));
+        return fetchWithAuth(`/accounting/settings/fiscal-periods${q.toString() ? `?${q}` : ''}`);
+    },
+    lockFiscalPeriod: (data: { year: number; month: number }) =>
+        fetchWithAuth('/accounting/settings/fiscal-periods/lock', { method: 'POST', body: JSON.stringify(data) }),
+    unlockFiscalPeriod: (data: { year: number; month: number }) =>
+        fetchWithAuth('/accounting/settings/fiscal-periods/unlock', { method: 'POST', body: JSON.stringify(data) }),
+    // Opening Balances
+    importOpeningBalances: (data: any) =>
+        fetchWithAuth('/accounting/opening-balances', { method: 'POST', body: JSON.stringify(data) }),
+    // Budget vs Actual
+    upsertBudget: (data: any) =>
+        fetchWithAuth('/accounting/budgets', { method: 'POST', body: JSON.stringify(data) }),
+    getBudgetVsActual: (params: { fiscalYear: number; month?: number }) => {
+        const q = new URLSearchParams();
+        q.set('fiscalYear', String(params.fiscalYear));
+        if (params.month) q.set('month', String(params.month));
+        return fetchWithAuth(`/accounting/reports/budget-vs-actual?${q}`);
+    },
+    // Cost Centers
+    listCostCenters: () => fetchWithAuth('/accounting/cost-centers'),
+    createCostCenter: (data: any) =>
+        fetchWithAuth('/accounting/cost-centers', { method: 'POST', body: JSON.stringify(data) }),
+    getCostCenterPL: (params: { costCenterId: string; from?: string; to?: string }) => {
+        const q = new URLSearchParams();
+        q.set('costCenterId', params.costCenterId);
+        if (params.from) q.set('from', params.from);
+        if (params.to) q.set('to', params.to);
+        return fetchWithAuth(`/accounting/reports/cost-center-pl?${q}`);
+    },
+    // Fixed Assets
+    listFixedAssets: () => fetchWithAuth('/accounting/fixed-assets'),
+    createFixedAsset: (data: any) =>
+        fetchWithAuth('/accounting/fixed-assets', { method: 'POST', body: JSON.stringify(data) }),
+    runDepreciation: (data: { year: number; month: number }) =>
+        fetchWithAuth('/accounting/fixed-assets/run-depreciation', { method: 'POST', body: JSON.stringify(data) }),
+    getDepreciationSchedule: (id: string) => fetchWithAuth(`/accounting/fixed-assets/${id}/schedule`),
+    // Recurring Journals
+    listRecurringJournals: () => fetchWithAuth('/accounting/recurring-journals'),
+    createRecurringJournal: (data: any) =>
+        fetchWithAuth('/accounting/recurring-journals', { method: 'POST', body: JSON.stringify(data) }),
+    postRecurringJournal: (id: string) =>
+        fetchWithAuth(`/accounting/recurring-journals/${id}/post`, { method: 'POST' }),
+    // Bank Reconciliation
+    createBankReconciliation: (data: any) =>
+        fetchWithAuth('/accounting/bank-reconciliations', { method: 'POST', body: JSON.stringify(data) }),
+    importBankStatementEntries: (data: any) =>
+        fetchWithAuth('/accounting/bank-reconciliations/import', { method: 'POST', body: JSON.stringify(data) }),
+    autoMatchBankEntries: (id: string) =>
+        fetchWithAuth(`/accounting/bank-reconciliations/${id}/auto-match`, { method: 'POST' }),
+    matchBankEntry: (data: any) =>
+        fetchWithAuth('/accounting/bank-reconciliations/match-entry', { method: 'POST', body: JSON.stringify(data) }),
+    getBankReconciliationReport: (id: string) => fetchWithAuth(`/accounting/bank-reconciliations/${id}/report`),
 };

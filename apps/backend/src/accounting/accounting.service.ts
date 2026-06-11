@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { Prisma } from '@prisma/client';
 import { DatabaseService } from '../database/database.service';
 import { AccountCategory, AccountType, VoucherType } from './accounting.constants';
+import { AuditService } from '../audit/audit.service';
 import {
     CreateVoucherDto,
     CreateAccountDto,
@@ -20,6 +21,26 @@ import {
     BalanceSheetQueryDto,
     CashbookQueryDto,
     BankbookQueryDto,
+    TrialBalanceQueryDto,
+    ArAgingQueryDto,
+    ApAgingQueryDto,
+    ComparativePLQueryDto,
+    VatTaxReportQueryDto,
+    FinancialRatiosQueryDto,
+    CashFlowQueryDto,
+    FiscalPeriodsQueryDto,
+    LockFiscalPeriodDto,
+    ImportOpeningBalancesDto,
+    UpsertBudgetDto,
+    BudgetVsActualQueryDto,
+    CreateCostCenterDto,
+    CostCenterPLQueryDto,
+    CreateFixedAssetDto,
+    RunDepreciationDto,
+    CreateRecurringJournalDto,
+    CreateBankReconciliationDto,
+    ImportBankStatementDto,
+    MatchBankEntryDto,
 } from './accounting.dto';
 
 export const VOUCHER_NUMBER_PREFIXES: Record<VoucherType, string> = {
@@ -45,7 +66,7 @@ const TAX_LIABILITY_ACCOUNT_PATTERN = /(tax|vat|gst|sales\s+tax|withholding)/i;
 
 @Injectable()
 export class AccountingService {
-    constructor(private readonly db: DatabaseService) {}
+    constructor(private readonly db: DatabaseService, private readonly auditService: AuditService) {}
 
     getModuleOverview(tenantId: string) {
         return {
@@ -654,11 +675,11 @@ export class AccountingService {
         };
     }
 
-    async createVoucher(tenantId: string, dto: CreateVoucherDto, attempt = 1) {
+    async createVoucher(tenantId: string, dto: CreateVoucherDto, attempt = 1, userId?: string) {
         this.validateVoucherDetails(dto);
 
         try {
-            return await this.db.$transaction(async (tx) => {
+            const result = await this.db.$transaction(async (tx) => {
                 const uniqueAccountIds = [...new Set(dto.details.map((detail) => detail.accountId))];
                 const accounts = await tx.account.findMany({
                     where: {
@@ -710,9 +731,11 @@ export class AccountingService {
             }, {
                 isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
             });
+            this.auditService.log('accounting.voucher.create', 'voucher', { tenantId, userId }, result.id, { voucher_number: (result as any).voucher_number }).catch(() => {});
+            return result;
         } catch (error) {
             if (this.isRetryableVoucherSequenceError(error) && attempt < 3) {
-                return this.createVoucher(tenantId, dto, attempt + 1);
+                return this.createVoucher(tenantId, dto, attempt + 1, userId);
             }
 
             throw error;
@@ -807,6 +830,8 @@ export class AccountingService {
                 creditAccount: true,
             },
         });
+
+        this.auditService.log('accounting.posting_rule.update', 'posting_rule', { tenantId }, updated.id, {}).catch(() => {});
 
         return {
             id: updated.id,
@@ -1090,6 +1115,1335 @@ export class AccountingService {
             equity: { groups: equityGroups, net_profit: netProfit, total: totalEquity },
             total_liabilities_and_equity: totalLiabilitiesAndEquity,
             is_balanced: Math.abs(totalAssets - totalLiabilitiesAndEquity) < 0.01,
+        };
+    }
+
+    async getTrialBalance(tenantId: string, query: TrialBalanceQueryDto) {
+        const asOfDateStr = query.asOfDate ?? this.formatDateValue(new Date());
+        const asOfDate = this.toEndOfDay(asOfDateStr);
+
+        const accounts = await this.db.account.findMany({
+            where: { tenant_id: tenantId },
+            include: { group: true, subgroup: true },
+        });
+
+        if (accounts.length === 0) {
+            return {
+                as_of: asOfDateStr,
+                rows: [],
+                totals: { debit: 0, credit: 0 },
+                is_balanced: true,
+            };
+        }
+
+        const details = await this.db.voucherDetail.findMany({
+            where: {
+                account_id: { in: accounts.map((a) => a.id) },
+                voucher: { tenant_id: tenantId, date: { lte: asOfDate } },
+            },
+            select: { account_id: true, debit_amount: true, credit_amount: true },
+        });
+
+        const accountTotals = new Map<string, { debit: number; credit: number }>();
+        for (const detail of details) {
+            const existing = accountTotals.get(detail.account_id) ?? { debit: 0, credit: 0 };
+            existing.debit += Number(detail.debit_amount ?? 0);
+            existing.credit += Number(detail.credit_amount ?? 0);
+            accountTotals.set(detail.account_id, existing);
+        }
+
+        let grandDebitBalance = 0;
+        let grandCreditBalance = 0;
+
+        const rows = accounts.map((account) => {
+            const totals = accountTotals.get(account.id) ?? { debit: 0, credit: 0 };
+            const signedBalance = this.calculateSignedBalance(account.type as AccountType, totals.debit, totals.credit);
+            const presented = this.presentBalance(account.type as AccountType, signedBalance);
+
+            const debitBalance = presented.side === 'debit' ? presented.amount : 0;
+            const creditBalance = presented.side === 'credit' ? presented.amount : 0;
+
+            grandDebitBalance = this.roundAmount(grandDebitBalance + debitBalance);
+            grandCreditBalance = this.roundAmount(grandCreditBalance + creditBalance);
+
+            return {
+                account: {
+                    id: account.id,
+                    name: account.name,
+                    code: account.code,
+                    type: account.type,
+                    group: { id: account.group.id, name: account.group.name },
+                    subgroup: account.subgroup ? { id: account.subgroup.id, name: account.subgroup.name } : null,
+                },
+                debit_total: this.roundAmount(totals.debit),
+                credit_total: this.roundAmount(totals.credit),
+                closing_balance: presented.amount,
+                closing_balance_side: presented.side,
+                debit_balance: debitBalance,
+                credit_balance: creditBalance,
+            };
+        });
+
+        return {
+            as_of: asOfDateStr,
+            rows,
+            totals: { debit: grandDebitBalance, credit: grandCreditBalance },
+            is_balanced: Math.abs(grandDebitBalance - grandCreditBalance) < 0.01,
+        };
+    }
+
+    async getArAging(tenantId: string, query: ArAgingQueryDto) {
+        const asOfDateStr = query.asOfDate ?? this.formatDateValue(new Date());
+        const asOfDate = this.toEndOfDay(asOfDateStr);
+        const asOfMs = asOfDate.getTime();
+
+        const allAccounts = await this.db.account.findMany({
+            where: { tenant_id: tenantId, type: AccountType.ASSET },
+            select: { id: true, name: true, code: true, type: true },
+        });
+
+        const arAccounts = allAccounts.filter((a) => this.matchesAccountPattern(a, RECEIVABLE_ACCOUNT_PATTERN));
+
+        if (arAccounts.length === 0) {
+            return {
+                as_of: asOfDateStr,
+                accounts: [],
+                totals: { balance: 0, current: 0, overdue_31_60: 0, overdue_61_90: 0, overdue_90_plus: 0 },
+                note: 'Aging is based on voucher date; individual invoice due dates are not tracked.',
+            };
+        }
+
+        const entries = await this.db.voucherDetail.findMany({
+            where: {
+                account_id: { in: arAccounts.map((a) => a.id) },
+                voucher: { tenant_id: tenantId, date: { lte: asOfDate } },
+            },
+            select: {
+                account_id: true,
+                debit_amount: true,
+                credit_amount: true,
+                voucher: { select: { date: true } },
+            },
+        });
+
+        const dayMs = 24 * 60 * 60 * 1000;
+
+        const totals = { balance: 0, current: 0, overdue_31_60: 0, overdue_61_90: 0, overdue_90_plus: 0 };
+        const accountResults = arAccounts.map((account) => {
+            const accountEntries = entries.filter((e) => e.account_id === account.id);
+            let totalDebit = 0;
+            let totalCredit = 0;
+            const buckets = { current: 0, overdue_31_60: 0, overdue_61_90: 0, overdue_90_plus: 0 };
+
+            for (const entry of accountEntries) {
+                const debit = Number(entry.debit_amount ?? 0);
+                const credit = Number(entry.credit_amount ?? 0);
+                totalDebit += debit;
+                totalCredit += credit;
+
+                if (debit > 0) {
+                    const ageDays = Math.floor((asOfMs - entry.voucher.date.getTime()) / dayMs);
+                    if (ageDays <= 30) buckets.current = this.roundAmount(buckets.current + debit);
+                    else if (ageDays <= 60) buckets.overdue_31_60 = this.roundAmount(buckets.overdue_31_60 + debit);
+                    else if (ageDays <= 90) buckets.overdue_61_90 = this.roundAmount(buckets.overdue_61_90 + debit);
+                    else buckets.overdue_90_plus = this.roundAmount(buckets.overdue_90_plus + debit);
+                }
+            }
+
+            const signedBalance = this.calculateSignedBalance(AccountType.ASSET, totalDebit, totalCredit);
+            const presented = this.presentBalance(AccountType.ASSET, signedBalance);
+
+            totals.balance = this.roundAmount(totals.balance + presented.amount);
+            totals.current = this.roundAmount(totals.current + buckets.current);
+            totals.overdue_31_60 = this.roundAmount(totals.overdue_31_60 + buckets.overdue_31_60);
+            totals.overdue_61_90 = this.roundAmount(totals.overdue_61_90 + buckets.overdue_61_90);
+            totals.overdue_90_plus = this.roundAmount(totals.overdue_90_plus + buckets.overdue_90_plus);
+
+            return {
+                id: account.id,
+                name: account.name,
+                code: account.code,
+                type: account.type,
+                balance: presented.amount,
+                balance_side: presented.side,
+                buckets,
+            };
+        });
+
+        return {
+            as_of: asOfDateStr,
+            accounts: accountResults,
+            totals,
+            note: 'Aging is based on voucher date; individual invoice due dates are not tracked.',
+        };
+    }
+
+    async getApAging(tenantId: string, query: ApAgingQueryDto) {
+        const asOfDateStr = query.asOfDate ?? this.formatDateValue(new Date());
+        const asOfDate = this.toEndOfDay(asOfDateStr);
+        const asOfMs = asOfDate.getTime();
+
+        const allAccounts = await this.db.account.findMany({
+            where: { tenant_id: tenantId, type: AccountType.LIABILITY },
+            select: { id: true, name: true, code: true, type: true },
+        });
+
+        const apAccounts = allAccounts.filter((a) => this.matchesAccountPattern(a, PAYABLE_ACCOUNT_PATTERN));
+
+        if (apAccounts.length === 0) {
+            return {
+                as_of: asOfDateStr,
+                accounts: [],
+                totals: { balance: 0, current: 0, overdue_31_60: 0, overdue_61_90: 0, overdue_90_plus: 0 },
+                note: 'Aging is based on voucher date; individual invoice due dates are not tracked.',
+            };
+        }
+
+        const entries = await this.db.voucherDetail.findMany({
+            where: {
+                account_id: { in: apAccounts.map((a) => a.id) },
+                voucher: { tenant_id: tenantId, date: { lte: asOfDate } },
+            },
+            select: {
+                account_id: true,
+                debit_amount: true,
+                credit_amount: true,
+                voucher: { select: { date: true } },
+            },
+        });
+
+        const dayMs = 24 * 60 * 60 * 1000;
+        const totals = { balance: 0, current: 0, overdue_31_60: 0, overdue_61_90: 0, overdue_90_plus: 0 };
+
+        const accountResults = apAccounts.map((account) => {
+            const accountEntries = entries.filter((e) => e.account_id === account.id);
+            let totalDebit = 0;
+            let totalCredit = 0;
+            const buckets = { current: 0, overdue_31_60: 0, overdue_61_90: 0, overdue_90_plus: 0 };
+
+            for (const entry of accountEntries) {
+                const debit = Number(entry.debit_amount ?? 0);
+                const credit = Number(entry.credit_amount ?? 0);
+                totalDebit += debit;
+                totalCredit += credit;
+
+                if (credit > 0) {
+                    const ageDays = Math.floor((asOfMs - entry.voucher.date.getTime()) / dayMs);
+                    if (ageDays <= 30) buckets.current = this.roundAmount(buckets.current + credit);
+                    else if (ageDays <= 60) buckets.overdue_31_60 = this.roundAmount(buckets.overdue_31_60 + credit);
+                    else if (ageDays <= 90) buckets.overdue_61_90 = this.roundAmount(buckets.overdue_61_90 + credit);
+                    else buckets.overdue_90_plus = this.roundAmount(buckets.overdue_90_plus + credit);
+                }
+            }
+
+            const signedBalance = this.calculateSignedBalance(AccountType.LIABILITY, totalDebit, totalCredit);
+            const presented = this.presentBalance(AccountType.LIABILITY, signedBalance);
+
+            totals.balance = this.roundAmount(totals.balance + presented.amount);
+            totals.current = this.roundAmount(totals.current + buckets.current);
+            totals.overdue_31_60 = this.roundAmount(totals.overdue_31_60 + buckets.overdue_31_60);
+            totals.overdue_61_90 = this.roundAmount(totals.overdue_61_90 + buckets.overdue_61_90);
+            totals.overdue_90_plus = this.roundAmount(totals.overdue_90_plus + buckets.overdue_90_plus);
+
+            return {
+                id: account.id,
+                name: account.name,
+                code: account.code,
+                type: account.type,
+                balance: presented.amount,
+                balance_side: presented.side,
+                buckets,
+            };
+        });
+
+        return {
+            as_of: asOfDateStr,
+            accounts: accountResults,
+            totals,
+            note: 'Aging is based on voucher date; individual invoice due dates are not tracked.',
+        };
+    }
+
+    async getComparativePL(tenantId: string, query: ComparativePLQueryDto) {
+        const range = this.resolveDateRange(query.from, query.to);
+        const fromDate = range.fromDate;
+        const toDate = range.toDate;
+
+        // Calculate period length in days
+        const periodMs = toDate.getTime() - fromDate.getTime();
+
+        // Previous period: shift back by periodMs + 1 day
+        const prevToDate = new Date(fromDate.getTime() - 1);
+        const prevFromDate = new Date(prevToDate.getTime() - periodMs);
+
+        // Year-ago period: same dates but 12 months earlier
+        const yearAgoFromDate = new Date(fromDate);
+        yearAgoFromDate.setUTCFullYear(yearAgoFromDate.getUTCFullYear() - 1);
+        const yearAgoToDate = new Date(toDate);
+        yearAgoToDate.setUTCFullYear(yearAgoToDate.getUTCFullYear() - 1);
+
+        const accounts = await this.db.account.findMany({
+            where: { tenant_id: tenantId, type: { in: [AccountType.REVENUE, AccountType.EXPENSE] } },
+            include: { group: true },
+        });
+
+        if (accounts.length === 0) {
+            return {
+                periods: {
+                    current: { from: range.from, to: range.to },
+                    previous: { from: this.formatDateValue(prevFromDate), to: this.formatDateValue(prevToDate) },
+                    year_ago: { from: this.formatDateValue(yearAgoFromDate), to: this.formatDateValue(yearAgoToDate) },
+                },
+                revenue: { groups: [], total: { current: 0, previous: 0, year_ago: 0 } },
+                expenses: { groups: [], total: { current: 0, previous: 0, year_ago: 0 } },
+                net_profit: { current: 0, previous: 0, year_ago: 0 },
+            };
+        }
+
+        const allIds = accounts.map((a) => a.id);
+
+        const [currentDetails, prevDetails, yearAgoDetails] = await Promise.all([
+            this.db.voucherDetail.findMany({
+                where: { account_id: { in: allIds }, voucher: { tenant_id: tenantId, date: { gte: fromDate, lte: toDate } } },
+                select: { account_id: true, debit_amount: true, credit_amount: true },
+            }),
+            this.db.voucherDetail.findMany({
+                where: { account_id: { in: allIds }, voucher: { tenant_id: tenantId, date: { gte: prevFromDate, lte: prevToDate } } },
+                select: { account_id: true, debit_amount: true, credit_amount: true },
+            }),
+            this.db.voucherDetail.findMany({
+                where: { account_id: { in: allIds }, voucher: { tenant_id: tenantId, date: { gte: yearAgoFromDate, lte: yearAgoToDate } } },
+                select: { account_id: true, debit_amount: true, credit_amount: true },
+            }),
+        ]);
+
+        const buildTotalsMap = (details: Array<{ account_id: string; debit_amount: any; credit_amount: any }>) => {
+            const map = new Map<string, { debit: number; credit: number }>();
+            for (const d of details) {
+                const existing = map.get(d.account_id) ?? { debit: 0, credit: 0 };
+                existing.debit += Number(d.debit_amount ?? 0);
+                existing.credit += Number(d.credit_amount ?? 0);
+                map.set(d.account_id, existing);
+            }
+            return map;
+        };
+
+        const currentMap = buildTotalsMap(currentDetails);
+        const prevMap = buildTotalsMap(prevDetails);
+        const yearAgoMap = buildTotalsMap(yearAgoDetails);
+
+        const calcBalance = (map: Map<string, { debit: number; credit: number }>, accountId: string, type: AccountType) => {
+            const t = map.get(accountId) ?? { debit: 0, credit: 0 };
+            return type === AccountType.REVENUE
+                ? this.roundAmount(t.credit - t.debit)
+                : this.roundAmount(t.debit - t.credit);
+        };
+
+        const buildGroups = (accts: typeof accounts, type: AccountType) => {
+            const groupMap = new Map<string, {
+                group: { id: string; name: string };
+                accounts: any[];
+                current: number;
+                previous: number;
+                year_ago: number;
+            }>();
+
+            for (const account of accts) {
+                const cur = calcBalance(currentMap, account.id, type);
+                const prev = calcBalance(prevMap, account.id, type);
+                const ya = calcBalance(yearAgoMap, account.id, type);
+                const variancePeriod = this.roundAmount(cur - prev);
+                const variancePeriodPct = prev !== 0 ? this.roundAmount((variancePeriod / Math.abs(prev)) * 100) : null;
+
+                const gid = account.group_id;
+                const existing = groupMap.get(gid) ?? {
+                    group: { id: account.group.id, name: account.group.name },
+                    accounts: [],
+                    current: 0,
+                    previous: 0,
+                    year_ago: 0,
+                };
+                existing.accounts.push({ id: account.id, name: account.name, code: account.code, current: cur, previous: prev, year_ago: ya, variance_period: variancePeriod, variance_period_pct: variancePeriodPct });
+                existing.current = this.roundAmount(existing.current + cur);
+                existing.previous = this.roundAmount(existing.previous + prev);
+                existing.year_ago = this.roundAmount(existing.year_ago + ya);
+                groupMap.set(gid, existing);
+            }
+
+            return Array.from(groupMap.values()).sort((a, b) => a.group.name.localeCompare(b.group.name));
+        };
+
+        const revenueGroups = buildGroups(accounts.filter((a) => a.type === AccountType.REVENUE), AccountType.REVENUE);
+        const expenseGroups = buildGroups(accounts.filter((a) => a.type === AccountType.EXPENSE), AccountType.EXPENSE);
+
+        const revenueTotal = {
+            current: this.roundAmount(revenueGroups.reduce((s, g) => s + g.current, 0)),
+            previous: this.roundAmount(revenueGroups.reduce((s, g) => s + g.previous, 0)),
+            year_ago: this.roundAmount(revenueGroups.reduce((s, g) => s + g.year_ago, 0)),
+        };
+        const expensesTotal = {
+            current: this.roundAmount(expenseGroups.reduce((s, g) => s + g.current, 0)),
+            previous: this.roundAmount(expenseGroups.reduce((s, g) => s + g.previous, 0)),
+            year_ago: this.roundAmount(expenseGroups.reduce((s, g) => s + g.year_ago, 0)),
+        };
+
+        return {
+            periods: {
+                current: { from: range.from, to: range.to },
+                previous: { from: this.formatDateValue(prevFromDate), to: this.formatDateValue(prevToDate) },
+                year_ago: { from: this.formatDateValue(yearAgoFromDate), to: this.formatDateValue(yearAgoToDate) },
+            },
+            revenue: { groups: revenueGroups, total: revenueTotal },
+            expenses: { groups: expenseGroups, total: expensesTotal },
+            net_profit: {
+                current: this.roundAmount(revenueTotal.current - expensesTotal.current),
+                previous: this.roundAmount(revenueTotal.previous - expensesTotal.previous),
+                year_ago: this.roundAmount(revenueTotal.year_ago - expensesTotal.year_ago),
+            },
+        };
+    }
+
+    async getVatTaxReport(tenantId: string, query: VatTaxReportQueryDto) {
+        const range = this.resolveDateRange(query.from, query.to);
+
+        const accounts = await this.db.account.findMany({
+            where: {
+                tenant_id: tenantId,
+                type: { in: [AccountType.LIABILITY, AccountType.ASSET] },
+            },
+            select: { id: true, name: true, code: true, type: true },
+        });
+
+        const outputVatAccounts = accounts.filter(
+            (a) => a.type === AccountType.LIABILITY && this.matchesAccountPattern(a, TAX_LIABILITY_ACCOUNT_PATTERN),
+        );
+        const inputVatAccounts = accounts.filter(
+            (a) => a.type === AccountType.ASSET && this.matchesAccountPattern(a, TAX_LIABILITY_ACCOUNT_PATTERN),
+        );
+
+        const allVatIds = [...outputVatAccounts.map((a) => a.id), ...inputVatAccounts.map((a) => a.id)];
+
+        const details = allVatIds.length === 0 ? [] : await this.db.voucherDetail.findMany({
+            where: {
+                account_id: { in: allVatIds },
+                voucher: { tenant_id: tenantId, date: { gte: range.fromDate, lte: range.toDate } },
+            },
+            select: { account_id: true, debit_amount: true, credit_amount: true },
+        });
+
+        const totalsMap = new Map<string, { debit: number; credit: number }>();
+        for (const d of details) {
+            const existing = totalsMap.get(d.account_id) ?? { debit: 0, credit: 0 };
+            existing.debit += Number(d.debit_amount ?? 0);
+            existing.credit += Number(d.credit_amount ?? 0);
+            totalsMap.set(d.account_id, existing);
+        }
+
+        const outputRows = outputVatAccounts.map((a) => {
+            const t = totalsMap.get(a.id) ?? { debit: 0, credit: 0 };
+            return { id: a.id, name: a.name, code: a.code, type: a.type, total: this.roundAmount(t.credit - t.debit) };
+        });
+        const inputRows = inputVatAccounts.map((a) => {
+            const t = totalsMap.get(a.id) ?? { debit: 0, credit: 0 };
+            return { id: a.id, name: a.name, code: a.code, type: a.type, total: this.roundAmount(t.debit - t.credit) };
+        });
+
+        const outputTotal = this.roundAmount(outputRows.reduce((s, r) => s + r.total, 0));
+        const inputTotal = this.roundAmount(inputRows.reduce((s, r) => s + r.total, 0));
+
+        return {
+            filters: { from: range.from, to: range.to },
+            output_vat: { accounts: outputRows, total: outputTotal },
+            input_vat: { accounts: inputRows, total: inputTotal },
+            net_vat_payable: this.roundAmount(outputTotal - inputTotal),
+            note: 'Output VAT collected from customers minus Input VAT paid on purchases.',
+        };
+    }
+
+    async getFinancialRatios(tenantId: string, query: FinancialRatiosQueryDto) {
+        const asOfDateStr = query.asOfDate ?? this.formatDateValue(new Date());
+        const asOfDate = this.toEndOfDay(asOfDateStr);
+        const range = this.resolveDateRange(query.from, query.to);
+
+        const accounts = await this.db.account.findMany({
+            where: { tenant_id: tenantId },
+            select: { id: true, name: true, code: true, type: true, category: true },
+        });
+
+        const allIds = accounts.map((a) => a.id);
+
+        const [bsDetails, plDetails] = await Promise.all([
+            allIds.length === 0 ? Promise.resolve([]) : this.db.voucherDetail.findMany({
+                where: {
+                    account_id: { in: allIds },
+                    voucher: { tenant_id: tenantId, date: { lte: asOfDate } },
+                },
+                select: { account_id: true, debit_amount: true, credit_amount: true },
+            }),
+            allIds.length === 0 ? Promise.resolve([]) : this.db.voucherDetail.findMany({
+                where: {
+                    account_id: { in: allIds },
+                    voucher: { tenant_id: tenantId, date: { gte: range.fromDate, lte: range.toDate } },
+                },
+                select: { account_id: true, debit_amount: true, credit_amount: true },
+            }),
+        ]);
+
+        const bsMap = new Map<string, { debit: number; credit: number }>();
+        for (const d of bsDetails) {
+            const e = bsMap.get(d.account_id) ?? { debit: 0, credit: 0 };
+            e.debit += Number(d.debit_amount ?? 0);
+            e.credit += Number(d.credit_amount ?? 0);
+            bsMap.set(d.account_id, e);
+        }
+
+        const plMap = new Map<string, { debit: number; credit: number }>();
+        for (const d of plDetails) {
+            const e = plMap.get(d.account_id) ?? { debit: 0, credit: 0 };
+            e.debit += Number(d.debit_amount ?? 0);
+            e.credit += Number(d.credit_amount ?? 0);
+            plMap.set(d.account_id, e);
+        }
+
+        const assetAccounts = accounts.filter((a) => a.type === AccountType.ASSET);
+        const liabilityAccounts = accounts.filter((a) => a.type === AccountType.LIABILITY);
+        const revenueAccounts = accounts.filter((a) => a.type === AccountType.REVENUE);
+        const expenseAccounts = accounts.filter((a) => a.type === AccountType.EXPENSE);
+
+        const totalAssets = assetAccounts.reduce((s, a) => {
+            const t = bsMap.get(a.id) ?? { debit: 0, credit: 0 };
+            return s + this.calculateSignedBalance(AccountType.ASSET, t.debit, t.credit);
+        }, 0);
+
+        const totalLiabilities = liabilityAccounts.reduce((s, a) => {
+            const t = bsMap.get(a.id) ?? { debit: 0, credit: 0 };
+            return s + this.calculateSignedBalance(AccountType.LIABILITY, t.debit, t.credit);
+        }, 0);
+
+        const revenue = revenueAccounts.reduce((s, a) => {
+            const t = plMap.get(a.id) ?? { debit: 0, credit: 0 };
+            return s + this.roundAmount(t.credit - t.debit);
+        }, 0);
+
+        const totalExpenses = expenseAccounts.reduce((s, a) => {
+            const t = plMap.get(a.id) ?? { debit: 0, credit: 0 };
+            return s + this.roundAmount(t.debit - t.credit);
+        }, 0);
+
+        const netProfit = this.roundAmount(revenue - totalExpenses);
+
+        const arAccounts = assetAccounts.filter((a) => this.matchesAccountPattern(a, RECEIVABLE_ACCOUNT_PATTERN));
+        const apAccounts = liabilityAccounts.filter((a) => this.matchesAccountPattern(a, PAYABLE_ACCOUNT_PATTERN));
+
+        const arBalance = arAccounts.reduce((s, a) => {
+            const t = bsMap.get(a.id) ?? { debit: 0, credit: 0 };
+            return s + this.calculateSignedBalance(AccountType.ASSET, t.debit, t.credit);
+        }, 0);
+
+        const apBalance = apAccounts.reduce((s, a) => {
+            const t = bsMap.get(a.id) ?? { debit: 0, credit: 0 };
+            return s + this.calculateSignedBalance(AccountType.LIABILITY, t.debit, t.credit);
+        }, 0);
+
+        const currentRatio = totalLiabilities !== 0 ? this.roundAmount(totalAssets / totalLiabilities) : null;
+        const grossMarginPct = revenue !== 0 ? this.roundAmount((netProfit / revenue) * 100) : null;
+        const netProfitMarginPct = revenue !== 0 ? this.roundAmount((netProfit / revenue) * 100) : null;
+        const dsoDays = revenue !== 0 ? this.roundAmount((arBalance / revenue) * 30) : null;
+        const dpoDays = totalExpenses !== 0 ? this.roundAmount((apBalance / totalExpenses) * 30) : null;
+
+        return {
+            as_of: asOfDateStr,
+            period: { from: range.from, to: range.to },
+            ratios: {
+                current_ratio: currentRatio,
+                gross_margin_pct: grossMarginPct,
+                net_profit_margin_pct: netProfitMarginPct,
+                dso_days: dsoDays,
+                dpo_days: dpoDays,
+                revenue: this.roundAmount(revenue),
+                total_expenses: this.roundAmount(totalExpenses),
+                net_profit: netProfit,
+                total_assets: this.roundAmount(totalAssets),
+                total_liabilities: this.roundAmount(totalLiabilities),
+            },
+        };
+    }
+
+    async getCashFlow(tenantId: string, query: CashFlowQueryDto) {
+        const range = this.resolveDateRange(query.from, query.to);
+
+        const INVESTING_PATTERN = /(fixed\s+asset|property|equipment|plant|machinery|vehicle|furniture|land|building)/i;
+        const FINANCING_PATTERN = /(loan|borrowing|debt|mortgage|bond)/i;
+
+        const accounts = await this.db.account.findMany({
+            where: { tenant_id: tenantId },
+            select: { id: true, name: true, code: true, type: true, category: true },
+        });
+
+        // Classify accounts
+        const investingAccounts = accounts.filter(
+            (a) => a.type === AccountType.ASSET && this.matchesAccountPattern(a, INVESTING_PATTERN),
+        );
+        const financingAccounts = accounts.filter(
+            (a) => a.type === AccountType.EQUITY ||
+                (a.type === AccountType.LIABILITY && this.matchesAccountPattern(a, FINANCING_PATTERN)),
+        );
+        const investingIds = new Set(investingAccounts.map((a) => a.id));
+        const financingIds = new Set(financingAccounts.map((a) => a.id));
+        const operatingAccounts = accounts.filter((a) => !investingIds.has(a.id) && !financingIds.has(a.id));
+
+        const allIds = accounts.map((a) => a.id);
+
+        // Opening balances (before period)
+        const openingDetails = allIds.length === 0 ? [] : await this.db.voucherDetail.findMany({
+            where: {
+                account_id: { in: allIds },
+                voucher: { tenant_id: tenantId, date: { lt: range.fromDate } },
+            },
+            select: { account_id: true, debit_amount: true, credit_amount: true },
+        });
+
+        // Period details
+        const periodDetails = allIds.length === 0 ? [] : await this.db.voucherDetail.findMany({
+            where: {
+                account_id: { in: allIds },
+                voucher: { tenant_id: tenantId, date: { gte: range.fromDate, lte: range.toDate } },
+            },
+            select: { account_id: true, debit_amount: true, credit_amount: true },
+        });
+
+        const buildMap = (details: Array<{ account_id: string; debit_amount: any; credit_amount: any }>) => {
+            const map = new Map<string, { debit: number; credit: number }>();
+            for (const d of details) {
+                const e = map.get(d.account_id) ?? { debit: 0, credit: 0 };
+                e.debit += Number(d.debit_amount ?? 0);
+                e.credit += Number(d.credit_amount ?? 0);
+                map.set(d.account_id, e);
+            }
+            return map;
+        };
+
+        const openingMap = buildMap(openingDetails);
+        const periodMap = buildMap(periodDetails);
+
+        const cashBankIds = accounts
+            .filter((a) => a.category === AccountCategory.CASH || a.category === AccountCategory.BANK)
+            .map((a) => a.id);
+
+        const openingCashBalance = cashBankIds.reduce((s, id) => {
+            const t = openingMap.get(id) ?? { debit: 0, credit: 0 };
+            return s + this.calculateSignedBalance(AccountType.ASSET, t.debit, t.credit);
+        }, 0);
+
+        const closingCashBalance = cashBankIds.reduce((s, id) => {
+            const openT = openingMap.get(id) ?? { debit: 0, credit: 0 };
+            const periodT = periodMap.get(id) ?? { debit: 0, credit: 0 };
+            return s + this.calculateSignedBalance(AccountType.ASSET, openT.debit + periodT.debit, openT.credit + periodT.credit);
+        }, 0);
+
+        const calcNetChange = (accts: typeof accounts) => {
+            return accts.map((a) => {
+                const t = periodMap.get(a.id) ?? { debit: 0, credit: 0 };
+                const netChange = CREDIT_NORMAL_ACCOUNT_TYPES.has(a.type as AccountType)
+                    ? this.roundAmount(t.credit - t.debit)
+                    : this.roundAmount(t.debit - t.credit);
+                return { id: a.id, name: a.name, type: a.type, net_change: netChange };
+            }).filter((r) => r.net_change !== 0);
+        };
+
+        const investingActivities = calcNetChange(investingAccounts);
+        const financingActivities = calcNetChange(financingAccounts);
+        const operatingActivities = calcNetChange(operatingAccounts);
+
+        const investingNet = this.roundAmount(investingActivities.reduce((s, a) => s + a.net_change, 0));
+        const financingNet = this.roundAmount(financingActivities.reduce((s, a) => s + a.net_change, 0));
+        const operatingNet = this.roundAmount(operatingActivities.reduce((s, a) => s + a.net_change, 0));
+
+        return {
+            filters: { from: range.from, to: range.to },
+            operating: { activities: operatingActivities, net: operatingNet },
+            investing: { activities: investingActivities, net: investingNet },
+            financing: { activities: financingActivities, net: financingNet },
+            net_change_in_cash: this.roundAmount(operatingNet + investingNet + financingNet),
+            opening_cash_balance: this.roundAmount(openingCashBalance),
+            closing_cash_balance: this.roundAmount(closingCashBalance),
+            note: 'Indirect method approximation based on account classification.',
+        };
+    }
+
+    // ============ FEATURE 8: Fiscal Period Locking ============
+
+    async listFiscalPeriods(tenantId: string, query: FiscalPeriodsQueryDto) {
+        const now = new Date();
+        const year = query.year ?? now.getUTCFullYear();
+
+        // Auto-create 12 months if none exist
+        const existing = await this.db.fiscalPeriod.findMany({
+            where: { tenant_id: tenantId, year },
+            orderBy: { month: 'asc' },
+        });
+
+        if (existing.length === 0) {
+            const data = Array.from({ length: 12 }, (_, i) => {
+                const m = i + 1;
+                const start = new Date(Date.UTC(year, i, 1));
+                const end = new Date(Date.UTC(year, i + 1, 0, 23, 59, 59, 999));
+                return {
+                    tenant_id: tenantId,
+                    year,
+                    month: m,
+                    period_label: `${start.toLocaleString('en', { month: 'long' })} ${year}`,
+                    start_date: start,
+                    end_date: end,
+                };
+            });
+
+            await this.db.fiscalPeriod.createMany({ data });
+            return this.db.fiscalPeriod.findMany({ where: { tenant_id: tenantId, year }, orderBy: { month: 'asc' } });
+        }
+
+        return existing;
+    }
+
+    async lockFiscalPeriod(tenantId: string, dto: LockFiscalPeriodDto, userId: string) {
+        const period = await this.db.fiscalPeriod.findUnique({
+            where: { tenant_id_year_month: { tenant_id: tenantId, year: dto.year, month: dto.month } },
+        });
+
+        if (!period) {
+            // Auto-create if missing
+            await this.listFiscalPeriods(tenantId, { year: dto.year });
+        }
+
+        return this.db.fiscalPeriod.update({
+            where: { tenant_id_year_month: { tenant_id: tenantId, year: dto.year, month: dto.month } },
+            data: { is_locked: true, locked_at: new Date(), locked_by_user_id: userId },
+        });
+    }
+
+    async unlockFiscalPeriod(tenantId: string, dto: LockFiscalPeriodDto, userId: string) {
+        const period = await this.db.fiscalPeriod.findUnique({
+            where: { tenant_id_year_month: { tenant_id: tenantId, year: dto.year, month: dto.month } },
+        });
+
+        if (!period) {
+            throw new NotFoundException('Fiscal period not found.');
+        }
+
+        return this.db.fiscalPeriod.update({
+            where: { tenant_id_year_month: { tenant_id: tenantId, year: dto.year, month: dto.month } },
+            data: { is_locked: false, locked_at: null, locked_by_user_id: userId },
+        });
+    }
+
+    // ============ FEATURE 9: Opening Balance Import ============
+
+    async importOpeningBalances(tenantId: string, dto: ImportOpeningBalancesDto) {
+        // Validate: each entry must have exactly one of debit/credit > 0
+        for (const entry of dto.entries) {
+            const hasDebit = entry.debitAmount > 0;
+            const hasCredit = entry.creditAmount > 0;
+            if ((hasDebit && hasCredit) || (!hasDebit && !hasCredit)) {
+                throw new BadRequestException('Each entry must have either a debit or credit amount, not both or neither.');
+            }
+        }
+
+        const totalDebit = dto.entries.reduce((s, e) => s + e.debitAmount, 0);
+        const totalCredit = dto.entries.reduce((s, e) => s + e.creditAmount, 0);
+        if (Math.abs(totalDebit - totalCredit) > 0.01) {
+            throw new BadRequestException(`Opening balances must be balanced. Debit total: ${totalDebit}, Credit total: ${totalCredit}.`);
+        }
+
+        const accountIds = [...new Set(dto.entries.map((e) => e.accountId))];
+        const accounts = await this.db.account.findMany({ where: { tenant_id: tenantId, id: { in: accountIds } } });
+        if (accounts.length !== accountIds.length) {
+            throw new BadRequestException('One or more accounts do not belong to this tenant.');
+        }
+
+        return this.db.$transaction(async (tx) => {
+            const generatedNumber = await this.generateNextVoucherNumberWithClient(tx, tenantId, VoucherType.JOURNAL);
+            return tx.voucher.create({
+                data: {
+                    tenant_id: tenantId,
+                    voucher_number: generatedNumber.voucherNumber,
+                    voucher_type: VoucherType.JOURNAL,
+                    description: `Opening Balances as of ${dto.asOfDate}`,
+                    date: new Date(dto.asOfDate),
+                    details: {
+                        create: dto.entries.map((e) => ({
+                            account_id: e.accountId,
+                            debit_amount: e.debitAmount,
+                            credit_amount: e.creditAmount,
+                        })),
+                    },
+                },
+                include: {
+                    details: {
+                        include: { account: { include: { group: true, subgroup: true } } },
+                        orderBy: { created_at: 'asc' },
+                    },
+                },
+            });
+        }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+    }
+
+    // ============ FEATURE 10: Budget vs Actual ============
+
+    async upsertBudget(tenantId: string, dto: UpsertBudgetDto) {
+        const account = await this.db.account.findFirst({ where: { id: dto.accountId, tenant_id: tenantId } });
+        if (!account) throw new NotFoundException('Account not found.');
+
+        return this.db.accountBudget.upsert({
+            where: {
+                tenant_id_account_id_fiscal_year_month: {
+                    tenant_id: tenantId,
+                    account_id: dto.accountId,
+                    fiscal_year: dto.fiscalYear,
+                    month: dto.month ?? null,
+                },
+            },
+            create: {
+                tenant_id: tenantId,
+                account_id: dto.accountId,
+                fiscal_year: dto.fiscalYear,
+                month: dto.month ?? null,
+                amount: dto.amount,
+            },
+            update: { amount: dto.amount },
+        });
+    }
+
+    async getBudgetVsActual(tenantId: string, query: BudgetVsActualQueryDto) {
+        const budgets = await this.db.accountBudget.findMany({
+            where: {
+                tenant_id: tenantId,
+                fiscal_year: query.fiscalYear,
+                ...(query.month !== undefined ? { month: query.month } : {}),
+            },
+            include: { account: { include: { group: true } } },
+        });
+
+        if (budgets.length === 0) {
+            return { fiscal_year: query.fiscalYear, month: query.month ?? null, rows: [], totals: { budget: 0, actual: 0, variance: 0 } };
+        }
+
+        // Determine date range for actuals
+        let fromDate: Date;
+        let toDate: Date;
+        if (query.month) {
+            fromDate = new Date(Date.UTC(query.fiscalYear, query.month - 1, 1));
+            toDate = new Date(Date.UTC(query.fiscalYear, query.month, 0, 23, 59, 59, 999));
+        } else {
+            fromDate = new Date(Date.UTC(query.fiscalYear, 0, 1));
+            toDate = new Date(Date.UTC(query.fiscalYear, 11, 31, 23, 59, 59, 999));
+        }
+
+        const accountIds = budgets.map((b) => b.account_id);
+        const details = await this.db.voucherDetail.findMany({
+            where: {
+                account_id: { in: accountIds },
+                voucher: { tenant_id: tenantId, date: { gte: fromDate, lte: toDate } },
+            },
+            select: { account_id: true, debit_amount: true, credit_amount: true },
+        });
+
+        const actualMap = new Map<string, { debit: number; credit: number }>();
+        for (const d of details) {
+            const e = actualMap.get(d.account_id) ?? { debit: 0, credit: 0 };
+            e.debit += Number(d.debit_amount ?? 0);
+            e.credit += Number(d.credit_amount ?? 0);
+            actualMap.set(d.account_id, e);
+        }
+
+        let totalBudget = 0;
+        let totalActual = 0;
+
+        const rows = budgets.map((budget) => {
+            const t = actualMap.get(budget.account_id) ?? { debit: 0, credit: 0 };
+            const accountType = budget.account.type as AccountType;
+            const actual = CREDIT_NORMAL_ACCOUNT_TYPES.has(accountType)
+                ? this.roundAmount(t.credit - t.debit)
+                : this.roundAmount(t.debit - t.credit);
+            const budgetAmount = this.roundAmount(Number(budget.amount));
+            const variance = this.roundAmount(budgetAmount - actual);
+            const variancePct = budgetAmount !== 0 ? this.roundAmount((variance / Math.abs(budgetAmount)) * 100) : null;
+
+            totalBudget = this.roundAmount(totalBudget + budgetAmount);
+            totalActual = this.roundAmount(totalActual + actual);
+
+            return {
+                account: {
+                    id: budget.account.id,
+                    name: budget.account.name,
+                    code: budget.account.code,
+                    type: budget.account.type,
+                    group: { id: budget.account.group.id, name: budget.account.group.name },
+                },
+                budget: budgetAmount,
+                actual,
+                variance,
+                variance_pct: variancePct,
+            };
+        });
+
+        return {
+            fiscal_year: query.fiscalYear,
+            month: query.month ?? null,
+            rows,
+            totals: { budget: totalBudget, actual: totalActual, variance: this.roundAmount(totalBudget - totalActual) },
+        };
+    }
+
+    // ============ FEATURE 11: Cost Centers ============
+
+    async createCostCenter(tenantId: string, dto: CreateCostCenterDto) {
+        const existing = await this.db.costCenter.findUnique({
+            where: { tenant_id_code: { tenant_id: tenantId, code: dto.code } },
+        });
+        if (existing) throw new BadRequestException('A cost center with this code already exists.');
+
+        return this.db.costCenter.create({
+            data: { tenant_id: tenantId, code: dto.code, name: dto.name },
+        });
+    }
+
+    async listCostCenters(tenantId: string) {
+        return this.db.costCenter.findMany({
+            where: { tenant_id: tenantId },
+            orderBy: { code: 'asc' },
+        });
+    }
+
+    async getCostCenterPL(tenantId: string, query: CostCenterPLQueryDto) {
+        const costCenter = await this.db.costCenter.findFirst({
+            where: { id: query.costCenterId, tenant_id: tenantId },
+        });
+        if (!costCenter) throw new NotFoundException('Cost center not found.');
+
+        const range = this.resolveDateRange(query.from, query.to);
+
+        const accounts = await this.db.account.findMany({
+            where: { tenant_id: tenantId, type: { in: [AccountType.REVENUE, AccountType.EXPENSE] } },
+            include: { group: true },
+        });
+
+        if (accounts.length === 0) {
+            return {
+                cost_center: { id: costCenter.id, name: costCenter.name, code: costCenter.code },
+                filters: { from: range.from, to: range.to },
+                revenue: { groups: [], total: 0 },
+                expenses: { groups: [], total: 0 },
+                net_profit: 0,
+            };
+        }
+
+        const details = await this.db.voucherDetail.findMany({
+            where: {
+                cost_center_id: query.costCenterId,
+                account_id: { in: accounts.map((a) => a.id) },
+                voucher: { tenant_id: tenantId, date: { gte: range.fromDate, lte: range.toDate } },
+            },
+            select: { account_id: true, debit_amount: true, credit_amount: true },
+        });
+
+        const accountTotals = new Map<string, { debit: number; credit: number }>();
+        for (const detail of details) {
+            const existing = accountTotals.get(detail.account_id) ?? { debit: 0, credit: 0 };
+            existing.debit += Number(detail.debit_amount ?? 0);
+            existing.credit += Number(detail.credit_amount ?? 0);
+            accountTotals.set(detail.account_id, existing);
+        }
+
+        const buildGroups = (accts: typeof accounts, type: AccountType) => {
+            const groupMap = new Map<string, { group: any; accounts: any[]; total: number }>();
+            for (const account of accts) {
+                const totals = accountTotals.get(account.id) ?? { debit: 0, credit: 0 };
+                const balance = type === AccountType.REVENUE
+                    ? this.roundAmount(totals.credit - totals.debit)
+                    : this.roundAmount(totals.debit - totals.credit);
+                const gid = account.group_id;
+                const existing = groupMap.get(gid) ?? { group: { id: account.group.id, name: account.group.name }, accounts: [], total: 0 };
+                existing.accounts.push({ id: account.id, name: account.name, code: account.code, balance });
+                existing.total = this.roundAmount(existing.total + balance);
+                groupMap.set(gid, existing);
+            }
+            return Array.from(groupMap.values()).sort((a, b) => a.group.name.localeCompare(b.group.name));
+        };
+
+        const revenueGroups = buildGroups(accounts.filter((a) => a.type === AccountType.REVENUE), AccountType.REVENUE);
+        const expenseGroups = buildGroups(accounts.filter((a) => a.type === AccountType.EXPENSE), AccountType.EXPENSE);
+        const totalRevenue = this.roundAmount(revenueGroups.reduce((s, g) => s + g.total, 0));
+        const totalExpenses = this.roundAmount(expenseGroups.reduce((s, g) => s + g.total, 0));
+
+        return {
+            cost_center: { id: costCenter.id, name: costCenter.name, code: costCenter.code },
+            filters: { from: range.from, to: range.to },
+            revenue: { groups: revenueGroups, total: totalRevenue },
+            expenses: { groups: expenseGroups, total: totalExpenses },
+            net_profit: this.roundAmount(totalRevenue - totalExpenses),
+        };
+    }
+
+    // ============ FEATURE 12: Fixed Assets ============
+
+    async createFixedAsset(tenantId: string, dto: CreateFixedAssetDto) {
+        const existing = await this.db.fixedAsset.findUnique({
+            where: { tenant_id_asset_code: { tenant_id: tenantId, asset_code: dto.assetCode } },
+        });
+        if (existing) throw new BadRequestException('An asset with this code already exists.');
+
+        return this.db.fixedAsset.create({
+            data: {
+                tenant_id: tenantId,
+                asset_code: dto.assetCode,
+                name: dto.name,
+                purchase_date: new Date(dto.purchaseDate),
+                cost: dto.cost,
+                residual_value: dto.residualValue ?? 0,
+                useful_life_months: dto.usefulLifeMonths,
+                depreciation_method: (dto.depreciationMethod as any) ?? 'STRAIGHT_LINE',
+                asset_account_id: dto.assetAccountId,
+                depreciation_account_id: dto.depreciationAccountId,
+            },
+        });
+    }
+
+    async listFixedAssets(tenantId: string) {
+        return this.db.fixedAsset.findMany({
+            where: { tenant_id: tenantId },
+            include: { depreciationEntries: { orderBy: [{ period_year: 'desc' }, { period_month: 'desc' }], take: 1 } },
+            orderBy: { asset_code: 'asc' },
+        });
+    }
+
+    async runDepreciation(tenantId: string, dto: RunDepreciationDto) {
+        const assets = await this.db.fixedAsset.findMany({
+            where: { tenant_id: tenantId, is_active: true },
+        });
+
+        const results = [];
+        for (const asset of assets) {
+            // Check if already run for this period
+            const existing = await this.db.assetDepreciationEntry.findUnique({
+                where: { asset_id_period_year_period_month: { asset_id: asset.id, period_year: dto.year, period_month: dto.month } },
+            });
+            if (existing) continue;
+
+            const cost = Number(asset.cost);
+            const residual = Number(asset.residual_value);
+            const accum = Number(asset.accumulated_depreciation);
+            let depreciation = 0;
+
+            if (asset.depreciation_method === 'STRAIGHT_LINE') {
+                depreciation = this.roundAmount((cost - residual) / asset.useful_life_months);
+            } else {
+                // Declining balance: 2 / useful_life_months applied to book value
+                const bookValue = cost - accum;
+                const rate = 2 / asset.useful_life_months;
+                depreciation = this.roundAmount(bookValue * rate);
+            }
+
+            // Don't depreciate below residual value
+            const maxDepreciation = this.roundAmount(cost - residual - accum);
+            if (maxDepreciation <= 0) continue;
+            depreciation = Math.min(depreciation, maxDepreciation);
+            if (depreciation <= 0) continue;
+
+            // Record entry
+            const entry = await this.db.assetDepreciationEntry.create({
+                data: {
+                    asset_id: asset.id,
+                    period_year: dto.year,
+                    period_month: dto.month,
+                    depreciation_amount: depreciation,
+                },
+            });
+
+            // Update accumulated depreciation
+            await this.db.fixedAsset.update({
+                where: { id: asset.id },
+                data: { accumulated_depreciation: { increment: depreciation } },
+            });
+
+            results.push({ asset: { id: asset.id, name: asset.name, asset_code: asset.asset_code }, depreciation_amount: depreciation, entry_id: entry.id });
+        }
+
+        return { period: `${dto.year}-${String(dto.month).padStart(2, '0')}`, processed: results.length, results };
+    }
+
+    async getDepreciationSchedule(tenantId: string, assetId: string) {
+        const asset = await this.db.fixedAsset.findFirst({
+            where: { id: assetId, tenant_id: tenantId },
+            include: { depreciationEntries: { orderBy: [{ period_year: 'asc' }, { period_month: 'asc' }] } },
+        });
+        if (!asset) throw new NotFoundException('Fixed asset not found.');
+
+        const cost = Number(asset.cost);
+        const residual = Number(asset.residual_value);
+        const existingEntries = asset.depreciationEntries;
+
+        const schedule = [];
+        let accum = 0;
+        let bookValue = cost;
+
+        for (let i = 0; i < asset.useful_life_months; i++) {
+            const purchaseDate = new Date(asset.purchase_date);
+            const periodDate = new Date(Date.UTC(purchaseDate.getUTCFullYear(), purchaseDate.getUTCMonth() + i, 1));
+            const year = periodDate.getUTCFullYear();
+            const month = periodDate.getUTCMonth() + 1;
+
+            let depreciation = 0;
+            if (asset.depreciation_method === 'STRAIGHT_LINE') {
+                depreciation = this.roundAmount((cost - residual) / asset.useful_life_months);
+            } else {
+                const rate = 2 / asset.useful_life_months;
+                depreciation = this.roundAmount(bookValue * rate);
+            }
+
+            const maxDepreciation = this.roundAmount(cost - residual - accum);
+            if (maxDepreciation <= 0) break;
+            depreciation = Math.min(depreciation, maxDepreciation);
+
+            accum = this.roundAmount(accum + depreciation);
+            bookValue = this.roundAmount(cost - accum);
+
+            const existing = existingEntries.find((e) => e.period_year === year && e.period_month === month);
+            schedule.push({ year, month, depreciation, accumulated_depreciation: accum, book_value: bookValue, posted: !!existing });
+        }
+
+        return {
+            asset: { id: asset.id, name: asset.name, asset_code: asset.asset_code, cost, residual_value: residual, useful_life_months: asset.useful_life_months, depreciation_method: asset.depreciation_method },
+            schedule,
+        };
+    }
+
+    // ============ FEATURE 13: Recurring Journals ============
+
+    async createRecurringJournal(tenantId: string, dto: CreateRecurringJournalDto) {
+        const accountIds = [...new Set(dto.lines.map((l) => l.accountId))];
+        const accounts = await this.db.account.findMany({ where: { tenant_id: tenantId, id: { in: accountIds } } });
+        if (accounts.length !== accountIds.length) {
+            throw new BadRequestException('One or more accounts do not belong to this tenant.');
+        }
+
+        return this.db.recurringJournal.create({
+            data: {
+                tenant_id: tenantId,
+                name: dto.name,
+                description: dto.description,
+                frequency: dto.frequency,
+                next_due_date: new Date(dto.nextDueDate),
+                lines: {
+                    create: dto.lines.map((l) => ({
+                        account_id: l.accountId,
+                        debit_amount: l.debitAmount,
+                        credit_amount: l.creditAmount,
+                        comment: l.comment,
+                    })),
+                },
+            },
+            include: { lines: { include: { account: true } } },
+        });
+    }
+
+    async listRecurringJournals(tenantId: string) {
+        return this.db.recurringJournal.findMany({
+            where: { tenant_id: tenantId },
+            include: { lines: { include: { account: { select: { id: true, name: true, code: true } } } } },
+            orderBy: { next_due_date: 'asc' },
+        });
+    }
+
+    async postRecurringJournal(tenantId: string, id: string) {
+        const template = await this.db.recurringJournal.findFirst({
+            where: { id, tenant_id: tenantId },
+            include: { lines: true },
+        });
+        if (!template) throw new NotFoundException('Recurring journal not found.');
+        if (!template.is_active) throw new BadRequestException('Recurring journal is not active.');
+
+        const voucherDto: CreateVoucherDto = {
+            voucherType: VoucherType.JOURNAL,
+            description: template.description ?? template.name,
+            details: template.lines.map((l) => ({
+                accountId: l.account_id,
+                debitAmount: Number(l.debit_amount),
+                creditAmount: Number(l.credit_amount),
+                comment: l.comment ?? undefined,
+            })),
+        };
+
+        const voucher = await this.createVoucher(tenantId, voucherDto);
+
+        // Advance next_due_date
+        const nextDue = new Date(template.next_due_date);
+        if (template.frequency === 'DAILY') nextDue.setUTCDate(nextDue.getUTCDate() + 1);
+        else if (template.frequency === 'WEEKLY') nextDue.setUTCDate(nextDue.getUTCDate() + 7);
+        else nextDue.setUTCMonth(nextDue.getUTCMonth() + 1);
+
+        await this.db.recurringJournal.update({
+            where: { id },
+            data: { last_run_date: new Date(), next_due_date: nextDue },
+        });
+
+        return { voucher, next_due_date: nextDue };
+    }
+
+    // ============ FEATURE 14: Bank Reconciliation ============
+
+    async createBankReconciliation(tenantId: string, dto: CreateBankReconciliationDto) {
+        const account = await this.db.account.findFirst({
+            where: { id: dto.accountId, tenant_id: tenantId, category: AccountCategory.BANK },
+        });
+        if (!account) throw new NotFoundException('Bank account not found.');
+
+        return this.db.bankReconciliation.create({
+            data: {
+                tenant_id: tenantId,
+                account_id: dto.accountId,
+                statement_date: new Date(dto.statementDate),
+                statement_closing_balance: dto.statementClosingBalance,
+            },
+        });
+    }
+
+    async importBankStatementEntries(tenantId: string, dto: ImportBankStatementDto) {
+        const recon = await this.db.bankReconciliation.findFirst({
+            where: { id: dto.reconciliationId, tenant_id: tenantId },
+        });
+        if (!recon) throw new NotFoundException('Bank reconciliation not found.');
+
+        await this.db.bankStatementEntry.createMany({
+            data: dto.entries.map((e) => ({
+                reconciliation_id: dto.reconciliationId,
+                entry_date: new Date(e.entryDate),
+                description: e.description,
+                amount: e.amount,
+                entry_type: e.entryType,
+            })),
+        });
+
+        return { imported: dto.entries.length };
+    }
+
+    async autoMatchBankEntries(tenantId: string, reconciliationId: string) {
+        const recon = await this.db.bankReconciliation.findFirst({
+            where: { id: reconciliationId, tenant_id: tenantId },
+        });
+        if (!recon) throw new NotFoundException('Bank reconciliation not found.');
+
+        const unmatchedEntries = await this.db.bankStatementEntry.findMany({
+            where: { reconciliation_id: reconciliationId, is_matched: false },
+        });
+
+        // Get voucher details for the bank account in the period
+        const voucherDetails = await this.db.voucherDetail.findMany({
+            where: {
+                account_id: recon.account_id,
+                voucher: { tenant_id: tenantId },
+            },
+            include: { voucher: { select: { date: true } } },
+        });
+
+        let matched = 0;
+        for (const entry of unmatchedEntries) {
+            const entryDate = entry.entry_date;
+            const amount = Number(entry.amount);
+
+            // Find matching voucher detail by date and amount
+            const match = voucherDetails.find((vd) => {
+                const vdDate = vd.voucher.date;
+                const sameDayMs = Math.abs(vdDate.getTime() - entryDate.getTime()) < 86400000 * 2;
+                const debit = Number(vd.debit_amount ?? 0);
+                const credit = Number(vd.credit_amount ?? 0);
+                const vdAmount = entry.entry_type === 'DEBIT' ? debit : credit;
+                return sameDayMs && Math.abs(vdAmount - amount) < 0.01;
+            });
+
+            if (match) {
+                await this.db.bankStatementEntry.update({
+                    where: { id: entry.id },
+                    data: { is_matched: true, matched_voucher_detail_id: match.id },
+                });
+                matched++;
+            }
+        }
+
+        return { matched, total: unmatchedEntries.length };
+    }
+
+    async matchBankEntry(tenantId: string, dto: MatchBankEntryDto) {
+        const recon = await this.db.bankStatementEntry.findFirst({
+            where: { id: dto.statementEntryId, reconciliation: { tenant_id: tenantId } },
+        });
+        if (!recon) throw new NotFoundException('Statement entry not found.');
+
+        return this.db.bankStatementEntry.update({
+            where: { id: dto.statementEntryId },
+            data: { is_matched: true, matched_voucher_detail_id: dto.voucherDetailId },
+        });
+    }
+
+    async getBankReconciliationReport(tenantId: string, reconciliationId: string) {
+        const recon = await this.db.bankReconciliation.findFirst({
+            where: { id: reconciliationId, tenant_id: tenantId },
+            include: {
+                entries: {
+                    orderBy: { entry_date: 'asc' },
+                },
+            },
+        });
+        if (!recon) throw new NotFoundException('Bank reconciliation not found.');
+
+        // Get book balance for the account up to statement date
+        const bookTotals = await this.db.voucherDetail.aggregate({
+            where: {
+                account_id: recon.account_id,
+                voucher: { tenant_id: tenantId, date: { lte: recon.statement_date } },
+            },
+            _sum: { debit_amount: true, credit_amount: true },
+        });
+
+        const bookBalance = this.roundAmount(
+            Number(bookTotals._sum.debit_amount ?? 0) - Number(bookTotals._sum.credit_amount ?? 0),
+        );
+        const statementBalance = Number(recon.statement_closing_balance);
+        const difference = this.roundAmount(statementBalance - bookBalance);
+
+        const matched = recon.entries.filter((e) => e.is_matched);
+        const unmatched = recon.entries.filter((e) => !e.is_matched);
+
+        return {
+            reconciliation: {
+                id: recon.id,
+                account_id: recon.account_id,
+                statement_date: recon.statement_date,
+                status: recon.status,
+            },
+            summary: {
+                book_balance: bookBalance,
+                statement_balance: statementBalance,
+                difference,
+                is_reconciled: Math.abs(difference) < 0.01,
+                total_entries: recon.entries.length,
+                matched_entries: matched.length,
+                unmatched_entries: unmatched.length,
+            },
+            matched_entries: matched.map((e) => ({
+                id: e.id,
+                entry_date: e.entry_date,
+                description: e.description,
+                amount: Number(e.amount),
+                entry_type: e.entry_type,
+                matched_voucher_detail_id: e.matched_voucher_detail_id,
+            })),
+            unmatched_entries: unmatched.map((e) => ({
+                id: e.id,
+                entry_date: e.entry_date,
+                description: e.description,
+                amount: Number(e.amount),
+                entry_type: e.entry_type,
+            })),
         };
     }
 

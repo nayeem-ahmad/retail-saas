@@ -115,25 +115,25 @@ Track all work here. Check off items as they're completed. Add new items as they
 - [x] Bankbook — bank account receipts and payments ledger with running balance — done 2026-05-29
 
 ### Accounting — Mid-Size Features (Tier 1: High Value)
-- [ ] Trial Balance — all accounts with debit/credit totals and closing balance; standard pre-audit report
-- [ ] AR Aging Report — receivables bucketed by 0-30 / 31-60 / 61-90 / 90+ days overdue per customer
-- [ ] AP Aging Report — payables bucketed by 0-30 / 31-60 / 61-90 / 90+ days overdue per supplier
-- [ ] Bank Reconciliation (Statement Import) — CSV/OFX bank statement upload, auto-match against bankbook, flag unmatched rows
-- [ ] Comparative P&L — side-by-side columns: this month / last month / same month last year / YTD
+- [x] Trial Balance — all accounts with debit/credit totals and closing balance; standard pre-audit report — done 2026-06-11
+- [x] AR Aging Report — receivables bucketed by 0-30 / 31-60 / 61-90 / 90+ days overdue per customer — done 2026-06-11
+- [x] AP Aging Report — payables bucketed by 0-30 / 31-60 / 61-90 / 90+ days overdue per supplier — done 2026-06-11
+- [x] Bank Reconciliation (Statement Import) — paste/import CSV statement, auto-match by date+amount, matched/unmatched report — done 2026-06-11
+- [x] Comparative P&L — side-by-side columns: current period / previous period / year-ago with variance — done 2026-06-11
 
 ### Accounting — Mid-Size Features (Tier 2: Differentiation)
-- [ ] Budget vs. Actual Report — set annual/monthly budgets per account group; report shows budget, actual, variance (amount + %)
-- [ ] Cost Center / Department Tagging — optional costCenterId dimension on voucher lines; per-branch or per-department P&L
-- [ ] Fixed Asset Register & Depreciation — asset master with purchase date/cost/useful life/method; auto-generate monthly depreciation journals
-- [ ] Recurring Journal Templates — define a journal entry with a schedule; system auto-creates or prompts on due date
-- [ ] VAT / Tax Ledger Report — output VAT collected, input VAT paid, net payable; structured for Bangladesh NBR monthly VAT return
+- [x] Budget vs. Actual Report — set annual/monthly budgets per account group; report shows budget, actual, variance (amount + %) — done 2026-06-11
+- [x] Cost Center / Department Tagging — optional costCenterId dimension on voucher lines; per-branch or per-department P&L — done 2026-06-11
+- [x] Fixed Asset Register & Depreciation — asset master with purchase date/cost/useful life/method; auto-generate monthly depreciation journals — done 2026-06-11
+- [x] Recurring Journal Templates — define a journal entry with a schedule; system auto-creates or prompts on due date — done 2026-06-11
+- [x] VAT / Tax Ledger Report — output VAT collected, input VAT paid, net payable; structured for Bangladesh NBR monthly VAT return — done 2026-06-11
 
 ### Accounting — Mid-Size Features (Tier 3: Stickiness & Depth)
-- [ ] Statement of Cash Flows — operating / investing / financing sections with activity classification per account
-- [ ] Financial Ratios Dashboard — Current Ratio, Quick Ratio, Gross Margin %, Operating Margin %, DSO, DPO from existing report data
-- [ ] Fiscal Period Locking — admin can close a month/year to prevent backdated voucher entry
-- [ ] Opening Balance Import — structured UI to enter account opening balances when migrating from another system
-- [ ] Accounting Audit Trail / Change Log — immutable log of every voucher edit, deletion, or COA change with user + timestamp
+- [x] Statement of Cash Flows — operating / investing / financing sections with activity classification per account — done 2026-06-11
+- [x] Financial Ratios Dashboard — Current Ratio, Quick Ratio, Gross Margin %, Operating Margin %, DSO, DPO from existing report data — done 2026-06-11
+- [x] Fiscal Period Locking — admin can close a month/year to prevent backdated voucher entry — done 2026-06-11
+- [x] Opening Balance Import — structured UI to enter account opening balances when migrating from another system — done 2026-06-11
+- [x] Accounting Audit Trail / Change Log — immutable log of every voucher edit, deletion, or COA change with user + timestamp — done 2026-06-11
 
 ### Sales Reports
 - [x] Product-wise sales summary — quantity sold, revenue, and margin per product for a selected period — done 2026-05-29
@@ -228,6 +228,12 @@ Track all work here. Check off items as they're completed. Add new items as they
 ---
 
 ## COMPLETED
+
+- [x] Add accounting features 8-15 (Fiscal Period Locking, Opening Balance Import, Budget vs Actual, Cost Centers, Fixed Assets & Depreciation, Recurring Journals, Bank Reconciliation, Audit Trail) — 21 service methods inserted before buildBookReport, 22 controller endpoints appended, controller DTO imports updated, createVoucher now passes userId for audit logging, accounting.module.ts updated with AuditService — done 2026-06-11
+
+- [x] Add 7 accounting report endpoints (Trial Balance, AR Aging, AP Aging, Comparative P&L, VAT/Tax Report, Financial Ratios, Cash Flow Statement) — DTOs already in accounting.dto.ts; added 7 service methods to AccountingService before buildBookReport; added 7 GET controller endpoints under reports/; updated controller DTO import block — done 2026-06-11
+
+- [x] Add Prisma schema models for accounting mid-size features: FiscalPeriod, AccountBudget, CostCenter, FixedAsset, AssetDepreciationEntry, RecurringJournal, RecurringJournalLine, BankReconciliation, BankStatementEntry; added DepreciationMethod enum; updated Tenant, Account, VoucherDetail relations; created SQL migration files 07–12 — done 2026-06-11
 
 - [x] Brand management — Brand CRUD (POST/GET/PATCH/DELETE /brands), Brand model in Prisma with soft delete, EDIT_BRANDS permission, brand select on product create/edit modal, Brands page at /dashboard/brands, sidebar nav link under Inventory Setup — done 2026-06-10
 

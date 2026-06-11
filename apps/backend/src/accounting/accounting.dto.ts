@@ -342,3 +342,316 @@ export class ExportLedgerQueryDto {
     @IsDateString()
     to?: string;
 }
+
+export class TrialBalanceQueryDto {
+    @IsOptional()
+    @IsDateString()
+    asOfDate?: string;
+}
+
+export class ArAgingQueryDto {
+    @IsOptional()
+    @IsDateString()
+    asOfDate?: string;
+}
+
+export class ApAgingQueryDto {
+    @IsOptional()
+    @IsDateString()
+    asOfDate?: string;
+}
+
+export class ComparativePLQueryDto {
+    @IsOptional()
+    @IsDateString()
+    from?: string;
+
+    @IsOptional()
+    @IsDateString()
+    to?: string;
+}
+
+export class VatTaxReportQueryDto {
+    @IsOptional()
+    @IsDateString()
+    from?: string;
+
+    @IsOptional()
+    @IsDateString()
+    to?: string;
+}
+
+export class FinancialRatiosQueryDto {
+    @IsOptional()
+    @IsDateString()
+    asOfDate?: string;
+
+    @IsOptional()
+    @IsDateString()
+    from?: string;
+
+    @IsOptional()
+    @IsDateString()
+    to?: string;
+}
+
+export class CashFlowQueryDto {
+    @IsOptional()
+    @IsDateString()
+    from?: string;
+
+    @IsOptional()
+    @IsDateString()
+    to?: string;
+}
+
+// Feature 8: Fiscal Period Locking
+export class LockFiscalPeriodDto {
+    @Type(() => Number)
+    @IsInt()
+    @Min(2020)
+    @Max(2099)
+    year: number;
+
+    @Type(() => Number)
+    @IsInt()
+    @Min(1)
+    @Max(12)
+    month: number;
+}
+
+export class FiscalPeriodsQueryDto {
+    @IsOptional()
+    @Type(() => Number)
+    @IsInt()
+    year?: number;
+}
+
+// Feature 9: Opening Balance Import
+export class OpeningBalanceEntryDto {
+    @IsUUID()
+    accountId: string;
+
+    @Type(() => Number)
+    @IsNumber()
+    @Min(0)
+    debitAmount: number;
+
+    @Type(() => Number)
+    @IsNumber()
+    @Min(0)
+    creditAmount: number;
+}
+
+export class ImportOpeningBalancesDto {
+    @IsDateString()
+    asOfDate: string;
+
+    @ArrayMinSize(1)
+    @ValidateNested({ each: true })
+    @Type(() => OpeningBalanceEntryDto)
+    entries: OpeningBalanceEntryDto[];
+}
+
+// Feature 10: Budget vs Actual
+export class UpsertBudgetDto {
+    @IsUUID()
+    accountId: string;
+
+    @Type(() => Number)
+    @IsInt()
+    @Min(2020)
+    @Max(2099)
+    fiscalYear: number;
+
+    @IsOptional()
+    @Type(() => Number)
+    @IsInt()
+    @Min(1)
+    @Max(12)
+    month?: number;
+
+    @Type(() => Number)
+    @IsNumber()
+    @Min(0)
+    amount: number;
+}
+
+export class BudgetVsActualQueryDto {
+    @Type(() => Number)
+    @IsInt()
+    @Min(2020)
+    fiscalYear: number;
+
+    @IsOptional()
+    @Type(() => Number)
+    @IsInt()
+    @Min(1)
+    @Max(12)
+    month?: number;
+}
+
+// Feature 11: Cost Centers
+export class CreateCostCenterDto {
+    @IsString()
+    @IsNotEmpty()
+    code: string;
+
+    @IsString()
+    @IsNotEmpty()
+    name: string;
+}
+
+export class CostCenterPLQueryDto {
+    @IsUUID()
+    costCenterId: string;
+
+    @IsOptional()
+    @IsDateString()
+    from?: string;
+
+    @IsOptional()
+    @IsDateString()
+    to?: string;
+}
+
+// Feature 12: Fixed Assets
+export class CreateFixedAssetDto {
+    @IsString()
+    @IsNotEmpty()
+    assetCode: string;
+
+    @IsString()
+    @IsNotEmpty()
+    name: string;
+
+    @IsDateString()
+    purchaseDate: string;
+
+    @Type(() => Number)
+    @IsNumber()
+    @Min(0)
+    cost: number;
+
+    @IsOptional()
+    @Type(() => Number)
+    @IsNumber()
+    @Min(0)
+    residualValue?: number;
+
+    @Type(() => Number)
+    @IsInt()
+    @Min(1)
+    usefulLifeMonths: number;
+
+    @IsOptional()
+    @IsIn(['STRAIGHT_LINE', 'DECLINING_BALANCE'])
+    depreciationMethod?: string;
+
+    @IsOptional()
+    @IsUUID()
+    assetAccountId?: string;
+
+    @IsOptional()
+    @IsUUID()
+    depreciationAccountId?: string;
+}
+
+export class RunDepreciationDto {
+    @Type(() => Number)
+    @IsInt()
+    @Min(2020)
+    year: number;
+
+    @Type(() => Number)
+    @IsInt()
+    @Min(1)
+    @Max(12)
+    month: number;
+}
+
+// Feature 13: Recurring Journals
+export class CreateRecurringJournalLineDto {
+    @IsUUID()
+    accountId: string;
+
+    @Type(() => Number)
+    @IsNumber()
+    debitAmount: number;
+
+    @Type(() => Number)
+    @IsNumber()
+    creditAmount: number;
+
+    @IsOptional()
+    @IsString()
+    comment?: string;
+}
+
+export class CreateRecurringJournalDto {
+    @IsString()
+    @IsNotEmpty()
+    name: string;
+
+    @IsOptional()
+    @IsString()
+    description?: string;
+
+    @IsIn(['MONTHLY', 'WEEKLY', 'DAILY'])
+    frequency: string;
+
+    @IsDateString()
+    nextDueDate: string;
+
+    @ArrayMinSize(2)
+    @ValidateNested({ each: true })
+    @Type(() => CreateRecurringJournalLineDto)
+    lines: CreateRecurringJournalLineDto[];
+}
+
+// Feature 14: Bank Reconciliation
+export class CreateBankReconciliationDto {
+    @IsUUID()
+    accountId: string;
+
+    @IsDateString()
+    statementDate: string;
+
+    @Type(() => Number)
+    @IsNumber()
+    statementClosingBalance: number;
+}
+
+export class BankStatementEntryDto {
+    @IsDateString()
+    entryDate: string;
+
+    @IsOptional()
+    @IsString()
+    description?: string;
+
+    @Type(() => Number)
+    @IsNumber()
+    amount: number;
+
+    @IsIn(['DEBIT', 'CREDIT'])
+    entryType: string;
+}
+
+export class ImportBankStatementDto {
+    @IsUUID()
+    reconciliationId: string;
+
+    @ArrayMinSize(1)
+    @ValidateNested({ each: true })
+    @Type(() => BankStatementEntryDto)
+    entries: BankStatementEntryDto[];
+}
+
+export class MatchBankEntryDto {
+    @IsUUID()
+    statementEntryId: string;
+
+    @IsUUID()
+    voucherDetailId: string;
+}
