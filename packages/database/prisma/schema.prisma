@@ -1117,18 +1117,20 @@ model CrmCampaign {
   name            String
   description     String?
   status          String    @default("DRAFT")
-  channel         String    // SMS | EMAIL
-  target_segment  String?   // VIP | At-Risk | Regular | New | ALL
-  target_group_id String?
-  message         String
-  scheduled_at    DateTime?
-  sent_at         DateTime?
-  recipient_count Int       @default(0)
-  delivered_count Int       @default(0)
-  failed_count    Int       @default(0)
-  created_by      String?
-  created_at      DateTime  @default(now())
-  updated_at      DateTime  @updatedAt
+  channel             String    // SMS | WHATSAPP | EMAIL
+  target_segment      String?   // VIP | At-Risk | Regular | New | ALL
+  target_group_id     String?
+  message             String
+  scheduled_at        DateTime?
+  sent_at             DateTime?
+  recipient_count     Int       @default(0)
+  delivered_count     Int       @default(0)
+  failed_count        Int       @default(0)
+  attributed_revenue  Decimal   @default(0) @db.Decimal(12, 2)
+  attributed_orders   Int       @default(0)
+  created_by          String?
+  created_at          DateTime  @default(now())
+  updated_at          DateTime  @updatedAt
 
   tenant     Tenant    @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
   creator    User?     @relation("CampaignCreator", fields: [created_by], references: [id])

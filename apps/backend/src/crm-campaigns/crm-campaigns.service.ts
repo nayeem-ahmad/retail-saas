@@ -1,6 +1,8 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Cron } from '@nestjs/schedule';
 import { DatabaseService } from '../database/database.service';
 import { SmsService } from '../sms/sms.service';
+import { WhatsAppService } from '../whatsapp/whatsapp.service';
 import { AppLogger } from '../common/app-logger.service';
 import { CreateCampaignDto, UpdateCampaignDto } from './crm-campaigns.dto';
 import { paginate } from '../common/pagination.dto';
@@ -10,6 +12,7 @@ export class CrmCampaignsService {
     constructor(
         private db: DatabaseService,
         private sms: SmsService,
+        private whatsapp: WhatsAppService,
         private readonly logger: AppLogger,
     ) {}
 
@@ -25,7 +28,7 @@ export class CrmCampaignsService {
                 target_group_id: dto.target_group_id,
                 scheduled_at: dto.scheduled_at ? new Date(dto.scheduled_at) : null,
                 created_by: userId,
-                status: 'DRAFT',
+                status: dto.scheduled_at ? 'SCHEDULED' : 'DRAFT',
             },
             include: { creator: { select: { id: true, name: true, email: true } } },
         });
@@ -72,10 +75,15 @@ export class CrmCampaignsService {
     async update(tenantId: string, id: string, dto: UpdateCampaignDto) {
         const existing = await this.db.crmCampaign.findFirst({ where: { id, tenant_id: tenantId } });
         if (!existing) throw new NotFoundException('Campaign not found');
-        if (existing.status !== 'DRAFT') throw new BadRequestException('Only DRAFT campaigns can be edited');
+        if (!['DRAFT', 'SCHEDULED'].includes(existing.status)) {
+            throw new BadRequestException('Only DRAFT/SCHEDULED campaigns can be edited');
+        }
 
         const data: any = { ...dto };
-        if (dto.scheduled_at) data.scheduled_at = new Date(dto.scheduled_at);
+        if (dto.scheduled_at !== undefined) {
+            data.scheduled_at = dto.scheduled_at ? new Date(dto.scheduled_at) : null;
+            data.status = dto.scheduled_at ? 'SCHEDULED' : 'DRAFT';
+        }
 
         return this.db.crmCampaign.update({
             where: { id },
@@ -87,7 +95,9 @@ export class CrmCampaignsService {
     async remove(tenantId: string, id: string) {
         const existing = await this.db.crmCampaign.findFirst({ where: { id, tenant_id: tenantId } });
         if (!existing) throw new NotFoundException('Campaign not found');
-        if (existing.status === 'SENDING') throw new BadRequestException('Cannot delete a campaign that is currently sending');
+        if (existing.status === 'SENDING') {
+            throw new BadRequestException('Cannot delete a campaign that is currently sending');
+        }
         await this.db.crmCampaign.delete({ where: { id } });
         return { success: true };
     }
@@ -96,7 +106,9 @@ export class CrmCampaignsService {
         const campaign = await this.db.crmCampaign.findFirst({ where: { id, tenant_id: tenantId } });
         if (!campaign) throw new NotFoundException('Campaign not found');
 
-        const customers = await this.resolveTargetCustomers(tenantId, campaign.target_segment, campaign.target_group_id);
+        const customers = await this.resolveTargetCustomers(
+            tenantId, campaign.target_segment, campaign.target_group_id,
+        );
         return {
             count: customers.length,
             sample: customers.slice(0, 10).map((c) => ({ id: c.id, name: c.name, phone: c.phone })),
@@ -110,16 +122,16 @@ export class CrmCampaignsService {
             throw new BadRequestException(`Campaign is ${campaign.status} and cannot be sent`);
         }
 
-        const customers = await this.resolveTargetCustomers(tenantId, campaign.target_segment, campaign.target_group_id);
+        const customers = await this.resolveTargetCustomers(
+            tenantId, campaign.target_segment, campaign.target_group_id,
+        );
         if (customers.length === 0) throw new BadRequestException('No eligible recipients found');
 
-        // Mark as SENDING
         await this.db.crmCampaign.update({
             where: { id },
             data: { status: 'SENDING', recipient_count: customers.length },
         });
 
-        // Create recipient rows
         await this.db.crmCampaignRecipient.createMany({
             data: customers.map((c) => ({
                 id: require('crypto').randomUUID(),
@@ -131,12 +143,62 @@ export class CrmCampaignsService {
             skipDuplicates: true,
         });
 
-        // Fire-and-forget delivery
         void this.dispatchCampaign(id, campaign.message, campaign.channel, customers).catch((err) =>
             this.logger.error(`Campaign ${id} dispatch error: ${err}`),
         );
 
         return { queued: customers.length };
+    }
+
+    /** Called by SalesService after a sale to attribute revenue to recent campaigns. */
+    async attributeSale(tenantId: string, customerId: string, amount: number): Promise<void> {
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+        const recipient = await this.db.crmCampaignRecipient.findFirst({
+            where: {
+                customer_id: customerId,
+                status: 'SENT',
+                campaign: {
+                    tenant_id: tenantId,
+                    status: 'COMPLETED',
+                    sent_at: { gte: thirtyDaysAgo },
+                },
+            },
+            orderBy: { sent_at: 'desc' },
+        });
+
+        if (!recipient) return;
+
+        await this.db.crmCampaign.update({
+            where: { id: recipient.campaign_id },
+            data: {
+                attributed_revenue: { increment: amount },
+                attributed_orders: { increment: 1 },
+            },
+        });
+    }
+
+    /** Cron: dispatch SCHEDULED campaigns whose scheduled_at has passed. */
+    @Cron('*/5 * * * *')
+    async processScheduledCampaigns(): Promise<void> {
+        const now = new Date();
+
+        const dueCampaigns = await this.db.crmCampaign.findMany({
+            where: {
+                status: 'SCHEDULED',
+                scheduled_at: { lte: now },
+            },
+        });
+
+        for (const campaign of dueCampaigns) {
+            this.logger.log(`Auto-dispatching scheduled campaign ${campaign.id} (${campaign.name})`);
+            try {
+                await this.send(campaign.tenant_id, campaign.id);
+            } catch (err) {
+                this.logger.error(`Scheduled campaign ${campaign.id} dispatch failed: ${err}`);
+            }
+        }
     }
 
     private async dispatchCampaign(
@@ -152,6 +214,8 @@ export class CrmCampaignsService {
             try {
                 if (channel === 'SMS') {
                     await this.sms.sendSms(customer.phone, message);
+                } else if (channel === 'WHATSAPP') {
+                    await this.whatsapp.sendMessage(customer.phone, message);
                 }
                 await this.db.crmCampaignRecipient.updateMany({
                     where: { campaign_id: campaignId, customer_id: customer.id },

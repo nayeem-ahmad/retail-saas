@@ -6,6 +6,7 @@ import { autoPostFromRules } from '../accounting/posting.utils';
 import { cursorPaginate, CursorPaginatedResult } from '../common/pagination.dto';
 import { EmailService } from '../email/email.service';
 import { SmsService } from '../sms/sms.service';
+import { CrmCampaignsService } from '../crm-campaigns/crm-campaigns.service';
 
 @Injectable()
 export class SalesService {
@@ -15,6 +16,7 @@ export class SalesService {
         private db: DatabaseService,
         private emailService: EmailService,
         private smsService: SmsService,
+        private crmCampaigns: CrmCampaignsService,
     ) { }
 
     async create(tenantId: string, userId: string, dto: CreateSaleDto) {
@@ -168,6 +170,8 @@ export class SalesService {
         // Fire-and-forget receipt email (after transaction commits)
         if (dto.customerId) {
             this.sendReceiptEmail(tenantId, dto.customerId, Number(result.total_amount), result.serial_number);
+            void this.crmCampaigns.attributeSale(tenantId, dto.customerId, Number(result.total_amount))
+                .catch((err) => this.logger.warn(`CRM attribution failed for customer ${dto.customerId}: ${err}`));
         }
 
         return result;

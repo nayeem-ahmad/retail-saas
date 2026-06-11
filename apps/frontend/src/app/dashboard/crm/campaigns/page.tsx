@@ -18,12 +18,14 @@ interface Campaign {
     recipient_count: number;
     delivered_count: number;
     failed_count: number;
+    attributed_revenue: number | null;
+    attributed_orders: number | null;
     created_at: string;
     creator: { name: string | null; email: string } | null;
 }
 
 const SEGMENTS = ['ALL', 'VIP', 'At-Risk', 'Regular', 'New'];
-const CHANNELS = ['SMS', 'EMAIL'];
+const CHANNELS = ['SMS', 'WHATSAPP', 'EMAIL'];
 
 const statusColors: Record<string, string> = {
     DRAFT: 'bg-gray-100 text-gray-600',
@@ -339,6 +341,12 @@ export default function CrmCampaignsPage() {
                                     <div><span className="text-gray-400">Delivered:</span> <span className="font-medium text-emerald-600">{selected.delivered_count}</span></div>
                                     <div><span className="text-gray-400">Failed:</span> <span className={`font-medium ${selected.failed_count > 0 ? 'text-rose-500' : 'text-gray-600'}`}>{selected.failed_count}</span></div>
                                     <div><span className="text-gray-400">Sent at:</span> <span className="font-medium">{selected.sent_at ? formatDate(selected.sent_at) : '—'}</span></div>
+                                    {(selected.attributed_orders ?? 0) > 0 && (
+                                        <>
+                                            <div><span className="text-gray-400">Attributed sales:</span> <span className="font-medium text-violet-600">{selected.attributed_orders}</span></div>
+                                            <div><span className="text-gray-400">Attributed revenue:</span> <span className="font-medium text-violet-600">৳{Number(selected.attributed_revenue ?? 0).toLocaleString()}</span></div>
+                                        </>
+                                    )}
                                 </>
                             )}
                         </div>

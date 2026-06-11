@@ -2,6 +2,7 @@ import { IsString, IsOptional, IsEnum, IsUUID, IsDateString, IsIn } from 'class-
 
 export enum CampaignChannel {
     SMS = 'SMS',
+    WHATSAPP = 'WHATSAPP',
     EMAIL = 'EMAIL',
 }
 
