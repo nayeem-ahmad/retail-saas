@@ -88,6 +88,10 @@ Track all work here. Check off items as they're completed. Add new items as they
 - [x] Write unit tests for 6 frontend pages and 3 components (inventory/page, sales/reports/monthly, accounting/fixed-assets, inventory/reports/valuation, inventory/reports/reorder; NotificationBell, LanguageSwitcher, PostingBadge) — 9 test files, 100+ tests total — done 2026-06-11
 - [x] Write unit tests for purchase-quotations.service.ts (33 tests covering create, findAll, findOne, updateStatus, convertToPurchaseOrder, remove) — done 2026-06-11
 - [x] Write unit tests for jwt-auth.guard.ts and api-key.guard.ts (18 tests covering guard instantiation, strategy delegation, handleRequest paths) — done 2026-06-11
+- [x] Write unit tests for notifications.service.ts (39 tests covering create, listForUser, getUnreadCount, markRead, markAllRead, sendSubscriptionExpiryWarnings, sendLowStockAlerts, sendWeeklyReports, sendMonthlyReports, purgeExpiredData) — done 2026-06-11
+- [x] Write unit tests for admin-tenants.service.ts (33 tests covering listTenants, getTenant, updateSubscription, suspendTenant, impersonateTenant, getMetrics, listUsers, promoteUser, demoteUser) — done 2026-06-11
+- [x] Write unit tests for inventory.service.ts (34 tests: getWarehouses, createWarehouse, updateWarehouse, getSettings/ensureSettings, updateSettings, listReasons, createReason, updateReason, getLedger — full happy + error paths) — done 2026-06-11
+- [x] Write unit tests for assets.service.ts (25 tests: onModuleInit, uploadFile, deleteFile, getOptimisedUrl — both enabled and disabled Cloudinary states) — done 2026-06-11
 - [ ] Add E2E tests for critical paths: signup → onboarding → POS sale → billing
 - [ ] Investigate and clean up backend Jest open handles reported after E2E suite completion
 - [ ] Clean up React `act(...)` warnings in login/signup page tests
