@@ -114,6 +114,27 @@ Track all work here. Check off items as they're completed. Add new items as they
 - [x] Cashbook — cash receipts and payments ledger with running balance — done 2026-05-29
 - [x] Bankbook — bank account receipts and payments ledger with running balance — done 2026-05-29
 
+### Accounting — Mid-Size Features (Tier 1: High Value)
+- [ ] Trial Balance — all accounts with debit/credit totals and closing balance; standard pre-audit report
+- [ ] AR Aging Report — receivables bucketed by 0-30 / 31-60 / 61-90 / 90+ days overdue per customer
+- [ ] AP Aging Report — payables bucketed by 0-30 / 31-60 / 61-90 / 90+ days overdue per supplier
+- [ ] Bank Reconciliation (Statement Import) — CSV/OFX bank statement upload, auto-match against bankbook, flag unmatched rows
+- [ ] Comparative P&L — side-by-side columns: this month / last month / same month last year / YTD
+
+### Accounting — Mid-Size Features (Tier 2: Differentiation)
+- [ ] Budget vs. Actual Report — set annual/monthly budgets per account group; report shows budget, actual, variance (amount + %)
+- [ ] Cost Center / Department Tagging — optional costCenterId dimension on voucher lines; per-branch or per-department P&L
+- [ ] Fixed Asset Register & Depreciation — asset master with purchase date/cost/useful life/method; auto-generate monthly depreciation journals
+- [ ] Recurring Journal Templates — define a journal entry with a schedule; system auto-creates or prompts on due date
+- [ ] VAT / Tax Ledger Report — output VAT collected, input VAT paid, net payable; structured for Bangladesh NBR monthly VAT return
+
+### Accounting — Mid-Size Features (Tier 3: Stickiness & Depth)
+- [ ] Statement of Cash Flows — operating / investing / financing sections with activity classification per account
+- [ ] Financial Ratios Dashboard — Current Ratio, Quick Ratio, Gross Margin %, Operating Margin %, DSO, DPO from existing report data
+- [ ] Fiscal Period Locking — admin can close a month/year to prevent backdated voucher entry
+- [ ] Opening Balance Import — structured UI to enter account opening balances when migrating from another system
+- [ ] Accounting Audit Trail / Change Log — immutable log of every voucher edit, deletion, or COA change with user + timestamp
+
 ### Sales Reports
 - [x] Product-wise sales summary — quantity sold, revenue, and margin per product for a selected period — done 2026-05-29
 - [x] Customer-wise sales summary — total orders, revenue, and average order value per customer for a selected period — done 2026-05-29
