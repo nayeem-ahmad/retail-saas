@@ -37,6 +37,11 @@ const SETTINGS_SCHEMA: Record<string, Record<string, SettingMeta>> = {
         merchant_public_key:  { isSecret: false },
         is_sandbox:           { isSecret: false, default: 'true' },
     },
+    whatsapp: {
+        access_token:    { isSecret: true },
+        phone_number_id: { isSecret: false },
+        api_version:     { isSecret: false, default: 'v18.0' },
+    },
     general: {
         platform_name:    { isSecret: false, default: 'RetailSaaS' },
         support_email:    { isSecret: false, default: 'support@retailsaas.app' },

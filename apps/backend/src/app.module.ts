@@ -54,6 +54,7 @@ import { ManufacturingModule } from './manufacturing/manufacturing.module';
 import { LoyaltyModule } from './loyalty/loyalty.module';
 import { PlatformSettingsModule } from './platform-settings/platform-settings.module';
 import { SmsModule } from './sms/sms.module';
+import { WhatsAppModule } from './whatsapp/whatsapp.module';
 import { DiscountCodesModule } from './discount-codes/discount-codes.module';
 import { EmployeesModule } from './employees/employees.module';
 import { CountersModule } from './counters/counters.module';
@@ -61,6 +62,7 @@ import { AttendanceModule } from './attendance/attendance.module';
 import { BrandsModule } from './brands/brands.module';
 import { CrmInteractionsModule } from './crm-interactions/crm-interactions.module';
 import { CrmTasksModule } from './crm-tasks/crm-tasks.module';
+import { CrmCampaignsModule } from './crm-campaigns/crm-campaigns.module';
 
 @Module({
     imports: [
@@ -73,6 +75,7 @@ import { CrmTasksModule } from './crm-tasks/crm-tasks.module';
         PlatformSettingsModule,
         EmailModule,
         SmsModule,
+        WhatsAppModule,
         AuditModule,
         HealthModule,
         AuthModule,
@@ -123,6 +126,7 @@ import { CrmTasksModule } from './crm-tasks/crm-tasks.module';
         BrandsModule,
         CrmInteractionsModule,
         CrmTasksModule,
+        CrmCampaignsModule,
     ],
     controllers: [],
     providers: [

@@ -236,10 +236,12 @@ Track all work here. Check off items as they're completed. Add new items as they
 - [x] CRM permissions added to shared-types (VIEW_CRM_INTERACTIONS, CREATE_CRM_INTERACTIONS, MANAGE_CRM_TASKS, VIEW_CUSTOMER_CREDIT, MANAGE_CUSTOMER_CREDIT) — done 2026-06-11
 - [x] Customer detail page redesigned with tabs: Purchase History | Interactions | Credit/Due — done 2026-06-11
 - [x] CRM Tasks & Follow-ups sidebar link added under Sales → CRM section — done 2026-06-11
-- [ ] Phase 5 — Campaigns: bulk SMS/WhatsApp to customer segments with ROI tracking
-- [ ] Due aging report frontend page at /dashboard/customers/reports/due-aging
-- [ ] CRM task creation modal on customer detail page
-- [ ] WhatsApp/SMS integration for outbound interactions
+- [x] Phase 5 — Campaigns: `CrmCampaign` + `CrmCampaignRecipient` models; `CrmCampaignsModule` (POST/GET/PATCH/DELETE `/crm/campaigns`, POST `/:id/send`, GET `/:id/preview`); fire-and-forget SMS dispatch; campaigns list + create modal + send modal at `/dashboard/crm/campaigns`; sidebar link — done 2026-06-11
+- [x] Due aging report frontend page at /dashboard/customers/reports/due-aging — summary cards + customer table with 4 buckets — done 2026-06-11
+- [x] CRM task creation modal on customer detail page — Tasks tab with create form, mark-done, type selector — done 2026-06-11
+- [x] WhatsApp/SMS integration for outbound interactions — `WhatsAppService` with Meta Cloud API, graceful no-op without credentials, WHATSAPP channel added to campaigns — done 2026-06-11
+- [x] Campaign scheduling — `@Cron('*/5 * * * *')` in `CrmCampaignsService.processScheduledCampaigns()` auto-dispatches SCHEDULED campaigns once `scheduled_at` passes — done 2026-06-11
+- [x] Campaign ROI tracking — `CrmCampaignsService.attributeSale()` called fire-and-forget from `SalesService.create()`; 30-day attribution window; increments `attributed_revenue` + `attributed_orders` on the campaign; ROI stats shown in campaign detail modal — done 2026-06-11
 
 ---
 
