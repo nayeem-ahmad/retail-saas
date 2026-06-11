@@ -81,6 +81,8 @@ Track all work here. Check off items as they're completed. Add new items as they
 
 ### Testing
 - [ ] Verify 80% coverage threshold is actually met (no coverage reports in repo)
+- [x] Improve backend test coverage by ~10%: added 15 new spec files (employees, purchase-orders, cashier-sessions, loyalty, purchase-quotations, jwt-auth.guard, api-key.guard, notifications, admin-tenants, delivery, inventory, assets, brands, customer-groups, product-groups) — backend statements 49.6%→59.27% (+9.67%), branches 25.74%→40.21% (+14.47%), functions 30.07%→40.15% (+10.08%) — done 2026-06-11
+- [x] Improve frontend test coverage by ~10%: added 25 new test files (attendance, brands, customer-groups, delivery, employees, territories, loyalty, leaves, warranty-claims, cashier-sessions, purchase-quotations, suppliers, sales reports, inventory, settings pages, components) + fixed @/ alias in jest.config.ts — frontend statements 20.91%→34.36% (+13.45%), branches 62.47%→67.62% (+5.15%) — done 2026-06-11
 - [x] Write unit tests for cashier-sessions.service.ts (26 tests, 6 describe blocks covering all 7 public methods) — done 2026-06-11
 - [x] Write unit tests for loyalty.service.ts (36 tests, 8 describe blocks covering all 7 public methods) — done 2026-06-11
 - [x] Fix 2 failing tests in warranty-claims service (TypeScript error: `warrantyClaim` model not recognized in transaction context) — regenerated Prisma client and added warranty-claims.service.spec.ts
