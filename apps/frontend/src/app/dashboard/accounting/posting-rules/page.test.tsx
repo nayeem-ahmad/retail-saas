@@ -79,7 +79,7 @@ describe('PostingRulesPage', () => {
     it('renders the page heading', async () => {
         render(<PostingRulesPage />);
         await waitFor(() => {
-            expect(screen.getByText('Posting Rules')).toBeInTheDocument();
+            expect(screen.getAllByText('Posting Rules').length).toBeGreaterThan(0);
         });
     });
 
@@ -170,7 +170,7 @@ describe('PostingRulesPage', () => {
         render(<PostingRulesPage />);
         await waitFor(() => {
             expect(screen.queryByText('Loading posting rules...')).not.toBeInTheDocument();
-            expect(screen.getByText('Posting Rules')).toBeInTheDocument();
+            expect(screen.getAllByText('Posting Rules').length).toBeGreaterThan(0);
         });
     });
 
@@ -196,6 +196,6 @@ describe('PostingRulesPage', () => {
             expect(screen.queryByText('Loading posting rules...')).not.toBeInTheDocument();
         });
         // Should not crash and should render the table with empty data
-        expect(screen.getByText('Posting Rules')).toBeInTheDocument();
+        expect(screen.getAllByText('Posting Rules').length).toBeGreaterThan(0);
     });
 });

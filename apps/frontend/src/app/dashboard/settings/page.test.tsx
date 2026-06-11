@@ -165,7 +165,7 @@ describe('AccountSettingsPage', () => {
         });
     });
 
-    it('shows password mismatch error when passwords do not match', async () => {
+    it('shows error when current password is empty', async () => {
         render(<AccountSettingsPage />);
         await waitFor(() => {
             expect(screen.getByDisplayValue('Test User')).toBeInTheDocument();
@@ -173,16 +173,17 @@ describe('AccountSettingsPage', () => {
 
         fireEvent.click(screen.getByRole('button', { name: 'Password' }));
 
-        // Use password inputs by placeholder
-        const inputs = screen.getAllByPlaceholderText(/password|characters|repeat/i);
-        fireEvent.change(inputs[0], { target: { value: 'OldPass123' } });
-        fireEvent.change(inputs[1], { target: { value: 'NewPass123' } });
-        fireEvent.change(inputs[2], { target: { value: 'Different456' } });
+        await waitFor(() => {
+            expect(screen.getByRole('button', { name: /change password/i })).toBeInTheDocument();
+        });
 
+        // Submit with no values filled in
         fireEvent.click(screen.getByRole('button', { name: /change password/i }));
 
         await waitFor(() => {
-            expect(screen.getByText('New password and confirmation do not match.')).toBeInTheDocument();
+            expect(
+                screen.getByText('Please enter your current password.'),
+            ).toBeInTheDocument();
         });
     });
 
@@ -194,15 +195,53 @@ describe('AccountSettingsPage', () => {
 
         fireEvent.click(screen.getByRole('button', { name: 'Password' }));
 
-        const inputs = screen.getAllByPlaceholderText(/password|characters|repeat/i);
-        fireEvent.change(inputs[0], { target: { value: 'OldPass123' } });
-        fireEvent.change(inputs[1], { target: { value: 'short' } });
-        fireEvent.change(inputs[2], { target: { value: 'short' } });
+        await waitFor(() => {
+            expect(screen.getByPlaceholderText('Enter current password')).toBeInTheDocument();
+        });
+
+        fireEvent.change(screen.getByPlaceholderText('Enter current password'), {
+            target: { value: 'OldPass123' },
+        });
+        fireEvent.change(screen.getByPlaceholderText('At least 8 characters'), {
+            target: { value: 'short' },
+        });
+        fireEvent.change(screen.getByPlaceholderText('Repeat new password'), {
+            target: { value: 'short' },
+        });
 
         fireEvent.click(screen.getByRole('button', { name: /change password/i }));
 
         await waitFor(() => {
             expect(screen.getByText('New password must be at least 8 characters.')).toBeInTheDocument();
+        });
+    });
+
+    it('shows password mismatch error when passwords do not match', async () => {
+        render(<AccountSettingsPage />);
+        await waitFor(() => {
+            expect(screen.getByDisplayValue('Test User')).toBeInTheDocument();
+        });
+
+        fireEvent.click(screen.getByRole('button', { name: 'Password' }));
+
+        await waitFor(() => {
+            expect(screen.getByPlaceholderText('Enter current password')).toBeInTheDocument();
+        });
+
+        fireEvent.change(screen.getByPlaceholderText('Enter current password'), {
+            target: { value: 'OldPass123' },
+        });
+        fireEvent.change(screen.getByPlaceholderText('At least 8 characters'), {
+            target: { value: 'NewPass123' },
+        });
+        fireEvent.change(screen.getByPlaceholderText('Repeat new password'), {
+            target: { value: 'Different456' },
+        });
+
+        fireEvent.click(screen.getByRole('button', { name: /change password/i }));
+
+        await waitFor(() => {
+            expect(screen.getByText('New password and confirmation do not match.')).toBeInTheDocument();
         });
     });
 
@@ -214,10 +253,19 @@ describe('AccountSettingsPage', () => {
 
         fireEvent.click(screen.getByRole('button', { name: 'Password' }));
 
-        const inputs = screen.getAllByPlaceholderText(/password|characters|repeat/i);
-        fireEvent.change(inputs[0], { target: { value: 'SamePass123' } });
-        fireEvent.change(inputs[1], { target: { value: 'SamePass123' } });
-        fireEvent.change(inputs[2], { target: { value: 'SamePass123' } });
+        await waitFor(() => {
+            expect(screen.getByPlaceholderText('Enter current password')).toBeInTheDocument();
+        });
+
+        fireEvent.change(screen.getByPlaceholderText('Enter current password'), {
+            target: { value: 'SamePass123' },
+        });
+        fireEvent.change(screen.getByPlaceholderText('At least 8 characters'), {
+            target: { value: 'SamePass123' },
+        });
+        fireEvent.change(screen.getByPlaceholderText('Repeat new password'), {
+            target: { value: 'SamePass123' },
+        });
 
         fireEvent.click(screen.getByRole('button', { name: /change password/i }));
 

@@ -25,9 +25,9 @@ jest.mock('next/link', () => ({
 }));
 
 jest.mock('next/navigation', () => ({
-    useRouter: () => ({ push: jest.fn(), back: jest.fn(), replace: jest.fn() }),
+    useRouter: jest.fn(() => ({ push: jest.fn(), back: jest.fn(), replace: jest.fn() })),
     usePathname: () => '/dashboard/sales/test-sale-1',
-    useSearchParams: () => ({ get: jest.fn().mockReturnValue(null) }),
+    useSearchParams: jest.fn(() => ({ get: jest.fn().mockReturnValue(null) })),
     useParams: () => ({ id: 'test-sale-1' }),
 }));
 
@@ -104,7 +104,7 @@ describe('SaleDetailPage', () => {
     it('renders the sale serial number after loading', async () => {
         render(<SaleDetailPage />);
         await waitFor(() => {
-            expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('SALE-001');
+            expect(screen.getAllByRole('heading', { level: 1 })[0]).toHaveTextContent('SALE-001');
         });
     });
 
@@ -118,8 +118,8 @@ describe('SaleDetailPage', () => {
     it('renders the line items section', async () => {
         render(<SaleDetailPage />);
         await waitFor(() => {
-            expect(screen.getByText('Gadget X')).toBeInTheDocument();
-            expect(screen.getByText('GAD-001')).toBeInTheDocument();
+            expect(screen.getAllByText('Gadget X').length).toBeGreaterThan(0);
+            expect(screen.getAllByText('GAD-001').length).toBeGreaterThan(0);
         });
     });
 
@@ -134,7 +134,7 @@ describe('SaleDetailPage', () => {
     it('renders the note section with sale note', async () => {
         render(<SaleDetailPage />);
         await waitFor(() => {
-            expect(screen.getByText('Handle with care')).toBeInTheDocument();
+            expect(screen.getAllByText('Handle with care').length).toBeGreaterThan(0);
         });
     });
 
@@ -174,7 +174,7 @@ describe('SaleDetailPage', () => {
     it('shows summary cards with correct labels', async () => {
         render(<SaleDetailPage />);
         await waitFor(() => {
-            expect(screen.getByText('Total')).toBeInTheDocument();
+            expect(screen.getAllByText('Total').length).toBeGreaterThan(0);
             expect(screen.getByText('Paid')).toBeInTheDocument();
             expect(screen.getByText('Items')).toBeInTheDocument();
         });
@@ -209,8 +209,8 @@ describe('SaleDetailPage', () => {
     it('renders item quantity', async () => {
         render(<SaleDetailPage />);
         await waitFor(() => {
-            // quantity 3
-            expect(screen.getByText('3')).toBeInTheDocument();
+            // quantity 3 appears in multiple places (table and print section)
+            expect(screen.getAllByText('3').length).toBeGreaterThan(0);
         });
     });
 
@@ -230,6 +230,13 @@ describe('SaleDetailPage', () => {
 });
 
 describe('SaleDetailPage - edit mode', () => {
+    const setEditMode = (enabled: boolean) => {
+        const nav = require('next/navigation');
+        nav.useSearchParams.mockReturnValue({
+            get: (k: string) => (k === 'edit' && enabled ? 'true' : null),
+        });
+    };
+
     beforeEach(() => {
         jest.clearAllMocks();
         const api = getApi();
@@ -239,12 +246,11 @@ describe('SaleDetailPage - edit mode', () => {
             { id: 'prod-2', name: 'Widget Z', sku: 'WID-Z', price: '800' },
         ]);
         api.updateSale.mockResolvedValue({});
+        setEditMode(false);
     });
 
     it('shows edit mode banner when ?edit=true', async () => {
-        const { useSearchParams } = require('next/navigation');
-        useSearchParams.mockReturnValue({ get: (k: string) => (k === 'edit' ? 'true' : null) });
-
+        setEditMode(true);
         render(<SaleDetailPage />);
         await waitFor(() => {
             expect(
@@ -254,9 +260,7 @@ describe('SaleDetailPage - edit mode', () => {
     });
 
     it('shows status select in edit mode', async () => {
-        const { useSearchParams } = require('next/navigation');
-        useSearchParams.mockReturnValue({ get: (k: string) => (k === 'edit' ? 'true' : null) });
-
+        setEditMode(true);
         render(<SaleDetailPage />);
         await waitFor(() => {
             expect(screen.getByDisplayValue('COMPLETED')).toBeInTheDocument();
@@ -264,9 +268,7 @@ describe('SaleDetailPage - edit mode', () => {
     });
 
     it('shows Add Payment button in edit mode', async () => {
-        const { useSearchParams } = require('next/navigation');
-        useSearchParams.mockReturnValue({ get: (k: string) => (k === 'edit' ? 'true' : null) });
-
+        setEditMode(true);
         render(<SaleDetailPage />);
         await waitFor(() => {
             expect(screen.getByRole('button', { name: /add payment/i })).toBeInTheDocument();
@@ -274,9 +276,7 @@ describe('SaleDetailPage - edit mode', () => {
     });
 
     it('adds a payment row when Add Payment is clicked', async () => {
-        const { useSearchParams } = require('next/navigation');
-        useSearchParams.mockReturnValue({ get: (k: string) => (k === 'edit' ? 'true' : null) });
-
+        setEditMode(true);
         render(<SaleDetailPage />);
         await waitFor(() => {
             expect(screen.getByRole('button', { name: /add payment/i })).toBeInTheDocument();
@@ -291,9 +291,7 @@ describe('SaleDetailPage - edit mode', () => {
     });
 
     it('shows note textarea in edit mode', async () => {
-        const { useSearchParams } = require('next/navigation');
-        useSearchParams.mockReturnValue({ get: (k: string) => (k === 'edit' ? 'true' : null) });
-
+        setEditMode(true);
         render(<SaleDetailPage />);
         await waitFor(() => {
             expect(screen.getByPlaceholderText(/add a note about this sale/i)).toBeInTheDocument();
@@ -301,9 +299,7 @@ describe('SaleDetailPage - edit mode', () => {
     });
 
     it('shows Save Changes button in edit mode banner', async () => {
-        const { useSearchParams } = require('next/navigation');
-        useSearchParams.mockReturnValue({ get: (k: string) => (k === 'edit' ? 'true' : null) });
-
+        setEditMode(true);
         render(<SaleDetailPage />);
         await waitFor(() => {
             expect(screen.getAllByRole('button', { name: /save changes/i }).length).toBeGreaterThan(0);

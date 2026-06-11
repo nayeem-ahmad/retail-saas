@@ -19,9 +19,9 @@ jest.mock('../../../../lib/format', () => ({
 }));
 
 jest.mock('next/navigation', () => ({
-    useRouter: () => ({ push: jest.fn(), back: jest.fn(), replace: jest.fn() }),
+    useRouter: jest.fn(() => ({ push: jest.fn(), back: jest.fn(), replace: jest.fn() })),
     usePathname: () => '/dashboard/orders/test-order-1',
-    useSearchParams: () => ({ get: jest.fn().mockReturnValue(null) }),
+    useSearchParams: jest.fn(() => ({ get: jest.fn().mockReturnValue(null) })),
     useParams: () => ({ id: 'test-order-1' }),
 }));
 
@@ -87,7 +87,7 @@ describe('OrderDetailsPage', () => {
     it('renders order number after loading', async () => {
         render(<OrderDetailsPage />);
         await waitFor(() => {
-            expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('ORD-001');
+            expect(screen.getAllByRole('heading', { level: 1 })[0]).toHaveTextContent('ORD-001');
         });
     });
 
@@ -101,15 +101,15 @@ describe('OrderDetailsPage', () => {
     it('renders order items table', async () => {
         render(<OrderDetailsPage />);
         await waitFor(() => {
-            expect(screen.getByText('Widget A')).toBeInTheDocument();
+            expect(screen.getAllByText('Widget A').length).toBeGreaterThan(0);
         });
     });
 
     it('renders financial summary cards', async () => {
         render(<OrderDetailsPage />);
         await waitFor(() => {
-            expect(screen.getByText('Total Amount')).toBeInTheDocument();
-            expect(screen.getByText('Amount Due')).toBeInTheDocument();
+            expect(screen.getAllByText('Total Amount').length).toBeGreaterThan(0);
+            expect(screen.getAllByText('Amount Due').length).toBeGreaterThan(0);
             expect(screen.getByText('Payment')).toBeInTheDocument();
         });
     });
@@ -273,11 +273,16 @@ describe('OrderDetailsPage - edit mode', () => {
             { id: 'prod-2', name: 'Widget B', sku: 'WID-002', price: '1500' },
         ]);
         api.updateOrder.mockResolvedValue({});
+
+        const nav = require('next/navigation');
+        nav.useSearchParams.mockReturnValue({ get: jest.fn().mockReturnValue(null) });
     });
 
     it('shows edit mode banner when ?edit=true', async () => {
-        const { useSearchParams } = require('next/navigation');
-        useSearchParams.mockReturnValue({ get: (k: string) => (k === 'edit' ? 'true' : null) });
+        const nav = require('next/navigation');
+        nav.useSearchParams.mockReturnValue({
+            get: (k: string) => (k === 'edit' ? 'true' : null),
+        });
 
         render(<OrderDetailsPage />);
         await waitFor(() => {

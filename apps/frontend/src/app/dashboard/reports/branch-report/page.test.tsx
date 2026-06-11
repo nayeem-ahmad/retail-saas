@@ -258,12 +258,14 @@ describe('BranchReportPage', () => {
         api.getBranchReport.mockResolvedValue(mockReport);
 
         render(<BranchReportPage />);
-        await waitFor(() => screen.getByRole('button', { name: /generate/i }));
+        // Wait for auto-fetch triggered by store selection
+        await waitFor(() => expect(api.getBranchReport).toHaveBeenCalled());
+        api.getBranchReport.mockClear();
 
         fireEvent.click(screen.getByRole('button', { name: /generate/i }));
 
         await waitFor(() => {
-            expect(api.getBranchReport).toHaveBeenCalledTimes(2);
+            expect(api.getBranchReport).toHaveBeenCalledTimes(1);
         });
     });
 

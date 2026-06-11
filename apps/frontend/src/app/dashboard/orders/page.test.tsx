@@ -48,21 +48,11 @@ jest.mock('@/components/data-table', () => ({
 
 jest.mock('./CreateOrderModal', () => ({
     __esModule: true,
-    default: ({ isOpen, onClose, onCreated }: any) =>
+    default: ({ isOpen, onClose, onSuccess }: any) =>
         isOpen ? (
             <div data-testid="create-modal">
                 <button onClick={onClose}>Close Modal</button>
-                <button onClick={() => onCreated({
-                    id: 'ord-new',
-                    order_number: 'ORD-NEW',
-                    status: 'DRAFT',
-                    payment_status: 'UNPAID',
-                    total_amount: '0',
-                    amount_paid: '0',
-                    items: [],
-                    deposits: [],
-                    created_at: new Date().toISOString(),
-                })}>
+                <button onClick={onSuccess}>
                     Create Order
                 </button>
             </div>
@@ -188,13 +178,16 @@ describe('OrdersPage', () => {
         expect(screen.queryByTestId('create-modal')).not.toBeInTheDocument();
     });
 
-    it('adds new order to list when created via modal', async () => {
+    it('reloads orders when modal reports success', async () => {
+        const { api } = require('../../../lib/api');
         render(<OrdersPage />);
         await waitFor(() => screen.getByRole('button', { name: /new order/i }));
         fireEvent.click(screen.getByRole('button', { name: /new order/i }));
+        expect(screen.getByTestId('create-modal')).toBeInTheDocument();
         fireEvent.click(screen.getByRole('button', { name: /create order/i }));
         await waitFor(() => {
-            expect(screen.getByText('ORD-NEW')).toBeInTheDocument();
+            // getOrders called again after success
+            expect(api.getOrders).toHaveBeenCalledTimes(2);
         });
     });
 

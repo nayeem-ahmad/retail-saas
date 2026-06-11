@@ -166,8 +166,8 @@ describe('ConsolidatedReportPage', () => {
 
         await waitFor(() => {
             expect(screen.getByText('Store Breakdown')).toBeInTheDocument();
-            expect(screen.getByText('Main Store')).toBeInTheDocument();
-            expect(screen.getByText('Branch Store')).toBeInTheDocument();
+            expect(screen.getAllByText('Main Store').length).toBeGreaterThan(0);
+            expect(screen.getAllByText('Branch Store').length).toBeGreaterThan(0);
         });
     });
 

@@ -92,7 +92,7 @@ describe('EmployeeDetailPage', () => {
         await waitFor(() => {
             expect(screen.getByText('Jane Smith')).toBeInTheDocument();
         });
-        expect(screen.getByText('EMP-001')).toBeInTheDocument();
+        expect(screen.getAllByText('EMP-001').length).toBeGreaterThan(0);
     });
 
     it('shows "Employee not found" when API returns null', async () => {
@@ -114,8 +114,8 @@ describe('EmployeeDetailPage', () => {
     it('displays department and designation', async () => {
         render(<EmployeeDetailPage />);
         await waitFor(() => {
-            expect(screen.getByText('Sales')).toBeInTheDocument();
-            expect(screen.getByText('Manager')).toBeInTheDocument();
+            expect(screen.getAllByText('Sales').length).toBeGreaterThan(0);
+            expect(screen.getAllByText('Manager').length).toBeGreaterThan(0);
         });
     });
 
@@ -186,7 +186,10 @@ describe('EmployeeDetailPage', () => {
         await waitFor(() => screen.getByRole('button', { name: /save changes/i }));
         fireEvent.click(screen.getByRole('button', { name: /save changes/i }));
         await waitFor(() => {
-            expect(screen.getByText(/failed to update/i) || screen.getByText(/update failed/i)).toBeInTheDocument();
+            // Either 'Failed to update employee.' or the error message from the API
+            const errorEl = screen.queryByText(/failed to update/i) ||
+                screen.queryByText(/update failed/i);
+            expect(errorEl).not.toBeNull();
         });
     });
 
@@ -215,14 +218,15 @@ describe('EmployeeDetailPage', () => {
         render(<EmployeeDetailPage />);
         await waitFor(() => {
             // Link section should appear when no user is linked
-            expect(screen.getByText(/link/i)).toBeInTheDocument();
+            expect(screen.getByPlaceholderText(/paste user id/i)).toBeInTheDocument();
         });
     });
 
-    it('shows status select with ACTIVE option', async () => {
+    it('shows status select with Active option', async () => {
         render(<EmployeeDetailPage />);
         await waitFor(() => {
-            const statusSelect = screen.getByDisplayValue('ACTIVE');
+            // Status select shows "Active" (display text) not "ACTIVE" (value)
+            const statusSelect = screen.getByDisplayValue('Active');
             expect(statusSelect).toBeInTheDocument();
         });
     });

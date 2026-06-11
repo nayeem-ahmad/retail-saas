@@ -47,11 +47,11 @@ jest.mock('@/components/data-table', () => ({
 
 jest.mock('./CreateQuotationModal', () => ({
     __esModule: true,
-    default: ({ isOpen, onClose, onCreated }: any) =>
+    default: ({ isOpen, onClose, onSuccess }: any) =>
         isOpen ? (
             <div data-testid="create-modal">
                 <button onClick={onClose}>Close Modal</button>
-                <button onClick={() => onCreated({ id: 'new-q', quote_number: 'QUO-NEW', status: 'DRAFT', version: 1, items: [], total_amount: '0', created_at: new Date().toISOString() })}>
+                <button onClick={onSuccess}>
                     Create Quote
                 </button>
             </div>
@@ -171,13 +171,17 @@ describe('QuotesPage', () => {
         expect(screen.queryByTestId('create-modal')).not.toBeInTheDocument();
     });
 
-    it('adds new quote to list when created via modal', async () => {
+    it('closes modal and reloads after quote is created', async () => {
+        const { api } = require('../../../lib/api');
         render(<QuotesPage />);
         await waitFor(() => screen.getByRole('button', { name: /new quotation/i }));
         fireEvent.click(screen.getByRole('button', { name: /new quotation/i }));
+        expect(screen.getByTestId('create-modal')).toBeInTheDocument();
+        // Clicking Create Quote triggers onSuccess which calls loadQuotes
         fireEvent.click(screen.getByRole('button', { name: /create quote/i }));
         await waitFor(() => {
-            expect(screen.getByText('QUO-NEW')).toBeInTheDocument();
+            // getQuotations called again on success
+            expect(api.getQuotations).toHaveBeenCalledTimes(2);
         });
     });
 

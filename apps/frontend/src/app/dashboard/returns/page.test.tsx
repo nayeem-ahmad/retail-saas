@@ -47,19 +47,12 @@ jest.mock('@/components/data-table', () => ({
 
 jest.mock('./IssueReturnModal', () => ({
     __esModule: true,
-    default: ({ isOpen, onClose, onCreated }: any) =>
+    default: ({ isOpen, onClose, onSuccess }: any) =>
         isOpen ? (
             <div data-testid="issue-modal">
                 <button onClick={onClose}>Close Modal</button>
-                <button onClick={() => onCreated({
-                    id: 'ret-new',
-                    return_number: 'RET-NEW',
-                    status: 'COMPLETED',
-                    total_refund: '200',
-                    items: [],
-                    created_at: new Date().toISOString(),
-                })}>
-                    Issue Return
+                <button onClick={onSuccess}>
+                    Submit Return
                 </button>
             </div>
         ) : null,
@@ -157,35 +150,38 @@ describe('ReturnsPage', () => {
         });
     });
 
-    it('renders Issue Return button in toolbar', async () => {
+    it('renders Process Return button in toolbar', async () => {
         render(<ReturnsPage />);
         await waitFor(() => {
-            expect(screen.getByRole('button', { name: /issue return/i })).toBeInTheDocument();
+            expect(screen.getByRole('button', { name: /process return/i })).toBeInTheDocument();
         });
     });
 
-    it('opens issue return modal when button is clicked', async () => {
+    it('opens issue return modal when Process Return is clicked', async () => {
         render(<ReturnsPage />);
-        await waitFor(() => screen.getByRole('button', { name: /issue return/i }));
-        fireEvent.click(screen.getByRole('button', { name: /issue return/i }));
+        await waitFor(() => screen.getByRole('button', { name: /process return/i }));
+        fireEvent.click(screen.getByRole('button', { name: /process return/i }));
         expect(screen.getByTestId('issue-modal')).toBeInTheDocument();
     });
 
     it('closes modal when Close is clicked', async () => {
         render(<ReturnsPage />);
-        await waitFor(() => screen.getByRole('button', { name: /issue return/i }));
-        fireEvent.click(screen.getByRole('button', { name: /issue return/i }));
+        await waitFor(() => screen.getByRole('button', { name: /process return/i }));
+        fireEvent.click(screen.getByRole('button', { name: /process return/i }));
         fireEvent.click(screen.getByRole('button', { name: /close modal/i }));
         expect(screen.queryByTestId('issue-modal')).not.toBeInTheDocument();
     });
 
-    it('adds new return to list when created via modal', async () => {
+    it('reloads returns when modal reports success', async () => {
+        const { api } = require('../../../lib/api');
         render(<ReturnsPage />);
-        await waitFor(() => screen.getByRole('button', { name: /issue return/i }));
-        fireEvent.click(screen.getByRole('button', { name: /issue return/i }));
-        fireEvent.click(screen.getByRole('button', { name: /issue return/i, hidden: true }) || screen.getByText('Issue Return'));
+        await waitFor(() => screen.getByRole('button', { name: /process return/i }));
+        fireEvent.click(screen.getByRole('button', { name: /process return/i }));
+        expect(screen.getByTestId('issue-modal')).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: /submit return/i }));
         await waitFor(() => {
-            expect(screen.getByText('RET-NEW')).toBeInTheDocument();
+            // getReturns called again on success
+            expect(api.getReturns).toHaveBeenCalledTimes(2);
         });
     });
 

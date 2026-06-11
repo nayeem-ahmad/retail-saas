@@ -133,7 +133,7 @@ describe('InvoicePage', () => {
     it('shows VAT column header in line items table', async () => {
         render(<InvoicePage />);
         await waitFor(() => {
-            expect(screen.getByText('VAT')).toBeInTheDocument();
+            expect(screen.getAllByText('VAT').length).toBeGreaterThan(0);
         });
     });
 
@@ -240,7 +240,7 @@ describe('InvoicePage', () => {
         });
         render(<InvoicePage />);
         await waitFor(() => {
-            expect(screen.getByText('Walk-in Customer')).toBeInTheDocument();
+            expect(screen.getAllByText('Walk-in Customer').length).toBeGreaterThan(0);
         });
     });
 
