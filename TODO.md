@@ -84,6 +84,9 @@ Track all work here. Check off items as they're completed. Add new items as they
 - [x] Write unit tests for cashier-sessions.service.ts (26 tests, 6 describe blocks covering all 7 public methods) — done 2026-06-11
 - [x] Write unit tests for loyalty.service.ts (36 tests, 8 describe blocks covering all 7 public methods) — done 2026-06-11
 - [x] Fix 2 failing tests in warranty-claims service (TypeScript error: `warrantyClaim` model not recognized in transaction context) — regenerated Prisma client and added warranty-claims.service.spec.ts
+- [x] Write render unit tests for 8 frontend pages (loyalty, settings/discount-codes, settings/loyalty, suppliers, purchase-quotations, leaves, warranty-claims, cashier-sessions) — 3–4 tests per file; API mocked, next/navigation + next/link mocked — done 2026-06-11
+- [x] Write unit tests for purchase-quotations.service.ts (33 tests covering create, findAll, findOne, updateStatus, convertToPurchaseOrder, remove) — done 2026-06-11
+- [x] Write unit tests for jwt-auth.guard.ts and api-key.guard.ts (18 tests covering guard instantiation, strategy delegation, handleRequest paths) — done 2026-06-11
 - [ ] Add E2E tests for critical paths: signup → onboarding → POS sale → billing
 - [ ] Investigate and clean up backend Jest open handles reported after E2E suite completion
 - [ ] Clean up React `act(...)` warnings in login/signup page tests
