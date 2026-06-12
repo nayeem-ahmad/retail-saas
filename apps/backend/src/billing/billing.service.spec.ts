@@ -7,7 +7,7 @@ describe('BillingService', () => {
         subscriptionPlan: { findMany: jest.fn(), findUnique: jest.fn() },
         tenantSubscription: { findUnique: jest.fn(), upsert: jest.fn(), update: jest.fn() },
         tenant: { findUnique: jest.fn() },
-        billingEvent: { findMany: jest.fn(), upsert: jest.fn() },
+        billingEvent: { findMany: jest.fn(), findUnique: jest.fn(), upsert: jest.fn() },
     } as any;
 
     const audit = { log: jest.fn().mockResolvedValue(undefined) } as any;
@@ -75,6 +75,7 @@ describe('BillingService', () => {
             features_json: {},
         });
         db.billingEvent.findMany.mockResolvedValue([]);
+        db.billingEvent.findUnique.mockResolvedValue(null);
         db.billingEvent.upsert.mockResolvedValue({ id: 'event-1' });
         db.tenant.findUnique.mockResolvedValue({ id: 'tenant-1', name: 'Tenant One' });
         db.tenantSubscription.upsert.mockResolvedValue(premiumSubscriptionUpsertResult);
@@ -247,12 +248,79 @@ describe('BillingService', () => {
             planCode: 'PREMIUM',
             status: 'ACTIVE',
             billingCycle: 'YEARLY',
+            externalEventId: 'manual:event-1',
         });
 
         expect(db.tenantSubscription.upsert).toHaveBeenCalledWith(expect.objectContaining({
             update: expect.objectContaining({ status: 'ACTIVE' }),
         }));
+        expect(db.billingEvent.upsert).toHaveBeenCalledWith(expect.objectContaining({
+            create: expect.objectContaining({ event_type: 'MANUAL_WEBHOOK' }),
+        }));
         expect(result).toHaveProperty('subscription');
+    });
+
+    it('ignores duplicate manual webhook events with the same idempotency key', async () => {
+        process.env.BILLING_WEBHOOK_SECRET = 'my-secret';
+        db.billingEvent.findUnique.mockResolvedValueOnce({
+            id: 'event-dup',
+            tenant_id: 'tenant-1',
+            event_type: 'MANUAL_WEBHOOK',
+            status: 'ACTIVE',
+        });
+        db.tenantSubscription.findUnique.mockResolvedValueOnce(premiumSubscriptionUpsertResult);
+
+        const result = await service.handleManualWebhook('my-secret', {
+            tenantId: 'tenant-1',
+            planCode: 'PREMIUM',
+            status: 'ACTIVE',
+            externalEventId: 'manual:event-1',
+        });
+
+        expect(db.tenantSubscription.upsert).not.toHaveBeenCalled();
+        expect(result).toMatchObject({ idempotent_replay: true });
+    });
+
+    it('skips duplicate SSL Wireless IPN callbacks', async () => {
+        db.billingEvent.findUnique.mockResolvedValueOnce({
+            id: 'event-ipn',
+            tenant_id: 'tenant-1',
+            event_type: 'IPN',
+            status: 'VALID',
+        });
+        db.tenantSubscription.findUnique.mockResolvedValueOnce(premiumSubscriptionUpsertResult);
+
+        const result = await service.handleSslWirelessCallback({
+            tran_id: 'sslw_ipn_ref',
+            val_id: 'val-ipn',
+            value_a: 'tenant-1',
+            value_b: 'PREMIUM',
+            value_c: 'MONTHLY',
+        }, 'ipn');
+
+        expect(fetchMock).not.toHaveBeenCalled();
+        expect(db.tenantSubscription.upsert).not.toHaveBeenCalled();
+        expect(result).toMatchObject({ idempotent_replay: true });
+    });
+
+    it('records a refund and optionally downgrades the tenant', async () => {
+        db.tenantSubscription.findUnique.mockResolvedValueOnce({
+            ...premiumSubscriptionUpsertResult,
+            provider_name: 'ssl-wireless',
+        });
+
+        const result = await service.processRefund('user-1', 'tenant-1', {
+            referenceId: 'bank-ref-1',
+            amount: 3999,
+            reason: 'Customer request',
+            downgradeToFree: true,
+            idempotencyKey: 'refund:bank-ref-1',
+        });
+
+        expect(result).toMatchObject({ refunded: true, duplicate: false, downgraded: true });
+        expect(db.billingEvent.upsert).toHaveBeenCalledWith(expect.objectContaining({
+            create: expect.objectContaining({ event_type: 'REFUND', status: 'COMPLETED' }),
+        }));
     });
 
     it('returns billing summary with subscription and available plans', async () => {

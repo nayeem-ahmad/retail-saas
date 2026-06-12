@@ -4,10 +4,12 @@ describe('BillingSchedulerService', () => {
     const db = {
         tenantSubscription: { findMany: jest.fn(), update: jest.fn() },
         subscriptionPlan: { findUnique: jest.fn() },
+        billingEvent: { findFirst: jest.fn(), create: jest.fn() },
     } as any;
 
     const email = {
         sendSubscriptionCancelled: jest.fn().mockResolvedValue(undefined),
+        sendPaymentRetryReminder: jest.fn().mockResolvedValue(undefined),
     } as any;
 
     const audit = {
@@ -45,6 +47,39 @@ describe('BillingSchedulerService', () => {
 
         db.subscriptionPlan.findUnique.mockResolvedValue(freePlan);
         db.tenantSubscription.update.mockResolvedValue({});
+        db.billingEvent.findFirst.mockResolvedValue(null);
+        db.billingEvent.create.mockResolvedValue({ id: 'retry-event-1' });
+    });
+
+    it('sends payment retry reminders for PAST_DUE subscriptions within the grace window', async () => {
+        db.tenantSubscription.findMany.mockResolvedValue([
+            makeSubscription({
+                current_period_end: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+            }),
+        ]);
+
+        await service.retryFailedPayments();
+
+        expect(db.billingEvent.create).toHaveBeenCalledWith(expect.objectContaining({
+            data: expect.objectContaining({ event_type: 'PAYMENT_RETRY_REMINDER' }),
+        }));
+        expect(email.sendPaymentRetryReminder).toHaveBeenCalledWith(
+            'owner@example.com',
+            'Tenant One',
+            3999,
+            'BDT',
+            7,
+        );
+    });
+
+    it('skips payment retry reminders when one was sent in the last 24 hours', async () => {
+        db.tenantSubscription.findMany.mockResolvedValue([makeSubscription()]);
+        db.billingEvent.findFirst.mockResolvedValueOnce({ id: 'recent-reminder' });
+
+        await service.retryFailedPayments();
+
+        expect(db.billingEvent.create).not.toHaveBeenCalled();
+        expect(email.sendPaymentRetryReminder).not.toHaveBeenCalled();
     });
 
     it('cancels overdue PAST_DUE subscriptions and sends cancellation email', async () => {

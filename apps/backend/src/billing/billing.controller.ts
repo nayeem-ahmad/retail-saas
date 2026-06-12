@@ -21,6 +21,7 @@ import {
     ConfirmCheckoutDto,
     CreateCheckoutSessionDto,
     ManualBillingWebhookDto,
+    RefundBillingDto,
 } from './billing.dto';
 
 @Controller('billing')
@@ -62,6 +63,17 @@ export class BillingController {
     @UseInterceptors(TenantInterceptor)
     cancelAtPeriodEnd(@Request() req: any, @Tenant() tenant: TenantContext) {
         return this.billingService.cancelAtPeriodEnd(req.user.userId, tenant.tenantId);
+    }
+
+    @Post('refund')
+    @UseGuards(JwtAuthGuard)
+    @UseInterceptors(TenantInterceptor)
+    processRefund(
+        @Request() req: any,
+        @Tenant() tenant: TenantContext,
+        @Body() dto: RefundBillingDto,
+    ) {
+        return this.billingService.processRefund(req.user.userId, tenant.tenantId, dto);
     }
 
     @Post('webhooks/manual')

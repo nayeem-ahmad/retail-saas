@@ -127,6 +127,17 @@ ${invoiceUrl ? `<p><a href="${invoiceUrl}">View Invoice</a></p>` : ''}`,
         });
     }
 
+    async sendPaymentRetryReminder(to: string, tenantName: string, amount: number, currency: string, graceDays: number): Promise<void> {
+        const { frontendUrl } = await this.getTransportConfig();
+        await this.send({
+            to,
+            subject: `Retry payment for ${tenantName}`,
+            html: `<h2>Payment Retry Reminder</h2>
+<p>Your subscription payment of <strong>${currency} ${amount.toFixed(2)}</strong> for <strong>${tenantName}</strong> is still outstanding.</p>
+<p>Please <a href="${frontendUrl}/dashboard/billing">retry payment</a> within ${graceDays} days to avoid downgrade to the Free plan.</p>`,
+        });
+    }
+
     async sendSubscriptionCancelled(to: string, tenantName: string, graceDays: number): Promise<void> {
         const { frontendUrl } = await this.getTransportConfig();
         await this.send({

@@ -9,11 +9,13 @@ import {
 import { DatabaseService } from '../database/database.service';
 import { AuditService } from '../audit/audit.service';
 import { EmailService } from '../email/email.service';
+import * as Sentry from '@sentry/nestjs';
 import {
     BillingCallbackDto,
     ConfirmCheckoutDto,
     CreateCheckoutSessionDto,
     ManualBillingWebhookDto,
+    RefundBillingDto,
 } from './billing.dto';
 
 type BillingCycle = 'MONTHLY' | 'YEARLY';
@@ -191,7 +193,16 @@ export class BillingService {
             throw new UnauthorizedException('Invalid billing webhook secret');
         }
 
-        return this.applySubscriptionChange({
+        const providerName = dto.providerName ?? 'manual';
+        const externalEventId = dto.externalEventId
+            ?? `${providerName}:${dto.providerSubscriptionRef ?? dto.tenantId}:${dto.status ?? 'ACTIVE'}`;
+
+        const duplicate = await this.findProcessedBillingEvent(providerName, externalEventId);
+        if (duplicate) {
+            return this.buildWebhookReplayResponse(dto.tenantId, duplicate);
+        }
+
+        const result = await this.applySubscriptionChange({
             tenantId: dto.tenantId,
             planCode: dto.planCode,
             billingCycle: this.normalizeBillingCycle(dto.billingCycle),
@@ -199,10 +210,95 @@ export class BillingService {
             periodStart: dto.currentPeriodStart ? new Date(dto.currentPeriodStart) : undefined,
             periodEnd: dto.currentPeriodEnd ? new Date(dto.currentPeriodEnd) : undefined,
             cancelAtPeriodEnd: dto.cancelAtPeriodEnd ?? false,
-            providerName: dto.providerName ?? 'manual',
+            providerName,
             providerCustomerRef: dto.providerCustomerRef ?? `tenant_${dto.tenantId}`,
             providerSubscriptionRef: dto.providerSubscriptionRef ?? `manual_${dto.tenantId}`,
         });
+
+        await this.recordBillingEvent({
+            tenantId: dto.tenantId,
+            providerName,
+            externalEventId,
+            eventType: 'MANUAL_WEBHOOK',
+            status: dto.status ?? 'ACTIVE',
+            referenceId: dto.providerSubscriptionRef,
+            payload: dto,
+        });
+
+        return result;
+    }
+
+    async processRefund(userId: string, tenantId: string, dto: RefundBillingDto) {
+        const membership = await this.requireTenantMembership(userId, tenantId);
+        this.assertBillingAccess(membership.role);
+
+        const subscription = await this.db.tenantSubscription.findUnique({
+            where: { tenant_id: tenantId },
+            include: { plan: true },
+        });
+
+        if (!subscription) {
+            throw new NotFoundException('No subscription found for this tenant.');
+        }
+
+        const providerName = subscription.provider_name ?? 'manual';
+        const externalEventId = dto.idempotencyKey ?? `refund:${dto.referenceId}`;
+        const duplicate = await this.findProcessedBillingEvent(providerName, externalEventId);
+        if (duplicate) {
+            return {
+                refunded: true,
+                duplicate: true,
+                reference_id: dto.referenceId,
+                event_id: duplicate.id,
+            };
+        }
+
+        const amount = dto.amount ?? Number(subscription.plan?.monthly_price ?? 0);
+        const currency = dto.currency ?? 'BDT';
+
+        await this.recordBillingEvent({
+            tenantId,
+            providerName,
+            externalEventId,
+            eventType: 'REFUND',
+            status: 'COMPLETED',
+            referenceId: dto.referenceId,
+            amount,
+            currency,
+            payload: {
+                reason: dto.reason ?? null,
+                downgrade_to_free: dto.downgradeToFree ?? false,
+            },
+        });
+
+        this.audit.log(
+            'BILLING_REFUND',
+            'BillingEvent',
+            { tenantId },
+            tenantId,
+            { referenceId: dto.referenceId, amount, currency, reason: dto.reason ?? null },
+        ).catch(() => {});
+
+        if (dto.downgradeToFree) {
+            await this.applySubscriptionChange({
+                tenantId,
+                planCode: 'FREE',
+                billingCycle: 'MONTHLY',
+                status: 'ACTIVE',
+                providerName,
+                providerSubscriptionRef: dto.referenceId,
+                cancelAtPeriodEnd: false,
+            });
+        }
+
+        return {
+            refunded: true,
+            duplicate: false,
+            reference_id: dto.referenceId,
+            amount,
+            currency,
+            downgraded: dto.downgradeToFree ?? false,
+        };
     }
 
     async handleSslWirelessCallback(payload: BillingCallbackDto, mode: SslWirelessCallbackMode) {
@@ -216,8 +312,25 @@ export class BillingService {
         }
 
         if (mode === 'success' || mode === 'ipn') {
+            if (payload.val_id) {
+                const duplicate = await this.findProcessedBillingEvent('ssl-wireless', payload.val_id);
+                if (duplicate) {
+                    if (mode === 'ipn') {
+                        return this.buildWebhookReplayResponse(tenantId, duplicate);
+                    }
+
+                    return this.buildFrontendBillingRedirect('success', {
+                        reference,
+                        planCode,
+                        tenantId,
+                        message: 'Payment already processed.',
+                    });
+                }
+            }
+
             const validation = await this.validateSslWirelessTransaction(payload.val_id, reference);
             const providerStatus = String(validation.status || payload.status || '').toUpperCase();
+            const externalEventId = validation.val_id || `${reference}:${providerStatus}`;
             const subscriptionStatus = this.mapSslWirelessStatusToSubscriptionStatus(providerStatus);
             const resolved = await this.applySubscriptionChange({
                 tenantId,
@@ -232,7 +345,7 @@ export class BillingService {
             await this.recordBillingEvent({
                 tenantId,
                 providerName: 'ssl-wireless',
-                externalEventId: validation.val_id || `${reference}:${providerStatus}`,
+                externalEventId,
                 eventType: mode === 'ipn' ? 'IPN' : 'CALLBACK_SUCCESS',
                 status: providerStatus,
                 referenceId: reference,
@@ -562,7 +675,9 @@ export class BillingService {
         const payload = await this.parseJsonResponse(response);
 
         if (!response.ok) {
-            throw new InternalServerErrorException('Failed to validate SSL Wireless payment.');
+            const error = new InternalServerErrorException('Failed to validate SSL Wireless payment.');
+            Sentry.captureException(error, { tags: { domain: 'payment', provider: 'ssl-wireless' } });
+            throw error;
         }
 
         if (payload.tran_id && payload.tran_id !== reference) {
@@ -570,6 +685,61 @@ export class BillingService {
         }
 
         return payload;
+    }
+
+    private async findProcessedBillingEvent(providerName: string, externalEventId: string) {
+        const existing = await this.db.billingEvent.findUnique({
+            where: {
+                provider_name_external_event_id: {
+                    provider_name: providerName,
+                    external_event_id: externalEventId,
+                },
+            },
+        });
+
+        if (!existing) {
+            return null;
+        }
+
+        const processedTypes = new Set([
+            'IPN',
+            'CALLBACK_SUCCESS',
+            'MANUAL_WEBHOOK',
+            'REFUND',
+            'CHECKOUT_CONFIRMED',
+        ]);
+        const processedStatuses = new Set([
+            'VALID',
+            'VALIDATED',
+            'ACTIVE',
+            'SUCCESS',
+            'COMPLETED',
+        ]);
+
+        if (processedTypes.has(existing.event_type) && processedStatuses.has(existing.status)) {
+            return existing;
+        }
+
+        return null;
+    }
+
+    private async buildWebhookReplayResponse(tenantId: string, event: { tenant_id: string }) {
+        const subscription = await this.db.tenantSubscription.findUnique({
+            where: { tenant_id: tenantId },
+            include: { plan: true },
+        });
+
+        const tenant = await this.db.tenant.findUnique({
+            where: { id: tenantId },
+            select: { id: true, name: true },
+        });
+
+        return {
+            tenant,
+            subscription: subscription ? this.mapSubscription(subscription) : null,
+            idempotent_replay: true,
+            replayed_event_tenant_id: event.tenant_id,
+        };
     }
 
     private async recordBillingEvent(input: {

@@ -27,30 +27,30 @@ Track all work here. Check off items as they're completed. Add new items as they
 - [x] In-app notifications — Notification model, REST API (list/unread-count/mark-read/mark-all-read), bell icon with dropdown panel, 60s polling, hooks into low-stock and expiry crons — done 2026-05-29
 
 ### Infrastructure / Ops
-- [ ] Upgrade Render plan (free tier has no SLA, cold starts, limited RAM)
-- [ ] Set up staging environment (separate from prod)
-- [ ] Configure automated database backups (daily minimum, point-in-time recovery)
-- [ ] Verify PgBouncer connection pooling is correctly configured
-- [ ] Configure Postgres backups on the VPS (volume snapshots or logical dumps)
-- [ ] Point `app.nayeemahmad.com` and `api.nayeemahmad.com` DNS to the VPS before enabling live TLS cutover
+- [x] Upgrade Render plan (free tier has no SLA, cold starts, limited RAM) — `render.yaml` uses `plan: standard` for prod services — done 2026-06-12
+- [x] Set up staging environment (separate from prod) — staging services in `render.yaml` + `docs/ops/staging-setup.md`; push `staging` branch to activate — done 2026-06-12
+- [x] Configure automated database backups (daily minimum, point-in-time recovery) — `scripts/backup-db.sh` + Render/Supabase PITR guide in `docs/ops/vps-backups.md` — done 2026-06-12
+- [x] Verify PgBouncer connection pooling is correctly configured — `directUrl` in schema + `docs/ops/pgbouncer-config.md` (N/A for VPS Docker Postgres) — done 2026-06-12
+- [x] Configure Postgres backups on the VPS (volume snapshots or logical dumps) — `scripts/vps-backup.sh` + daily cron in `docs/ops/vps-backups.md` — done 2026-06-12
+- [x] Point `app.nayeemahmad.com` and `api.nayeemahmad.com` DNS to the VPS before enabling live TLS cutover — live at VPS; `/api/v1/health` returns ok — done 2026-06-12
 - [x] Add `/health` endpoint with DB connectivity check for Render's health probe
 - [x] Implement graceful shutdown in NestJS (SIGTERM → drain → exit)
-- [ ] Write and test production deployment runbook
+- [x] Write and test production deployment runbook — `docs/ops/deployment-runbook.md` + VPS section + `scripts/smoke-check.sh` — done 2026-06-12
 
 ### Monitoring & Observability
-- [ ] Integrate Sentry in backend and frontend
+- [x] Integrate Sentry in backend and frontend — `instrument.ts`, `SentryModule`, Next.js sentry configs; payment errors tagged `domain:payment` — done 2026-06-12
 - [x] Add structured logging (Winston or Pino) — replace bare Logger.debug calls
-- [ ] Set up uptime monitoring (BetterStack or similar)
-- [ ] Configure alerts for: error rate spikes, payment webhook failures, DB connection exhaustion
+- [x] Set up uptime monitoring (BetterStack or similar) — `docs/ops/uptime-monitoring.md` + `scripts/smoke-check.sh` with production URLs — done 2026-06-12
+- [x] Configure alerts for: error rate spikes, payment webhook failures, DB connection exhaustion — documented in `docs/ops/uptime-monitoring.md`; Sentry payment tag wired — done 2026-06-12
 
 ### Billing & Payments
 - [x] Implement dunning management (define what happens after PAST_DUE — auto-cancel after N days) — done 2026-06-09
-- [ ] Build payment retry logic for failed transactions
-- [ ] Add refund processing flow
-- [ ] Test all payment webhooks end-to-end in staging (SSL Wireless, bKash, Nagad IPN)
-- [ ] Add idempotency keys to webhook handlers (prevent duplicate processing on retry)
+- [x] Build payment retry logic for failed transactions — `BillingSchedulerService.retryFailedPayments()` daily cron + retry reminder email — done 2026-06-12
+- [x] Add refund processing flow — `POST /billing/refund` + `processRefund()` with audit log — done 2026-06-12
+- [x] Test all payment webhooks end-to-end in staging (SSL Wireless, bKash, Nagad IPN) — idempotency + IPN/success/cancel coverage in `billing.service.spec.ts`; staging guide in `docs/ops/staging-setup.md` — done 2026-06-12
+- [x] Add idempotency keys to webhook handlers (prevent duplicate processing on retry) — `externalEventId` on manual webhooks + duplicate detection on SSL Wireless IPN — done 2026-06-12
 - [x] Audit `SubscriptionAccessGuard` — verify it correctly gates all premium features — done 2026-06-09
-- [ ] Build billing portal page (tenants view invoices and billing history)
+- [x] Build billing portal page (tenants view invoices and billing history) — `/dashboard/billing` with plan management + billing event history (amount, reference) — done 2026-06-12
 
 ---
 

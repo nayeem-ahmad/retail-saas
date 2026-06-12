@@ -104,3 +104,28 @@ curl -X POST https://api.yourdomain.com/auth/login \
 # 4. Check Render metrics — CPU/memory normal
 # 5. Check uptime monitor (BetterStack) — all checks green
 ```
+
+---
+
+## VPS Deploy (`app.nayeemahmad.com`)
+
+Production also runs on the VPS at `66.116.236.127` via Caddy + `docker-compose.prod.yml`.
+
+```bash
+ssh root@66.116.236.127
+cd /opt/retail-saas
+git pull origin main
+docker compose --env-file .env.production -f docker-compose.prod.yml run --rm backend sh -lc \
+  'npx prisma db push --schema=packages/database/prisma/schema.prisma --skip-generate'
+docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build
+```
+
+Post-deploy verification:
+
+```bash
+./scripts/smoke-check.sh
+docker compose --env-file .env.production -f docker-compose.prod.yml ps
+docker compose --env-file .env.production -f docker-compose.prod.yml logs --tail=50 backend
+```
+
+See also: `docs/ops/vps-deployment.md`, `docs/ops/vps-backups.md`.

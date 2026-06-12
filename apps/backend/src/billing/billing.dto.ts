@@ -32,4 +32,17 @@ export class ManualBillingWebhookDto {
     providerName?: string;
     providerCustomerRef?: string;
     providerSubscriptionRef?: string;
+    /** Idempotency key — duplicate webhooks with the same key are ignored. */
+    externalEventId?: string;
+}
+
+export class RefundBillingDto {
+    referenceId!: string;
+    amount?: number;
+    currency?: string;
+    reason?: string;
+    /** When true, downgrade the tenant to FREE after recording the refund. */
+    downgradeToFree?: boolean;
+    /** Idempotency key for duplicate-safe refund processing. */
+    idempotencyKey?: string;
 }

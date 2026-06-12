@@ -18,6 +18,71 @@ export class BillingSchedulerService {
         private readonly audit: AuditService,
     ) {}
 
+    // Run daily at 08:00 — remind PAST_DUE tenants to retry payment before dunning cancels them
+    @Cron('0 8 * * *')
+    async retryFailedPayments(): Promise<void> {
+        const graceCutoff = new Date();
+        graceCutoff.setDate(graceCutoff.getDate() - this.graceDays);
+
+        const retryCandidates = await this.db.tenantSubscription.findMany({
+            where: {
+                status: 'PAST_DUE',
+                current_period_end: { gte: graceCutoff },
+            },
+            include: {
+                tenant: { include: { owner: true } },
+                plan: true,
+            },
+        });
+
+        for (const sub of retryCandidates) {
+            try {
+                const recentReminder = await this.db.billingEvent.findFirst({
+                    where: {
+                        tenant_id: sub.tenant_id,
+                        event_type: 'PAYMENT_RETRY_REMINDER',
+                        created_at: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+                    },
+                });
+
+                if (recentReminder) {
+                    continue;
+                }
+
+                const amount = Number(sub.plan?.monthly_price ?? 0);
+                const ownerEmail = sub.tenant?.owner?.email;
+
+                await this.db.billingEvent.create({
+                    data: {
+                        tenant_id: sub.tenant_id,
+                        provider_name: sub.provider_name ?? 'manual',
+                        external_event_id: `retry:${sub.tenant_id}:${new Date().toISOString().slice(0, 10)}`,
+                        event_type: 'PAYMENT_RETRY_REMINDER',
+                        status: 'SENT',
+                        reference_id: sub.provider_subscription_ref,
+                        amount,
+                        currency: 'BDT',
+                        payload: { grace_days: this.graceDays },
+                    },
+                });
+
+                if (ownerEmail && amount > 0) {
+                    await this.email.sendPaymentRetryReminder(
+                        ownerEmail,
+                        sub.tenant.name,
+                        amount,
+                        'BDT',
+                        this.graceDays,
+                    );
+                }
+
+                this.logger.log(`Payment retry reminder sent for tenant ${sub.tenant_id}`);
+            } catch (err) {
+                this.logger.error(`Payment retry reminder failed for tenant ${sub.tenant_id}: ${err}`);
+            }
+        }
+    }
+
     // Run daily at 09:00 — cancel subscriptions that have been PAST_DUE beyond the grace period
     @Cron('0 9 * * *')
     async performDunning(): Promise<void> {

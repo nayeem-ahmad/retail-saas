@@ -39,6 +39,9 @@ type BillingSummary = {
         id: string;
         event_type: string;
         status: string;
+        amount?: number | null;
+        currency?: string | null;
+        reference_id?: string | null;
         created_at: string;
     }>;
 };
@@ -356,7 +359,13 @@ function BillingPageContent() {
                                                     <span className="font-black text-gray-900">{event.event_type}</span>
                                                     <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">{event.status}</span>
                                                 </div>
-                                                <p className="mt-1 text-xs text-gray-500">{new Date(event.created_at).toLocaleString()}</p>
+                                                <p className="mt-1 text-xs text-gray-500">
+                                                    {formatDate(event.created_at)}
+                                                    {event.amount != null && event.currency
+                                                        ? ` · ${formatBDT(event.amount)}`
+                                                        : ''}
+                                                    {event.reference_id ? ` · ${event.reference_id}` : ''}
+                                                </p>
                                             </div>
                                         ))}
                                     </div>
