@@ -36,7 +36,8 @@ function SignupPageContent() {
     const searchParams = useSearchParams();
     const postAuthPath = (() => {
         const redirect = searchParams.get('redirect');
-        return redirect && redirect.startsWith('/') ? redirect : '/dashboard';
+        if (redirect && redirect.startsWith('/')) return redirect;
+        return '/dashboard/onboarding';
     })();
     const [plans, setPlans] = useState<Plan[]>([]);
     const [form, setForm] = useState({

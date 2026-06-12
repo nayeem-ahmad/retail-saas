@@ -830,6 +830,12 @@ export const api = {
         if (!res.ok) throw new Error(body?.message || 'Failed to load plans');
         return body && 'data' in body ? body.data : body;
     }),
+    setupTenant: (data: { tenantName: string; name: string; address?: string; planCode?: string }) =>
+        fetchWithAuth('/auth/setup-tenant', {
+            method: 'POST',
+            body: JSON.stringify(data),
+            headers: { 'Content-Type': 'application/json' },
+        }),
     getBillingSummary: () => fetchWithAuth('/billing/summary'),
     createBillingCheckoutSession: (data: any) => fetchWithAuth('/billing/checkout-session', {
         method: 'POST',

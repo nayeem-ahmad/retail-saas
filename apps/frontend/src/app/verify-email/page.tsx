@@ -78,10 +78,10 @@ function VerifyEmailContent() {
                                 </p>
                             </div>
                             <Link
-                                href="/dashboard"
+                                href="/dashboard/onboarding"
                                 className="mt-2 inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-xl shadow-lg shadow-blue-200 transition-all group"
                             >
-                                Continue to dashboard
+                                Continue to setup
                                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                             </Link>
                         </div>
@@ -99,10 +99,10 @@ function VerifyEmailContent() {
                                 </p>
                             </div>
                             <Link
-                                href="/dashboard"
+                                href="/dashboard/onboarding"
                                 className="mt-2 inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-xl shadow-lg shadow-blue-200 transition-all group"
                             >
-                                Go to dashboard
+                                Continue to setup
                                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                             </Link>
                         </div>

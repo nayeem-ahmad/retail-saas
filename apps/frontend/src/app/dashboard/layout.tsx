@@ -40,6 +40,15 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         if (!done && pathname === '/dashboard') setShowOnboardingBanner(true);
     }, [pathname]);
 
+    useEffect(() => {
+        if (!hasResolvedUser) return;
+        const done = localStorage.getItem('onboarding_complete');
+        if (done) return;
+        if (pathname === '/dashboard') {
+            router.replace('/dashboard/onboarding');
+        }
+    }, [hasResolvedUser, pathname, router]);
+
     const isDashboardHome = pathname === '/dashboard';
     const activeTenantId = globalThis.window === undefined ? null : localStorage.getItem('tenant_id');
     const activeTenant = user?.tenants?.find((tenant: any) => tenant.id === activeTenantId) || user?.tenants?.[0];

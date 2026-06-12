@@ -20,8 +20,9 @@ test.describe('Critical launch path', () => {
         await expect(page).toHaveURL(/verify-email/, { timeout: 15_000 });
         await expect(page.getByText(/check your inbox/i)).toBeVisible();
 
-        await page.getByRole('link', { name: /continue to dashboard/i }).click();
-        await expect(page).toHaveURL(/dashboard/, { timeout: 15_000 });
+        await page.getByRole('link', { name: /continue to setup/i }).click();
+        await expect(page).toHaveURL(/dashboard\/onboarding/, { timeout: 15_000 });
+        await expect(page.getByText(/welcome to retailsaas|get your store/i).first()).toBeVisible();
 
         await page.goto('/dashboard/billing');
         await expect(page.getByText(/billing|subscription|plan/i).first()).toBeVisible({ timeout: 10_000 });
