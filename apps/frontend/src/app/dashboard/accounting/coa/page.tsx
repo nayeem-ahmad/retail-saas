@@ -5,6 +5,9 @@ import { ArrowLeft, BookOpen, FolderTree, Landmark, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { createColumnHelper, type ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table';
+import { ContextualHelpPanel } from '@/components/ContextualHelpPanel';
+import { HelpTooltip } from '@/components/HelpTooltip';
+import { COA_FIELD_HELP, COA_HELP } from '@/lib/help/contextual-help';
 import { api } from '../../../../lib/api';
 
 type AccountType = 'asset' | 'liability' | 'equity' | 'revenue' | 'expense';
@@ -139,7 +142,10 @@ export default function ChartOfAccountsPage() {
                 <div className="flex items-start justify-between gap-4 flex-wrap">
                     <div>
                         <p className="text-xs font-black uppercase tracking-[0.24em] text-gray-400">Story 30.2</p>
-                        <h1 className="text-3xl font-black tracking-tight">Chart of Accounts</h1>
+                        <h1 className="text-3xl font-black tracking-tight inline-flex items-center gap-2">
+                            Chart of Accounts
+                            <HelpTooltip text={COA_FIELD_HELP.page} wide />
+                        </h1>
                         <p className="text-sm text-gray-500 mt-2 max-w-3xl">
                             Define tenant-specific account groups, subgroups, and accounts so every financial workflow posts into a clean chart structure.
                         </p>
@@ -150,16 +156,18 @@ export default function ChartOfAccountsPage() {
                     </div>
                 </div>
 
+                <ContextualHelpPanel {...COA_HELP} />
+
                 <div className="grid gap-4 xl:grid-cols-3">
-                    <InlineFormCard icon={<FolderTree className="w-5 h-5" />} title="New Group" subtitle="Create top-level financial groups">
+                    <InlineFormCard icon={<FolderTree className="w-5 h-5" />} title="New Group" subtitle="Create top-level financial groups" helpText={COA_FIELD_HELP.group}>
                         <AccountGroupForm onSuccess={refreshAll} />
                     </InlineFormCard>
 
-                    <InlineFormCard icon={<BookOpen className="w-5 h-5" />} title="New Subgroup" subtitle="Attach subgroups beneath a selected group">
+                    <InlineFormCard icon={<BookOpen className="w-5 h-5" />} title="New Subgroup" subtitle="Attach subgroups beneath a selected group" helpText={COA_FIELD_HELP.subgroup}>
                         <AccountSubgroupForm groups={groups} onSuccess={refreshAll} />
                     </InlineFormCard>
 
-                    <InlineFormCard icon={<Landmark className="w-5 h-5" />} title="New Account" subtitle="Create posting accounts with type and category">
+                    <InlineFormCard icon={<Landmark className="w-5 h-5" />} title="New Account" subtitle="Create posting accounts with type and category" helpText={COA_FIELD_HELP.account}>
                         <AccountForm groups={groups} subgroups={subgroups} onSuccess={refreshAll} />
                     </InlineFormCard>
                 </div>
@@ -173,8 +181,8 @@ export default function ChartOfAccountsPage() {
                             </div>
                             <div className="flex gap-3 flex-wrap">
                                 <FilterSelect label="Filter by group" value={groupFilter} onChange={setGroupFilter} options={groups.map((group) => ({ value: group.id, label: group.name }))} />
-                                <FilterSelect label="Filter by type" value={typeFilter} onChange={setTypeFilter} options={ACCOUNT_TYPES.map((type) => ({ value: type, label: type }))} />
-                                <FilterSelect label="Filter by category" value={categoryFilter} onChange={setCategoryFilter} options={ACCOUNT_CATEGORIES.map((category) => ({ value: category, label: category }))} />
+                                <FilterSelect label="Filter by type" value={typeFilter} onChange={setTypeFilter} options={ACCOUNT_TYPES.map((type) => ({ value: type, label: type }))} helpText={COA_FIELD_HELP.accountType} />
+                                <FilterSelect label="Filter by category" value={categoryFilter} onChange={setCategoryFilter} options={ACCOUNT_CATEGORIES.map((category) => ({ value: category, label: category }))} helpText={COA_FIELD_HELP.accountCategory} />
                             </div>
                         </div>
 
@@ -218,13 +226,16 @@ export default function ChartOfAccountsPage() {
     );
 }
 
-function InlineFormCard({ icon, title, subtitle, children }: { icon: React.ReactNode; title: string; subtitle: string; children: React.ReactNode }) {
+function InlineFormCard({ icon, title, subtitle, helpText, children }: { icon: React.ReactNode; title: string; subtitle: string; helpText?: string; children: React.ReactNode }) {
     return (
         <section className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
             <div className="flex items-start gap-3 mb-5">
                 <div className="rounded-2xl border border-gray-200 bg-gray-50 p-3 text-gray-700">{icon}</div>
                 <div>
-                    <h2 className="text-lg font-black tracking-tight">{title}</h2>
+                    <h2 className="text-lg font-black tracking-tight inline-flex items-center gap-2">
+                        {title}
+                        {helpText ? <HelpTooltip text={helpText} side="right" /> : null}
+                    </h2>
                     <p className="text-sm text-gray-500">{subtitle}</p>
                 </div>
             </div>
@@ -233,17 +244,20 @@ function InlineFormCard({ icon, title, subtitle, children }: { icon: React.React
     );
 }
 
-function FilterSelect({ label, value, onChange, options }: { label: string; value: string; onChange: (value: string) => void; options: { value: string; label: string }[] }) {
+function FilterSelect({ label, value, onChange, options, helpText }: { label: string; value: string; onChange: (value: string) => void; options: { value: string; label: string }[]; helpText?: string }) {
     return (
-        <label className="text-xs font-bold uppercase tracking-widest text-gray-400 space-y-1 block">
-            <span>{label}</span>
+        <div className="text-xs font-bold uppercase tracking-widest text-gray-400 space-y-1">
+            <span className="inline-flex items-center gap-1.5">
+                {label}
+                {helpText ? <HelpTooltip text={helpText} side="top" /> : null}
+            </span>
             <select aria-label={label} value={value} onChange={(event) => onChange(event.target.value)} className="block min-w-[180px] rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-bold text-gray-700">
                 <option value="">All</option>
                 {options.map((option) => (
                     <option key={option.value} value={option.value}>{option.label}</option>
                 ))}
             </select>
-        </label>
+        </div>
     );
 }
 

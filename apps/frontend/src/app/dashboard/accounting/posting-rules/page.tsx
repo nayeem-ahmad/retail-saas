@@ -5,6 +5,9 @@ import { ArrowLeft, CheckCircle, Edit2, Settings, XCircle } from 'lucide-react';
 import Link from 'next/link';
 import { createColumnHelper } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table';
+import { ContextualHelpPanel } from '@/components/ContextualHelpPanel';
+import { HelpTooltip } from '@/components/HelpTooltip';
+import { POSTING_RULES_FIELD_HELP, POSTING_RULES_HELP } from '@/lib/help/contextual-help';
 import { api } from '../../../../lib/api';
 
 const EVENT_TYPE_LABELS: Record<string, string> = {
@@ -251,7 +254,10 @@ export default function PostingRulesPage() {
                                 <Settings className="h-5 w-5" />
                             </div>
                             <div>
-                                <h1 className="text-2xl font-black tracking-tight text-gray-950">Posting Rules</h1>
+                                <h1 className="text-2xl font-black tracking-tight text-gray-950 inline-flex items-center gap-2">
+                                    Posting Rules
+                                    <HelpTooltip text={POSTING_RULES_FIELD_HELP.page} wide />
+                                </h1>
                                 <p className="text-sm text-gray-500 mt-0.5">
                                     Configure how operational events automatically create accounting vouchers.
                                 </p>
@@ -259,6 +265,8 @@ export default function PostingRulesPage() {
                         </div>
                     </div>
                 </div>
+
+                <ContextualHelpPanel {...POSTING_RULES_HELP} />
 
                 {/* Filters */}
                 <div className="flex flex-wrap gap-3">
@@ -324,7 +332,10 @@ export default function PostingRulesPage() {
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Debit Account <span className="text-red-500">*</span>
+                                        <span className="inline-flex items-center gap-1.5">
+                                            Debit Account <span className="text-red-500">*</span>
+                                            <HelpTooltip text={POSTING_RULES_FIELD_HELP.debit} side="right" />
+                                        </span>
                                     </label>
                                     <select
                                         value={form.debitAccountId}
@@ -341,7 +352,10 @@ export default function PostingRulesPage() {
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Credit Account <span className="text-red-500">*</span>
+                                        <span className="inline-flex items-center gap-1.5">
+                                            Credit Account <span className="text-red-500">*</span>
+                                            <HelpTooltip text={POSTING_RULES_FIELD_HELP.credit} side="right" />
+                                        </span>
                                     </label>
                                     <select
                                         value={form.creditAccountId}
@@ -360,7 +374,12 @@ export default function PostingRulesPage() {
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        <span className="inline-flex items-center gap-1.5">
+                                            Priority
+                                            <HelpTooltip text={POSTING_RULES_FIELD_HELP.priority} side="right" />
+                                        </span>
+                                    </label>
                                     <input
                                         type="number"
                                         min={1}
@@ -378,7 +397,10 @@ export default function PostingRulesPage() {
                                             onChange={(e) => setForm((f) => ({ ...f, isActive: e.target.checked }))}
                                             className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                                         />
-                                        <span className="text-sm font-medium text-gray-700">Active</span>
+                                        <span className="text-sm font-medium text-gray-700 inline-flex items-center gap-1.5">
+                                            Active
+                                            <HelpTooltip text={POSTING_RULES_FIELD_HELP.active} side="right" />
+                                        </span>
                                     </label>
                                     <p className="text-xs text-gray-400 mt-1 ml-6">Inactive rules are skipped</p>
                                 </div>

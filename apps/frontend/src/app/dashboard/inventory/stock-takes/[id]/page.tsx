@@ -3,6 +3,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { CheckCircle2, Save } from 'lucide-react';
+import { ContextualHelpPanel } from '@/components/ContextualHelpPanel';
+import { HelpTooltip } from '@/components/HelpTooltip';
+import { STOCK_TAKES_FIELD_HELP, STOCK_TAKE_DETAIL_HELP } from '@/lib/help/contextual-help';
 import { api } from '../../../../../lib/api';
 import { formatBDT } from '../../../../../lib/format';
 
@@ -107,7 +110,10 @@ export default function StockTakeDetailPage() {
             <div className="max-w-[1300px] mx-auto space-y-6">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-black tracking-tight">Stock Take {session.session_number}</h1>
+                        <h1 className="text-2xl font-black tracking-tight inline-flex items-center gap-2">
+                            Stock Take {session.session_number}
+                            <HelpTooltip text={STOCK_TAKES_FIELD_HELP.page} wide />
+                        </h1>
                         <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mt-0.5">
                             {session.warehouse?.name} • {session.status} • {discrepancyCount} discrepant lines
                         </p>
@@ -125,12 +131,18 @@ export default function StockTakeDetailPage() {
                             </button>
                         ) : null}
                         <button disabled={!canPost} onClick={() => void handlePost()} className="bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 text-white px-4 py-2.5 rounded-xl font-bold text-sm flex items-center shadow-lg shadow-emerald-200 disabled:shadow-none">
-                            <CheckCircle2 className="w-4 h-4 mr-2" /> Post Session
+                            <CheckCircle2 className="w-4 h-4 mr-2" />
+                            <span className="inline-flex items-center gap-1.5">
+                                Post Session
+                                <HelpTooltip text={STOCK_TAKES_FIELD_HELP.post} side="left" />
+                            </span>
                         </button>
                     </div>
                 </div>
 
                 {message ? <div className="bg-white border border-gray-100 rounded-xl px-4 py-3 text-sm font-bold text-gray-700">{message}</div> : null}
+
+                <ContextualHelpPanel {...STOCK_TAKE_DETAIL_HELP} />
 
                 <div className="grid md:grid-cols-4 gap-4">
                     <div className="bg-white border border-gray-100 rounded-2xl p-4">
@@ -168,8 +180,8 @@ export default function StockTakeDetailPage() {
                                     <div className="text-xs text-gray-500">Expected {line.expected_quantity}</div>
                                 </div>
                                 <div className="text-sm font-bold text-gray-700">Expected {line.expected_quantity}</div>
-                                <input type="number" min="0" value={values.countedQuantity} onChange={(event) => setDraftCounts((current) => ({ ...current, [line.product_id]: { ...values, countedQuantity: event.target.value } }))} className="w-full bg-white border border-gray-200 rounded-xl py-2.5 px-4 text-sm font-medium" placeholder="Counted" />
-                                <select value={values.reasonId} onChange={(event) => setDraftCounts((current) => ({ ...current, [line.product_id]: { ...values, reasonId: event.target.value } }))} className="w-full bg-white border border-gray-200 rounded-xl py-2.5 px-4 text-sm font-medium">
+                                <input type="number" min="0" value={values.countedQuantity} onChange={(event) => setDraftCounts((current) => ({ ...current, [line.product_id]: { ...values, countedQuantity: event.target.value } }))} className="w-full bg-white border border-gray-200 rounded-xl py-2.5 px-4 text-sm font-medium" placeholder="Counted" title={STOCK_TAKES_FIELD_HELP.countedQuantity} />
+                                <select value={values.reasonId} onChange={(event) => setDraftCounts((current) => ({ ...current, [line.product_id]: { ...values, reasonId: event.target.value } }))} className="w-full bg-white border border-gray-200 rounded-xl py-2.5 px-4 text-sm font-medium" title={STOCK_TAKES_FIELD_HELP.reason}>
                                     <option value="">No reason</option>
                                     {reasons.map((reason) => <option key={reason.id} value={reason.id}>{reason.label}</option>)}
                                 </select>

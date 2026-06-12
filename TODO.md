@@ -120,7 +120,7 @@ Track all work here. Check off items as they're completed. Add new items as they
 - [x] Build real marketing/landing page — `apps/frontend/src/app/page.tsx` with hero preview, how-it-works, modules, 4-tier pricing preview, shared marketing components — done 2026-06-12
 - [x] Pricing page with feature comparison table across all 4 tiers — `apps/frontend/src/app/pricing/page.tsx` + `src/lib/marketing/plans.ts` aligned with seed prices — done 2026-06-12
 - [x] Onboarding wizard for new tenants (add store → add products → first sale) — `apps/frontend/src/app/dashboard/onboarding/page.tsx` with i18n, sale detection, auto-redirect — done 2026-06-12
-- [ ] In-app contextual help / tooltips for complex features (COA, posting rules, stock takes)
+- [x] In-app contextual help / tooltips for complex features (COA, posting rules, stock takes) — `ContextualHelpPanel`, enhanced `HelpTooltip`, `lib/help/contextual-help.ts` — done 2026-06-12
 - [ ] Demo/sandbox account for prospects to try before subscribing
 - [ ] Video walkthroughs or screenshot tours of key workflows
 
