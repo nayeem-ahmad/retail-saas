@@ -126,7 +126,7 @@ export default function TeamSettingsPage() {
 
         setUpdatingUserId(member.user_id);
         try {
-            await api.updateMemberRole(member.user_id, role);
+            await api.updateMemberRole(member.user_id, { role });
             setMembers((prev) => prev.map((row) => (
                 row.user_id === member.user_id ? { ...row, role } : row
             )));

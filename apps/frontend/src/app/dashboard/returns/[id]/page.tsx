@@ -240,7 +240,7 @@ function ReturnDetailPageContent() {
                 {isEditMode ? (
                     <div className="grid grid-cols-3 gap-4">
                         <div className="bg-white p-4 rounded-2xl shadow-sm">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1">{t.returns.detail.originalReceipt ?? t.shared.columns.originalReceipt}</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1">{t.returns.columns.originalReceipt}</span>
                             <span className="text-sm font-black text-gray-900">{ret.sale?.serial_number || '-'}</span>
                         </div>
                         <div className="bg-white p-4 rounded-2xl shadow-sm">
@@ -260,7 +260,7 @@ function ReturnDetailPageContent() {
                 ) : (
                     <div className="grid grid-cols-4 gap-4">
                         <div className="bg-white p-4 rounded-2xl shadow-sm">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1">{t.returns.detail.originalReceipt ?? t.shared.columns.originalReceipt}</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1">{t.returns.columns.originalReceipt}</span>
                             <span className="text-sm font-black text-gray-900">{ret.sale?.serial_number || '-'}</span>
                         </div>
                         <div className="bg-white p-4 rounded-2xl shadow-sm">
@@ -283,7 +283,7 @@ function ReturnDetailPageContent() {
                 {/* Print-ready content (hidden on screen) */}
                 <div ref={printRef} className="hidden">
                     <h1>{ret.return_number}</h1>
-                    <div className="subtitle">Date: {new Date(ret.created_at).toLocaleString()} | {t.returns.detail.originalReceipt ?? t.shared.columns.originalReceipt}: {ret.sale?.serial_number || '-'}</div>
+                    <div className="subtitle">Date: {new Date(ret.created_at).toLocaleString()} | {t.returns.columns.originalReceipt}: {ret.sale?.serial_number || '-'}</div>
                     <table>
                         <thead>
                             <tr>
@@ -302,7 +302,7 @@ function ReturnDetailPageContent() {
                             ))}
                             <tr className="total-row">
                                 <td colSpan={2}>{t.returns.detail.totalRefund}</td>
-                                <td>{formatBDT(parseFloat(ret.total_refund, { locale }))}</td>
+                                <td>{formatBDT(parseFloat(ret.total_refund), { locale })}</td>
                             </tr>
                         </tbody>
                     </table>
@@ -408,14 +408,14 @@ function ReturnDetailPageContent() {
                                             </div>
                                         </td>
                                         <td className="p-4 text-center text-sm font-black">{item.quantity}</td>
-                                        <td className="p-4 text-right text-sm font-black text-rose-600">{formatBDT(parseFloat(item.refund_amount, { locale }))}</td>
+                                        <td className="p-4 text-right text-sm font-black text-rose-600">{formatBDT(parseFloat(item.refund_amount), { locale })}</td>
                                     </tr>
                                 ))}
                             </tbody>
                             <tfoot>
                                 <tr className="border-t-2 border-gray-200">
                                     <td colSpan={2} className="p-4 text-right text-sm font-black uppercase tracking-widest">{t.returns.detail.totalRefund}</td>
-                                    <td className="p-4 text-right text-xl font-black text-rose-600">{formatBDT(parseFloat(ret.total_refund, { locale }))}</td>
+                                    <td className="p-4 text-right text-xl font-black text-rose-600">{formatBDT(parseFloat(ret.total_refund), { locale })}</td>
                                 </tr>
                             </tfoot>
                         </table>

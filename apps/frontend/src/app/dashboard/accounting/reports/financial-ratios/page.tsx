@@ -35,6 +35,7 @@ function RatioCard({ label, value, description, format, healthyCondition }: {
     format?: 'number' | 'pct' | 'days' | 'bdt';
     healthyCondition?: (v: number) => boolean;
 }) {
+    const { locale } = useI18n();
     const isHealthy = value !== null && healthyCondition ? healthyCondition(value) : null;
     const formattedValue = value === null ? 'N/A' :
         format === 'pct' ? `${value.toFixed(1)}%` :
@@ -107,19 +108,19 @@ export default function FinancialRatiosPage() {
                 ) : data ? (
                     <div className="space-y-6">
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                            <RatioCard label={t.reports.financialRatios.currentRatio} value={data.ratios.current_ratio} description={t.reports.financialRatios.currentRatioDesc} format="number" healthyCondition={(v) => v >= 1} />
-                            <RatioCard label={t.reports.financialRatios.grossMargin} value={data.ratios.gross_margin_pct} description={t.reports.financialRatios.grossMarginDesc} format="pct" healthyCondition={(v) => v >= 0} />
-                            <RatioCard label={t.reports.financialRatios.netProfitMargin} value={data.ratios.net_profit_margin_pct} description={t.reports.financialRatios.grossMarginDesc} format="pct" healthyCondition={(v) => v >= 0} />
-                            <RatioCard label={t.reports.financialRatios.dso} value={data.ratios.dso_days} description={t.reports.financialRatios.dsoDesc} format="days" healthyCondition={(v) => v <= 45} />
-                            <RatioCard label={t.reports.financialRatios.dpo} value={data.ratios.dpo_days} description={t.reports.financialRatios.dpoDesc} format="days" healthyCondition={(v) => v <= 60} />
+                            <RatioCard label={t.accounting.reports.financialRatios.currentRatio} value={data.ratios.current_ratio} description={t.accounting.reports.financialRatios.currentRatioDesc} format="number" healthyCondition={(v) => v >= 1} />
+                            <RatioCard label={t.accounting.reports.financialRatios.grossMargin} value={data.ratios.gross_margin_pct} description={t.accounting.reports.financialRatios.grossMarginDesc} format="pct" healthyCondition={(v) => v >= 0} />
+                            <RatioCard label={t.accounting.reports.financialRatios.netProfitMargin} value={data.ratios.net_profit_margin_pct} description={t.accounting.reports.financialRatios.grossMarginDesc} format="pct" healthyCondition={(v) => v >= 0} />
+                            <RatioCard label={t.accounting.reports.financialRatios.dso} value={data.ratios.dso_days} description={t.accounting.reports.financialRatios.dsoDesc} format="days" healthyCondition={(v) => v <= 45} />
+                            <RatioCard label={t.accounting.reports.financialRatios.dpo} value={data.ratios.dpo_days} description={t.accounting.reports.financialRatios.dpoDesc} format="days" healthyCondition={(v) => v <= 60} />
                         </div>
                         <div className="bg-white border border-gray-100 rounded-2xl p-6">
                             <p className="text-xs font-black uppercase tracking-widest text-gray-400 mb-4">Summary</p>
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-                                <div><p className="text-gray-400 text-xs">{t.reports.revenue}</p><p className="font-bold">{formatBDT(data.ratios.revenue, { locale })}</p></div>
-                                <div><p className="text-gray-400 text-xs">{t.reports.financialRatios.totalExpenses}</p><p className="font-bold">{formatBDT(data.ratios.total_expenses, { locale })}</p></div>
-                                <div><p className="text-gray-400 text-xs">{t.reports.netProfit}</p><p className={`font-bold ${data.ratios.net_profit >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>{formatBDT(data.ratios.net_profit, { locale })}</p></div>
-                                <div><p className="text-gray-400 text-xs">{t.reports.financialRatios.totalAssets}</p><p className="font-bold">{formatBDT(data.ratios.total_assets, { locale })}</p></div>
+                                <div><p className="text-gray-400 text-xs">{t.accounting.reports.revenue}</p><p className="font-bold">{formatBDT(data.ratios.revenue, { locale })}</p></div>
+                                <div><p className="text-gray-400 text-xs">{t.accounting.reports.financialRatios.totalExpenses}</p><p className="font-bold">{formatBDT(data.ratios.total_expenses, { locale })}</p></div>
+                                <div><p className="text-gray-400 text-xs">{t.accounting.reports.netProfit}</p><p className={`font-bold ${data.ratios.net_profit >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>{formatBDT(data.ratios.net_profit, { locale })}</p></div>
+                                <div><p className="text-gray-400 text-xs">{t.accounting.reports.financialRatios.totalAssets}</p><p className="font-bold">{formatBDT(data.ratios.total_assets, { locale })}</p></div>
                                 <div><p className="text-gray-400 text-xs">Total Liabilities</p><p className="font-bold">{formatBDT(data.ratios.total_liabilities, { locale })}</p></div>
                             </div>
                         </div>

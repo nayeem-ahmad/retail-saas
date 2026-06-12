@@ -30,6 +30,7 @@ interface BSData {
 }
 
 function BSSection({ groups, label, colorClass }: { groups: Group[]; label: string; colorClass: string }) {
+    const { locale } = useI18n();
     return (
         <div>
             <div className={`px-4 py-2 rounded-xl font-black text-xs uppercase tracking-widest ${colorClass} mb-2`}>
@@ -111,7 +112,7 @@ export default function BalanceSheetPage() {
 
                         <div className="grid md:grid-cols-2 gap-4">
                             <div className="bg-white border border-gray-100 rounded-2xl p-6 space-y-4">
-                                <BSSection groups={data.assets.groups} label={t.reports.assets} colorClass="bg-sky-50 text-sky-700" />
+                                <BSSection groups={data.assets.groups} label={t.accounting.reports.assets} colorClass="bg-sky-50 text-sky-700" />
                                 <div className="flex justify-between items-center px-4 py-3 bg-sky-50 rounded-xl font-black text-sm text-sky-800 border border-sky-100">
                                     <span>Total Assets</span>
                                     <span>{formatBDT(data.assets.total, { locale })}</span>
@@ -120,7 +121,7 @@ export default function BalanceSheetPage() {
 
                             <div className="space-y-4">
                                 <div className="bg-white border border-gray-100 rounded-2xl p-6 space-y-4">
-                                    <BSSection groups={data.liabilities.groups} label={t.reports.liabilities} colorClass="bg-rose-50 text-rose-700" />
+                                    <BSSection groups={data.liabilities.groups} label={t.accounting.reports.liabilities} colorClass="bg-rose-50 text-rose-700" />
                                     <div className="flex justify-between items-center px-4 py-3 bg-rose-50 rounded-xl font-black text-sm text-rose-800 border border-rose-100">
                                         <span>Total Liabilities</span>
                                         <span>{formatBDT(data.liabilities.total, { locale })}</span>
@@ -128,7 +129,7 @@ export default function BalanceSheetPage() {
                                 </div>
 
                                 <div className="bg-white border border-gray-100 rounded-2xl p-6 space-y-4">
-                                    <BSSection groups={data.equity.groups} label={t.reports.equity} colorClass="bg-violet-50 text-violet-700" />
+                                    <BSSection groups={data.equity.groups} label={t.accounting.reports.equity} colorClass="bg-violet-50 text-violet-700" />
                                     <div className="flex justify-between items-center px-6 py-1.5 text-sm text-gray-600">
                                         <span>Current Period Net Profit</span>
                                         <span className={data.equity.net_profit >= 0 ? 'text-emerald-700 font-bold' : 'text-red-600 font-bold'}>

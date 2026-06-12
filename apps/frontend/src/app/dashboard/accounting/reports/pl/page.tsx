@@ -79,7 +79,7 @@ export default function ProfitLossPage() {
             const result = await api.getProfitLoss({ from: fromDate || undefined, to: toDate || undefined });
             setData(result);
         } catch (err: any) {
-            setError(err?.message ?? t.reports.loadFailed);
+            setError(err?.message ?? t.accounting.reports.loadFailed);
         } finally {
             setLoading(false);
         }
@@ -91,9 +91,9 @@ export default function ProfitLossPage() {
         <div className="overflow-y-auto h-full bg-[#f3f4f6] p-6 font-sans text-gray-900">
             <div className="max-w-[900px] mx-auto space-y-6">
                 <div>
-                    <h1 className="text-2xl font-black tracking-tight">{t.reports.pl.title}</h1>
+                    <h1 className="text-2xl font-black tracking-tight">{t.accounting.reports.pl.title}</h1>
                     <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mt-0.5">
-                        {t.reports.pl.subtitle}
+                        {t.accounting.reports.pl.subtitle}
                     </p>
                 </div>
 
@@ -123,24 +123,24 @@ export default function ProfitLossPage() {
                             <p className="text-sm font-bold text-gray-700 mt-1">{data.filters.from} — {data.filters.to}</p>
                         </div>
 
-                        <AccountSection groups={data.revenue.groups} label={t.reports.revenue} colorClass="bg-emerald-50 text-emerald-700" locale={locale} />
+                        <AccountSection groups={data.revenue.groups} label={t.accounting.reports.revenue} colorClass="bg-emerald-50 text-emerald-700" locale={locale} />
 
                         <div className="flex justify-between items-center px-4 py-3 bg-emerald-50 rounded-xl font-black text-sm text-emerald-800 border border-emerald-100">
-                            <span>{t.reports.totalRevenue}</span>
+                            <span>{t.accounting.reports.totalRevenue}</span>
                             <span>{formatBDT(data.revenue.total, { locale })}</span>
                         </div>
 
-                        <AccountSection groups={data.expenses.groups} label={t.reports.expenses} colorClass="bg-rose-50 text-rose-700" locale={locale} />
+                        <AccountSection groups={data.expenses.groups} label={t.accounting.reports.expenses} colorClass="bg-rose-50 text-rose-700" locale={locale} />
 
                         <div className="flex justify-between items-center px-4 py-3 bg-rose-50 rounded-xl font-black text-sm text-rose-800 border border-rose-100">
-                            <span>{t.reports.totalExpenses}</span>
+                            <span>{t.accounting.reports.totalExpenses}</span>
                             <span>{formatBDT(data.expenses.total, { locale })}</span>
                         </div>
 
                         <div className={`flex justify-between items-center px-5 py-4 rounded-2xl font-black text-base border ${isProfit ? 'bg-blue-50 text-blue-800 border-blue-200' : 'bg-red-50 text-red-800 border-red-200'}`}>
                             <div className="flex items-center gap-2">
                                 <TrendingUp className="w-5 h-5" />
-                                <span>{isProfit ? t.reports.netProfit : t.reports.netLoss}</span>
+                                <span>{isProfit ? t.accounting.reports.netProfit : t.accounting.reports.netLoss}</span>
                             </div>
                             <span>{formatBDT(Math.abs(data.net_profit), { locale })}</span>
                         </div>

@@ -338,7 +338,7 @@ export default function InvoicePage() {
                                     {sale.payments.map((p, i) => (
                                         <div key={i} className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5 text-xs">
                                             <span className="font-semibold text-gray-700">{p.payment_method.replace(/_/g, ' ')}</span>
-                                            <span className="text-gray-500 ml-2">{formatBDT(parseFloat(p.amount, { locale }))}</span>
+                                            <span className="text-gray-500 ml-2">{formatBDT(parseFloat(p.amount), { locale })}</span>
                                         </div>
                                     ))}
                                 </div>

@@ -207,7 +207,7 @@ export default function FixedAssetsPage() {
                                         <td className="px-4 py-3 text-gray-500">{new Date(a.purchase_date).toLocaleDateString()}</td>
                                         <td className="px-4 py-3">{formatBDT(Number(a.cost), { locale })}</td>
                                         <td className="px-4 py-3 text-rose-600">{formatBDT(Number(a.accumulated_depreciation), { locale })}</td>
-                                        <td className="px-4 py-3 font-bold">{formatBDT(Number(a.cost), { locale } - Number(a.accumulated_depreciation))}</td>
+                                        <td className="px-4 py-3 font-bold">{formatBDT(Number(a.cost) - Number(a.accumulated_depreciation), { locale })}</td>
                                         <td className="px-4 py-3 text-xs text-gray-400">{a.depreciation_method === 'STRAIGHT_LINE' ? 'SL' : 'DB'}</td>
                                     </tr>
                                 ))}

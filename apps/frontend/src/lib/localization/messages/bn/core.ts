@@ -93,6 +93,8 @@ export const coreMessages = {
             selectAll: "সব নির্বাচন",
             noResults: "কোনো ফলাফল পাওয়া যায়নি",
             showingRange: "{start}–{end} এর মধ্যে {total} দেখানো হচ্ছে",
+            prevPage: "পূর্ববর্তী",
+            nextPage: "পরবর্তী",
             dataTable: {
                 searchPlaceholder: "অনুসন্ধান...",
                 filters: "ফিল্টার",

@@ -33,6 +33,7 @@ interface Props {
 }
 
 export default function CreatePurchaseQuotationModal({ isOpen, onClose, onSuccess }: Props) {
+    const { t, locale } = useI18n();
     const [products, setProducts] = useState<Product[]>([]);
     const [suppliers, setSuppliers] = useState<Supplier[]>([]);
     const [items, setItems] = useState<DraftItem[]>([]);

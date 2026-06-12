@@ -93,6 +93,8 @@ export const coreMessages = {
         selectAll: 'Select all',
         noResults: 'No results found',
         showingRange: 'Showing {start}–{end} of {total}',
+        prevPage: 'Previous',
+        nextPage: 'Next',
         dataTable: {
             searchPlaceholder: 'Search...',
             filters: 'Filters',

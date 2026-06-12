@@ -90,17 +90,17 @@ export default function BankbookPage() {
         }),
         columnHelper.accessor('account_name', { header: 'Bank Account', size: 180 }),
         columnHelper.accessor('receipts', {
-            header: t.reports.bankbook.deposits,
+            header: t.accounting.reports.bankbook.deposits,
             cell: (info) => info.getValue() > 0 ? <span className="text-emerald-700 font-bold">{formatBDT(Number(info.getValue()), { locale })}</span> : <span className="text-gray-300">—</span>,
             size: 130,
         }),
         columnHelper.accessor('payments', {
-            header: t.reports.bankbook.withdrawals,
+            header: t.accounting.reports.bankbook.withdrawals,
             cell: (info) => info.getValue() > 0 ? <span className="text-rose-600 font-bold">{formatBDT(Number(info.getValue()), { locale })}</span> : <span className="text-gray-300">—</span>,
             size: 130,
         }),
         columnHelper.accessor('running_balance', {
-            header: t.reports.cashbook.balance,
+            header: t.accounting.reports.cashbook.balance,
             cell: (info) => (
                 <span className="font-black text-blue-700">
                     {formatBDT(Number(info.getValue()), { locale })}

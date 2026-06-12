@@ -93,6 +93,8 @@ export const coreMessages = {
             selectAll: "Pilih semua",
             noResults: "Tiada hasil dijumpai",
             showingRange: "Menunjukkan {start}–{end} daripada {total}",
+            prevPage: "Sebelumnya",
+            nextPage: "Seterusnya",
             dataTable: {
                 searchPlaceholder: "Cari...",
                 filters: "Penapis",

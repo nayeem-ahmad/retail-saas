@@ -90,17 +90,17 @@ export default function CashbookPage() {
         }),
         columnHelper.accessor('account_name', { header: t.accountingShared.account, size: 160 }),
         columnHelper.accessor('receipts', {
-            header: t.reports.cashbook.receipts,
+            header: t.accounting.reports.cashbook.receipts,
             cell: (info) => info.getValue() > 0 ? <span className="text-emerald-700 font-bold">{formatBDT(Number(info.getValue()), { locale })}</span> : <span className="text-gray-300">—</span>,
             size: 130,
         }),
         columnHelper.accessor('payments', {
-            header: t.reports.cashbook.payments,
+            header: t.accounting.reports.cashbook.payments,
             cell: (info) => info.getValue() > 0 ? <span className="text-rose-600 font-bold">{formatBDT(Number(info.getValue()), { locale })}</span> : <span className="text-gray-300">—</span>,
             size: 130,
         }),
         columnHelper.accessor('running_balance', {
-            header: t.reports.cashbook.balance,
+            header: t.accounting.reports.cashbook.balance,
             cell: (info) => (
                 <span className="font-black text-blue-700">
                     {formatBDT(Number(info.getValue()), { locale })}

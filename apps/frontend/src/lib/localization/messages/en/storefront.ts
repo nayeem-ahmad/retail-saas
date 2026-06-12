@@ -180,7 +180,6 @@ export const storefrontMessages = {
             signingIn: 'Signing in…',
             signingUp: 'Creating account…',
             passwordMismatch: 'Passwords do not match',
-            password: 'Password',
             signUpPageTitle: 'Create an account',
             signUpPageSubtitle: 'Track your orders and save your details',
             createAccountButton: 'Create Account',

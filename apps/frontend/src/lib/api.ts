@@ -1149,14 +1149,8 @@ export const api = {
     matchBankEntry: (data: any) =>
         fetchWithAuth('/accounting/bank-reconciliations/match-entry', { method: 'POST', body: JSON.stringify(data) }),
     getBankReconciliationReport: (id: string) => fetchWithAuth(`/accounting/bank-reconciliations/${id}/report`),
-    // Team invitations
-    getTeamMembers: () => fetchWithAuth('/invitations/members'),
+    // Team invitations (settings flow)
     getPendingInvitations: () => fetchWithAuth('/invitations/pending'),
-    updateMemberRole: (userId: string, role: string) => fetchWithAuth(`/invitations/members/${userId}/role`, {
-        method: 'PATCH',
-        body: JSON.stringify({ role }),
-        headers: { 'Content-Type': 'application/json' },
-    }),
     sendInvitation: (data: { email: string; role: string }) => fetchWithAuth('/invitations/send', {
         method: 'POST',
         body: JSON.stringify(data),

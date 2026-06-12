@@ -24,6 +24,7 @@ interface CashFlowData {
 }
 
 function ActivitySection({ label, data, colorClass }: { label: string; data: { activities: Activity[]; net: number }; colorClass: string }) {
+    const { locale } = useI18n();
     return (
         <div>
             <div className={`px-4 py-2 rounded-xl font-black text-xs uppercase tracking-widest ${colorClass} mb-2`}>{label}</div>
@@ -88,9 +89,9 @@ export default function CashFlowPage() {
                             <p className="text-xs font-black uppercase tracking-widest text-gray-400">Period</p>
                             <p className="text-sm font-bold text-gray-700 mt-1">{data.filters.from} — {data.filters.to}</p>
                         </div>
-                        <ActivitySection label={t.reports.cashFlow.operating} data={data.operating} colorClass="bg-blue-50 text-blue-700" />
-                        <ActivitySection label={t.reports.cashFlow.investing} data={data.investing} colorClass="bg-purple-50 text-purple-700" />
-                        <ActivitySection label={t.reports.cashFlow.financing} data={data.financing} colorClass="bg-orange-50 text-orange-700" />
+                        <ActivitySection label={t.accounting.reports.cashFlow.operating} data={data.operating} colorClass="bg-blue-50 text-blue-700" />
+                        <ActivitySection label={t.accounting.reports.cashFlow.investing} data={data.investing} colorClass="bg-purple-50 text-purple-700" />
+                        <ActivitySection label={t.accounting.reports.cashFlow.financing} data={data.financing} colorClass="bg-orange-50 text-orange-700" />
                         <div className="border-t border-gray-200 pt-4 space-y-2">
                             <div className="flex justify-between text-sm text-gray-600">
                                 <span>Opening Cash Balance</span>

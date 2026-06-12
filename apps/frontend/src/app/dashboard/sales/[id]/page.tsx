@@ -444,7 +444,7 @@ function SaleDetailPageContent() {
                         <strong>{t.shared.print.payments}</strong>
                         <ul>
                             {sale.payments?.map((p: any, i: number) => (
-                                <li key={i}>{p.payment_method}: {formatBDT(parseFloat(p.amount, { locale }))}</li>
+                                <li key={i}>{p.payment_method}: {formatBDT(parseFloat(p.amount), { locale })}</li>
                             ))}
                         </ul>
                     </div>

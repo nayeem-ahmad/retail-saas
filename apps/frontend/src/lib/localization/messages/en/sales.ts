@@ -95,6 +95,7 @@ export const salesMessages = {
             product: 'Product',
             sku: 'SKU',
             qty: 'Qty',
+            price: 'Price',
             unitPrice: 'Unit Price',
             subtotal: 'Subtotal',
             originalReceipt: 'Original Receipt',
