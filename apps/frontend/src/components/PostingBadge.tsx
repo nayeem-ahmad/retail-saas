@@ -1,3 +1,5 @@
+'use client';
+
 import { BookOpen, CheckCircle, Clock, SkipForward, XCircle } from 'lucide-react';
 
 const POSTING_STATUS_CONFIG: Record<string, {

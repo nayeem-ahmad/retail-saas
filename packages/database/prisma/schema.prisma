@@ -333,6 +333,8 @@ model Tenant {
   crmTasks            CrmTask[]
   customerCreditTransactions CustomerCreditTransaction[]
   crmCampaigns        CrmCampaign[]
+  expenseCategories ExpenseCategory[]
+  expenseEntries    ExpenseEntry[]
 }
 
 model TenantUser {
@@ -374,6 +376,7 @@ model Store {
   fundTransfersDestination FundTransfer[] @relation("FundTransferDestinationStore")
   warrantyClaims  WarrantyClaim[]
   posCounters     PosCounter[]
+  expenseEntries  ExpenseEntry[]
 }
 
 model PosCounter {
@@ -2219,4 +2222,35 @@ model PlatformSetting {
 
   @@unique([group, key])
   @@map("platform_settings")
+}
+
+model ExpenseCategory {
+  id          String   @id @default(uuid())
+  tenant_id   String
+  name        String
+  description String?
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+  tenant      Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  entries     ExpenseEntry[]
+  @@unique([tenant_id, name])
+  @@index([tenant_id])
+}
+
+model ExpenseEntry {
+  id             String   @id @default(uuid())
+  tenant_id      String
+  store_id       String?
+  category_id    String
+  amount         Decimal  @db.Decimal(12, 2)
+  expense_date   DateTime @db.Date
+  description    String?
+  payment_method String   @default("CASH")
+  created_by     String?
+  created_at     DateTime @default(now())
+  tenant         Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  category       ExpenseCategory @relation(fields: [category_id], references: [id])
+  store          Store?   @relation(fields: [store_id], references: [id])
+  @@index([tenant_id, expense_date])
+  @@index([tenant_id, category_id])
 }

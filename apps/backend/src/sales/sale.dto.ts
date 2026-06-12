@@ -20,6 +20,10 @@ export class CreateSaleDto {
     items: CreateSaleItemDto[];
     payments?: CreatePaymentDto[];
     note?: string;
+    /** Optional promo/discount code amount already applied on the client */
+    discountAmount?: number;
+    /** Loyalty points the customer wants to redeem on this sale */
+    pointsToRedeem?: number;
 }
 
 export class UpdateSaleItemDto {

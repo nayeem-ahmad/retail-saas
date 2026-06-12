@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ShoppingCart, Search, Package, Trash2, Plus, Minus, CreditCard, ChevronRight, Store, X, Banknote, CheckCircle, AlertCircle, XCircle, Printer, WifiOff, RefreshCw, LayoutGrid, List } from 'lucide-react';
+import { ShoppingCart, Search, Package, Trash2, Plus, Minus, CreditCard, ChevronRight, Store, X, Banknote, CheckCircle, AlertCircle, XCircle, Printer, WifiOff, RefreshCw, LayoutGrid, List, Gift, User } from 'lucide-react';
 import { HelpTooltip } from '@/components/HelpTooltip';
 import { api } from '../../../lib/api';
 import { printPOSReceipt } from '../../../lib/pos-receipt-printer';
@@ -10,6 +10,32 @@ import { useOfflineSync } from '@/hooks/useOfflineSync';
 import { savePendingSale, cacheProducts, getCachedProducts } from '@/lib/pos-db';
 
 type Notification = { id: string; type: 'success' | 'error' | 'info'; message: string };
+
+function computeLoyaltyRedemption(
+    settings: { loyalty_min_redeem?: number | null; loyalty_redeem_rate?: string | number | null } | null,
+    availablePoints: number,
+    pointsToRedeem: number,
+    payableTotal: number,
+): { loyaltyDiscount: number; pointsRedeemed: number } {
+    if (!settings?.loyalty_redeem_rate || pointsToRedeem <= 0) {
+        return { loyaltyDiscount: 0, pointsRedeemed: 0 };
+    }
+
+    const minRedeem = settings.loyalty_min_redeem ?? 0;
+    const requested = Math.min(pointsToRedeem, availablePoints);
+    if (requested < minRedeem) {
+        return { loyaltyDiscount: 0, pointsRedeemed: 0 };
+    }
+
+    const redeemRate = Number(settings.loyalty_redeem_rate);
+    const rawDiscount = requested * redeemRate;
+    const loyaltyDiscount = Math.min(rawDiscount, payableTotal);
+    const pointsRedeemed = loyaltyDiscount < rawDiscount
+        ? Math.ceil(loyaltyDiscount / redeemRate)
+        : requested;
+
+    return { loyaltyDiscount, pointsRedeemed };
+}
 
 // Generate a UUID v4 (browser-native or fallback)
 function generateId(): string {
@@ -42,6 +68,13 @@ export default function POSPage() {
     const [appliedDiscount, setAppliedDiscount] = useState<{ code: string; name: string; amount: number } | null>(null);
     const [discountError, setDiscountError] = useState('');
     const [discountApplying, setDiscountApplying] = useState(false);
+
+    const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
+    const [customerSearch, setCustomerSearch] = useState('');
+    const [customerResults, setCustomerResults] = useState<any[]>([]);
+    const [loyaltySettings, setLoyaltySettings] = useState<any>(null);
+    const [redeemPointsEnabled, setRedeemPointsEnabled] = useState(false);
+    const [pointsToRedeem, setPointsToRedeem] = useState(0);
 
     const { isOnline, pendingCount, isSyncing, syncNow, refreshPendingCount } = useOfflineSync();
 
@@ -216,10 +249,23 @@ export default function POSPage() {
     };
 
     const subtotal = cart.reduce((sum, item) => sum + (parseFloat(item.price) * item.quantity), 0);
-    const tax = subtotal * 0.1; // 10% tax mock
-    const totalBeforeDiscount = subtotal + tax;
     const discountAmount = appliedDiscount?.amount ?? 0;
-    const total = Math.max(0, totalBeforeDiscount - discountAmount);
+    const preLoyaltyTotal = Math.max(0, subtotal - discountAmount);
+
+    const loyaltyRedemption = (() => {
+        if (!selectedCustomer || !redeemPointsEnabled || !loyaltySettings?.loyalty_points_enabled) {
+            return { loyaltyDiscount: 0, pointsRedeemed: 0 };
+        }
+        return computeLoyaltyRedemption(
+            loyaltySettings,
+            selectedCustomer.loyalty_points ?? 0,
+            pointsToRedeem || 0,
+            preLoyaltyTotal,
+        );
+    })();
+    const { loyaltyDiscount, pointsRedeemed: loyaltyPointsRedeemed } = loyaltyRedemption;
+
+    const total = Math.max(0, preLoyaltyTotal - loyaltyDiscount);
 
     const totalPaid = (cashAmount || 0) + (bkashAmount || 0) + (cardAmount || 0);
     const changeDue = Math.max(0, totalPaid - total);
@@ -229,10 +275,10 @@ export default function POSPage() {
         setDiscountApplying(true);
         setDiscountError('');
         try {
-            const result = await api.validateDiscountCode(discountCodeInput.trim(), totalBeforeDiscount);
+            const result = await api.validateDiscountCode(discountCodeInput.trim(), subtotal);
             const data = result?.data ?? result;
             setAppliedDiscount({ code: data.code, name: data.name, amount: data.discount_amount });
-            setCashAmount(Math.max(0, totalBeforeDiscount - data.discount_amount));
+            setCashAmount(Math.max(0, subtotal - data.discount_amount));
         } catch (err: any) {
             setDiscountError(err?.message ?? 'Invalid discount code');
             setAppliedDiscount(null);
@@ -248,7 +294,36 @@ export default function POSPage() {
         setCashAmount(total);
     };
 
-    const handleCheckoutClick = () => {
+    const searchCustomers = async (query: string) => {
+        setCustomerSearch(query);
+        if (query.trim().length < 2) {
+            setCustomerResults([]);
+            return;
+        }
+        try {
+            const data = await api.getCustomers({ search: query.trim(), limit: 8 });
+            const items = Array.isArray(data) ? data : (data?.items ?? []);
+            setCustomerResults(items);
+        } catch {
+            setCustomerResults([]);
+        }
+    };
+
+    const selectCustomer = async (customer: any) => {
+        setSelectedCustomer(customer);
+        setCustomerSearch('');
+        setCustomerResults([]);
+        setRedeemPointsEnabled(false);
+        setPointsToRedeem(0);
+        try {
+            const pointsData = await api.getCustomerLoyaltyPoints(customer.id);
+            setSelectedCustomer({ ...customer, loyalty_points: pointsData.loyalty_points ?? customer.loyalty_points ?? 0 });
+        } catch {
+            // keep base customer
+        }
+    };
+
+    const handleCheckoutClick = async () => {
         if (cart.length === 0) return;
 
         // Validate serial numbers BEFORE showing Payment Details dialog
@@ -259,9 +334,20 @@ export default function POSPage() {
         setAppliedDiscount(null);
         setDiscountCodeInput('');
         setDiscountError('');
-        setCashAmount(totalBeforeDiscount);
+        setSelectedCustomer(null);
+        setCustomerSearch('');
+        setCustomerResults([]);
+        setRedeemPointsEnabled(false);
+        setPointsToRedeem(0);
+        setCashAmount(subtotal);
         setBkashAmount(0);
         setCardAmount(0);
+        try {
+            const settings = await api.getLoyaltySettings();
+            setLoyaltySettings(settings);
+        } catch {
+            setLoyaltySettings(null);
+        }
         setShowCheckout(true);
     };
 
@@ -277,10 +363,17 @@ export default function POSPage() {
         if (cardAmount > 0) payments.push({ paymentMethod: 'CARD', amount: cardAmount });
 
         const counterId = localStorage.getItem('counter_id') || undefined;
+        const effectivePointsToRedeem = redeemPointsEnabled && selectedCustomer && loyaltyPointsRedeemed > 0
+            ? loyaltyPointsRedeemed
+            : 0;
+
         const saleData = {
             storeId: localStorage.getItem('store_id') || '',
             ...(salesWarehouseId ? { warehouseId: salesWarehouseId } : {}),
             ...(counterId ? { counterId } : {}),
+            ...(selectedCustomer?.id ? { customerId: selectedCustomer.id } : {}),
+            ...(discountAmount > 0 ? { discountAmount } : {}),
+            ...(effectivePointsToRedeem > 0 ? { pointsToRedeem: effectivePointsToRedeem } : {}),
             totalAmount: total,
             amountPaid: totalPaid,
             items: cart.map(item => ({
@@ -318,14 +411,25 @@ export default function POSPage() {
 
         try {
             const sale = await api.createSale(saleData);
-            setLastSale({ sale, cart: [...cart], payments, subtotal, tax, total, totalPaid, changeDue });
+            setLastSale({ sale, cart: [...cart], payments, subtotal, tax: 0, total, totalPaid, changeDue });
             if (appliedDiscount) {
                 api.useDiscountCode(appliedDiscount.code).catch(() => {});
             }
-            addNotification('Sale completed successfully!', 'success');
+            let successMessage = 'Sale completed successfully!';
+            const loyalty = sale?.loyalty;
+            if (loyalty && (loyalty.pointsEarned > 0 || loyalty.pointsRedeemed > 0)) {
+                const parts: string[] = [];
+                if (loyalty.pointsRedeemed > 0) parts.push(`${loyalty.pointsRedeemed} pts redeemed`);
+                if (loyalty.pointsEarned > 0) parts.push(`${loyalty.pointsEarned} pts earned`);
+                successMessage = `Sale completed — ${parts.join(', ')}`;
+            }
+            addNotification(successMessage, 'success');
             setCart([]);
             setAppliedDiscount(null);
             setDiscountCodeInput('');
+            setSelectedCustomer(null);
+            setRedeemPointsEnabled(false);
+            setPointsToRedeem(0);
             setShowCheckout(false);
             loadProducts(); // Update stock levels
         } catch (error: any) {
@@ -591,10 +695,6 @@ export default function POSPage() {
                                 <span>Subtotal</span>
                                 <span className="text-gray-900">{formatBDT(subtotal)}</span>
                             </div>
-                            <div className="flex justify-between text-xs font-bold text-gray-400 uppercase tracking-widest">
-                                <span>Tax (10%)</span>
-                                <span className="text-gray-900">{formatBDT(tax)}</span>
-                            </div>
                             <div className="pt-3 border-t border-dashed border-gray-200 flex justify-between">
                                 <span className="text-sm font-black uppercase tracking-widest">Total Pay</span>
                                 <span className="text-2xl font-black text-blue-600">{formatBDT(total)}</span>
@@ -699,8 +799,103 @@ export default function POSPage() {
                                             -{formatBDT(appliedDiscount.amount)} ({appliedDiscount.name})
                                         </div>
                                     )}
+                                    {loyaltyDiscount > 0 && (
+                                        <div className="text-xs text-violet-600 font-semibold mt-0.5">
+                                            -{formatBDT(loyaltyDiscount)} (loyalty points)
+                                        </div>
+                                    )}
                                 </div>
                                 <span className="text-3xl font-black text-blue-600">{formatBDT(total)}</span>
+                            </div>
+
+                            {/* Customer & Loyalty */}
+                            <div className="space-y-3">
+                                <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">Customer (optional)</label>
+                                {selectedCustomer ? (
+                                    <div className="flex items-center justify-between rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+                                        <div>
+                                            <p className="text-sm font-bold text-gray-900">{selectedCustomer.name || selectedCustomer.phone}</p>
+                                            <p className="text-xs text-gray-500">{selectedCustomer.phone}</p>
+                                            {loyaltySettings?.loyalty_points_enabled && (
+                                                <p className="text-xs font-semibold text-violet-600 mt-1">
+                                                    <Gift className="inline w-3.5 h-3.5 mr-1" />
+                                                    {selectedCustomer.loyalty_points ?? 0} points available
+                                                </p>
+                                            )}
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => { setSelectedCustomer(null); setRedeemPointsEnabled(false); setPointsToRedeem(0); }}
+                                            className="text-gray-400 hover:text-red-500"
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="relative">
+                                        <User className="absolute left-3 top-3.5 w-4 h-4 text-gray-400" />
+                                        <input
+                                            type="text"
+                                            value={customerSearch}
+                                            onChange={(e) => searchCustomers(e.target.value)}
+                                            placeholder="Search by name or phone…"
+                                            className="w-full rounded-xl border border-gray-100 bg-gray-50 pl-10 pr-4 py-3 text-sm focus:ring-2 focus:ring-blue-500/20 focus:bg-white"
+                                        />
+                                        {customerResults.length > 0 && (
+                                            <div className="absolute z-10 mt-1 w-full rounded-xl border border-gray-200 bg-white shadow-lg overflow-hidden">
+                                                {customerResults.map((customer) => (
+                                                    <button
+                                                        key={customer.id}
+                                                        type="button"
+                                                        onClick={() => selectCustomer(customer)}
+                                                        className="w-full text-left px-4 py-2.5 hover:bg-blue-50 text-sm"
+                                                    >
+                                                        <span className="font-semibold text-gray-900">{customer.name || 'Unnamed'}</span>
+                                                        <span className="text-gray-500 ml-2">{customer.phone}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {selectedCustomer && loyaltySettings?.loyalty_points_enabled && loyaltySettings?.loyalty_redeem_rate && (
+                                    <div className="rounded-xl border border-violet-100 bg-violet-50/50 p-4 space-y-3">
+                                        <label className="flex items-center gap-2 text-sm font-semibold text-violet-800">
+                                            <input
+                                                type="checkbox"
+                                                checked={redeemPointsEnabled}
+                                                onChange={(e) => {
+                                                    setRedeemPointsEnabled(e.target.checked);
+                                                    if (e.target.checked) {
+                                                        const min = loyaltySettings.loyalty_min_redeem ?? 0;
+                                                        setPointsToRedeem(Math.max(min, Math.min(selectedCustomer.loyalty_points ?? 0, pointsToRedeem || min)));
+                                                    } else {
+                                                        setPointsToRedeem(0);
+                                                    }
+                                                }}
+                                                className="rounded border-violet-300"
+                                            />
+                                            Redeem loyalty points
+                                        </label>
+                                        {redeemPointsEnabled && (
+                                            <div className="flex items-center gap-3">
+                                                <input
+                                                    type="number"
+                                                    min={loyaltySettings.loyalty_min_redeem ?? 0}
+                                                    max={selectedCustomer.loyalty_points ?? 0}
+                                                    value={pointsToRedeem || ''}
+                                                    onChange={(e) => setPointsToRedeem(parseInt(e.target.value, 10) || 0)}
+                                                    className="w-32 rounded-lg border border-violet-200 px-3 py-2 text-sm"
+                                                />
+                                                <span className="text-xs text-violet-700">
+                                                    ≈ {formatBDT(loyaltyDiscount)} off
+                                                    {loyaltySettings.loyalty_min_redeem ? ` (min ${loyaltySettings.loyalty_min_redeem})` : ''}
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
 
                             {/* Discount Code */}

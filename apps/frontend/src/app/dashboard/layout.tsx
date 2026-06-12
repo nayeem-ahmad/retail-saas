@@ -50,6 +50,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     const isPlatformAdmin = Boolean(user?.is_platform_admin);
     const canManageBilling = primaryRole === 'OWNER' || primaryRole === 'MANAGER';
     const canManageTeam = primaryRole === 'OWNER' || primaryRole === 'MANAGER';
+    const canViewAudit = canManageTeam;
     const canAccessAccounting = (primaryRole === 'OWNER' || primaryRole === 'MANAGER') && hasPaidPlan && hasAccountingEntitlement;
     const canAccessInventoryReports = Boolean(hasInventoryReportEntitlement);
 
@@ -85,7 +86,16 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         if (!canManageTeam && pathname.startsWith('/dashboard/team')) {
             router.replace('/dashboard');
         }
-    }, [canAccessAccounting, canAccessInventoryReports, canManageTeam, hasResolvedUser, isPlatformAdmin, pathname, router]);
+        if (!canManageTeam && pathname.startsWith('/dashboard/settings/team')) {
+            router.replace('/dashboard/settings');
+        }
+        if (!canViewAudit && pathname.startsWith('/dashboard/settings/audit-logs')) {
+            router.replace('/dashboard/settings');
+        }
+        if (!canAccessAccounting && pathname.startsWith('/dashboard/expenses')) {
+            router.replace('/dashboard');
+        }
+    }, [canAccessAccounting, canAccessInventoryReports, canManageTeam, canViewAudit, hasResolvedUser, isPlatformAdmin, pathname, router]);
 
     // Build a human-readable page title from the path
     const pageTitle = (() => {

@@ -146,6 +146,7 @@ function buildModules(t: ReturnType<typeof useI18n>['t']): NavModule[] {
             { href: '/dashboard/accounting/journal', icon: ClipboardList, label: t.sidebar.items.journal },
             { href: '/dashboard/accounting/ledger', icon: ClipboardList, label: t.sidebar.items.ledger },
             { href: '/dashboard/accounting/reconciliation', icon: AlertTriangle, label: t.sidebar.items.postingExceptions },
+            { href: '/dashboard/expenses', icon: Receipt, label: t.sidebar.items.expenses },
             // Accounting Reports
             { href: '#accounting-reports',          icon: BarChart3,       label: t.sidebar.sections.accountingReports, section: true },
             { href: '/dashboard/accounting/reports/pl', icon: TrendingUp,  label: t.sidebar.items.profitAndLoss },

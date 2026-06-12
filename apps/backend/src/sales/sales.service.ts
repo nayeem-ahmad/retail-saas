@@ -3,6 +3,7 @@ import { DatabaseService } from '../database/database.service';
 import { CreateSaleDto, UpdateSaleDto } from './sale.dto';
 import { applyInventoryMovement, resolveWarehouseId } from '../database/inventory.utils';
 import { autoPostFromRules } from '../accounting/posting.utils';
+import { previewSaleLoyaltyRedemption, recordSaleLoyalty } from '../loyalty/loyalty-sale.utils';
 import { cursorPaginate, CursorPaginatedResult } from '../common/pagination.dto';
 import { EmailService } from '../email/email.service';
 import { SmsService } from '../sms/sms.service';
@@ -33,6 +34,32 @@ export class SalesService {
             const productById = new Map(saleProducts.map((product) => [product.id, product]));
             this.validateWarrantySerials(dto.items, productById);
 
+            const itemsSubtotal = dto.items.reduce(
+                (sum, item) => sum + item.quantity * item.priceAtSale,
+                0,
+            );
+            const discountAmount = dto.discountAmount ?? 0;
+            const preLoyaltyTotal = Math.max(0, itemsSubtotal - discountAmount);
+
+            let loyaltyPreview = { loyaltyDiscount: 0, pointsRedeemed: 0 };
+            if (dto.customerId && dto.pointsToRedeem && dto.pointsToRedeem > 0) {
+                loyaltyPreview = await previewSaleLoyaltyRedemption(
+                    tx,
+                    tenantId,
+                    dto.customerId,
+                    preLoyaltyTotal,
+                    dto.pointsToRedeem,
+                );
+            }
+            const { loyaltyDiscount } = loyaltyPreview;
+
+            const computedTotal = Math.max(0, preLoyaltyTotal - loyaltyDiscount);
+            if (Math.abs(computedTotal - dto.totalAmount) > 0.02) {
+                throw new BadRequestException(
+                    `Sale total mismatch. Expected ৳${computedTotal.toFixed(2)} after discounts and loyalty.`,
+                );
+            }
+
             // 1. Generate Serial Number (Simplified for v0.1)
             const serialNumber = `SL-${Date.now()}`;
 
@@ -44,7 +71,7 @@ export class SalesService {
                     counter_id: dto.counterId ?? null,
                     customer_id: dto.customerId,
                     serial_number: serialNumber,
-                    total_amount: dto.totalAmount,
+                    total_amount: computedTotal,
                     amount_paid: dto.amountPaid,
                     status: 'COMPLETED',
                     note: dto.note,
@@ -128,13 +155,23 @@ export class SalesService {
                     }
                 }
             }
+            let loyaltyResult = { ...loyaltyPreview, pointsEarned: 0 };
             if (dto.customerId) {
                 await tx.customer.update({
                     where: { id: dto.customerId },
                     data: {
-                        total_spent: { increment: dto.totalAmount }
-                    }
+                        total_spent: { increment: computedTotal },
+                    },
                 });
+
+                loyaltyResult = await recordSaleLoyalty(
+                    tx,
+                    tenantId,
+                    dto.customerId,
+                    sale.id,
+                    preLoyaltyTotal,
+                    loyaltyPreview,
+                );
             }
 
             const primaryPaymentMethod = dto.payments?.[0]?.paymentMethod?.toLowerCase() || 'cash';
@@ -164,6 +201,7 @@ export class SalesService {
                 voucher_id: posting.voucherId ?? null,
                 voucher_number: posting.voucherNumber ?? null,
                 voucher_type: posting.voucherType ?? null,
+                loyalty: loyaltyResult,
             };
         });
 

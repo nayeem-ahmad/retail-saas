@@ -4,12 +4,24 @@
 //   'pending-sales'  — keyPath='id', offline queued sales
 //   'products-cache' — keyPath='id', cached product list
 
+export interface PendingSaleItem {
+  productId: string;
+  quantity: number;
+  priceAtSale: number;
+  serialNumbers?: string[];
+}
+
 export interface PendingSale {
   id: string;           // uuid generated client-side
   storeId: string;
+  warehouseId?: string;
+  counterId?: string;
+  customerId?: string;
+  discountAmount?: number;
+  pointsToRedeem?: number;
   totalAmount: number;
   amountPaid: number;
-  items: { productId: string; quantity: number; priceAtSale: number }[];
+  items: PendingSaleItem[];
   payments: { paymentMethod: string; amount: number }[];
   createdAt: string;    // ISO timestamp
   authToken: string;    // JWT to use when syncing

@@ -39,6 +39,10 @@ function LoginPageContent() {
     const [isDemoLoading, setIsDemoLoading] = useState(false);
     const router = useRouter();
     const searchParams = useSearchParams();
+    const postAuthPath = (() => {
+        const redirect = searchParams.get('redirect');
+        return redirect && redirect.startsWith('/') ? redirect : '/dashboard';
+    })();
 
     // Auto-trigger demo login when ?demo=1 is present in the URL
     useEffect(() => {
@@ -56,7 +60,7 @@ function LoginPageContent() {
         try {
             const loginRes = await api.login({ email, password });
             await storeAuthResponse(loginRes);
-            router.push('/dashboard');
+            router.push(postAuthPath);
         } catch (err: any) {
             setError(err.message || t.auth.login.defaultError);
         } finally {

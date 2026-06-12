@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowRight, Building2, Loader2, Lock, Mail, Store } from 'lucide-react';
 import { api } from '@/lib/api';
 import { formatBDT } from '@/lib/format';
@@ -19,8 +19,25 @@ type Plan = {
 type FormSubmitEvent = Parameters<NonNullable<React.ComponentProps<'form'>['onSubmit']>>[0];
 
 export default function SignupPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+            </div>
+        }>
+            <SignupPageContent />
+        </Suspense>
+    );
+}
+
+function SignupPageContent() {
     const { t } = useI18n();
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const postAuthPath = (() => {
+        const redirect = searchParams.get('redirect');
+        return redirect && redirect.startsWith('/') ? redirect : '/dashboard';
+    })();
     const [plans, setPlans] = useState<Plan[]>([]);
     const [form, setForm] = useState({
         name: '',
@@ -62,7 +79,7 @@ export default function SignupPage() {
                 }
             }
 
-            router.push('/dashboard');
+            router.push(postAuthPath);
         } catch (err: any) {
             setError(err.message || t.auth.signup.defaultError);
         } finally {

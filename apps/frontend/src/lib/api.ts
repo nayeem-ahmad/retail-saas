@@ -1122,4 +1122,97 @@ export const api = {
     matchBankEntry: (data: any) =>
         fetchWithAuth('/accounting/bank-reconciliations/match-entry', { method: 'POST', body: JSON.stringify(data) }),
     getBankReconciliationReport: (id: string) => fetchWithAuth(`/accounting/bank-reconciliations/${id}/report`),
+    // Team invitations
+    getTeamMembers: () => fetchWithAuth('/invitations/members'),
+    getPendingInvitations: () => fetchWithAuth('/invitations/pending'),
+    updateMemberRole: (userId: string, role: string) => fetchWithAuth(`/invitations/members/${userId}/role`, {
+        method: 'PATCH',
+        body: JSON.stringify({ role }),
+        headers: { 'Content-Type': 'application/json' },
+    }),
+    sendInvitation: (data: { email: string; role: string }) => fetchWithAuth('/invitations/send', {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+    }),
+    cancelInvitation: (id: string) => fetchWithAuth(`/invitations/${id}`, { method: 'DELETE' }),
+    getInvitationInfo: (token: string) => fetch(`${API_BASE}/invitations/info?token=${encodeURIComponent(token)}`).then(async (response) => {
+        if (!response.ok) {
+            let message = 'Invalid or expired invitation';
+            try {
+                const errorBody = await response.json();
+                const apiMessage = Array.isArray(errorBody?.message)
+                    ? errorBody.message.join(', ')
+                    : errorBody?.message || errorBody?.error;
+                if (apiMessage) message = apiMessage;
+            } catch {
+                // ignore
+            }
+            throw new Error(message);
+        }
+        return response.json().then((body) => (body?.data !== undefined ? body.data : body));
+    }),
+    getLoyaltySettings: () => fetchWithAuth('/loyalty/settings'),
+    getCustomerLoyaltyPoints: (customerId: string) => fetchWithAuth(`/loyalty/customers/${customerId}/points`),
+    getAuditLogs: (params?: {
+        entity?: string;
+        action?: string;
+        from?: string;
+        to?: string;
+        limit?: number;
+        offset?: number;
+    }) => {
+        const q = new URLSearchParams();
+        if (params?.entity) q.set('entity', params.entity);
+        if (params?.action) q.set('action', params.action);
+        if (params?.from) q.set('from', params.from);
+        if (params?.to) q.set('to', params.to);
+        if (params?.limit) q.set('limit', String(params.limit));
+        if (params?.offset) q.set('offset', String(params.offset));
+        const query = q.toString();
+        return fetchWithAuth(`/audit-logs${query ? `?${query}` : ''}`);
+    },
+    getExpenseCategories: () => fetchWithAuth('/expenses/categories'),
+    createExpenseCategory: (data: { name: string; description?: string }) => fetchWithAuth('/expenses/categories', {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+    }),
+    updateExpenseCategory: (id: string, data: { name?: string; description?: string }) => fetchWithAuth(`/expenses/categories/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+    }),
+    deleteExpenseCategory: (id: string) => fetchWithAuth(`/expenses/categories/${id}`, { method: 'DELETE' }),
+    getExpenseEntries: (params?: { page?: number; limit?: number; from?: string; to?: string; categoryId?: string }) => {
+        const q = new URLSearchParams();
+        if (params?.page) q.set('page', String(params.page));
+        if (params?.limit) q.set('limit', String(params.limit));
+        if (params?.from) q.set('from', params.from);
+        if (params?.to) q.set('to', params.to);
+        if (params?.categoryId) q.set('categoryId', params.categoryId);
+        return fetchWithAuth(`/expenses/entries?${q}`);
+    },
+    createExpenseEntry: (data: any) => fetchWithAuth('/expenses/entries', {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+    }),
+    updateExpenseEntry: (id: string, data: any) => fetchWithAuth(`/expenses/entries/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+    }),
+    deleteExpenseEntry: (id: string) => fetchWithAuth(`/expenses/entries/${id}`, { method: 'DELETE' }),
+    getExpenseSummary: (params?: { from?: string; to?: string }) => {
+        const q = new URLSearchParams();
+        if (params?.from) q.set('from', params.from);
+        if (params?.to) q.set('to', params.to);
+        return fetchWithAuth(`/expenses/summary?${q}`);
+    },
+    acceptInvitation: (token: string) => fetchWithAuth('/invitations/accept', {
+        method: 'POST',
+        body: JSON.stringify({ token }),
+        headers: { 'Content-Type': 'application/json' },
+    }),
 };

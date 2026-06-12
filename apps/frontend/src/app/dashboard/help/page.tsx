@@ -29,7 +29,7 @@ const SECTIONS: Section[] = [
             },
             {
                 q: 'How do I invite staff members?',
-                a: 'Go to Settings → Users and click "Invite". Enter the staff member\'s email and assign a role (Cashier, Manager, etc.). They\'ll receive an invitation email to join your account.',
+                a: 'Go to Settings → Team & Users and click "Invite". Enter the staff member\'s email and assign a role (Cashier, Manager, etc.). They\'ll receive an invitation email to join your account.',
             },
             {
                 q: 'What subscription plans are available?',

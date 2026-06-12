@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards, UseInterceptors, ForbiddenException, Request } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { TenantInterceptor } from '../database/tenant.interceptor';
@@ -23,6 +23,7 @@ export class AuditController {
     @ApiQuery({ name: 'limit', required: false })
     @ApiQuery({ name: 'offset', required: false })
     async list(
+        @Request() req,
         @Tenant() tenant: TenantContext,
         @Query('entity') entity?: string,
         @Query('entity_id') entityId?: string,
@@ -33,6 +34,10 @@ export class AuditController {
         @Query('limit') limit?: string,
         @Query('offset') offset?: string,
     ) {
+        if (!['OWNER', 'MANAGER'].includes(req.userRole)) {
+            throw new ForbiddenException('Only OWNER or MANAGER can view audit logs');
+        }
+
         return this.auditService.query({
             tenantId: tenant.tenantId,
             entity,

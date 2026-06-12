@@ -31,6 +31,9 @@ export default function Error({
                     {error.digest && (
                         <p className="text-xs font-mono text-gray-400 mt-2">Error ID: {error.digest}</p>
                     )}
+                    {error.message && !error.digest && (
+                        <p className="text-xs font-mono text-gray-400 mt-2 max-w-sm break-all">{error.message}</p>
+                    )}
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">

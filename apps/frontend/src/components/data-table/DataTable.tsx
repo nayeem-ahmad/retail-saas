@@ -310,7 +310,8 @@ export default function DataTable<T>({
 
     const columnIds = useMemo(
         () => table.getVisibleLeafColumns().map((c) => c.id),
-        [table.getVisibleLeafColumns()],
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [columnOrder, columnVisibility],
     );
 
     return (

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { CheckCircle, XCircle, Loader2, ShieldCheck, ShieldOff, Eye, EyeOff, Palette, Receipt, Gift, MessageSquare, BarChart3, Globe, Monitor } from 'lucide-react';
+import { CheckCircle, XCircle, Loader2, ShieldCheck, ShieldOff, Eye, EyeOff, Palette, Receipt, Gift, MessageSquare, BarChart3, Globe, Monitor, UserCog, ScrollText } from 'lucide-react';
 import { api, fetchWithAuth } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 
@@ -559,6 +559,18 @@ export default function AccountSettingsPage() {
     ];
 
     const quickLinks = [
+        {
+            href: '/dashboard/settings/team',
+            icon: UserCog,
+            label: t.settings.quickLinks.teamLabel,
+            description: t.settings.quickLinks.teamDescription,
+        },
+        {
+            href: '/dashboard/settings/audit-logs',
+            icon: ScrollText,
+            label: t.settings.quickLinks.auditLabel,
+            description: t.settings.quickLinks.auditDescription,
+        },
         {
             href: '/dashboard/settings/localization',
             icon: Globe,

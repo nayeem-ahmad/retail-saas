@@ -64,6 +64,7 @@ import { BrandsModule } from './brands/brands.module';
 import { CrmInteractionsModule } from './crm-interactions/crm-interactions.module';
 import { CrmTasksModule } from './crm-tasks/crm-tasks.module';
 import { CrmCampaignsModule } from './crm-campaigns/crm-campaigns.module';
+import { ExpensesModule } from './expenses/expenses.module';
 
 @Module({
     imports: [
@@ -129,6 +130,7 @@ import { CrmCampaignsModule } from './crm-campaigns/crm-campaigns.module';
         CrmInteractionsModule,
         CrmTasksModule,
         CrmCampaignsModule,
+        ExpensesModule,
     ],
     controllers: [],
     providers: [
