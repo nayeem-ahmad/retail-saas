@@ -6,6 +6,16 @@ jest.mock('../../../components/HelpTooltip', () => ({
   HelpTooltip: () => null,
 }));
 
+jest.mock('@/lib/i18n', () => {
+  const { enMessages } = require('../../../lib/localization/messages/en');
+
+  return {
+    useI18n: () => ({
+      t: enMessages,
+    }),
+  };
+}, { virtual: true });
+
 // Mock lucide-react icons
 jest.mock('lucide-react', () => ({
   ShoppingCart: () => <span data-testid="icon-cart" />,
@@ -25,6 +35,10 @@ jest.mock('lucide-react', () => ({
   Printer: () => <span data-testid="icon-printer" />,
   WifiOff: () => <span data-testid="icon-wifi-off" />,
   RefreshCw: () => <span data-testid="icon-refresh" />,
+  LayoutGrid: () => <span data-testid="icon-layout-grid" />,
+  List: () => <span data-testid="icon-list" />,
+  Gift: () => <span data-testid="icon-gift" />,
+  User: () => <span data-testid="icon-user" />,
 }));
 
 // Mock the API

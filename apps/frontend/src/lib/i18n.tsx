@@ -96,4 +96,11 @@ export function useI18n() {
     return useContext(I18nContext);
 }
 
+export function formatMessage(template: string, values: Record<string, string | number>) {
+    return Object.entries(values).reduce(
+        (result, [key, value]) => result.replaceAll(`{${key}}`, String(value)),
+        template,
+    );
+}
+
 export type { Locale };

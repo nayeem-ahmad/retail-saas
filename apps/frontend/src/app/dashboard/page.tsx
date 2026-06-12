@@ -11,9 +11,10 @@ import {
     ReceiptText,
     CircleAlert,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { api } from '../../lib/api';
 import { formatBDT, formatDate } from '../../lib/format';
+import { formatMessage, useI18n } from '../../lib/i18n';
 
 type FinancialKpis = {
     cash_inflow: number;
@@ -72,6 +73,8 @@ const EMPTY_KPIS: FinancialKpis = {
 };
 
 export default function DashboardPage() {
+    const { t, locale } = useI18n();
+    const copy = t.dashboardHome;
     const [user, setUser] = useState<any>(null);
     const [sales, setSales] = useState<any[]>([]);
     const [products, setProducts] = useState<any[]>([]);
@@ -112,13 +115,13 @@ export default function DashboardPage() {
             if (financialRes.status === 'fulfilled') {
                 setFinancialSnapshot(financialRes.value);
             } else {
-                setFinancialError(financialRes.reason instanceof Error ? financialRes.reason.message : 'Financial KPIs are unavailable right now.');
+                setFinancialError(financialRes.reason instanceof Error ? financialRes.reason.message : copy.financialKpisUnavailable);
             }
 
             if (trendRes.status === 'fulfilled') {
                 setFinancialTrendSnapshot(trendRes.value);
             } else {
-                setFinancialTrendError(trendRes.reason instanceof Error ? trendRes.reason.message : 'Financial trends are unavailable right now.');
+                setFinancialTrendError(trendRes.reason instanceof Error ? trendRes.reason.message : copy.financialTrendsUnavailable);
             }
 
             if (meRes.status === 'rejected' || productsRes.status === 'rejected' || salesRes.status === 'rejected') {
@@ -134,7 +137,7 @@ export default function DashboardPage() {
         };
 
         void fetchData();
-    }, []);
+    }, [copy.financialKpisUnavailable, copy.financialTrendsUnavailable]);
 
     const totalSalesAmount = sales.reduce((acc, sale) => acc + Number(sale.total_amount), 0);
     const activeOrdersCount = sales.length;
@@ -145,88 +148,101 @@ export default function DashboardPage() {
         net_profit: financialKpis.gross_revenue - financialKpis.operating_expense,
         gross_margin: null,
         gross_margin_status: 'unavailable' as const,
-        gross_margin_reason: 'Sale-time cost basis is not tracked in the current data model.',
+        gross_margin_reason: copy.grossMarginReasonDefault,
     };
     const financialDateRange = financialSnapshot?.filters
-        ? `${formatDate(financialSnapshot.filters.from)} - ${formatDate(financialSnapshot.filters.to)}`
-        : 'Current month';
-    const financialTiles = [
+        ? `${formatDate(financialSnapshot.filters.from, locale)} - ${formatDate(financialSnapshot.filters.to, locale)}`
+        : copy.currentMonth;
+    const lowStockTrend = lowStockCount === null
+        ? copy.loadingTrend
+        : lowStockCount === 0
+            ? copy.allSufficientlyStocked
+            : formatMessage(
+                lowStockCount === 1 ? copy.lowStockItemSingular : copy.lowStockItemsPlural,
+                { count: lowStockCount },
+            );
+    const tenantName = user?.tenants?.[0]?.name || copy.yourBusiness;
+
+    const financialTiles = useMemo(() => [
         {
-            title: 'Net Cash Movement',
+            title: copy.netCashMovement,
             value: formatCurrency(financialKpis.net_cash_movement),
-            helper: `${formatCurrency(financialKpis.cash_inflow)} in • ${formatCurrency(financialKpis.cash_outflow)} out`,
+            helper: formatMessage(copy.cashFlowHelper, {
+                inflow: formatCurrency(financialKpis.cash_inflow),
+                outflow: formatCurrency(financialKpis.cash_outflow),
+            }),
             tone: financialKpis.net_cash_movement >= 0 ? 'positive' : 'negative',
             icon: Wallet,
         },
         {
-            title: 'Gross Revenue',
+            title: copy.grossRevenue,
             value: formatCurrency(financialKpis.gross_revenue),
-            helper: 'Posted revenue accounts',
+            helper: copy.postedRevenueAccounts,
             tone: 'positive',
             icon: TrendingUp,
         },
         {
-            title: 'Operating Expense',
+            title: copy.operatingExpense,
             value: formatCurrency(financialKpis.operating_expense),
-            helper: 'Posted expense accounts',
+            helper: copy.postedExpenseAccounts,
             tone: 'neutral',
             icon: ReceiptText,
         },
         {
-            title: 'Receivables',
-            value: formatOptionalCurrency(financialKpis.accounts_receivable),
-            helper: financialKpis.accounts_receivable === null ? 'No receivable account configured' : 'Open receivable balance',
+            title: copy.receivables,
+            value: formatOptionalCurrency(financialKpis.accounts_receivable, copy.notConfigured),
+            helper: financialKpis.accounts_receivable === null ? copy.noReceivableConfigured : copy.openReceivableBalance,
             tone: 'neutral',
             icon: Landmark,
         },
         {
-            title: 'Payables',
-            value: formatOptionalCurrency(financialKpis.accounts_payable),
-            helper: financialKpis.accounts_payable === null ? 'No payable account configured' : 'Outstanding supplier obligations',
+            title: copy.payables,
+            value: formatOptionalCurrency(financialKpis.accounts_payable, copy.notConfigured),
+            helper: financialKpis.accounts_payable === null ? copy.noPayableConfigured : copy.outstandingSupplierObligations,
             tone: 'neutral',
             icon: Package,
         },
         {
-            title: 'Tax Liability',
-            value: formatOptionalCurrency(financialKpis.tax_liability),
-            helper: financialKpis.tax_liability === null ? 'No tax liability account configured' : 'Configured tax obligations',
+            title: copy.taxLiability,
+            value: formatOptionalCurrency(financialKpis.tax_liability, copy.notConfigured),
+            helper: financialKpis.tax_liability === null ? copy.noTaxLiabilityConfigured : copy.configuredTaxObligations,
             tone: 'neutral',
             icon: CircleAlert,
         },
-    ] as const;
+    ] as const, [copy, financialKpis]);
 
     return (
         <div className="overflow-y-auto h-full p-8">
             <div className="mb-8">
-                <h1 className="text-2xl font-bold tracking-tight">Dashboard Overview</h1>
+                <h1 className="text-2xl font-bold tracking-tight">{copy.title}</h1>
                 <p className="text-gray-500 text-sm mt-1 uppercase font-medium tracking-wide">
-                    {user?.tenants?.[0]?.name || 'Your Business'} • Last updated: Today
+                    {formatMessage(copy.tenantSubtitle, { tenant: tenantName })}
                 </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
                 <StatCard
-                    title="Total Sales"
+                    title={copy.totalSales}
                     value={`${totalSalesAmount.toLocaleString()}`}
-                    trend="+0% from last month"
+                    trend={copy.trendFromLastMonth}
                     isPositive={true}
                 />
                 <StatCard
-                    title="Active Orders"
+                    title={copy.activeOrders}
                     value={activeOrdersCount.toString()}
-                    trend="Real-time data"
+                    trend={copy.realTimeData}
                     isPositive={true}
                 />
                 <StatCard
-                    title="Products"
+                    title={copy.products}
                     value={products.length.toString()}
-                    trend="In inventory"
+                    trend={copy.inInventory}
                     isPositive={true}
                 />
                 <StatCard
-                    title="Low Stock Items"
+                    title={copy.lowStockItems}
                     value={lowStockCount === null ? '—' : lowStockCount.toString()}
-                    trend={lowStockCount === null ? 'Loading…' : lowStockCount === 0 ? 'All items sufficiently stocked' : `${lowStockCount} item${lowStockCount !== 1 ? 's' : ''} at or below reorder level`}
+                    trend={lowStockTrend}
                     isPositive={lowStockCount !== null && lowStockCount === 0}
                 />
             </div>
@@ -234,8 +250,8 @@ export default function DashboardPage() {
             <section className="mb-8 rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
                 <div className="flex flex-wrap items-start justify-between gap-4 border-b border-gray-100 pb-5">
                     <div>
-                        <p className="text-xs font-black uppercase tracking-[0.24em] text-gray-400">Financial Snapshot</p>
-                        <h2 className="mt-1 text-xl font-black tracking-tight text-gray-900">Accounting KPIs</h2>
+                        <p className="text-xs font-black uppercase tracking-[0.24em] text-gray-400">{copy.financialSnapshot}</p>
+                        <h2 className="mt-1 text-xl font-black tracking-tight text-gray-900">{copy.accountingKpis}</h2>
                         <p className="mt-2 text-sm text-gray-500">{financialDateRange}</p>
                     </div>
                     {financialError ? (
@@ -287,8 +303,8 @@ export default function DashboardPage() {
                             <section className="rounded-2xl border border-gray-100 bg-slate-950 p-5 text-white shadow-sm">
                                 <div className="flex flex-wrap items-start justify-between gap-3">
                                     <div>
-                                        <p className="text-xs font-black uppercase tracking-[0.24em] text-slate-400">Cash Flow Movement</p>
-                                        <h3 className="mt-2 text-xl font-black tracking-tight">Inflow vs Outflow</h3>
+                                        <p className="text-xs font-black uppercase tracking-[0.24em] text-slate-400">{copy.cashFlowMovement}</p>
+                                        <h3 className="mt-2 text-xl font-black tracking-tight">{copy.inflowVsOutflow}</h3>
                                     </div>
                                     {financialTrendError ? (
                                         <div className="rounded-2xl border border-amber-300/40 bg-amber-200/10 px-3 py-2 text-sm font-bold text-amber-100">
@@ -297,23 +313,23 @@ export default function DashboardPage() {
                                     ) : null}
                                 </div>
                                 <div className="mt-6">
-                                    <CashFlowChart points={financialTrends} />
+                                    <CashFlowChart points={financialTrends} locale={locale} />
                                 </div>
                             </section>
 
                             <section className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-                                <p className="text-xs font-black uppercase tracking-[0.24em] text-gray-400">Net Profit vs Gross Margin</p>
-                                <h3 className="mt-2 text-xl font-black tracking-tight text-gray-950">Period Comparison</h3>
+                                <p className="text-xs font-black uppercase tracking-[0.24em] text-gray-400">{copy.netProfitVsGrossMargin}</p>
+                                <h3 className="mt-2 text-xl font-black tracking-tight text-gray-950">{copy.periodComparison}</h3>
                                 <div className="mt-6 space-y-4">
                                     <ComparisonMetricCard
-                                        title="Net Profit"
+                                        title={copy.netProfit}
                                         value={formatCurrency(financialComparison.net_profit)}
-                                        helper="Revenue minus operating expense for posted vouchers"
+                                        helper={copy.netProfitHelper}
                                         tone={financialComparison.net_profit >= 0 ? 'positive' : 'negative'}
                                     />
                                     <ComparisonMetricCard
-                                        title="Gross Margin"
-                                        value="Unavailable"
+                                        title={copy.grossMargin}
+                                        value={copy.unavailable}
                                         helper={financialComparison.gross_margin_reason}
                                         tone="neutral"
                                     />
@@ -327,9 +343,9 @@ export default function DashboardPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                     <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-                        <h2 className="font-bold text-gray-900 tracking-tight">Recent Activity</h2>
+                        <h2 className="font-bold text-gray-900 tracking-tight">{copy.recentActivity}</h2>
                         <button className="text-gray-400 hover:text-gray-600 font-medium text-sm">
-                            View all
+                            {copy.viewAll}
                         </button>
                     </div>
                     <div className="p-0">
@@ -337,20 +353,20 @@ export default function DashboardPage() {
                             sales.slice(0, 5).map((sale) => (
                                 <ActivityItem
                                     key={sale.id}
-                                    title={`Sale ${sale.serial_number}`}
-                                    description={`Amount: ${formatBDT(Number(sale.total_amount))}`}
-                                    time={new Date(sale.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    title={formatMessage(copy.saleTitle, { serial: sale.serial_number })}
+                                    description={formatMessage(copy.amountLabel, { amount: formatBDT(Number(sale.total_amount), { locale }) })}
+                                    time={new Date(sale.created_at).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}
                                 />
                             ))
                         ) : (
-                            <div className="p-8 text-center text-gray-400 text-sm">{isLoading ? 'Loading recent activity...' : 'No recent activity'}</div>
+                            <div className="p-8 text-center text-gray-400 text-sm">{isLoading ? copy.loadingRecentActivity : copy.noRecentActivity}</div>
                         )}
                     </div>
                 </div>
 
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                     <div className="flex items-center justify-between mb-6">
-                        <h2 className="font-bold text-gray-900 tracking-tight">Inventory Overview</h2>
+                        <h2 className="font-bold text-gray-900 tracking-tight">{copy.inventoryOverview}</h2>
                         <MoreVertical className="w-5 h-5 text-gray-400 cursor-pointer" />
                     </div>
                     <div className="space-y-6">
@@ -359,13 +375,13 @@ export default function DashboardPage() {
                                 <ProductRow
                                     key={product.id}
                                     name={product.name}
-                                    price={formatBDT(Number(product.price))}
+                                    price={formatBDT(Number(product.price), { locale })}
                                     sales={product.stocks?.[0]?.quantity?.toString() || '0'}
-                                    salesLabel="Stock"
+                                    salesLabel={copy.stock}
                                 />
                             ))
                         ) : (
-                            <div className="text-center text-gray-400 text-sm py-4">{isLoading ? 'Loading products...' : 'No products found'}</div>
+                            <div className="text-center text-gray-400 text-sm py-4">{isLoading ? copy.loadingProducts : copy.noProductsFound}</div>
                         )}
                     </div>
                 </div>
@@ -409,12 +425,15 @@ function FinancialTile({
     );
 }
 
-function CashFlowChart({ points }: { points: FinancialTrendPoint[] }) {
+function CashFlowChart({ points, locale }: { points: FinancialTrendPoint[]; locale: string }) {
+    const { t } = useI18n();
+    const copy = t.dashboardHome;
+
     if (points.length === 0 || !points.some((point) => point.cash_inflow !== 0 || point.cash_outflow !== 0)) {
         return (
             <div className="rounded-2xl border border-dashed border-white/15 bg-white/5 px-5 py-12 text-center">
-                <p className="text-sm font-bold uppercase tracking-[0.2em] text-slate-300">No accounting movement</p>
-                <p className="mt-2 text-sm text-slate-400">No posted cash inflow or outflow exists for the selected period.</p>
+                <p className="text-sm font-bold uppercase tracking-[0.2em] text-slate-300">{copy.noAccountingMovement}</p>
+                <p className="mt-2 text-sm text-slate-400">{copy.noCashMovementPeriod}</p>
             </div>
         );
     }
@@ -424,27 +443,27 @@ function CashFlowChart({ points }: { points: FinancialTrendPoint[] }) {
     return (
         <div>
             <div className="flex items-center gap-4 text-xs font-bold uppercase tracking-[0.2em] text-slate-400">
-                <span className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />Inflow</span>
-                <span className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-rose-400" />Outflow</span>
+                <span className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />{copy.inflow}</span>
+                <span className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-rose-400" />{copy.outflow}</span>
             </div>
             <div className="mt-6 flex h-56 items-end gap-2 overflow-x-auto pb-2">
                 {points.map((point, index) => (
                     <div key={point.date} className="flex min-w-8 flex-1 flex-col items-center justify-end gap-2">
                         <div className="flex h-44 items-end gap-1">
                             <div
-                                aria-label={`Cash inflow ${point.date}`}
+                                aria-label={formatMessage(copy.cashInflowAria, { date: point.date })}
                                 className="w-3 rounded-t-full bg-emerald-400 transition-all"
                                 style={{ height: `${Math.max((point.cash_inflow / peak) * 100, point.cash_inflow > 0 ? 6 : 0)}%` }}
                             />
                             <div
-                                aria-label={`Cash outflow ${point.date}`}
+                                aria-label={formatMessage(copy.cashOutflowAria, { date: point.date })}
                                 className="w-3 rounded-t-full bg-rose-400 transition-all"
                                 style={{ height: `${Math.max((point.cash_outflow / peak) * 100, point.cash_outflow > 0 ? 6 : 0)}%` }}
                             />
                         </div>
                         <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
                             {index === 0 || index === points.length - 1 || point.cash_inflow !== 0 || point.cash_outflow !== 0
-                                ? new Date(point.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+                                ? new Date(point.date).toLocaleDateString(locale, { month: 'short', day: 'numeric' })
                                 : '·'}
                         </span>
                     </div>
@@ -489,9 +508,9 @@ function formatCurrency(value: number) {
     return `${value < 0 ? '-' : ''}${absolute}`;
 }
 
-function formatOptionalCurrency(value: number | null) {
+function formatOptionalCurrency(value: number | null, notConfiguredLabel: string) {
     if (value === null) {
-        return 'Not configured';
+        return notConfiguredLabel;
     }
 
     return formatCurrency(value);
@@ -526,7 +545,7 @@ function ActivityItem({ title, description, time }: { title: string, description
     );
 }
 
-function ProductRow({ name, price, sales, salesLabel = 'Sales' }: { name: string, price: string, sales: string, salesLabel?: string }) {
+function ProductRow({ name, price, sales, salesLabel }: { name: string, price: string, sales: string, salesLabel: string }) {
     return (
         <div className="flex items-center justify-between group cursor-pointer hover:bg-gray-50 p-2 -mx-2 rounded-xl transition-colors">
             <div className="flex items-center space-x-4">
@@ -543,4 +562,3 @@ function ProductRow({ name, price, sales, salesLabel = 'Sales' }: { name: string
         </div>
     );
 }
-

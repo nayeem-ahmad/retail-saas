@@ -125,8 +125,8 @@ Track all work here. Check off items as they're completed. Add new items as they
 - [ ] Video walkthroughs or screenshot tours of key workflows
 
 ### Localization
-- [ ] Bangla (Bengali) language support — documented as market requirement in PRD, not built
-- [ ] Migrate remaining frontend literal strings to localization catalogs (dashboard, auth, billing, POS, inventory, storefront, onboarding)
+- [x] Bangla (Bengali) language support — i18n foundation + LanguageSwitcher; core flows localized (login, signup, sidebar, onboarding, dashboard home, POS, inventory, billing, settings) — done 2026-06-12
+- [ ] Migrate remaining frontend literal strings to localization catalogs (sales, purchases, accounting, CRM, storefront, reports, admin — core paths done)
 - [ ] Verify consistent BDT currency formatting throughout UI
 - [ ] Date format localization (BD convention)
 - [ ] Bangla number formatting option

@@ -8,8 +8,16 @@ import { printPOSReceipt } from '../../../lib/pos-receipt-printer';
 import { formatBDT } from '../../../lib/format';
 import { useOfflineSync } from '@/hooks/useOfflineSync';
 import { savePendingSale, cacheProducts, getCachedProducts } from '@/lib/pos-db';
+import { useI18n } from '@/lib/i18n';
 
 type Notification = { id: string; type: 'success' | 'error' | 'info'; message: string };
+
+function interpolate(template: string, values: Record<string, string | number>): string {
+    return Object.entries(values).reduce(
+        (result, [key, value]) => result.replace(new RegExp(`\\{${key}\\}`, 'g'), String(value)),
+        template,
+    );
+}
 
 function computeLoyaltyRedemption(
     settings: { loyalty_min_redeem?: number | null; loyalty_redeem_rate?: string | number | null } | null,
@@ -50,6 +58,7 @@ function generateId(): string {
 }
 
 export default function POSPage() {
+    const { t } = useI18n();
     const [products, setProducts] = useState<any[]>([]);
     const [salesWarehouseId, setSalesWarehouseId] = useState<string | null>(null);
     const [cart, setCart] = useState<any[]>([]);
@@ -97,13 +106,19 @@ export default function POSPage() {
                 .filter((value) => value.length > 0);
 
             if (serialNumbers.length !== item.quantity) {
-                addNotification(`Please provide ${item.quantity} serial number(s) for ${item.name}.`, 'error');
+                addNotification(
+                    interpolate(t.pos.notifications.serialRequired, { count: item.quantity, product: item.name }),
+                    'error',
+                );
                 return false;
             }
 
             const unique = new Set(serialNumbers);
             if (unique.size !== serialNumbers.length) {
-                addNotification(`Serial numbers for ${item.name} must be unique.`, 'error');
+                addNotification(
+                    interpolate(t.pos.notifications.serialUnique, { product: item.name }),
+                    'error',
+                );
                 return false;
             }
         }
@@ -280,7 +295,7 @@ export default function POSPage() {
             setAppliedDiscount({ code: data.code, name: data.name, amount: data.discount_amount });
             setCashAmount(Math.max(0, subtotal - data.discount_amount));
         } catch (err: any) {
-            setDiscountError(err?.message ?? 'Invalid discount code');
+            setDiscountError(err?.message ?? t.pos.notifications.invalidDiscount);
             setAppliedDiscount(null);
         } finally {
             setDiscountApplying(false);
@@ -353,7 +368,7 @@ export default function POSPage() {
 
     const handleConfirmCheckout = async () => {
         if (totalPaid < total) {
-            addNotification('Insufficient amount paid!', 'error');
+            addNotification(t.pos.notifications.insufficientPaid, 'error');
             return;
         }
 
@@ -400,11 +415,11 @@ export default function POSPage() {
                     tenantId: localStorage.getItem('tenant_id') || '',
                 });
                 await refreshPendingCount();
-                addNotification('Sale saved offline — will sync when online', 'info');
+                addNotification(t.pos.notifications.saleOffline, 'info');
                 setCart([]);
                 setShowCheckout(false);
             } catch {
-                addNotification('Failed to save offline sale. Please try again.', 'error');
+                addNotification(t.pos.notifications.offlineFailed, 'error');
             }
             return;
         }
@@ -415,13 +430,17 @@ export default function POSPage() {
             if (appliedDiscount) {
                 api.useDiscountCode(appliedDiscount.code).catch(() => {});
             }
-            let successMessage = 'Sale completed successfully!';
+            let successMessage = t.pos.notifications.saleSuccess;
             const loyalty = sale?.loyalty;
             if (loyalty && (loyalty.pointsEarned > 0 || loyalty.pointsRedeemed > 0)) {
                 const parts: string[] = [];
-                if (loyalty.pointsRedeemed > 0) parts.push(`${loyalty.pointsRedeemed} pts redeemed`);
-                if (loyalty.pointsEarned > 0) parts.push(`${loyalty.pointsEarned} pts earned`);
-                successMessage = `Sale completed — ${parts.join(', ')}`;
+                if (loyalty.pointsRedeemed > 0) {
+                    parts.push(interpolate(t.pos.notifications.pointsRedeemed, { count: loyalty.pointsRedeemed }));
+                }
+                if (loyalty.pointsEarned > 0) {
+                    parts.push(interpolate(t.pos.notifications.pointsEarned, { count: loyalty.pointsEarned }));
+                }
+                successMessage = interpolate(t.pos.notifications.saleSuccessLoyalty, { details: parts.join(', ') });
             }
             addNotification(successMessage, 'success');
             setCart([]);
@@ -449,15 +468,15 @@ export default function POSPage() {
                         tenantId: localStorage.getItem('tenant_id') || '',
                     });
                     await refreshPendingCount();
-                    addNotification('Sale saved offline — will sync when online', 'info');
+                    addNotification(t.pos.notifications.saleOffline, 'info');
                     setCart([]);
                     setShowCheckout(false);
                 } catch {
-                    addNotification('Checkout failed. Please check stock levels.', 'error');
+                    addNotification(t.pos.notifications.checkoutFailed, 'error');
                 }
             } else {
                 console.error('Checkout failed', error);
-                addNotification('Checkout failed. Please check stock levels.', 'error');
+                addNotification(t.pos.notifications.checkoutFailed, 'error');
             }
         }
     };
@@ -497,10 +516,10 @@ export default function POSPage() {
                 <div className="bg-yellow-50 border-b border-yellow-200 px-6 py-2.5 flex items-center justify-between gap-4 flex-shrink-0">
                     <div className="flex items-center gap-2 text-sm font-medium text-yellow-800">
                         <WifiOff className="w-4 h-4 flex-shrink-0 text-yellow-600" />
-                        <span>You are offline. Sales will be queued and synced when you reconnect.</span>
+                        <span>{t.pos.offline.banner}</span>
                         {pendingCount > 0 && (
                             <span className="ml-1 bg-yellow-200 text-yellow-900 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest">
-                                {pendingCount} pending
+                                {interpolate(t.pos.offline.pending, { count: pendingCount })}
                             </span>
                         )}
                     </div>
@@ -510,7 +529,7 @@ export default function POSPage() {
                         className="flex items-center gap-1.5 text-xs font-bold bg-yellow-200 hover:bg-yellow-300 text-yellow-900 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50 flex-shrink-0"
                     >
                         <RefreshCw className={`w-3 h-3 ${isSyncing ? 'animate-spin' : ''}`} />
-                        {isSyncing ? 'Syncing…' : 'Sync now'}
+                        {isSyncing ? t.pos.offline.syncing : t.pos.offline.syncNow}
                     </button>
                 </div>
             )}
@@ -520,15 +539,15 @@ export default function POSPage() {
                 <div className="flex-1 flex flex-col p-6 space-y-6 overflow-hidden">
                     <div className="flex items-center justify-between">
                         <div>
-                            <h1 className="text-2xl font-black tracking-tight inline-flex items-center gap-2">POS Terminal <HelpTooltip text="Select items, choose a payment method, then press Checkout. For split payments, add multiple payment rows. Change due is calculated automatically." /></h1>
-                            <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mt-0.5">Quick selection &amp; billing</p>
+                            <h1 className="text-2xl font-black tracking-tight inline-flex items-center gap-2">{t.pos.title} <HelpTooltip text={t.pos.helpTooltip} /></h1>
+                            <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mt-0.5">{t.pos.subtitle}</p>
                         </div>
                         <div className="flex items-center gap-2">
                             <div className="relative w-72">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
                                 <input
                                     type="text"
-                                    placeholder="Search SKU or Name..."
+                                    placeholder={t.pos.searchPlaceholder}
                                     className="w-full bg-white border-none rounded-xl py-2.5 pl-10 pr-4 text-sm shadow-sm focus:ring-2 focus:ring-blue-500/10 transition-all font-medium"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -537,14 +556,14 @@ export default function POSPage() {
                             <div className="flex items-center bg-white rounded-xl shadow-sm p-1 gap-0.5">
                                 <button
                                     onClick={() => setViewMode('gallery')}
-                                    title="Gallery view"
+                                    title={t.pos.galleryViewTitle}
                                     className={`p-2 rounded-lg transition-all ${viewMode === 'gallery' ? 'bg-gray-900 text-white' : 'text-gray-400 hover:text-gray-700'}`}
                                 >
                                     <LayoutGrid className="w-4 h-4" />
                                 </button>
                                 <button
                                     onClick={() => setViewMode('compact')}
-                                    title="Compact view"
+                                    title={t.pos.compactViewTitle}
                                     className={`p-2 rounded-lg transition-all ${viewMode === 'compact' ? 'bg-gray-900 text-white' : 'text-gray-400 hover:text-gray-700'}`}
                                 >
                                     <List className="w-4 h-4" />
@@ -555,7 +574,7 @@ export default function POSPage() {
 
                     <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
                         {loading ? (
-                            <div className="flex items-center justify-center h-full text-gray-400 font-bold uppercase tracking-widest text-xs">Loading Products...</div>
+                            <div className="flex items-center justify-center h-full text-gray-400 font-bold uppercase tracking-widest text-xs">{t.pos.loadingProducts}</div>
                         ) : viewMode === 'gallery' ? (
                             <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                                 {filteredProducts.map((product) => (
@@ -573,11 +592,11 @@ export default function POSPage() {
                                         </div>
                                         <div className="w-full">
                                             <h3 className="text-sm font-black tracking-tight text-gray-900 truncate">{product.name}</h3>
-                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter mb-2">{product.sku || 'N/A'}</p>
+                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter mb-2">{product.sku || t.pos.notAvailable}</p>
                                             <div className="flex items-center justify-between mt-2">
                                                 <span className="text-lg font-black text-blue-600">${product.price}</span>
                                                 <span className="bg-gray-100 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest text-gray-500">
-                                                    {getStockForSalesWarehouse(product)} left
+                                                    {interpolate(t.pos.stockLeft, { count: getStockForSalesWarehouse(product) })}
                                                 </span>
                                             </div>
                                         </div>
@@ -601,11 +620,11 @@ export default function POSPage() {
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <p className="text-sm font-black tracking-tight text-gray-900 truncate leading-tight">{product.name}</p>
-                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">{product.sku || 'N/A'}</p>
+                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">{product.sku || t.pos.notAvailable}</p>
                                         </div>
                                         <div className="flex items-center gap-2 flex-shrink-0">
                                             <span className="bg-gray-100 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest text-gray-500">
-                                                {getStockForSalesWarehouse(product)} left
+                                                {interpolate(t.pos.stockLeft, { count: getStockForSalesWarehouse(product) })}
                                             </span>
                                             <span className="text-sm font-black text-blue-600 w-20 text-right">{formatBDT(parseFloat(product.price))}</span>
                                             <div className="w-7 h-7 rounded-lg bg-gray-100 group-hover:bg-blue-600 flex items-center justify-center transition-colors flex-shrink-0">
@@ -626,10 +645,10 @@ export default function POSPage() {
                             <div className="p-2 bg-blue-50 rounded-xl text-blue-600">
                                 <ShoppingCart className="w-6 h-6" />
                             </div>
-                            <h2 className="text-lg font-black tracking-tight">Current Cart</h2>
+                            <h2 className="text-lg font-black tracking-tight">{t.pos.cart.currentCart}</h2>
                         </div>
                         <span className="bg-gray-900 text-white px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
-                            {cart.length} Items
+                            {interpolate(t.pos.cart.itemsCount, { count: cart.length })}
                         </span>
                     </div>
 
@@ -637,7 +656,7 @@ export default function POSPage() {
                         {cart.length === 0 ? (
                             <div className="h-full flex flex-col items-center justify-center text-gray-300 space-y-4">
                                 <ShoppingCart className="w-16 h-16 opacity-20" />
-                                <p className="text-xs font-black uppercase tracking-widest">Cart is empty</p>
+                                <p className="text-xs font-black uppercase tracking-widest">{t.pos.cart.empty}</p>
                             </div>
                         ) : (
                             cart.map((item) => (
@@ -654,7 +673,7 @@ export default function POSPage() {
                                             <h4 className="text-sm font-black tracking-tight text-gray-900 leading-tight">{item.name}</h4>
                                             <p className="text-xs font-bold text-blue-600 mt-0.5">${item.price}</p>
                                             {item.warranty_enabled && (
-                                                <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest mt-1">Warranty serial required</p>
+                                                <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest mt-1">{t.pos.cart.warrantySerialRequired}</p>
                                             )}
                                         </div>
                                         <div className="flex items-center bg-white rounded-xl p-1 shadow-sm border border-gray-100">
@@ -669,7 +688,7 @@ export default function POSPage() {
 
                                     {item.warranty_enabled && (
                                         <div className="bg-white border border-amber-100 rounded-xl p-3 space-y-2">
-                                            <p className="text-[10px] font-black uppercase tracking-widest text-amber-700">Serial numbers</p>
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-amber-700">{t.pos.cart.serialNumbers}</p>
                                             <div className="grid grid-cols-1 gap-2">
                                                 {getWarrantySerialsForQuantity(item.serialNumbers, item.quantity).map((serial: string, index: number) => (
                                                     <input
@@ -677,7 +696,7 @@ export default function POSPage() {
                                                         type="text"
                                                         value={serial}
                                                         onChange={(e) => updateSerialNumber(item.id, index, e.target.value)}
-                                                        placeholder={`Unit ${index + 1} serial`}
+                                                        placeholder={interpolate(t.pos.cart.unitSerialPlaceholder, { unit: index + 1 })}
                                                         className="w-full bg-gray-50 border border-gray-100 rounded-lg px-3 py-2 text-xs font-bold text-gray-900 focus:ring-2 focus:ring-amber-500/20 focus:bg-white transition-all"
                                                     />
                                                 ))}
@@ -692,11 +711,11 @@ export default function POSPage() {
                     <div className="p-8 bg-gray-50 border-t border-gray-100 space-y-6">
                         <div className="space-y-3">
                             <div className="flex justify-between text-xs font-bold text-gray-400 uppercase tracking-widest">
-                                <span>Subtotal</span>
+                                <span>{t.pos.checkout.subtotal}</span>
                                 <span className="text-gray-900">{formatBDT(subtotal)}</span>
                             </div>
                             <div className="pt-3 border-t border-dashed border-gray-200 flex justify-between">
-                                <span className="text-sm font-black uppercase tracking-widest">Total Pay</span>
+                                <span className="text-sm font-black uppercase tracking-widest">{t.pos.checkout.totalPay}</span>
                                 <span className="text-2xl font-black text-blue-600">{formatBDT(total)}</span>
                             </div>
                         </div>
@@ -706,7 +725,10 @@ export default function POSPage() {
                             <div className="flex items-center gap-2 bg-yellow-50 border border-yellow-200 rounded-2xl px-4 py-2">
                                 <AlertCircle className="w-4 h-4 text-yellow-600 flex-shrink-0" />
                                 <span className="text-xs font-bold text-yellow-800">
-                                    {pendingCount} sale{pendingCount !== 1 ? 's' : ''} pending sync
+                                    {interpolate(
+                                        pendingCount === 1 ? t.pos.checkout.pendingSyncOne : t.pos.checkout.pendingSyncMany,
+                                        { count: pendingCount },
+                                    )}
                                 </span>
                             </div>
                         )}
@@ -717,7 +739,7 @@ export default function POSPage() {
                             className="w-full bg-gray-900 hover:bg-blue-600 text-white py-4 rounded-3xl font-black text-sm uppercase tracking-widest shadow-xl shadow-gray-200 flex items-center justify-center group transition-all hover:-translate-y-1 active:translate-y-0 disabled:opacity-20 disabled:grayscale disabled:translate-y-0"
                         >
                             <CreditCard className="w-5 h-5 mr-3 group-hover:animate-bounce" />
-                            {isOnline ? 'Complete Checkout' : 'Save Offline'}
+                            {isOnline ? t.pos.checkout.completeCheckout : t.pos.checkout.saveOffline}
                             <ChevronRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
                         </button>
                     </div>
@@ -733,22 +755,22 @@ export default function POSPage() {
                                 <CheckCircle className="w-7 h-7" />
                             </div>
                             <div>
-                                <h2 className="text-xl font-black tracking-tight text-gray-900">Sale Complete!</h2>
+                                <h2 className="text-xl font-black tracking-tight text-gray-900">{t.pos.saleComplete.title}</h2>
                                 <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mt-0.5">{lastSale.sale?.serial_number}</p>
                             </div>
                         </div>
                         <div className="p-6 space-y-4">
                             <div className="bg-gray-50 rounded-2xl p-4 space-y-2">
                                 <div className="flex justify-between text-xs font-bold text-gray-500 uppercase tracking-widest">
-                                    <span>Total</span>
+                                    <span>{t.pos.saleComplete.total}</span>
                                     <span className="text-gray-900">{formatBDT(lastSale.total)}</span>
                                 </div>
                                 <div className="flex justify-between text-xs font-bold text-gray-500 uppercase tracking-widest">
-                                    <span>Paid</span>
+                                    <span>{t.pos.saleComplete.paid}</span>
                                     <span className="text-gray-900">{formatBDT(lastSale.totalPaid)}</span>
                                 </div>
                                 <div className="flex justify-between text-xs font-bold text-green-600 uppercase tracking-widest pt-1 border-t border-gray-200">
-                                    <span>Change Due</span>
+                                    <span>{t.pos.saleComplete.changeDue}</span>
                                     <span>{formatBDT(lastSale.changeDue)}</span>
                                 </div>
                             </div>
@@ -757,7 +779,7 @@ export default function POSPage() {
                                 className="w-full bg-gray-900 hover:bg-blue-600 text-white py-4 rounded-2xl font-black text-sm uppercase tracking-widest shadow-lg flex items-center justify-center space-x-3 transition-all hover:-translate-y-0.5"
                             >
                                 <Printer className="w-5 h-5" />
-                                <span>Print POS Receipt</span>
+                                <span>{t.pos.saleComplete.printReceipt}</span>
                             </button>
                         </div>
                         <div className="px-6 pb-6">
@@ -765,7 +787,7 @@ export default function POSPage() {
                                 onClick={() => setLastSale(null)}
                                 className="w-full py-3 rounded-2xl font-black text-xs uppercase tracking-widest text-gray-400 hover:text-gray-900 hover:bg-gray-50 transition-all"
                             >
-                                Skip &amp; Continue
+                                {t.pos.saleComplete.skipContinue}
                             </button>
                         </div>
                     </div>
@@ -782,8 +804,8 @@ export default function POSPage() {
                                     <Banknote className="w-6 h-6" />
                                 </div>
                                 <div>
-                                    <h2 className="text-xl font-black tracking-tight">Payment Details</h2>
-                                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Split or multiple methods</p>
+                                    <h2 className="text-xl font-black tracking-tight">{t.pos.payment.title}</h2>
+                                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">{t.pos.payment.subtitle}</p>
                                 </div>
                             </div>
                             <button onClick={() => setShowCheckout(false)} className="p-2 hover:bg-white rounded-xl text-gray-400 hover:text-gray-900 transition-all shadow-sm">
@@ -793,7 +815,7 @@ export default function POSPage() {
                         <div className="p-6 space-y-6">
                             <div className="bg-blue-50 p-4 rounded-2xl flex items-center justify-between border border-blue-100">
                                 <div>
-                                    <span className="font-black uppercase tracking-widest text-blue-900 text-sm">Total Due</span>
+                                    <span className="font-black uppercase tracking-widest text-blue-900 text-sm">{t.pos.payment.totalDue}</span>
                                     {appliedDiscount && (
                                         <div className="text-xs text-green-600 font-semibold mt-0.5">
                                             -{formatBDT(appliedDiscount.amount)} ({appliedDiscount.name})
@@ -801,7 +823,7 @@ export default function POSPage() {
                                     )}
                                     {loyaltyDiscount > 0 && (
                                         <div className="text-xs text-violet-600 font-semibold mt-0.5">
-                                            -{formatBDT(loyaltyDiscount)} (loyalty points)
+                                            -{formatBDT(loyaltyDiscount)} ({t.pos.payment.loyaltyPointsLabel})
                                         </div>
                                     )}
                                 </div>
@@ -810,7 +832,7 @@ export default function POSPage() {
 
                             {/* Customer & Loyalty */}
                             <div className="space-y-3">
-                                <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">Customer (optional)</label>
+                                <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">{t.pos.payment.customerOptional}</label>
                                 {selectedCustomer ? (
                                     <div className="flex items-center justify-between rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
                                         <div>
@@ -819,7 +841,7 @@ export default function POSPage() {
                                             {loyaltySettings?.loyalty_points_enabled && (
                                                 <p className="text-xs font-semibold text-violet-600 mt-1">
                                                     <Gift className="inline w-3.5 h-3.5 mr-1" />
-                                                    {selectedCustomer.loyalty_points ?? 0} points available
+                                                    {interpolate(t.pos.payment.pointsAvailable, { count: selectedCustomer.loyalty_points ?? 0 })}
                                                 </p>
                                             )}
                                         </div>
@@ -838,7 +860,7 @@ export default function POSPage() {
                                             type="text"
                                             value={customerSearch}
                                             onChange={(e) => searchCustomers(e.target.value)}
-                                            placeholder="Search by name or phone…"
+                                            placeholder={t.pos.payment.searchCustomer}
                                             className="w-full rounded-xl border border-gray-100 bg-gray-50 pl-10 pr-4 py-3 text-sm focus:ring-2 focus:ring-blue-500/20 focus:bg-white"
                                         />
                                         {customerResults.length > 0 && (
@@ -850,7 +872,7 @@ export default function POSPage() {
                                                         onClick={() => selectCustomer(customer)}
                                                         className="w-full text-left px-4 py-2.5 hover:bg-blue-50 text-sm"
                                                     >
-                                                        <span className="font-semibold text-gray-900">{customer.name || 'Unnamed'}</span>
+                                                        <span className="font-semibold text-gray-900">{customer.name || t.pos.payment.unnamed}</span>
                                                         <span className="text-gray-500 ml-2">{customer.phone}</span>
                                                     </button>
                                                 ))}
@@ -876,7 +898,7 @@ export default function POSPage() {
                                                 }}
                                                 className="rounded border-violet-300"
                                             />
-                                            Redeem loyalty points
+                                            {t.pos.payment.redeemPoints}
                                         </label>
                                         {redeemPointsEnabled && (
                                             <div className="flex items-center gap-3">
@@ -889,8 +911,10 @@ export default function POSPage() {
                                                     className="w-32 rounded-lg border border-violet-200 px-3 py-2 text-sm"
                                                 />
                                                 <span className="text-xs text-violet-700">
-                                                    ≈ {formatBDT(loyaltyDiscount)} off
-                                                    {loyaltySettings.loyalty_min_redeem ? ` (min ${loyaltySettings.loyalty_min_redeem})` : ''}
+                                                    {interpolate(t.pos.payment.redeemOff, { amount: formatBDT(loyaltyDiscount) })}
+                                                    {loyaltySettings.loyalty_min_redeem
+                                                        ? interpolate(t.pos.payment.redeemMin, { min: loyaltySettings.loyalty_min_redeem })
+                                                        : ''}
                                                 </span>
                                             </div>
                                         )}
@@ -900,7 +924,7 @@ export default function POSPage() {
 
                             {/* Discount Code */}
                             <div className="space-y-2">
-                                <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">Discount Code</label>
+                                <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">{t.pos.payment.discountCode}</label>
                                 {appliedDiscount ? (
                                     <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-xl px-4 py-3">
                                         <div>
@@ -918,7 +942,7 @@ export default function POSPage() {
                                             value={discountCodeInput}
                                             onChange={e => { setDiscountCodeInput(e.target.value.toUpperCase()); setDiscountError(''); }}
                                             onKeyDown={e => e.key === 'Enter' && handleApplyDiscountCode()}
-                                            placeholder="Enter code (optional)"
+                                            placeholder={t.pos.payment.discountPlaceholder}
                                             className="flex-1 bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 font-mono text-sm text-gray-900 focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all shadow-sm uppercase"
                                         />
                                         <button
@@ -926,7 +950,7 @@ export default function POSPage() {
                                             disabled={discountApplying || !discountCodeInput.trim()}
                                             className="px-4 py-3 bg-gray-900 text-white rounded-xl text-xs font-black uppercase tracking-widest disabled:opacity-40 hover:bg-gray-700 transition-colors"
                                         >
-                                            {discountApplying ? '…' : 'Apply'}
+                                            {discountApplying ? t.pos.payment.applying : t.pos.payment.apply}
                                         </button>
                                     </div>
                                 )}
@@ -937,27 +961,27 @@ export default function POSPage() {
 
                             <div className="space-y-4">
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">Cash Paid</label>
-                                    <input type="number" min="0" value={cashAmount || ''} onChange={(e) => setCashAmount(parseFloat(e.target.value) || 0)} className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 font-black text-gray-900 focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all shadow-sm" placeholder="0.00" />
+                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">{t.pos.payment.cashPaid}</label>
+                                    <input type="number" min="0" value={cashAmount || ''} onChange={(e) => setCashAmount(parseFloat(e.target.value) || 0)} className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 font-black text-gray-900 focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all shadow-sm" placeholder={t.pos.payment.amountPlaceholder} />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">bKash</label>
-                                    <input type="number" min="0" value={bkashAmount || ''} onChange={(e) => setBkashAmount(parseFloat(e.target.value) || 0)} className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 font-black text-gray-900 focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all shadow-sm" placeholder="0.00" />
+                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">{t.pos.payment.bkash}</label>
+                                    <input type="number" min="0" value={bkashAmount || ''} onChange={(e) => setBkashAmount(parseFloat(e.target.value) || 0)} className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 font-black text-gray-900 focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all shadow-sm" placeholder={t.pos.payment.amountPlaceholder} />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">Credit Card</label>
-                                    <input type="number" min="0" value={cardAmount || ''} onChange={(e) => setCardAmount(parseFloat(e.target.value) || 0)} className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 font-black text-gray-900 focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all shadow-sm" placeholder="0.00" />
+                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">{t.pos.payment.creditCard}</label>
+                                    <input type="number" min="0" value={cardAmount || ''} onChange={(e) => setCardAmount(parseFloat(e.target.value) || 0)} className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 font-black text-gray-900 focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all shadow-sm" placeholder={t.pos.payment.amountPlaceholder} />
                                 </div>
                             </div>
 
                             <div className="grid grid-cols-2 gap-4 pt-4 border-t border-dashed border-gray-200">
                                 <div className="bg-gray-50 p-3 rounded-2xl flex flex-col justify-center">
-                                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Total Paid</span>
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">{t.pos.payment.totalPaid}</span>
                                     <span className="text-lg font-black text-gray-900">{formatBDT(totalPaid)}</span>
                                 </div>
                                 <div className={`p-3 rounded-2xl flex flex-col justify-center ${totalPaid < total ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-600'}`}>
                                     <span className={`text-[10px] font-black uppercase tracking-widest mb-1 ${totalPaid < total ? 'text-red-400' : 'text-green-500'}`}>
-                                        {totalPaid < total ? 'Remaining' : 'Change Due'}
+                                        {totalPaid < total ? t.pos.payment.remaining : t.pos.payment.changeDue}
                                     </span>
                                     <span className="text-lg font-black">{formatBDT(Math.abs(totalPaid - total))}</span>
                                 </div>
@@ -969,7 +993,7 @@ export default function POSPage() {
                                 disabled={totalPaid < total}
                                 className="w-full py-4 rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl flex items-center justify-center transition-all disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed bg-blue-600 hover:bg-blue-700 text-white shadow-blue-500/20 hover:-translate-y-0.5"
                             >
-                                {isOnline ? 'Confirm Transaction' : 'Save Offline Sale'}
+                                {isOnline ? t.pos.payment.confirmTransaction : t.pos.payment.saveOfflineSale}
                             </button>
                         </div>
                     </div>

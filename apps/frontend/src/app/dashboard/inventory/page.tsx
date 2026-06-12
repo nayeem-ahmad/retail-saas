@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { AlertTriangle, BookOpen, ClipboardCheck, Package, Pencil, Plus, Settings2, ShoppingBasket, Tag, Trash2, Truck, TrendingUp, Upload } from 'lucide-react';
 import { api, fetchWithAuth } from '../../../lib/api';
 import { formatBDT } from '../../../lib/format';
+import { useI18n } from '@/lib/i18n';
 import AddProductModal from './AddProductModal';
 import { createColumnHelper, type ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table';
@@ -30,7 +31,12 @@ interface Product {
 
 const columnHelper = createColumnHelper<Product>();
 
+function pluralize(count: number, singular: string, plural: string) {
+    return count === 1 ? singular : plural;
+}
+
 export default function InventoryPage() {
+    const { t } = useI18n();
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -112,13 +118,13 @@ export default function InventoryPage() {
     };
 
     const handleDelete = async (id: string) => {
-        if (!window.confirm('Are you sure you want to delete this product?')) return;
+        if (!window.confirm(t.inventory.deleteConfirm)) return;
 
         try {
             await api.deleteProduct(id);
             setProducts((prev) => prev.filter((product) => product.id !== id));
         } catch (error: any) {
-            alert(error.message || 'Failed to delete product');
+            alert(error.message || t.inventory.deleteFailed);
         }
     };
 
@@ -151,11 +157,30 @@ export default function InventoryPage() {
                 body: formData,
             });
 
-            const summary = `Imported ${result.created} product${result.created !== 1 ? 's' : ''}, skipped ${result.skipped}${result.errors?.length ? ` (${result.errors.length} error${result.errors.length !== 1 ? 's' : ''})` : ''}.`;
-            setImportStatus(summary);
+            const productWord = pluralize(
+                result.created,
+                t.inventory.importProductSingular,
+                t.inventory.importProductPlural,
+            );
+            const imported = t.inventory.importSummaryImported
+                .replace('{count}', String(result.created))
+                .replace('{unit}', productWord);
+            const skipped = t.inventory.importSummarySkipped.replace('{count}', String(result.skipped));
+            let errorPart = '';
+            if (result.errors?.length) {
+                const errorWord = pluralize(
+                    result.errors.length,
+                    t.inventory.importErrorSingular,
+                    t.inventory.importErrorPlural,
+                );
+                errorPart = ` ${t.inventory.importSummaryErrors
+                    .replace('{count}', String(result.errors.length))
+                    .replace('{unit}', errorWord)}`;
+            }
+            setImportStatus(`${imported}, ${skipped}${errorPart}.`);
             await loadProducts();
         } catch (error: any) {
-            setImportStatus(`Import failed: ${error?.message ?? 'unknown error'}`);
+            setImportStatus(`${t.inventory.importFailed}${error?.message ?? t.common.error}`);
         } finally {
             setIsImporting(false);
         }
@@ -164,7 +189,7 @@ export default function InventoryPage() {
     const columns: ColumnDef<Product, any>[] = useMemo(
         () => [
             columnHelper.accessor('name', {
-                header: 'Product',
+                header: t.inventory.columns.product,
                 cell: (info) => {
                     const product = info.row.original;
                     return (
@@ -183,14 +208,14 @@ export default function InventoryPage() {
                 size: 240,
             }),
             columnHelper.accessor('sku', {
-                header: 'SKU',
+                header: t.inventory.columns.sku,
                 cell: (info) => (
                     <span className="text-sm font-mono text-gray-500">{info.getValue() || '-'}</span>
                 ),
                 size: 150,
             }),
             columnHelper.accessor('price', {
-                header: 'Price',
+                header: t.inventory.columns.price,
                 cell: (info) => (
                     <span className="text-sm font-black text-blue-600">
                         {formatBDT(Number(info.getValue() || 0))}
@@ -199,15 +224,20 @@ export default function InventoryPage() {
                 sortingFn: (a, b) => Number(a.getValue('price') || 0) - Number(b.getValue('price') || 0),
                 size: 120,
             }),
-            columnHelper.accessor((row) => (row.warranty_enabled ? `${row.warranty_duration_days ?? 0} days` : 'Disabled'), {
+            columnHelper.accessor(
+                (row) =>
+                    row.warranty_enabled
+                        ? `${row.warranty_duration_days ?? 0} ${t.inventory.status.daysSuffix}`
+                        : t.inventory.status.disabled,
+                {
                 id: 'warranty',
-                header: 'Warranty',
+                header: t.inventory.columns.warranty,
                 cell: (info) => <span className="text-sm font-bold text-gray-700">{info.getValue()}</span>,
                 size: 120,
             }),
             columnHelper.accessor((row) => Number(row.stocks?.[0]?.quantity || 0), {
                 id: 'stock',
-                header: 'Current Stock',
+                header: t.inventory.columns.currentStock,
                 cell: (info) => (
                     <span className="text-sm font-bold text-gray-700">{info.getValue()}</span>
                 ),
@@ -218,7 +248,7 @@ export default function InventoryPage() {
                 (row) => Number(row.price || 0) * Number(row.stocks?.[0]?.quantity || 0),
                 {
                     id: 'stock_value',
-                    header: 'Stock Value',
+                    header: t.inventory.columns.stockValue,
                     cell: (info) => (
                         <span className="text-sm font-bold text-gray-700">
                             {formatBDT(Number(info.getValue() || 0))}
@@ -237,7 +267,7 @@ export default function InventoryPage() {
                 },
                 {
                     id: 'status',
-                    header: 'Status',
+                    header: t.inventory.columns.status,
                     cell: (info) => {
                         const status = info.getValue();
                         const classes =
@@ -246,7 +276,12 @@ export default function InventoryPage() {
                                 : status === 'LOW'
                                   ? 'bg-amber-50 text-amber-700 border-amber-200'
                                   : 'bg-emerald-50 text-emerald-700 border-emerald-200';
-                        const label = status === 'OUT' ? 'Out of Stock' : status === 'LOW' ? 'Low Stock' : 'In Stock';
+                        const label =
+                            status === 'OUT'
+                                ? t.inventory.status.outOfStock
+                                : status === 'LOW'
+                                  ? t.inventory.status.lowStock
+                                  : t.inventory.status.inStock;
 
                         return (
                             <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${classes}`}>
@@ -257,48 +292,48 @@ export default function InventoryPage() {
                     size: 130,
                 },
             ),
-            columnHelper.accessor((row) => row.group?.name || 'Uncategorized', {
+            columnHelper.accessor((row) => row.group?.name || t.inventory.status.uncategorized, {
                 id: 'group',
-                header: 'Group',
+                header: t.inventory.columns.group,
                 cell: (info) => <span className="text-sm font-bold text-gray-700">{info.getValue()}</span>,
                 size: 140,
             }),
             columnHelper.accessor((row) => row.subgroup?.name || '-', {
                 id: 'subgroup',
-                header: 'Subgroup',
+                header: t.inventory.columns.subgroup,
                 cell: (info) => <span className="text-sm text-gray-500">{info.getValue()}</span>,
                 size: 150,
             }),
             columnHelper.display({
                 id: 'actions',
-                header: 'Actions',
+                header: t.inventory.columns.actions,
                 cell: (info) => (
                     <div className="flex items-center justify-end space-x-1">
                         <button
                             onClick={() => openEditProduct(info.row.original)}
                             className="p-1.5 rounded-lg text-indigo-600 hover:bg-indigo-50 transition-colors"
-                            title="Edit product"
+                            title={t.inventory.actions.editProduct}
                         >
                             <Pencil className="w-4 h-4" />
                         </button>
                         <button
                             onClick={() => openAddStock(info.row.original)}
                             className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors"
-                            title="Add Stock"
+                            title={t.inventory.actions.addStock}
                         >
                             <ShoppingBasket className="w-4 h-4" />
                         </button>
                         <Link
                             href={`/dashboard/inventory/transfers?productId=${info.row.original.id}`}
                             className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors"
-                            title="View transfer history"
+                            title={t.inventory.actions.transferHistory}
                         >
                             <Truck className="w-4 h-4" />
                         </Link>
                         <button
                             onClick={() => handleDelete(info.row.original.id)}
                             className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 transition-colors"
-                            title="Delete"
+                            title={t.inventory.actions.delete}
                         >
                             <Trash2 className="w-4 h-4" />
                         </button>
@@ -310,16 +345,16 @@ export default function InventoryPage() {
                 size: 90,
             }),
         ],
-        [],
+        [t],
     );
 
     const filterPresets = useMemo(
         () => [
-            { label: 'In Stock', filters: [{ id: 'status', value: 'IN' }] },
-            { label: 'Low Stock', filters: [{ id: 'status', value: 'LOW' }] },
-            { label: 'Out of Stock', filters: [{ id: 'status', value: 'OUT' }] },
+            { label: t.inventory.filterPresets.inStock, filters: [{ id: 'status', value: 'IN' }] },
+            { label: t.inventory.filterPresets.lowStock, filters: [{ id: 'status', value: 'LOW' }] },
+            { label: t.inventory.filterPresets.outOfStock, filters: [{ id: 'status', value: 'OUT' }] },
         ],
-        [],
+        [t],
     );
 
     const filteredSubgroups = useMemo(
@@ -332,9 +367,9 @@ export default function InventoryPage() {
             <div className="max-w-[1400px] mx-auto space-y-6">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-black tracking-tight">Products</h1>
+                        <h1 className="text-2xl font-black tracking-tight">{t.inventory.title}</h1>
                         <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mt-0.5">
-                            Manage catalog pricing and stock positions
+                            {t.inventory.subtitle}
                         </p>
                     </div>
                     <div className="flex items-center gap-3">
@@ -343,42 +378,42 @@ export default function InventoryPage() {
                             className="bg-white border border-gray-200 text-gray-700 px-4 py-2.5 rounded-xl font-bold text-sm flex items-center transition-all hover:border-blue-300 hover:text-blue-700"
                         >
                             <BookOpen className="w-4 h-4 mr-2" />
-                            Stock Ledger
+                            {t.inventory.stockLedger}
                         </Link>
                         <Link
                             href="/dashboard/inventory/settings"
                             className="bg-white border border-gray-200 text-gray-700 px-4 py-2.5 rounded-xl font-bold text-sm flex items-center transition-all hover:border-blue-300 hover:text-blue-700"
                         >
                             <Settings2 className="w-4 h-4 mr-2" />
-                            Settings
+                            {t.inventory.settings}
                         </Link>
                         <Link
                             href="/dashboard/inventory/categories"
                             className="bg-white border border-gray-200 text-gray-700 px-4 py-2.5 rounded-xl font-bold text-sm flex items-center transition-all hover:border-blue-300 hover:text-blue-700"
                         >
                             <Tag className="w-4 h-4 mr-2" />
-                            Manage Categories
+                            {t.inventory.manageCategories}
                         </Link>
                         <Link
                             href="/dashboard/inventory/transfers"
                             className="bg-white border border-gray-200 text-gray-700 px-4 py-2.5 rounded-xl font-bold text-sm flex items-center transition-all hover:border-blue-300 hover:text-blue-700"
                         >
                             <Truck className="w-4 h-4 mr-2" />
-                            Transfers
+                            {t.inventory.transfers}
                         </Link>
                         <Link
                             href="/dashboard/inventory/shrinkage"
                             className="bg-white border border-gray-200 text-gray-700 px-4 py-2.5 rounded-xl font-bold text-sm flex items-center transition-all hover:border-blue-300 hover:text-blue-700"
                         >
                             <AlertTriangle className="w-4 h-4 mr-2" />
-                            Shrinkage
+                            {t.inventory.shrinkage}
                         </Link>
                         <Link
                             href="/dashboard/inventory/stock-takes"
                             className="bg-white border border-gray-200 text-gray-700 px-4 py-2.5 rounded-xl font-bold text-sm flex items-center transition-all hover:border-blue-300 hover:text-blue-700"
                         >
                             <ClipboardCheck className="w-4 h-4 mr-2" />
-                            Stock Takes
+                            {t.inventory.stockTakes}
                         </Link>
                         {hasAdvancedInventoryReports ? (
                             <>
@@ -387,14 +422,14 @@ export default function InventoryPage() {
                                     className="bg-white border border-gray-200 text-gray-700 px-4 py-2.5 rounded-xl font-bold text-sm flex items-center transition-all hover:border-blue-300 hover:text-blue-700"
                                 >
                                     <TrendingUp className="w-4 h-4 mr-2" />
-                                    Reorder Report
+                                    {t.inventory.reorderReport}
                                 </Link>
                                 <Link
                                     href="/dashboard/inventory/reports/shrinkage"
                                     className="bg-white border border-gray-200 text-gray-700 px-4 py-2.5 rounded-xl font-bold text-sm flex items-center transition-all hover:border-blue-300 hover:text-blue-700"
                                 >
                                     <AlertTriangle className="w-4 h-4 mr-2" />
-                                    Shrinkage Report
+                                    {t.inventory.shrinkageReport}
                                 </Link>
                             </>
                         ) : (
@@ -403,7 +438,7 @@ export default function InventoryPage() {
                                 className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-2.5 rounded-xl font-bold text-sm flex items-center transition-all hover:border-amber-300 hover:bg-amber-100"
                             >
                                 <TrendingUp className="w-4 h-4 mr-2" />
-                                Upgrade for Advanced Reports
+                                {t.inventory.upgradeReports}
                             </Link>
                         )}
                         {/* Hidden CSV file input */}
@@ -420,14 +455,14 @@ export default function InventoryPage() {
                             className="bg-white border border-gray-200 text-gray-700 px-4 py-2.5 rounded-xl font-bold text-sm flex items-center transition-all hover:border-emerald-300 hover:text-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed"
                         >
                             <Upload className="w-4 h-4 mr-2" />
-                            {isImporting ? 'Importing…' : 'Import CSV'}
+                            {isImporting ? t.inventory.importing : t.inventory.importCsv}
                         </button>
                         <button
                             onClick={() => setIsModalOpen(true)}
                             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl font-bold text-sm flex items-center shadow-lg shadow-blue-200 transition-all hover:-translate-y-0.5 active:translate-y-0"
                         >
                             <Plus className="w-4 h-4 mr-2" />
-                            Add Product
+                            {t.inventory.addProduct}
                         </button>
                     </div>
                 </div>
@@ -435,7 +470,7 @@ export default function InventoryPage() {
                 {importStatus && (
                     <div
                         className={`px-4 py-3 rounded-xl text-sm font-bold flex items-center justify-between ${
-                            importStatus.startsWith('Import failed')
+                            importStatus.startsWith(t.inventory.importFailed)
                                 ? 'bg-red-50 border border-red-200 text-red-700'
                                 : 'bg-emerald-50 border border-emerald-200 text-emerald-700'
                         }`}
@@ -444,7 +479,7 @@ export default function InventoryPage() {
                         <button
                             onClick={() => setImportStatus(null)}
                             className="ml-4 text-current opacity-60 hover:opacity-100 font-black text-base leading-none"
-                            aria-label="Dismiss"
+                            aria-label={t.common.dismiss}
                         >
                             ×
                         </button>
@@ -453,7 +488,7 @@ export default function InventoryPage() {
 
                 <div className="bg-white border border-gray-100 rounded-2xl p-4 flex flex-wrap gap-3 items-end">
                     <div className="min-w-[220px] flex-1">
-                        <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 ml-1">Group Filter</label>
+                        <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 ml-1">{t.inventory.filters.groupFilter}</label>
                         <select
                             value={selectedGroupId}
                             onChange={(e) => {
@@ -463,7 +498,7 @@ export default function InventoryPage() {
                             }}
                             className="w-full bg-gray-50 border-none rounded-xl py-3 px-4 text-sm font-medium"
                         >
-                            <option value="">All Groups</option>
+                            <option value="">{t.inventory.filters.allGroups}</option>
                             {groups.map((group) => (
                                 <option key={group.id} value={group.id}>
                                     {group.name}
@@ -472,7 +507,7 @@ export default function InventoryPage() {
                         </select>
                     </div>
                     <div className="min-w-[220px] flex-1">
-                        <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 ml-1">Subgroup Filter</label>
+                        <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 ml-1">{t.inventory.filters.subgroupFilter}</label>
                         <select
                             value={selectedSubgroupId}
                             onChange={(e) => {
@@ -481,7 +516,7 @@ export default function InventoryPage() {
                             }}
                             className="w-full bg-gray-50 border-none rounded-xl py-3 px-4 text-sm font-medium"
                         >
-                            <option value="">All Subgroups</option>
+                            <option value="">{t.inventory.filters.allSubgroups}</option>
                             {filteredSubgroups.map((subgroup) => (
                                 <option key={subgroup.id} value={subgroup.id}>
                                     {subgroup.name}
@@ -502,7 +537,7 @@ export default function InventoryPage() {
                             }}
                             className="rounded border-gray-300"
                         />
-                        Show only uncategorized
+                        {t.inventory.filters.showUncategorized}
                     </label>
                 </div>
 
@@ -547,11 +582,11 @@ export default function InventoryPage() {
                     tableId="products"
                     columns={columns}
                     data={products}
-                    title="Products"
+                    title={t.inventory.dataTable.title}
                     isLoading={loading}
-                    emptyMessage="No products found"
+                    emptyMessage={t.inventory.dataTable.emptyMessage}
                     emptyIcon={<Package className="w-16 h-16 text-gray-200" />}
-                    searchPlaceholder="Search by product, SKU, stock status..."
+                    searchPlaceholder={t.inventory.dataTable.searchPlaceholder}
                     filterPresets={filterPresets}
                     enableRowSelection
                 />

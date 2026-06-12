@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import AccountSettingsPage from './page';
 
 jest.mock('@/lib/api', () => ({
@@ -9,18 +9,14 @@ jest.mock('@/lib/api', () => ({
     fetchWithAuth: jest.fn(),
 }));
 
-jest.mock('@/lib/i18n', () => ({
-    useI18n: () => ({
-        t: {
-            settings: {
-                quickLinks: {
-                    localizationLabel: 'Language & Region',
-                    localizationDescription: 'Manage locale, currency, and date format',
-                },
-            },
-        },
-    }),
-}));
+jest.mock('@/lib/i18n', () => {
+    const { enMessages } = require('@/lib/localization/messages/en');
+    return {
+        useI18n: () => ({
+            t: enMessages,
+        }),
+    };
+});
 
 jest.mock('next/link', () => ({
     __esModule: true,
@@ -42,6 +38,8 @@ jest.mock('lucide-react', () => ({
     BarChart3: () => <span data-testid="icon-bar-chart" />,
     Globe: () => <span data-testid="icon-globe" />,
     Monitor: () => <span data-testid="icon-monitor" />,
+    UserCog: () => <span data-testid="icon-user-cog" />,
+    ScrollText: () => <span data-testid="icon-scroll-text" />,
 }));
 
 describe('AccountSettingsPage', () => {
@@ -69,7 +67,7 @@ describe('AccountSettingsPage', () => {
             expect(screen.getByText('Tax / VAT')).toBeInTheDocument();
             expect(screen.getByText('Loyalty Program')).toBeInTheDocument();
             expect(screen.getByText('SMS Notifications')).toBeInTheDocument();
-            expect(screen.getByText('Language & Region')).toBeInTheDocument();
+            expect(screen.getByText('Localization')).toBeInTheDocument();
         });
     });
 
