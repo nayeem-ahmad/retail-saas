@@ -797,6 +797,16 @@ export const api = {
         headers: { 'Content-Type': 'application/json' },
     }),
     deleteCounter: (id: string) => fetchWithAuth(`/counters/${id}`, { method: 'DELETE' }),
+    demoLogin: () => fetch(`${API_BASE}/auth/demo`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+    }).then(async res => {
+        const body = await res.json().catch(() => null);
+        if (!res.ok) {
+            throw new Error(body?.message || body?.error?.message || 'Demo account not available');
+        }
+        return body && 'data' in body ? body.data : body;
+    }),
     login: (data: any) => fetch(`${API_BASE}/auth/login`, {
         method: 'POST',
         body: JSON.stringify(data),

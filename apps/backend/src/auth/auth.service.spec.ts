@@ -1,4 +1,4 @@
-import { ConflictException, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
@@ -281,6 +281,24 @@ describe('AuthService', () => {
     });
 
     // --- changePassword: session invalidation ---
+
+    describe('demoLogin', () => {
+        it('returns auth payload with is_demo when demo user exists', async () => {
+            db.user.findUnique.mockResolvedValueOnce({ id: 'demo-user', email: 'demo@retailsaas.app' });
+            db.user.findUnique.mockResolvedValueOnce(makeUserWithAccess('store-demo', 'tenant-demo'));
+
+            const result = await service.demoLogin();
+
+            expect(result.access_token).toBe('jwt-token');
+            expect(result.is_demo).toBe(true);
+        });
+
+        it('throws when demo user is not seeded', async () => {
+            db.user.findUnique.mockResolvedValueOnce(null);
+
+            await expect(service.demoLogin()).rejects.toBeInstanceOf(ServiceUnavailableException);
+        });
+    });
 
     describe('changePassword', () => {
         const userId = 'user-1';

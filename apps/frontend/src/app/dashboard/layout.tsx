@@ -6,6 +6,7 @@ import { ArrowLeft, Zap, X } from 'lucide-react';
 import NotificationBell from '@/components/NotificationBell';
 import Sidebar from '@/components/Sidebar';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
+import DemoSandboxBanner from '@/components/DemoSandboxBanner';
 import FeedbackWidget from '@/components/FeedbackWidget';
 import ServiceWorkerRegistrar from '@/components/ServiceWorkerRegistrar';
 import { BrandingProvider } from '@/lib/branding';
@@ -23,6 +24,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     const [hasResolvedUser, setHasResolvedUser] = useState(false);
     const [activeStoreId, setActiveStoreId] = useState<string>('');
     const [showOnboardingBanner, setShowOnboardingBanner] = useState(false);
+    const [showDemoBanner, setShowDemoBanner] = useState(false);
     const [showEmailVerificationBanner, setShowEmailVerificationBanner] = useState(false);
     const [resendingVerification, setResendingVerification] = useState(false);
 
@@ -31,6 +33,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             syncLocalePreferenceFromSession(me, { overwrite: false });
             setUser(me);
             setShowEmailVerificationBanner(!me?.email_verified);
+            const isDemo = Boolean(me?.is_demo) || localStorage.getItem('demo_session') === '1';
+            setShowDemoBanner(isDemo && localStorage.getItem('demo_banner_dismissed') !== '1');
+            if (me?.is_demo) {
+                localStorage.setItem('demo_session', '1');
+            }
         }).catch(() => null)
             .finally(() => setHasResolvedUser(true));
     }, []);
@@ -195,6 +202,15 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                         </div>
                     </div>
                 </header>
+
+                {showDemoBanner && (
+                    <DemoSandboxBanner
+                        onDismiss={() => {
+                            localStorage.setItem('demo_banner_dismissed', '1');
+                            setShowDemoBanner(false);
+                        }}
+                    />
+                )}
 
                 {showEmailVerificationBanner && (
                     <div className="bg-amber-500 text-white px-6 py-2.5 flex items-center justify-between gap-4 flex-shrink-0">

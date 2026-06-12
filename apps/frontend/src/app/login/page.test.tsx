@@ -1,12 +1,11 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import LoginPage from './page';
 
-// Mock the Next router seamlessly
+const pushMock = jest.fn();
+
 jest.mock('next/navigation', () => ({
   useRouter() {
-    return {
-      push: jest.fn(),
-    };
+    return { push: pushMock };
   },
   useSearchParams() {
     return {
@@ -21,6 +20,11 @@ jest.mock('../../lib/api', () => ({
     login: jest.fn().mockResolvedValue({
         access_token: 'fake-token',
         tenants: []
+    }),
+    demoLogin: jest.fn().mockResolvedValue({
+        access_token: 'demo-token',
+        is_demo: true,
+        tenants: [{ id: 'tenant-demo', stores: [{ id: 'store-demo' }] }],
     }),
     getMe: jest.fn().mockResolvedValue({
         tenants: []
@@ -78,6 +82,19 @@ describe('Login UI Authentication Mapping', () => {
     expect(errorMsg).toBeInTheDocument();
   });
 
+  it('starts demo sandbox from the demo button', async () => {
+    const { api } = require('../../lib/api');
+
+    render(<LoginPage />);
+    fireEvent.click(screen.getByRole('button', { name: /try demo/i }));
+
+    await waitFor(() => {
+      expect(api.demoLogin).toHaveBeenCalled();
+      expect(localStorage.getItem('demo_session')).toBe('1');
+      expect(pushMock).toHaveBeenCalledWith('/dashboard/onboarding');
+    });
+  });
+
   it('sets tenant and store in localStorage on successful login', async () => {
     const { api } = require('../../lib/api');
     api.login.mockResolvedValueOnce({ access_token: 't-123' });
@@ -95,10 +112,9 @@ describe('Login UI Authentication Mapping', () => {
     
     fireEvent.click(screen.getByRole('button', { name: /sign in/i }));
 
-    const { useRouter } = require('next/navigation');
-    const router = useRouter();
-    
-    await new Promise(resolve => setTimeout(resolve, 10)); // wait for async
+    await waitFor(() => {
+      expect(localStorage.getItem('tenant_id')).toBe('tenant-1');
+    });
 
     expect(localStorage.getItem('tenant_id')).toBe('tenant-1');
     expect(localStorage.getItem('store_id')).toBe('store-1');

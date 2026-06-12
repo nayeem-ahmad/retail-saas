@@ -120,6 +120,15 @@ export const msMessages: MessageDictionary = {
         userFallbackRole: 'Kakitangan',
         onboardingMessage: 'Selamat datang! Mulakan dengan menambah produk dan membuat jualan pertama anda.',
         startSetup: 'Mulakan persediaan',
+        demoBannerMessage: 'Anda sedang meneroka kotak pasir demo langsung — data sampel, ciri penuh, tiada pendaftaran diperlukan.',
+        demoBannerCta: 'Cipta ruang kerja anda',
+    },
+    demo: {
+        loadingTitle: 'Membuka kotak pasir demo…',
+        loadingDescription: 'Memuatkan produk, jualan, dan data perakaunan sampel.',
+        unavailableTitle: 'Demo tidak tersedia',
+        startFreeTrial: 'Mulakan percubaan percuma',
+        backToLogin: 'Kembali ke log masuk',
     },
     sidebar: {
         workspace: 'Ruang kerja',

@@ -96,13 +96,13 @@ export default function HomePage() {
                                 Start your free trial
                                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                             </Link>
-                            <Link
-                                href="/login?demo=1"
-                                className="bg-white hover:bg-gray-50 text-gray-700 font-bold py-4 px-10 rounded-2xl border border-gray-200 transition-colors w-full sm:w-auto text-center flex items-center justify-center gap-2"
-                            >
-                                <PlayCircle className="w-5 h-5 text-blue-500" />
-                                Try Demo
-                            </Link>
+                        <Link
+                            href="/demo"
+                            className="bg-white hover:bg-gray-50 text-gray-700 font-bold py-4 px-10 rounded-2xl border border-gray-200 transition-colors w-full sm:w-auto text-center flex items-center justify-center gap-2"
+                        >
+                            <PlayCircle className="w-5 h-5 text-blue-500" />
+                            Try Demo
+                        </Link>
                         </div>
                         <p className="text-sm text-gray-400">No credit card required · 14-day free trial · Cancel anytime</p>
                         <div className="flex flex-wrap items-center justify-center gap-3 pt-2">

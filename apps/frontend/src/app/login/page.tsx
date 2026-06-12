@@ -5,30 +5,10 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Lock, Mail, ArrowRight, Loader2, PlayCircle } from 'lucide-react';
 import { api } from '@/lib/api';
+import { storeAuthResponse } from '@/lib/auth-session';
 import { useI18n } from '@/lib/i18n';
-import { syncLocalePreferenceFromSession } from '@/lib/localization/preference';
-
-const API_BASE = ((process.env.NEXT_PUBLIC_API_BASE || process.env.NEXT_PUBLIC_API_URL)
-    || (process.env.NODE_ENV === 'production' ? 'https://retail-saas-backend.onrender.com' : 'http://localhost:4000')) + '/api/v1';
 
 type FormSubmitEvent = Parameters<NonNullable<React.ComponentProps<'form'>['onSubmit']>>[0];
-
-async function storeAuthResponse(res: any) {
-    const data = res.data ? res.data : res;
-    localStorage.setItem('access_token', data.access_token);
-    const meRes = data.tenants ? data : await api.getMe();
-    syncLocalePreferenceFromSession(meRes, { overwrite: true });
-    if (meRes.tenants && meRes.tenants.length > 0) {
-        const primaryTenant = meRes.tenants[0];
-        localStorage.setItem('tenant_id', primaryTenant.id);
-        if (primaryTenant.stores && primaryTenant.stores.length > 0) {
-            localStorage.setItem('store_id', primaryTenant.stores[0].id);
-        }
-        if (primaryTenant.subscription?.plan?.code) {
-            localStorage.setItem('subscription_plan_code', primaryTenant.subscription.plan.code);
-        }
-    }
-}
 
 function LoginPageContent() {
     const { t } = useI18n();
@@ -103,14 +83,10 @@ function LoginPageContent() {
         setError(null);
 
         try {
-            const res = await fetch(`${API_BASE}/auth/demo`, { method: 'POST' });
-            if (!res.ok) {
-                const body = await res.json().catch(() => null);
-                throw new Error(body?.message || 'Demo account not available. Please try again later.');
-            }
-            const data = await res.json();
-            await storeAuthResponse(data);
-            router.push('/dashboard');
+            const auth = await api.demoLogin();
+            await storeAuthResponse(auth);
+            localStorage.removeItem('onboarding_complete');
+            router.push('/dashboard/onboarding');
         } catch (err: any) {
             setError(err.message || t.auth.login.demoFailed);
         } finally {

@@ -120,6 +120,15 @@ export const bnMessages: MessageDictionary = {
         userFallbackRole: 'স্টাফ',
         onboardingMessage: 'স্বাগতম! পণ্য যোগ করে এবং প্রথম বিক্রয় করে শুরু করুন।',
         startSetup: 'সেটআপ শুরু করুন',
+        demoBannerMessage: 'আপনি লাইভ ডেমো স্যান্ডবক্সে আছেন — নমুনা ডেটা, সম্পূর্ণ ফিচার, সাইন আপ লাগবে না।',
+        demoBannerCta: 'আপনার ওয়ার্কস্পেস তৈরি করুন',
+    },
+    demo: {
+        loadingTitle: 'ডেমো স্যান্ডবক্স খোলা হচ্ছে…',
+        loadingDescription: 'নমুনা পণ্য, বিক্রয় ও অ্যাকাউন্টিং ডেটা লোড হচ্ছে।',
+        unavailableTitle: 'ডেমো উপলব্ধ নয়',
+        startFreeTrial: 'ফ্রি ট্রায়াল শুরু করুন',
+        backToLogin: 'সাইন ইনে ফিরে যান',
     },
     sidebar: {
         workspace: 'ওয়ার্কস্পেস',

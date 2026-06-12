@@ -118,6 +118,15 @@ export const enMessages = {
         userFallbackRole: 'Staff',
         onboardingMessage: 'Welcome! Get started by adding products and making your first sale.',
         startSetup: 'Start setup',
+        demoBannerMessage: 'You are exploring the live demo sandbox — sample data, full features, no signup required.',
+        demoBannerCta: 'Create your workspace',
+    },
+    demo: {
+        loadingTitle: 'Opening demo sandbox…',
+        loadingDescription: 'Loading sample products, sales, and accounting data.',
+        unavailableTitle: 'Demo unavailable',
+        startFreeTrial: 'Start free trial',
+        backToLogin: 'Back to sign in',
     },
     sidebar: {
         workspace: 'Workspace',

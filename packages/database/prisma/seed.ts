@@ -5,6 +5,7 @@ config({ path: resolve(__dirname, '../../../.env') });
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { bootstrapDefaultAccountingForTenant } from './bootstrap-accounting';
+import { seedDemoAccount, DEMO_ACCOUNT_EMAIL } from './seed-demo';
 import { ROLE_DEFAULT_PERMISSIONS, UserRole } from '@retail-saas/shared-types';
 
 const prisma = new PrismaClient();
@@ -1131,6 +1132,10 @@ async function main() {
     console.log('─────────────────────────────────────');
     console.log('Login → http://localhost:3000');
     console.log('Email: nayeem.ahmad@gmail.com  |  Password: password123');
+
+    console.log('\n🧪  Seeding public demo sandbox...');
+    await seedDemoAccount(prisma);
+    console.log(`    Demo login → ${DEMO_ACCOUNT_EMAIL} / demo123456  or  GET /demo`);
 }
 
 main()

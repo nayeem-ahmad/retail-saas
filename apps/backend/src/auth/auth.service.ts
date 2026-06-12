@@ -9,6 +9,7 @@ import * as bcrypt from 'bcrypt';
 import * as crypto from 'node:crypto';
 import { SignupDto, LoginDto, UpdateProfileDto, ChangePasswordDto } from './auth.dto';
 import { isPlatformAdminEmail } from './platform-admin.util';
+import { DEMO_ACCOUNT_EMAIL } from '@retail-saas/database';
 import { ROLE_DEFAULT_PERMISSIONS, UserRole } from '@retail-saas/shared-types';
 
 type TenantProvisionDto = {
@@ -173,14 +174,19 @@ export class AuthService {
 
     async demoLogin() {
         const user = await this.db.user.findUnique({
-            where: { email: 'demo@retailsaas.app' },
+            where: { email: DEMO_ACCOUNT_EMAIL },
         });
 
         if (!user) {
-            throw new ServiceUnavailableException('Demo account not available');
+            throw new ServiceUnavailableException('Demo account not available. Run npm run seed:demo on the backend.');
         }
 
-        return this.generateAuthResponse(user.id);
+        const auth = await this.generateAuthResponse(user.id);
+        return { ...auth, is_demo: true };
+    }
+
+    private isDemoAccount(email: string) {
+        return email === DEMO_ACCOUNT_EMAIL;
     }
 
     async getPlans() {
@@ -283,6 +289,7 @@ export class AuthService {
             name: user.name,
             preferred_locale: user.preferred_locale,
             is_platform_admin: (user as any).is_platform_admin === true || isPlatformAdminEmail(user.email),
+            is_demo: this.isDemoAccount(user.email),
             email_verified: !!user.email_verified_at,
             two_factor_enabled: twoFactorEnabled,
             tenants: tenantMembers.map((membership) =>
