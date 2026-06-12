@@ -187,7 +187,9 @@ export async function bootstrapDefaultAccountingForTenant(
         select: { id: true, name: true },
     });
 
-    const accountByName = new Map(accounts.map((account) => [account.name, account.id]));
+    const accountByName = new Map<string, string>(
+        accounts.map((account) => [account.name, account.id as string]),
+    );
     const cashId = accountByName.get('Cash in Hand');
     const bankId = accountByName.get('Main Bank Account');
     const salesRevenueId = accountByName.get('Sales Revenue');
