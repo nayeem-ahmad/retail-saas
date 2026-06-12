@@ -49,9 +49,12 @@ describe('TeamService', () => {
 
     it('lets OWNER list members without a permission grant', async () => {
         db.tenantUser.findMany.mockResolvedValue([]);
+        db.tenantUser.count.mockResolvedValue(0);
         db.userStoreAccess.findMany.mockResolvedValue([]);
         db.userStorePermission.groupBy.mockResolvedValue([]);
-        await expect(service.listMembers(owner)).resolves.toEqual([]);
+        await expect(service.listMembers(owner)).resolves.toEqual(
+            expect.objectContaining({ items: [], total: 0 }),
+        );
         expect(db.userStorePermission.findFirst).not.toHaveBeenCalled();
     });
 
@@ -63,9 +66,12 @@ describe('TeamService', () => {
     it('allows a CASHIER who has the MANAGE_USERS grant on the active branch', async () => {
         db.userStorePermission.findFirst.mockResolvedValue({ id: 'g1' });
         db.tenantUser.findMany.mockResolvedValue([]);
+        db.tenantUser.count.mockResolvedValue(0);
         db.userStoreAccess.findMany.mockResolvedValue([]);
         db.userStorePermission.groupBy.mockResolvedValue([]);
-        await expect(service.listMembers(cashier)).resolves.toEqual([]);
+        await expect(service.listMembers(cashier)).resolves.toEqual(
+            expect.objectContaining({ items: [], total: 0 }),
+        );
         expect(db.userStorePermission.findFirst).toHaveBeenCalledWith({
             where: { user_id: 'cash', store_id: 's1', permission: StorePermission.MANAGE_USERS },
             select: { id: true },

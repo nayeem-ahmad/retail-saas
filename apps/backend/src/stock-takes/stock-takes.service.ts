@@ -1,4 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { paginatedFindMany } from '../common/list-pagination.util';
+import { PaginatedResult } from '../common/pagination.dto';
 import { DatabaseService } from '../database/database.service';
 import { applyInventoryMovement, assertWarehouseBelongsToTenant } from '../database/inventory.utils';
 import { CreateStockTakeSessionDto, UpdateStockTakeCountsDto, UpdateStockTakeStatusDto } from './stock-takes.dto';
@@ -42,15 +44,25 @@ export class StockTakesService {
         });
     }
 
-    async findAll(tenantId: string) {
-        const sessions = await this.db.stockTakeSession.findMany({
+    async findAll(tenantId: string, page = 1, limit = 20): Promise<PaginatedResult<unknown>> {
+        const result = await paginatedFindMany({
+            findMany: (args) =>
+                this.db.stockTakeSession.findMany({
+                    ...(args as object),
+                    include: this.sessionInclude(),
+                }),
+            count: (args) => this.db.stockTakeSession.count(args as any),
             where: { tenant_id: tenantId },
-            include: this.sessionInclude(),
             orderBy: [{ created_at: 'desc' }, { id: 'desc' }],
+            page,
+            limit,
         });
         const settings = await this.db.inventorySettings.findUnique({ where: { tenant_id: tenantId } });
         const approvalThreshold = settings?.discrepancy_approval_threshold ?? 25;
-        return sessions.map((session) => this.decorateSession(session, approvalThreshold));
+        return {
+            ...result,
+            items: result.items.map((session) => this.decorateSession(session, approvalThreshold)),
+        };
     }
 
     async findOne(tenantId: string, id: string) {

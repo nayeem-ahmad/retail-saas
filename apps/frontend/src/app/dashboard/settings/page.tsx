@@ -10,7 +10,7 @@ import { useI18n } from '@/lib/i18n';
 /*  Types                                                              */
 /* ------------------------------------------------------------------ */
 
-type Tab = 'profile' | 'password' | '2fa';
+type Tab = 'profile' | 'password' | '2fa' | 'privacy';
 
 type ToastState = { type: 'success' | 'error'; message: string } | null;
 
@@ -42,6 +42,78 @@ function Toast({ toast, onDismiss }: { toast: ToastState; onDismiss: () => void 
                 <XCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
             )}
             {toast.message}
+        </div>
+    );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Data & Privacy Tab                                                 */
+/* ------------------------------------------------------------------ */
+
+function PrivacyTab({ onToast }: { onToast: (t: ToastState) => void }) {
+    const [exporting, setExporting] = useState(false);
+    const [requestingDeletion, setRequestingDeletion] = useState(false);
+
+    const handleExport = async () => {
+        setExporting(true);
+        try {
+            const data = await fetchWithAuth('/account/data-export');
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `retail-saas-export-${new Date().toISOString().slice(0, 10)}.json`;
+            link.click();
+            URL.revokeObjectURL(url);
+            onToast({ type: 'success', message: 'Data export downloaded.' });
+        } catch (err: any) {
+            onToast({ type: 'error', message: err?.message || 'Failed to export data.' });
+        } finally {
+            setExporting(false);
+        }
+    };
+
+    const handleDeletionRequest = async () => {
+        if (!globalThis.confirm('Request deletion of your personal data? Our team will review within 30 days.')) {
+            return;
+        }
+        setRequestingDeletion(true);
+        try {
+            await fetchWithAuth('/account/data-deletion-request', { method: 'DELETE' });
+            onToast({ type: 'success', message: 'Deletion request submitted.' });
+        } catch (err: any) {
+            onToast({ type: 'error', message: err?.message || 'Failed to submit deletion request.' });
+        } finally {
+            setRequestingDeletion(false);
+        }
+    };
+
+    return (
+        <div className="space-y-6">
+            <p className="text-sm text-gray-600">
+                Export a copy of your account data or request deletion under our{' '}
+                <Link href="/privacy" className="text-blue-600 hover:underline">Privacy Policy</Link>.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <button
+                    type="button"
+                    onClick={handleExport}
+                    disabled={exporting}
+                    className="rounded-2xl border border-gray-200 bg-gray-50 px-5 py-4 text-left hover:border-blue-300 transition-colors disabled:opacity-60"
+                >
+                    <p className="text-sm font-bold text-gray-900">Download my data</p>
+                    <p className="mt-1 text-xs text-gray-500">JSON export of profile, memberships, and recent audit activity.</p>
+                </button>
+                <button
+                    type="button"
+                    onClick={handleDeletionRequest}
+                    disabled={requestingDeletion}
+                    className="rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4 text-left hover:border-rose-300 transition-colors disabled:opacity-60"
+                >
+                    <p className="text-sm font-bold text-rose-800">Request data deletion</p>
+                    <p className="mt-1 text-xs text-rose-700">Submit a GDPR/PDPA deletion request for manual review.</p>
+                </button>
+            </div>
         </div>
     );
 }
@@ -556,6 +628,7 @@ export default function AccountSettingsPage() {
         { key: 'profile', label: 'Profile' },
         { key: 'password', label: 'Password' },
         { key: '2fa', label: 'Two-Factor Auth' },
+        { key: 'privacy', label: 'Data & Privacy' },
     ];
 
     const quickLinks = [
@@ -686,6 +759,9 @@ export default function AccountSettingsPage() {
                                         onToast={setToast}
                                         onStatusChange={(enabled) => setTwoFAEnabled(enabled)}
                                     />
+                                )}
+                                {activeTab === 'privacy' && (
+                                    <PrivacyTab onToast={setToast} />
                                 )}
                             </>
                         )}

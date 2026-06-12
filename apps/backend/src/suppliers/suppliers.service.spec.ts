@@ -13,6 +13,7 @@ describe('SuppliersService', () => {
                 findUnique: jest.fn(),
                 create: jest.fn(),
                 findMany: jest.fn(),
+                count: jest.fn(),
                 findFirst: jest.fn(),
             },
         };
@@ -45,15 +46,14 @@ describe('SuppliersService', () => {
         await expect(service.create('tenant-1', { name: 'ACME Supply' })).rejects.toThrow(BadRequestException);
     });
 
-    it('returns ordered supplier lists', async () => {
+    it('returns paginated supplier lists', async () => {
         db.supplier.findMany.mockResolvedValue([{ id: 'sup-1' }]);
+        db.supplier.count.mockResolvedValue(1);
 
-        await service.findAll('tenant-1');
+        const result = await service.findAll('tenant-1', 1, 100);
 
-        expect(db.supplier.findMany).toHaveBeenCalledWith({
-            where: { tenant_id: 'tenant-1', deleted_at: null },
-            orderBy: { name: 'asc' },
-        });
+        expect(result.items).toEqual([{ id: 'sup-1' }]);
+        expect(result.total).toBe(1);
     });
 
     it('throws when supplier is missing', async () => {

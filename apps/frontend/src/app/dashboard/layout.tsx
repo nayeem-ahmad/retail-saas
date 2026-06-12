@@ -23,11 +23,14 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     const [hasResolvedUser, setHasResolvedUser] = useState(false);
     const [activeStoreId, setActiveStoreId] = useState<string>('');
     const [showOnboardingBanner, setShowOnboardingBanner] = useState(false);
+    const [showEmailVerificationBanner, setShowEmailVerificationBanner] = useState(false);
+    const [resendingVerification, setResendingVerification] = useState(false);
 
     useEffect(() => {
         api.getMe().then((me) => {
             syncLocalePreferenceFromSession(me, { overwrite: false });
             setUser(me);
+            setShowEmailVerificationBanner(!me?.email_verified);
         }).catch(() => null)
             .finally(() => setHasResolvedUser(true));
     }, []);
@@ -183,6 +186,37 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                         </div>
                     </div>
                 </header>
+
+                {showEmailVerificationBanner && (
+                    <div className="bg-amber-500 text-white px-6 py-2.5 flex items-center justify-between gap-4 flex-shrink-0">
+                        <div className="text-sm font-medium">
+                            Verify your email to secure your account and receive billing alerts.
+                        </div>
+                        <div className="flex items-center gap-3 flex-shrink-0">
+                            <button
+                                disabled={resendingVerification}
+                                onClick={async () => {
+                                    setResendingVerification(true);
+                                    try {
+                                        await api.resendVerificationEmail();
+                                    } finally {
+                                        setResendingVerification(false);
+                                    }
+                                }}
+                                className="text-xs font-bold bg-white text-amber-700 px-3 py-1 rounded-lg hover:bg-amber-50 transition-colors disabled:opacity-60"
+                            >
+                                {resendingVerification ? 'Sending…' : 'Resend email'}
+                            </button>
+                            <button
+                                onClick={() => setShowEmailVerificationBanner(false)}
+                                className="text-amber-100 hover:text-white transition-colors"
+                                aria-label="Dismiss"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 {/* Onboarding banner */}
                 {showOnboardingBanner && (

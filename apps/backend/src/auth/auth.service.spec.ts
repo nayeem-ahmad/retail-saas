@@ -6,6 +6,7 @@ import { AuthService } from './auth.service';
 import { DatabaseService } from '../database/database.service';
 import { EmailService } from '../email/email.service';
 import { AuditService } from '../audit/audit.service';
+import { TotpService } from './totp.service';
 
 jest.mock('bcrypt', () => ({
     hash: jest.fn().mockResolvedValue('hashed-password'),
@@ -120,6 +121,7 @@ describe('AuthService', () => {
                 { provide: JwtService, useValue: jwtService },
                 { provide: EmailService, useValue: emailService },
                 { provide: AuditService, useValue: auditService },
+                { provide: TotpService, useValue: { isEnabled: jest.fn().mockReturnValue(false) } },
             ],
         }).compile();
 

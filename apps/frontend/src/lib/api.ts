@@ -129,7 +129,7 @@ export const api = {
     deleteProduct: (id: string) => fetchWithAuth(`/products/${id}`, {
         method: 'DELETE',
     }),
-    getProductGroups: () => fetchWithAuth('/product-groups'),
+    getProductGroups: () => fetchWithAuth('/product-groups?limit=100').then((r: any) => r?.items ?? r),
     getProductGroup: (id: string) => fetchWithAuth(`/product-groups/${id}`),
     createProductGroup: (data: any) => fetchWithAuth('/product-groups', {
         method: 'POST',
@@ -147,7 +147,8 @@ export const api = {
     getProductSubgroups: (params?: { groupId?: string }) => {
         const query = new URLSearchParams();
         if (params?.groupId) query.set('groupId', params.groupId);
-        return fetchWithAuth(`/product-subgroups${query.toString() ? `?${query.toString()}` : ''}`);
+        if (!query.has('limit')) query.set('limit', '100');
+        return fetchWithAuth(`/product-subgroups${query.toString() ? `?${query.toString()}` : ''}`).then((r: any) => r?.items ?? r);
     },
     getProductSubgroup: (id: string) => fetchWithAuth(`/product-subgroups/${id}`),
     createProductSubgroup: (data: any) => fetchWithAuth('/product-subgroups', {
@@ -236,7 +237,7 @@ export const api = {
         body: JSON.stringify(data),
         headers: { 'Content-Type': 'application/json' },
     }),
-    getStockTakes: () => fetchWithAuth('/stock-takes'),
+    getStockTakes: () => fetchWithAuth('/stock-takes').then((r: any) => r?.items ?? r),
     getStockTake: (id: string) => fetchWithAuth(`/stock-takes/${id}`),
     createStockTake: (data: any) => fetchWithAuth('/stock-takes', {
         method: 'POST',
@@ -418,7 +419,7 @@ export const api = {
     sendCrmCampaign: (id: string) => fetchWithAuth(`/crm/campaigns/${id}/send`, { method: 'POST' }),
     deleteCrmCampaign: (id: string) => fetchWithAuth(`/crm/campaigns/${id}`, { method: 'DELETE' }),
     // Customer Groups
-    getCustomerGroups: () => fetchWithAuth('/customer-groups'),
+    getCustomerGroups: () => fetchWithAuth('/customer-groups?limit=100').then((r: any) => r?.items ?? r),
     getCustomerGroup: (id: string) => fetchWithAuth(`/customer-groups/${id}`),
     createCustomerGroup: (data: any) => fetchWithAuth('/customer-groups', {
         method: 'POST',
@@ -434,7 +435,7 @@ export const api = {
         method: 'DELETE',
     }),
     // Territories
-    getTerritories: () => fetchWithAuth('/territories'),
+    getTerritories: () => fetchWithAuth('/territories?limit=100').then((r: any) => r?.items ?? r),
     getTerritory: (id: string) => fetchWithAuth(`/territories/${id}`),
     createTerritory: (data: any) => fetchWithAuth('/territories', {
         method: 'POST',
@@ -606,7 +607,7 @@ export const api = {
         if (params.to) query.set('to', params.to);
         return fetchBlobWithAuth(`/accounting/export?${query.toString()}`);
     },
-    getReturns: () => fetchWithAuth('/sales-returns'),
+    getReturns: () => fetchWithAuth('/sales-returns').then((r: any) => r?.items ?? r),
     getReturn: (id: string) => fetchWithAuth(`/sales-returns/${id}`),
     createReturn: (data: any) => fetchWithAuth('/sales-returns', {
         method: 'POST',
@@ -621,7 +622,7 @@ export const api = {
         body: JSON.stringify(data),
         headers: { 'Content-Type': 'application/json' },
     }),
-    getOrders: () => fetchWithAuth('/sales-orders'),
+    getOrders: () => fetchWithAuth('/sales-orders').then((r: any) => r?.items ?? r),
     getOrder: (id: string) => fetchWithAuth(`/sales-orders/${id}`),
     createOrder: (data: any) => fetchWithAuth('/sales-orders', {
         method: 'POST',
@@ -646,11 +647,11 @@ export const api = {
         body: JSON.stringify(data),
         headers: { 'Content-Type': 'application/json' },
     }),
-    getBrands: () => fetchWithAuth('/brands'),
+    getBrands: () => fetchWithAuth('/brands?limit=100').then((r: any) => r?.items ?? r),
     createBrand: (data: any) => fetchWithAuth('/brands', { method: 'POST', body: JSON.stringify(data), headers: { 'Content-Type': 'application/json' } }),
     updateBrand: (id: string, data: any) => fetchWithAuth(`/brands/${id}`, { method: 'PATCH', body: JSON.stringify(data), headers: { 'Content-Type': 'application/json' } }),
     deleteBrand: (id: string) => fetchWithAuth(`/brands/${id}`, { method: 'DELETE' }),
-    getSuppliers: () => fetchWithAuth('/suppliers'),
+    getSuppliers: () => fetchWithAuth('/suppliers?limit=100').then((r: any) => r?.items ?? r),
     createSupplier: (data: any) => fetchWithAuth('/suppliers', {
         method: 'POST',
         body: JSON.stringify(data),
@@ -682,25 +683,25 @@ export const api = {
     updateSupplier: (id: string, data: any) => fetchWithAuth(`/suppliers/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
     deleteSupplier: (id: string) => fetchWithAuth(`/suppliers/${id}`, { method: 'DELETE' }),
     getPurchaseInvoice: (id: string) => fetchWithAuth(`/purchases/${id}/invoice`),
-    getPurchaseOrders: () => fetchWithAuth('/purchase-orders'),
+    getPurchaseOrders: () => fetchWithAuth('/purchase-orders').then((r: any) => r?.items ?? r),
     getPurchaseOrder: (id: string) => fetchWithAuth(`/purchase-orders/${id}`),
     createPurchaseOrder: (data: any) => fetchWithAuth('/purchase-orders', { method: 'POST', body: JSON.stringify(data) }),
     updatePurchaseOrderStatus: (id: string, status: string) => fetchWithAuth(`/purchase-orders/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
     getPurchaseOrderInvoice: (id: string) => fetchWithAuth(`/purchase-orders/${id}/invoice`),
-    getPurchaseQuotations: () => fetchWithAuth('/purchase-quotations'),
+    getPurchaseQuotations: () => fetchWithAuth('/purchase-quotations').then((r: any) => r?.items ?? r),
     getPurchaseQuotation: (id: string) => fetchWithAuth(`/purchase-quotations/${id}`),
     createPurchaseQuotation: (data: any) => fetchWithAuth('/purchase-quotations', { method: 'POST', body: JSON.stringify(data) }),
     updatePurchaseQuotationStatus: (id: string, status: string) => fetchWithAuth(`/purchase-quotations/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
     convertPurchaseQuotation: (id: string) => fetchWithAuth(`/purchase-quotations/${id}/convert`, { method: 'POST' }),
     deletePurchaseQuotation: (id: string) => fetchWithAuth(`/purchase-quotations/${id}`, { method: 'DELETE' }),
-    getPurchases: () => fetchWithAuth('/purchases'),
+    getPurchases: () => fetchWithAuth('/purchases').then((r: any) => r?.items ?? r),
     getPurchase: (id: string) => fetchWithAuth(`/purchases/${id}`),
     createPurchase: (data: any) => fetchWithAuth('/purchases', {
         method: 'POST',
         body: JSON.stringify(data),
         headers: { 'Content-Type': 'application/json' },
     }),
-    getPurchaseReturns: () => fetchWithAuth('/purchase-returns'),
+    getPurchaseReturns: () => fetchWithAuth('/purchase-returns').then((r: any) => r?.items ?? r),
     getPurchaseReturn: (id: string) => fetchWithAuth(`/purchase-returns/${id}`),
     createPurchaseReturn: (data: any) => fetchWithAuth('/purchase-returns', {
         method: 'POST',
@@ -715,7 +716,7 @@ export const api = {
     deletePurchaseReturn: (id: string) => fetchWithAuth(`/purchase-returns/${id}`, {
         method: 'DELETE',
     }),
-    getQuotations: () => fetchWithAuth('/sales-quotations'),
+    getQuotations: () => fetchWithAuth('/sales-quotations').then((r: any) => r?.items ?? r),
     getQuotation: (id: string) => fetchWithAuth(`/sales-quotations/${id}`),
     createQuotation: (data: any) => fetchWithAuth('/sales-quotations', {
         method: 'POST',
@@ -744,7 +745,7 @@ export const api = {
     // Sales detail
     getSale: (id: string) => fetchWithAuth(`/sales/${id}`),
     getSaleInvoice: (id: string) => fetchWithAuth(`/sales/${id}/invoice`),
-    getDiscountCodes: () => fetchWithAuth('/discount-codes'),
+    getDiscountCodes: () => fetchWithAuth('/discount-codes?limit=100').then((r: any) => r?.items ?? r),
     createDiscountCode: (data: any) => fetchWithAuth('/discount-codes', {
         method: 'POST',
         body: JSON.stringify(data),
@@ -802,9 +803,19 @@ export const api = {
         headers: { 'Content-Type': 'application/json' },
     }).then(async res => {
         const body = await res.json().catch(() => null);
-        if (!res.ok) throw new Error(body?.message || 'Login failed');
+        if (!res.ok) throw new Error(body?.error?.message || body?.message || 'Login failed');
         return body && 'data' in body ? body.data : body;
     }),
+    verify2FALogin: (userId: string, code: string) => fetch(`${API_BASE}/auth/2fa/verify`, {
+        method: 'POST',
+        body: JSON.stringify({ userId, code }),
+        headers: { 'Content-Type': 'application/json' },
+    }).then(async res => {
+        const body = await res.json().catch(() => null);
+        if (!res.ok) throw new Error(body?.error?.message || body?.message || '2FA verification failed');
+        return body && 'data' in body ? body.data : body;
+    }),
+    resendVerificationEmail: () => fetchWithAuth('/auth/resend-verification', { method: 'POST' }),
     signup: (data: any) => fetch(`${API_BASE}/auth/signup`, {
         method: 'POST',
         body: JSON.stringify(data),
@@ -865,7 +876,7 @@ export const api = {
     promoteUser: (userId: string) => fetchWithAuth(`/admin/users/${userId}/promote`, { method: 'POST' }),
     demoteUser: (userId: string) => fetchWithAuth(`/admin/users/${userId}/promote`, { method: 'DELETE' }),
     // Team & permissions (tenant-scoped staff management)
-    getTeamMembers: () => fetchWithAuth('/team/members'),
+    getTeamMembers: () => fetchWithAuth('/team/members?limit=100').then((r: any) => r?.items ?? r),
     getTeamMember: (userId: string) => fetchWithAuth(`/team/members/${userId}`),
     getTeamStores: () => fetchWithAuth('/team/stores'),
     getTeamInvitations: () => fetchWithAuth('/team/invitations'),
@@ -930,7 +941,7 @@ export const api = {
     // Warranty Claims
     lookupWarrantySerial: (serialNumber: string) =>
         fetchWithAuth(`/warranty-claims/lookup?serialNumber=${encodeURIComponent(serialNumber)}`),
-    getWarrantyClaims: () => fetchWithAuth('/warranty-claims'),
+    getWarrantyClaims: () => fetchWithAuth('/warranty-claims').then((r: any) => r?.items ?? r),
     getWarrantyClaim: (id: string) => fetchWithAuth(`/warranty-claims/${id}`),
     createWarrantyClaim: (data: any) => fetchWithAuth('/warranty-claims', {
         method: 'POST',
@@ -1021,7 +1032,7 @@ export const api = {
     cancelLeaveRequest: (id: string) =>
         fetchWithAuth(`/attendance/leave-requests/${id}/cancel`, { method: 'PATCH' }),
     // In-app notifications
-    getNotifications: () => fetchWithAuth('/notifications'),
+    getNotifications: () => fetchWithAuth('/notifications').then((r: any) => r?.items ?? r),
     getNotificationUnreadCount: () => fetchWithAuth('/notifications/unread-count'),
     markNotificationRead: (id: string) => fetchWithAuth(`/notifications/${id}/read`, { method: 'PATCH' }),
     markAllNotificationsRead: () => fetchWithAuth('/notifications/read-all', { method: 'PATCH' }),

@@ -1,4 +1,6 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { paginatedFindMany } from '../common/list-pagination.util';
+import { PaginatedResult } from '../common/pagination.dto';
 import { DatabaseService } from '../database/database.service';
 import { CreateCustomerGroupDto, UpdateCustomerGroupDto } from './customer-group.dto';
 
@@ -19,11 +21,18 @@ export class CustomerGroupsService {
         });
     }
 
-    async findAll(tenantId: string) {
-        return this.db.customerGroup.findMany({
+    async findAll(tenantId: string, page = 1, limit = 100): Promise<PaginatedResult<unknown>> {
+        return paginatedFindMany({
+            findMany: (args) =>
+                this.db.customerGroup.findMany({
+                    ...(args as object),
+                    include: { _count: { select: { customers: true } } },
+                }),
+            count: (args) => this.db.customerGroup.count(args as any),
             where: { tenant_id: tenantId },
-            include: { _count: { select: { customers: true } } },
             orderBy: { name: 'asc' },
+            page,
+            limit,
         });
     }
 

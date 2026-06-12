@@ -19,6 +19,7 @@ import { TenantInterceptor } from '../database/tenant.interceptor';
 import { Tenant, TenantContext } from '../database/tenant.decorator';
 import { SubscriptionAccessGuard } from '../auth/subscription-access.guard';
 import { RequiresPlan } from '../auth/subscription-access.decorator';
+import { PaginationDto } from '../common/pagination.dto';
 import { ManufacturingService } from './manufacturing.service';
 import {
     CreateBomDto,
@@ -38,8 +39,8 @@ export class ManufacturingController {
     // ------------------------------------------------------------------ //
 
     @Get('bom')
-    listBoms(@Tenant() tenant: TenantContext) {
-        return this.manufacturingService.listBoms(tenant.tenantId);
+    listBoms(@Tenant() tenant: TenantContext, @Query() query: PaginationDto) {
+        return this.manufacturingService.listBoms(tenant.tenantId, query.page, query.limit);
     }
 
     @Get('bom/:id')

@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Delete, Patch, Body, Param, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Patch, Body, Param, Query, UseGuards, UseInterceptors } from '@nestjs/common';
+import { PaginationDto } from '../common/pagination.dto';
 import { DiscountCodesService } from './discount-codes.service';
 import { CreateDiscountCodeDto, ValidateDiscountCodeDto } from './discount-codes.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -12,8 +13,8 @@ export class DiscountCodesController {
     constructor(private readonly service: DiscountCodesService) {}
 
     @Get()
-    list(@Tenant() tenant: TenantContext) {
-        return this.service.list(tenant.tenantId);
+    list(@Tenant() tenant: TenantContext, @Query() query: PaginationDto) {
+        return this.service.list(tenant.tenantId, query.page, query.limit);
     }
 
     @Post()

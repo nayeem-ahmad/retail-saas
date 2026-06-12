@@ -1,4 +1,6 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { paginatedFindMany } from '../common/list-pagination.util';
+import { PaginatedResult } from '../common/pagination.dto';
 import { DatabaseService } from '../database/database.service';
 import { CreateDiscountCodeDto, ValidateDiscountCodeDto } from './discount-codes.dto';
 
@@ -6,10 +8,14 @@ import { CreateDiscountCodeDto, ValidateDiscountCodeDto } from './discount-codes
 export class DiscountCodesService {
     constructor(private db: DatabaseService) {}
 
-    async list(tenantId: string) {
-        return this.db.discountCode.findMany({
+    async list(tenantId: string, page = 1, limit = 100): Promise<PaginatedResult<unknown>> {
+        return paginatedFindMany({
+            findMany: (args) => this.db.discountCode.findMany(args as any),
+            count: (args) => this.db.discountCode.count(args as any),
             where: { tenantId },
             orderBy: { created_at: 'desc' },
+            page,
+            limit,
         });
     }
 

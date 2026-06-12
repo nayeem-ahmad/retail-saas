@@ -1,4 +1,6 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { paginatedFindMany } from '../common/list-pagination.util';
+import { PaginatedResult } from '../common/pagination.dto';
 import { DatabaseService } from '../database/database.service';
 import { CreateWarrantyClaimDto, UpdateWarrantyClaimStatusDto } from './warranty-claim.dto';
 
@@ -120,11 +122,18 @@ export class WarrantyClaimsService {
         });
     }
 
-    async findAll(tenantId: string) {
-        return this.db.warrantyClaim.findMany({
+    async findAll(tenantId: string, page = 1, limit = 20): Promise<PaginatedResult<unknown>> {
+        return paginatedFindMany({
+            findMany: (args) =>
+                this.db.warrantyClaim.findMany({
+                    ...(args as object),
+                    include: { product: true, sale: true, customer: true, store: true },
+                }),
+            count: (args) => this.db.warrantyClaim.count(args as any),
             where: { tenant_id: tenantId },
-            include: { product: true, sale: true, customer: true, store: true },
             orderBy: { created_at: 'desc' },
+            page,
+            limit,
         });
     }
 

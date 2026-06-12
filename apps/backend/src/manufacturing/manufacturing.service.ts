@@ -1,4 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { paginatedFindMany } from '../common/list-pagination.util';
+import { PaginatedResult } from '../common/pagination.dto';
 import { DatabaseService } from '../database/database.service';
 import { CreateBomDto, UpdateBomDto, CreateProductionJobDto } from './manufacturing.dto';
 import { applyInventoryMovement, ensureDefaultWarehouse } from '../database/inventory.utils';
@@ -11,27 +13,37 @@ export class ManufacturingService {
     //  BOM Recipes                                                         //
     // ------------------------------------------------------------------ //
 
-    async listBoms(tenantId: string) {
-        const recipes = await this.db.bomRecipe.findMany({
+    async listBoms(tenantId: string, page = 1, limit = 100): Promise<PaginatedResult<unknown>> {
+        const result = await paginatedFindMany({
+            findMany: (args) =>
+                this.db.bomRecipe.findMany({
+                    ...(args as object),
+                    include: {
+                        product: { select: { id: true, name: true, sku: true } },
+                        _count: { select: { components: true } },
+                    },
+                }),
+            count: (args) => this.db.bomRecipe.count(args as any),
             where: { tenantId },
             orderBy: { created_at: 'desc' },
-            include: {
-                product: { select: { id: true, name: true, sku: true } },
-                _count: { select: { components: true } },
-            },
+            page,
+            limit,
         });
 
-        return recipes.map((r) => ({
-            id: r.id,
-            productId: r.productId,
-            productName: r.product.name,
-            productSku: r.product.sku,
-            outputQty: r.outputQty,
-            notes: r.notes,
-            componentCount: r._count.components,
-            created_at: r.created_at,
-            updated_at: r.updated_at,
-        }));
+        return {
+            ...result,
+            items: result.items.map((r: any) => ({
+                id: r.id,
+                productId: r.productId,
+                productName: r.product.name,
+                productSku: r.product.sku,
+                outputQty: r.outputQty,
+                notes: r.notes,
+                componentCount: r._count.components,
+                created_at: r.created_at,
+                updated_at: r.updated_at,
+            })),
+        };
     }
 
     async getBom(tenantId: string, id: string) {

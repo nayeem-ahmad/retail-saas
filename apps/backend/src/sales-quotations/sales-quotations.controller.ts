@@ -1,4 +1,5 @@
-import { Controller, Post, Get, Patch, Body, Param, UseGuards, UseInterceptors, Delete } from '@nestjs/common';
+import { Controller, Post, Get, Patch, Body, Param, Query, UseGuards, UseInterceptors, Delete } from '@nestjs/common';
+import { PaginationDto } from '../common/pagination.dto';
 import { SalesQuotationsService } from './sales-quotations.service';
 import { CreateQuotationDto, UpdateQuotationDto, UpdateQuotationStatusDto } from './sales-quotations.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -17,8 +18,8 @@ export class SalesQuotationsController {
     }
 
     @Get()
-    async findAll(@Tenant() tenant: TenantContext) {
-        return this.quotationsService.findAll(tenant.tenantId);
+    async findAll(@Tenant() tenant: TenantContext, @Query() query: PaginationDto) {
+        return this.quotationsService.findAll(tenant.tenantId, query.page, query.limit);
     }
 
     @Get(':id')

@@ -79,6 +79,11 @@ function SignupPageContent() {
                 }
             }
 
+            if (signupRes.requires_email_verification) {
+                router.push(`/verify-email?pending=1&email=${encodeURIComponent(form.email)}`);
+                return;
+            }
+
             router.push(postAuthPath);
         } catch (err: any) {
             setError(err.message || t.auth.signup.defaultError);

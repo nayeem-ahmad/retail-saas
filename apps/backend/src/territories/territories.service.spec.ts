@@ -13,6 +13,7 @@ describe('TerritoriesService', () => {
                 findUnique: jest.fn(),
                 findFirst: jest.fn(),
                 findMany: jest.fn(),
+                count: jest.fn(),
                 create: jest.fn(),
                 update: jest.fn(),
                 delete: jest.fn(),
@@ -87,10 +88,12 @@ describe('TerritoriesService', () => {
                 { id: 't2', name: 'Chittagong', _count: { customers: 0, children: 0 } },
             ];
             db.territory.findMany.mockResolvedValue(territories);
+            db.territory.count.mockResolvedValue(2);
 
             const result = await service.findAll('ten1');
 
-            expect(result).toHaveLength(2);
+            expect(result.items).toHaveLength(2);
+            expect(result.total).toBe(2);
             expect(db.territory.findMany).toHaveBeenCalledWith(
                 expect.objectContaining({ where: { tenant_id: 'ten1' } }),
             );
@@ -98,8 +101,10 @@ describe('TerritoriesService', () => {
 
         it('returns empty array when no territories exist', async () => {
             db.territory.findMany.mockResolvedValue([]);
+            db.territory.count.mockResolvedValue(0);
             const result = await service.findAll('ten1');
-            expect(result).toEqual([]);
+            expect(result.items).toEqual([]);
+            expect(result.total).toBe(0);
         });
     });
 

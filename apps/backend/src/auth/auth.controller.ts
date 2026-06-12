@@ -119,6 +119,7 @@ export class AuthController {
     @Throttle({ default: { ttl: 60_000, limit: 10 } })
     @Post('2fa/verify')
     async totpVerify(@Body() body: { userId: string; code: string }) {
-        return this.totpService.verifyTotpForLogin(body.userId, body.code);
+        await this.totpService.verifyTotpForLogin(body.userId, body.code);
+        return this.authService.completeTwoFactorLogin(body.userId);
     }
 }

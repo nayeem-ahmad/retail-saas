@@ -1,4 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { paginatedFindMany } from '../common/list-pagination.util';
+import { PaginatedResult } from '../common/pagination.dto';
 import { DatabaseService } from '../database/database.service';
 import { CreatePurchaseQuotationDto, UpdatePurchaseQuotationStatusDto } from './purchase-quotation.dto';
 
@@ -49,11 +51,18 @@ export class PurchaseQuotationsService {
         });
     }
 
-    async findAll(tenantId: string) {
-        return this.db.purchaseQuotation.findMany({
+    async findAll(tenantId: string, page = 1, limit = 20): Promise<PaginatedResult<unknown>> {
+        return paginatedFindMany({
+            findMany: (args) =>
+                this.db.purchaseQuotation.findMany({
+                    ...(args as object),
+                    include: INCLUDE,
+                }),
+            count: (args) => this.db.purchaseQuotation.count(args as any),
             where: { tenant_id: tenantId },
-            include: INCLUDE,
             orderBy: { created_at: 'desc' },
+            page,
+            limit,
         });
     }
 

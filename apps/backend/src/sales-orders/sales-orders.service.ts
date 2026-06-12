@@ -1,4 +1,6 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
+import { paginatedFindMany } from '../common/list-pagination.util';
+import { PaginatedResult } from '../common/pagination.dto';
 import { DatabaseService } from '../database/database.service';
 import { CreateSalesOrderDto, UpdateSalesOrderDto, UpdateOrderStatusDto, AddDepositDto } from './sales-orders.dto';
 import { applyInventoryMovement, resolveWarehouseId } from '../database/inventory.utils';
@@ -133,11 +135,18 @@ export class SalesOrdersService {
         });
     }
 
-    async findAll(tenantId: string) {
-        return this.db.salesOrder.findMany({
+    async findAll(tenantId: string, page = 1, limit = 20): Promise<PaginatedResult<unknown>> {
+        return paginatedFindMany({
+            findMany: (args) =>
+                this.db.salesOrder.findMany({
+                    ...(args as object),
+                    include: { customer: true, items: { include: { product: true } }, deposits: true },
+                }),
+            count: (args) => this.db.salesOrder.count(args as any),
             where: { tenant_id: tenantId },
-            include: { customer: true, items: { include: { product: true } }, deposits: true },
-            orderBy: { created_at: 'desc' }
+            orderBy: { created_at: 'desc' },
+            page,
+            limit,
         });
     }
 

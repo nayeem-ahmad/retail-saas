@@ -4,6 +4,8 @@ import {
     ForbiddenException,
 } from '@nestjs/common';
 import * as crypto from 'crypto';
+import { paginatedFindMany } from '../common/list-pagination.util';
+import { PaginatedResult } from '../common/pagination.dto';
 import { DatabaseService } from '../database/database.service';
 
 export interface ApiKeyListItem {
@@ -30,18 +32,25 @@ export class ApiKeysService {
      * List all API keys for a tenant.
      * Never returns the actual key or its hash — only safe display fields.
      */
-    async listKeys(tenantId: string): Promise<ApiKeyListItem[]> {
-        return this.db.apiKey.findMany({
+    async listKeys(tenantId: string, page = 1, limit = 100): Promise<PaginatedResult<ApiKeyListItem>> {
+        return paginatedFindMany({
+            findMany: (args) =>
+                this.db.apiKey.findMany({
+                    ...(args as object),
+                    select: {
+                        id: true,
+                        name: true,
+                        key_prefix: true,
+                        last_used: true,
+                        created_at: true,
+                        revoked_at: true,
+                    },
+                }),
+            count: (args) => this.db.apiKey.count(args as any),
             where: { tenantId },
-            select: {
-                id: true,
-                name: true,
-                key_prefix: true,
-                last_used: true,
-                created_at: true,
-                revoked_at: true,
-            },
             orderBy: { created_at: 'desc' },
+            page,
+            limit,
         });
     }
 

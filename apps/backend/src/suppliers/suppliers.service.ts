@@ -1,5 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
+import { paginatedFindMany } from '../common/list-pagination.util';
+import { PaginatedResult } from '../common/pagination.dto';
 import { CreateSupplierDto, UpdateSupplierDto } from './supplier.dto';
 
 @Injectable()
@@ -26,10 +28,14 @@ export class SuppliersService {
         });
     }
 
-    async findAll(tenantId: string) {
-        return this.db.supplier.findMany({
+    async findAll(tenantId: string, page = 1, limit = 100): Promise<PaginatedResult<unknown>> {
+        return paginatedFindMany({
+            findMany: (args) => this.db.supplier.findMany(args as any),
+            count: (args) => this.db.supplier.count(args as any),
             where: { tenant_id: tenantId, deleted_at: null },
             orderBy: { name: 'asc' },
+            page,
+            limit,
         });
     }
 

@@ -37,6 +37,8 @@ function LoginPageContent() {
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [isDemoLoading, setIsDemoLoading] = useState(false);
+    const [twoFactorUserId, setTwoFactorUserId] = useState<string | null>(null);
+    const [twoFactorCode, setTwoFactorCode] = useState('');
     const router = useRouter();
     const searchParams = useSearchParams();
     const postAuthPath = (() => {
@@ -59,6 +61,26 @@ function LoginPageContent() {
 
         try {
             const loginRes = await api.login({ email, password });
+            if (loginRes?.requires_2fa && loginRes?.user_id) {
+                setTwoFactorUserId(loginRes.user_id);
+                return;
+            }
+            await storeAuthResponse(loginRes);
+            router.push(postAuthPath);
+        } catch (err: any) {
+            setError(err.message || t.auth.login.defaultError);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const submitTwoFactor = async (e: FormSubmitEvent) => {
+        e.preventDefault();
+        if (!twoFactorUserId) return;
+        setIsLoading(true);
+        setError(null);
+        try {
+            const loginRes = await api.verify2FALogin(twoFactorUserId, twoFactorCode);
             await storeAuthResponse(loginRes);
             router.push(postAuthPath);
         } catch (err: any) {
@@ -70,6 +92,10 @@ function LoginPageContent() {
 
     const handleLogin: React.ComponentProps<'form'>['onSubmit'] = (e) => {
         void submitLogin(e);
+    };
+
+    const handleTwoFactor: React.ComponentProps<'form'>['onSubmit'] = (e) => {
+        void submitTwoFactor(e);
     };
 
     const handleDemoLogin = async () => {
@@ -110,6 +136,35 @@ function LoginPageContent() {
                         </div>
                     )}
 
+                    {twoFactorUserId ? (
+                    <form onSubmit={handleTwoFactor} className="space-y-6">
+                        <p className="text-sm text-gray-600 text-center">Enter the 6-digit code from your authenticator app.</p>
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-700 ml-1">Authentication code</label>
+                            <input
+                                type="text"
+                                inputMode="numeric"
+                                pattern="[0-9]{6}"
+                                maxLength={6}
+                                required
+                                value={twoFactorCode}
+                                onChange={(e) => setTwoFactorCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                                className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3 px-4 text-center tracking-[0.4em] font-mono text-lg outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                                placeholder="000000"
+                            />
+                        </div>
+                        <button
+                            type="submit"
+                            disabled={isLoading || twoFactorCode.length !== 6}
+                            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl shadow-lg shadow-blue-200 disabled:opacity-70"
+                        >
+                            {isLoading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Verify and sign in'}
+                        </button>
+                        <button type="button" onClick={() => { setTwoFactorUserId(null); setTwoFactorCode(''); }} className="w-full text-sm text-gray-500 hover:text-gray-800">
+                            Back to password login
+                        </button>
+                    </form>
+                    ) : (
                     <form onSubmit={handleLogin} className="space-y-6">
                         <div className="space-y-2">
                             <label className="text-sm font-medium text-gray-700 ml-1">{t.auth.login.emailLabel}</label>
@@ -164,6 +219,7 @@ function LoginPageContent() {
                             )}
                         </button>
                     </form>
+                    )}
 
                     {/* Divider */}
                     <div className="my-6 flex items-center gap-3">

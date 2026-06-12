@@ -15,6 +15,7 @@ describe('CustomerGroupsService', () => {
                 findUnique: jest.fn(),
                 findFirst: jest.fn(),
                 findMany: jest.fn(),
+                count: jest.fn(),
                 create: jest.fn(),
                 update: jest.fn(),
                 delete: jest.fn(),
@@ -76,23 +77,29 @@ describe('CustomerGroupsService', () => {
                 { id: 'cg-2', name: 'Silver', _count: { customers: 3 } },
             ];
             db.customerGroup.findMany.mockResolvedValue(groups);
+            db.customerGroup.count.mockResolvedValue(2);
 
             const result = await service.findAll(tenantId);
 
-            expect(db.customerGroup.findMany).toHaveBeenCalledWith({
-                where: { tenant_id: tenantId },
-                include: { _count: { select: { customers: true } } },
-                orderBy: { name: 'asc' },
-            });
-            expect(result).toEqual(groups);
+            expect(db.customerGroup.findMany).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    where: { tenant_id: tenantId },
+                    include: { _count: { select: { customers: true } } },
+                    orderBy: { name: 'asc' },
+                }),
+            );
+            expect(result.items).toEqual(groups);
+            expect(result.total).toBe(2);
         });
 
         it('should return empty array when no groups exist', async () => {
             db.customerGroup.findMany.mockResolvedValue([]);
+            db.customerGroup.count.mockResolvedValue(0);
 
             const result = await service.findAll('tenant-empty');
 
-            expect(result).toEqual([]);
+            expect(result.items).toEqual([]);
+            expect(result.total).toBe(0);
         });
     });
 

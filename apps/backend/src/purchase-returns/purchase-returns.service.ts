@@ -1,4 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { paginatedFindMany } from '../common/list-pagination.util';
+import { PaginatedResult } from '../common/pagination.dto';
 import { DatabaseService } from '../database/database.service';
 import { CreatePurchaseReturnDto, UpdatePurchaseReturnDto } from './purchase-return.dto';
 import { applyInventoryMovement, resolveWarehouseId } from '../database/inventory.utils';
@@ -107,14 +109,21 @@ export class PurchaseReturnsService {
         });
     }
 
-    async findAll(tenantId: string) {
-        const returns = await this.db.purchaseReturn.findMany({
+    async findAll(tenantId: string, page = 1, limit = 20): Promise<PaginatedResult<unknown>> {
+        const result = await paginatedFindMany({
+            findMany: (args) =>
+                this.db.purchaseReturn.findMany({
+                    ...(args as object),
+                    include: this.returnInclude(),
+                }),
+            count: (args) => this.db.purchaseReturn.count(args as any),
             where: { tenant_id: tenantId },
-            include: this.returnInclude(),
             orderBy: { created_at: 'desc' },
+            page,
+            limit,
         });
 
-        const returnIds = returns.map((item) => item.id);
+        const returnIds = result.items.map((item: { id: string }) => item.id);
         const vouchers = returnIds.length > 0
             ? await this.db.voucher.findMany({
                 where: {
@@ -134,16 +143,19 @@ export class PurchaseReturnsService {
 
         const voucherByReturnId = new Map(vouchers.map((voucher) => [voucher.source_id, voucher]));
 
-        return returns.map((item) => {
-            const voucher = voucherByReturnId.get(item.id);
-            return {
-                ...item,
-                posting_status: voucher ? 'posted' : 'skipped',
-                voucher_id: voucher?.id ?? null,
-                voucher_number: voucher?.voucher_number ?? null,
-                voucher_type: voucher?.voucher_type ?? null,
-            };
-        });
+        return {
+            ...result,
+            items: result.items.map((item: Record<string, unknown> & { id: string }) => {
+                const voucher = voucherByReturnId.get(item.id);
+                return {
+                    ...item,
+                    posting_status: voucher ? 'posted' : 'skipped',
+                    voucher_id: voucher?.id ?? null,
+                    voucher_number: voucher?.voucher_number ?? null,
+                    voucher_type: voucher?.voucher_type ?? null,
+                };
+            }),
+        };
     }
 
     async findOne(tenantId: string, id: string) {

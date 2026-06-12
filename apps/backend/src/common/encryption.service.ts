@@ -21,7 +21,11 @@ export class EncryptionService {
             this.key = Buffer.from(raw, 'hex');
             this.enabled = true;
         } else {
-            this.logger.warn('FIELD_ENCRYPTION_KEY not set or invalid — field encryption disabled');
+            const message = 'FIELD_ENCRYPTION_KEY not set or invalid — field encryption disabled';
+            if (process.env.NODE_ENV === 'production') {
+                throw new Error(`${message} (required in production)`);
+            }
+            this.logger.warn(message);
             this.enabled = false;
             this.key = Buffer.alloc(32); // placeholder, unused when disabled
         }

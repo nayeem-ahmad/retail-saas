@@ -1,4 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { paginatedFindMany } from '../common/list-pagination.util';
+import { PaginatedResult } from '../common/pagination.dto';
 import { DatabaseService } from '../database/database.service';
 import { CreatePurchaseDto } from './purchase.dto';
 import { applyInventoryMovement, resolveWarehouseId } from '../database/inventory.utils';
@@ -143,19 +145,26 @@ export class PurchasesService {
         });
     }
 
-    async findAll(tenantId: string) {
-        const purchases = await this.db.purchase.findMany({
+    async findAll(tenantId: string, page = 1, limit = 20): Promise<PaginatedResult<unknown>> {
+        const result = await paginatedFindMany({
+            findMany: (args) =>
+                this.db.purchase.findMany({
+                    ...(args as object),
+                    include: {
+                        supplier: true,
+                        items: {
+                            include: { product: true, returnItems: true },
+                        },
+                    },
+                }),
+            count: (args) => this.db.purchase.count(args as any),
             where: { tenant_id: tenantId },
-            include: {
-                supplier: true,
-                items: {
-                    include: { product: true, returnItems: true },
-                },
-            },
             orderBy: { created_at: 'desc' },
+            page,
+            limit,
         });
 
-        const purchaseIds = purchases.map((purchase) => purchase.id);
+        const purchaseIds = result.items.map((purchase: { id: string }) => purchase.id);
         const vouchers = purchaseIds.length > 0
             ? await this.db.voucher.findMany({
                 where: {
@@ -175,16 +184,19 @@ export class PurchasesService {
 
         const voucherByPurchaseId = new Map(vouchers.map((voucher) => [voucher.source_id, voucher]));
 
-        return purchases.map((purchase) => {
-            const voucher = voucherByPurchaseId.get(purchase.id);
-            return {
-                ...purchase,
-                posting_status: voucher ? 'posted' : 'skipped',
-                voucher_id: voucher?.id ?? null,
-                voucher_number: voucher?.voucher_number ?? null,
-                voucher_type: voucher?.voucher_type ?? null,
-            };
-        });
+        return {
+            ...result,
+            items: result.items.map((purchase: Record<string, unknown> & { id: string }) => {
+                const voucher = voucherByPurchaseId.get(purchase.id);
+                return {
+                    ...purchase,
+                    posting_status: voucher ? 'posted' : 'skipped',
+                    voucher_id: voucher?.id ?? null,
+                    voucher_number: voucher?.voucher_number ?? null,
+                    voucher_type: voucher?.voucher_type ?? null,
+                };
+            }),
+        };
     }
 
     async getInvoiceData(tenantId: string, id: string) {

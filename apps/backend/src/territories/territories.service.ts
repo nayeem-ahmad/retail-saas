@@ -1,4 +1,6 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { paginatedFindMany } from '../common/list-pagination.util';
+import { PaginatedResult } from '../common/pagination.dto';
 import { DatabaseService } from '../database/database.service';
 import { CreateTerritoryDto, UpdateTerritoryDto } from './territory.dto';
 
@@ -30,14 +32,21 @@ export class TerritoriesService {
         });
     }
 
-    async findAll(tenantId: string) {
-        return this.db.territory.findMany({
+    async findAll(tenantId: string, page = 1, limit = 100): Promise<PaginatedResult<unknown>> {
+        return paginatedFindMany({
+            findMany: (args) =>
+                this.db.territory.findMany({
+                    ...(args as object),
+                    include: {
+                        parent: { select: { id: true, name: true } },
+                        _count: { select: { customers: true, children: true } },
+                    },
+                }),
+            count: (args) => this.db.territory.count(args as any),
             where: { tenant_id: tenantId },
-            include: {
-                parent: { select: { id: true, name: true } },
-                _count: { select: { customers: true, children: true } },
-            },
             orderBy: { name: 'asc' },
+            page,
+            limit,
         });
     }
 

@@ -271,6 +271,7 @@ describe('PurchaseOrdersService', () => {
         it('returns all purchase orders for the tenant', async () => {
             const orders = [basePO, { ...basePO, id: 'po-2', po_number: 'PO-00002' }];
             db.purchaseOrder.findMany.mockResolvedValue(orders);
+            db.purchaseOrder.count.mockResolvedValue(2);
 
             const result = await service.findAll(tenantId);
 
@@ -280,15 +281,18 @@ describe('PurchaseOrdersService', () => {
                     orderBy: { created_at: 'desc' },
                 }),
             );
-            expect(result).toEqual(orders);
+            expect(result.items).toEqual(orders);
+            expect(result.total).toBe(2);
         });
 
         it('returns empty array when no orders exist', async () => {
             db.purchaseOrder.findMany.mockResolvedValue([]);
+            db.purchaseOrder.count.mockResolvedValue(0);
 
             const result = await service.findAll(tenantId);
 
-            expect(result).toEqual([]);
+            expect(result.items).toEqual([]);
+            expect(result.total).toBe(0);
         });
     });
 

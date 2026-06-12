@@ -1,4 +1,5 @@
-import { Controller, Get, Patch, Param, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Controller, Get, Patch, Param, Query, UseGuards, UseInterceptors } from '@nestjs/common';
+import { PaginationDto } from '../common/pagination.dto';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { NotificationsService } from './notifications.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -14,8 +15,8 @@ export class NotificationsController {
     constructor(private readonly notificationsService: NotificationsService) {}
 
     @Get()
-    list(@Tenant() tenant: TenantContext) {
-        return this.notificationsService.listForUser(tenant.tenantId, tenant.userId);
+    list(@Tenant() tenant: TenantContext, @Query() query: PaginationDto) {
+        return this.notificationsService.listForUser(tenant.tenantId, tenant.userId, query.page, query.limit);
     }
 
     @Get('unread-count')

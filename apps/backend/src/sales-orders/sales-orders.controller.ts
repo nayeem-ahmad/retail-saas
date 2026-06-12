@@ -1,4 +1,5 @@
-import { Controller, Post, Get, Patch, Delete, Body, Param, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Controller, Post, Get, Patch, Delete, Body, Param, Query, UseGuards, UseInterceptors } from '@nestjs/common';
+import { PaginationDto } from '../common/pagination.dto';
 import { SalesOrdersService } from './sales-orders.service';
 import { CreateSalesOrderDto, UpdateSalesOrderDto, UpdateOrderStatusDto, AddDepositDto } from './sales-orders.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -17,8 +18,8 @@ export class SalesOrdersController {
     }
 
     @Get()
-    async findAll(@Tenant() tenant: TenantContext) {
-        return this.ordersService.findAll(tenant.tenantId);
+    async findAll(@Tenant() tenant: TenantContext, @Query() query: PaginationDto) {
+        return this.ordersService.findAll(tenant.tenantId, query.page, query.limit);
     }
 
     @Get(':id')

@@ -13,6 +13,7 @@ describe('DiscountCodesService', () => {
                 findUnique: jest.fn(),
                 findFirst: jest.fn(),
                 findMany: jest.fn(),
+                count: jest.fn(),
                 create: jest.fn(),
                 update: jest.fn(),
                 updateMany: jest.fn(),
@@ -39,20 +40,26 @@ describe('DiscountCodesService', () => {
         it('returns all discount codes for the tenant', async () => {
             const codes = [{ id: 'd1', code: 'SAVE10' }, { id: 'd2', code: 'FLAT50' }];
             db.discountCode.findMany.mockResolvedValue(codes);
+            db.discountCode.count.mockResolvedValue(2);
 
             const result = await service.list('ten1');
 
-            expect(result).toHaveLength(2);
-            expect(db.discountCode.findMany).toHaveBeenCalledWith({
-                where: { tenantId: 'ten1' },
-                orderBy: { created_at: 'desc' },
-            });
+            expect(result.items).toHaveLength(2);
+            expect(result.total).toBe(2);
+            expect(db.discountCode.findMany).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    where: { tenantId: 'ten1' },
+                    orderBy: { created_at: 'desc' },
+                }),
+            );
         });
 
         it('returns empty array when no codes exist', async () => {
             db.discountCode.findMany.mockResolvedValue([]);
+            db.discountCode.count.mockResolvedValue(0);
             const result = await service.list('ten1');
-            expect(result).toEqual([]);
+            expect(result.items).toEqual([]);
+            expect(result.total).toBe(0);
         });
     });
 

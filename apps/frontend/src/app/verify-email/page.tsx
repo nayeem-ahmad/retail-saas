@@ -8,7 +8,7 @@ import { CheckCircle2, XCircle, Loader2, ArrowRight } from 'lucide-react';
 const API_BASE = ((process.env.NEXT_PUBLIC_API_BASE || process.env.NEXT_PUBLIC_API_URL)
     || (process.env.NODE_ENV === 'production' ? 'https://retail-saas-backend.onrender.com' : 'http://localhost:4000')) + '/api/v1';
 
-type Status = 'loading' | 'success' | 'error';
+type Status = 'loading' | 'success' | 'pending' | 'error';
 
 export default function VerifyEmailPage() {
     return (
@@ -21,9 +21,14 @@ export default function VerifyEmailPage() {
 function VerifyEmailContent() {
     const searchParams = useSearchParams();
     const token = searchParams.get('token');
-    const [status, setStatus] = useState<Status>('loading');
+    const pending = searchParams.get('pending') === '1';
+    const email = searchParams.get('email');
+    const [status, setStatus] = useState<Status>(pending ? 'pending' : 'loading');
 
     useEffect(() => {
+        if (pending) {
+            return;
+        }
         if (!token) {
             setStatus('error');
             return;
@@ -58,6 +63,27 @@ function VerifyEmailContent() {
                                 <p className="font-semibold text-gray-800 text-lg">Verifying your email…</p>
                                 <p className="text-sm text-gray-400 mt-1">This will only take a moment.</p>
                             </div>
+                        </div>
+                    )}
+
+                    {status === 'pending' && (
+                        <div className="flex flex-col items-center gap-5 py-6 text-center">
+                            <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center">
+                                <CheckCircle2 className="w-9 h-9 text-blue-500" />
+                            </div>
+                            <div>
+                                <h1 className="text-2xl font-bold tracking-tight text-gray-900">Check your inbox</h1>
+                                <p className="text-gray-500 mt-2 text-sm leading-relaxed">
+                                    We sent a verification link{email ? ` to ${email}` : ''}. Open it to activate your account, then continue to the dashboard.
+                                </p>
+                            </div>
+                            <Link
+                                href="/dashboard"
+                                className="mt-2 inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-xl shadow-lg shadow-blue-200 transition-all group"
+                            >
+                                Continue to dashboard
+                                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                            </Link>
                         </div>
                     )}
 

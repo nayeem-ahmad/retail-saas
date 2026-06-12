@@ -15,6 +15,7 @@ describe('SalesOrdersService', () => {
         findUnique: jest.fn(),
         update: jest.fn(),
         findMany: jest.fn(),
+        count: jest.fn(),
         findFirst: jest.fn()
       },
       productStock: {
@@ -146,13 +147,17 @@ describe('SalesOrdersService', () => {
 
   it('findAll() should return all orders for a tenant', async () => {
     db.salesOrder.findMany.mockResolvedValue([{ id: 'order-1' }]);
+    db.salesOrder.count.mockResolvedValue(1);
     const result = await service.findAll('tenant-1');
-    expect(db.salesOrder.findMany).toHaveBeenCalledWith({
-      where: { tenant_id: 'tenant-1' },
-      include: { customer: true, items: { include: { product: true } }, deposits: true },
-      orderBy: { created_at: 'desc' }
-    });
-    expect(result).toHaveLength(1);
+    expect(db.salesOrder.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { tenant_id: 'tenant-1' },
+        include: { customer: true, items: { include: { product: true } }, deposits: true },
+        orderBy: { created_at: 'desc' },
+      }),
+    );
+    expect(result.items).toHaveLength(1);
+    expect(result.total).toBe(1);
   });
 
   it('findOne() should return a single order with details', async () => {

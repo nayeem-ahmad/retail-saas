@@ -135,14 +135,15 @@ describe('NotificationsService', () => {
         { id: 'n-2', title: 'Second', read_at: new Date() },
       ];
       db.notification.findMany.mockResolvedValue(notifications);
+      db.notification.count.mockResolvedValue(2);
 
       const result = await service.listForUser('t-1', 'u-1');
 
-      expect(result).toEqual(notifications);
+      expect(result.items).toEqual(notifications);
+      expect(result.total).toBe(2);
       expect(db.notification.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { tenant_id: 't-1', user_id: 'u-1' },
-          take: 50,
           orderBy: [{ read_at: 'asc' }, { created_at: 'desc' }],
         }),
       );
@@ -150,10 +151,12 @@ describe('NotificationsService', () => {
 
     it('returns empty array when no notifications', async () => {
       db.notification.findMany.mockResolvedValue([]);
+      db.notification.count.mockResolvedValue(0);
 
       const result = await service.listForUser('t-1', 'u-1');
 
-      expect(result).toEqual([]);
+      expect(result.items).toEqual([]);
+      expect(result.total).toBe(0);
     });
   });
 

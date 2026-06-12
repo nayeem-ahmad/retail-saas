@@ -1,5 +1,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
+import { paginatedFindMany } from '../common/list-pagination.util';
+import { PaginatedResult } from '../common/pagination.dto';
 import { DatabaseService } from '../database/database.service';
 import { EmailService } from '../email/email.service';
 import { SmsService } from '../sms/sms.service';
@@ -52,20 +54,26 @@ export class NotificationsService {
         });
     }
 
-    async listForUser(tenantId: string, userId: string) {
-        return this.db.notification.findMany({
+    async listForUser(tenantId: string, userId: string, page = 1, limit = 20): Promise<PaginatedResult<unknown>> {
+        return paginatedFindMany({
+            findMany: (args) =>
+                this.db.notification.findMany({
+                    ...(args as object),
+                    select: {
+                        id: true,
+                        type: true,
+                        title: true,
+                        body: true,
+                        link: true,
+                        read_at: true,
+                        created_at: true,
+                    },
+                }),
+            count: (args) => this.db.notification.count(args as any),
             where: { tenant_id: tenantId, user_id: userId },
             orderBy: [{ read_at: 'asc' }, { created_at: 'desc' }],
-            take: 50,
-            select: {
-                id: true,
-                type: true,
-                title: true,
-                body: true,
-                link: true,
-                read_at: true,
-                created_at: true,
-            },
+            page,
+            limit,
         });
     }
 

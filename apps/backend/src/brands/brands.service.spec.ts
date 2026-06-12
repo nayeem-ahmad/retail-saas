@@ -15,6 +15,7 @@ describe('BrandsService', () => {
                 findUnique: jest.fn(),
                 findFirst: jest.fn(),
                 findMany: jest.fn(),
+                count: jest.fn(),
                 create: jest.fn(),
                 update: jest.fn(),
                 delete: jest.fn(),
@@ -96,22 +97,28 @@ describe('BrandsService', () => {
                 { id: 'brand-2', name: 'Nike', deleted_at: null },
             ];
             db.brand.findMany.mockResolvedValue(brands);
+            db.brand.count.mockResolvedValue(2);
 
             const result = await service.findAll(tenantId);
 
-            expect(db.brand.findMany).toHaveBeenCalledWith({
-                where: { tenant_id: tenantId, deleted_at: null },
-                orderBy: { name: 'asc' },
-            });
-            expect(result).toEqual(brands);
+            expect(db.brand.findMany).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    where: { tenant_id: tenantId, deleted_at: null },
+                    orderBy: { name: 'asc' },
+                }),
+            );
+            expect(result.items).toEqual(brands);
+            expect(result.total).toBe(2);
         });
 
         it('should return empty array when no brands exist', async () => {
             db.brand.findMany.mockResolvedValue([]);
+            db.brand.count.mockResolvedValue(0);
 
             const result = await service.findAll('tenant-empty');
 
-            expect(result).toEqual([]);
+            expect(result.items).toEqual([]);
+            expect(result.total).toBe(0);
         });
     });
 

@@ -1,4 +1,5 @@
-import { BadRequestException, Injectable, UnauthorizedException, ConflictException, ServiceUnavailableException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, UnauthorizedException, ConflictException, ServiceUnavailableException } from '@nestjs/common';
+import { TotpService } from './totp.service';
 import { DatabaseService } from '../database/database.service';
 import { JwtService } from '@nestjs/jwt';
 import { EmailService } from '../email/email.service';
@@ -24,6 +25,7 @@ export class AuthService {
         private readonly jwtService: JwtService,
         private readonly email: EmailService,
         private readonly audit: AuditService,
+        private readonly totp: TotpService,
     ) { }
 
     async signup(dto: SignupDto) {
@@ -66,7 +68,15 @@ export class AuthService {
             console.warn(`[AuthService] Verification email failed for ${user.email}:`, err?.message);
         });
         this.audit.log('USER_SIGNUP', 'User', { userId: user.id }, user.id, { email: user.email }).catch(() => {});
-        return this.generateAuthResponse(user.id);
+        const auth = await this.generateAuthResponse(user.id);
+        return {
+            ...auth,
+            requires_email_verification: !user.email_verified_at,
+        };
+    }
+
+    async completeTwoFactorLogin(userId: string) {
+        return this.generateAuthResponse(userId);
     }
 
     async login(dto: LoginDto) {
@@ -93,6 +103,22 @@ export class AuthService {
         if (!isPasswordValid) {
             this.audit.log('LOGIN_FAILED', 'User', { userId: user.id }, user.id, { email: dto.email }).catch(() => {});
             throw new UnauthorizedException('Invalid credentials');
+        }
+
+        const requireEmailVerification = process.env.REQUIRE_EMAIL_VERIFICATION === 'true';
+        const isExempt = isPlatformAdminEmail(user.email);
+        if (requireEmailVerification && !user.email_verified_at && !isExempt) {
+            throw new ForbiddenException({
+                code: 'EMAIL_NOT_VERIFIED',
+                message: 'Please verify your email before signing in.',
+            });
+        }
+
+        if (this.totp.isEnabled((user as any).totp_secret)) {
+            return {
+                requires_2fa: true,
+                user_id: user.id,
+            };
         }
 
         this.audit.log('USER_LOGIN', 'User', { userId: user.id }, user.id).catch(() => {});

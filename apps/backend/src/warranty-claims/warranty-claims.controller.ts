@@ -1,4 +1,5 @@
 import { Controller, Post, Get, Patch, Body, Param, Query, UseGuards, UseInterceptors } from '@nestjs/common';
+import { PaginationDto } from '../common/pagination.dto';
 import { WarrantyClaimsService } from './warranty-claims.service';
 import { CreateWarrantyClaimDto, UpdateWarrantyClaimStatusDto } from './warranty-claim.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -22,8 +23,8 @@ export class WarrantyClaimsController {
     }
 
     @Get()
-    async findAll(@Tenant() tenant: TenantContext) {
-        return this.warrantyClaimsService.findAll(tenant.tenantId);
+    async findAll(@Tenant() tenant: TenantContext, @Query() query: PaginationDto) {
+        return this.warrantyClaimsService.findAll(tenant.tenantId, query.page, query.limit);
     }
 
     @Get(':id')

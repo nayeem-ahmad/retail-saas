@@ -31,6 +31,7 @@ describe('SalesReturnsService', () => {
       salesReturn: {
           create: jest.fn(),
           findMany: jest.fn(),
+          count: jest.fn(),
           findFirst: jest.fn()
       },
         voucher: {
@@ -120,13 +121,17 @@ describe('SalesReturnsService', () => {
 
   it('findAll() should return all returns for a tenant', async () => {
     db.salesReturn.findMany.mockResolvedValue([{ id: 'ret-1' }]);
+    db.salesReturn.count.mockResolvedValue(1);
     const res = await service.findAll('tenant-1');
-    expect(db.salesReturn.findMany).toHaveBeenCalledWith({
+    expect(db.salesReturn.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
         where: { tenant_id: 'tenant-1' },
         include: { sale: true, items: { include: { product: true } } },
-        orderBy: { created_at: 'desc' }
-    });
-    expect(res).toHaveLength(1);
+        orderBy: { created_at: 'desc' },
+      }),
+    );
+    expect(res.items).toHaveLength(1);
+    expect(res.total).toBe(1);
   });
 
   it('findOne() should return a single return with details', async () => {

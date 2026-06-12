@@ -1,4 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { paginatedFindMany } from '../common/list-pagination.util';
+import { PaginatedResult } from '../common/pagination.dto';
 import { DatabaseService } from '../database/database.service';
 import { CreatePurchaseOrderDto, UpdatePurchaseOrderStatusDto } from './purchase-order.dto';
 import { applyInventoryMovement, resolveWarehouseId } from '../database/inventory.utils';
@@ -69,15 +71,22 @@ export class PurchaseOrdersService {
         });
     }
 
-    async findAll(tenantId: string) {
-        return this.db.purchaseOrder.findMany({
+    async findAll(tenantId: string, page = 1, limit = 20): Promise<PaginatedResult<unknown>> {
+        return paginatedFindMany({
+            findMany: (args) =>
+                this.db.purchaseOrder.findMany({
+                    ...(args as object),
+                    include: {
+                        supplier: true,
+                        store: { select: { name: true } },
+                        items: { include: { product: true } },
+                    },
+                }),
+            count: (args) => this.db.purchaseOrder.count(args as any),
             where: { tenant_id: tenantId },
-            include: {
-                supplier: true,
-                store: { select: { name: true } },
-                items: { include: { product: true } },
-            },
             orderBy: { created_at: 'desc' },
+            page,
+            limit,
         });
     }
 

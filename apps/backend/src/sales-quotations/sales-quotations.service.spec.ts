@@ -17,6 +17,7 @@ describe('SalesQuotationsService', () => {
         findUnique: jest.fn(),
         update: jest.fn(),
         findMany: jest.fn(),
+        count: jest.fn(),
         findFirst: jest.fn(),
         deleteMany: jest.fn(),
       },
@@ -110,13 +111,17 @@ describe('SalesQuotationsService', () => {
 
   it('findAll() should return all quotes for a tenant', async () => {
     db.quotation.findMany.mockResolvedValue([{ id: 'q-1' }]);
+    db.quotation.count.mockResolvedValue(1);
     const res = await service.findAll('tenant-1');
-    expect(db.quotation.findMany).toHaveBeenCalledWith({
+    expect(db.quotation.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
         where: { tenant_id: 'tenant-1' },
         include: { customer: true, items: { include: { product: true } } },
-        orderBy: { created_at: 'desc' }
-    });
-    expect(res).toHaveLength(1);
+        orderBy: { created_at: 'desc' },
+      }),
+    );
+    expect(res.items).toHaveLength(1);
+    expect(res.total).toBe(1);
   });
 
   it('findOne() should return a single quote with details', async () => {

@@ -4,6 +4,7 @@ import {
     Injectable,
     NotFoundException,
 } from '@nestjs/common';
+import { paginate, PaginatedResult } from '../common/pagination.dto';
 import { DatabaseService } from '../database/database.service';
 import { AuditService } from '../audit/audit.service';
 import { InvitationsService } from '../invitations/invitations.service';
@@ -69,15 +70,23 @@ export class TeamService {
 
     /* -------------------------------- Reads ---------------------------------- */
 
-    async listMembers(ctx: TenantContext) {
+    async listMembers(ctx: TenantContext, page = 1, limit = 100): Promise<PaginatedResult<unknown>> {
         await this.assertPermission(ctx, StorePermission.MANAGE_USERS);
 
-        const [members, accessRows, permCounts] = await Promise.all([
+        const where = { tenant_id: ctx.tenantId };
+        const pageNum = Math.max(1, page ?? 1);
+        const limitNum = Math.min(100, Math.max(1, limit ?? 100));
+        const skip = (pageNum - 1) * limitNum;
+
+        const [members, total, accessRows, permCounts] = await Promise.all([
             this.db.tenantUser.findMany({
-                where: { tenant_id: ctx.tenantId },
+                where,
                 include: { user: { select: { id: true, email: true, name: true } } },
                 orderBy: { user: { email: 'asc' } },
+                skip,
+                take: limitNum,
             }),
+            this.db.tenantUser.count({ where }),
             this.db.userStoreAccess.findMany({
                 where: { tenant_id: ctx.tenantId },
                 include: { store: { select: { id: true, name: true } } },
@@ -94,7 +103,7 @@ export class TeamService {
             permCountMap.set(`${row.user_id}:${row.store_id}`, row._count._all);
         }
 
-        return members.map((member) => ({
+        const items = members.map((member) => ({
             userId: member.user_id,
             email: member.user.email,
             name: member.user.name,
@@ -109,6 +118,8 @@ export class TeamService {
                     permissionCount: permCountMap.get(`${a.user_id}:${a.store_id}`) ?? 0,
                 })),
         }));
+
+        return paginate(items, total, pageNum, limitNum);
     }
 
     /** All branches in the tenant — used to render the access/permission matrix. */

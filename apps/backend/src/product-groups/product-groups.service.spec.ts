@@ -15,6 +15,7 @@ describe('ProductGroupsService', () => {
                 findUnique: jest.fn(),
                 findFirst: jest.fn(),
                 findMany: jest.fn(),
+                count: jest.fn(),
                 create: jest.fn(),
                 update: jest.fn(),
                 delete: jest.fn(),
@@ -76,23 +77,29 @@ describe('ProductGroupsService', () => {
                 { id: 'pg-2', name: 'Clothing', _count: { subgroups: 2, products: 5 } },
             ];
             db.productGroup.findMany.mockResolvedValue(groups);
+            db.productGroup.count.mockResolvedValue(2);
 
             const result = await service.findAll(tenantId);
 
-            expect(db.productGroup.findMany).toHaveBeenCalledWith({
-                where: { tenant_id: tenantId },
-                include: { _count: { select: { subgroups: true, products: true } } },
-                orderBy: { name: 'asc' },
-            });
-            expect(result).toEqual(groups);
+            expect(db.productGroup.findMany).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    where: { tenant_id: tenantId },
+                    include: { _count: { select: { subgroups: true, products: true } } },
+                    orderBy: { name: 'asc' },
+                }),
+            );
+            expect(result.items).toEqual(groups);
+            expect(result.total).toBe(2);
         });
 
         it('should return empty array when no groups exist', async () => {
             db.productGroup.findMany.mockResolvedValue([]);
+            db.productGroup.count.mockResolvedValue(0);
 
             const result = await service.findAll('tenant-empty');
 
-            expect(result).toEqual([]);
+            expect(result.items).toEqual([]);
+            expect(result.total).toBe(0);
         });
     });
 

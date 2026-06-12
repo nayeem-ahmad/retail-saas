@@ -268,6 +268,7 @@ describe('PurchaseQuotationsService', () => {
         it('returns all quotations for the tenant ordered by created_at desc', async () => {
             const quotations = [baseRFQ, { ...baseRFQ, id: 'rfq-2', rfq_number: 'RFQ-00002' }];
             db.purchaseQuotation.findMany.mockResolvedValue(quotations);
+            db.purchaseQuotation.count.mockResolvedValue(2);
 
             const result = await service.findAll(tenantId);
 
@@ -277,15 +278,18 @@ describe('PurchaseQuotationsService', () => {
                     orderBy: { created_at: 'desc' },
                 }),
             );
-            expect(result).toEqual(quotations);
+            expect(result.items).toEqual(quotations);
+            expect(result.total).toBe(2);
         });
 
         it('returns empty array when no quotations exist', async () => {
             db.purchaseQuotation.findMany.mockResolvedValue([]);
+            db.purchaseQuotation.count.mockResolvedValue(0);
 
             const result = await service.findAll(tenantId);
 
-            expect(result).toEqual([]);
+            expect(result.items).toEqual([]);
+            expect(result.total).toBe(0);
         });
     });
 

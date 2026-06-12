@@ -5,6 +5,7 @@ import {
     Delete,
     Param,
     Body,
+    Query,
     Request,
     UseGuards,
     UseInterceptors,
@@ -17,6 +18,7 @@ import { Tenant, TenantContext } from '../database/tenant.decorator';
 import { TenantInterceptor } from '../database/tenant.interceptor';
 import { SubscriptionAccessGuard } from '../auth/subscription-access.guard';
 import { RequiresFeature } from '../auth/subscription-access.decorator';
+import { PaginationDto } from '../common/pagination.dto';
 import { ApiKeysService } from './api-keys.service';
 
 class CreateApiKeyDto {
@@ -39,8 +41,8 @@ export class ApiKeysController {
      * Returns safe display fields only — never the raw key or its hash.
      */
     @Get()
-    listKeys(@Tenant() tenant: TenantContext) {
-        return this.apiKeysService.listKeys(tenant.tenantId);
+    listKeys(@Tenant() tenant: TenantContext, @Query() query: PaginationDto) {
+        return this.apiKeysService.listKeys(tenant.tenantId, query.page, query.limit);
     }
 
     /**
