@@ -11,6 +11,7 @@ import {
     UserRole,
 } from '@retail-saas/shared-types';
 import { api } from '@/lib/api';
+import { useI18n, formatMessage } from '@/lib/i18n';
 
 /* ------------------------------- Types -------------------------------- */
 
@@ -83,6 +84,8 @@ function MemberPanel({
     onChanged: () => void;
     onClose: () => void;
 }) {
+    const { t } = useI18n();
+    const tm = t.teamManagement.member;
     const [detail, setDetail] = useState<MemberDetail | null>(null);
     const [loading, setLoading] = useState(true);
     const [role, setRole] = useState<UserRole>(UserRole.CASHIER);
@@ -103,7 +106,7 @@ function MemberPanel({
             d.stores.forEach((s) => { next[s.storeId] = new Set(s.permissions); });
             setDrafts(next);
         } catch (err: any) {
-            onToast({ type: 'error', message: err?.message || 'Failed to load member.' });
+            onToast({ type: 'error', message: err?.message || tm.loadFailed });
         } finally {
             setLoading(false);
         }
@@ -114,11 +117,11 @@ function MemberPanel({
         setSavingRole(true);
         try {
             await api.updateMemberRole(userId, { role, reseedPermissions: reseed });
-            onToast({ type: 'success', message: 'Role updated.' });
+            onToast({ type: 'success', message: tm.roleUpdated });
             onChanged();
             await load();
         } catch (err: any) {
-            onToast({ type: 'error', message: err?.message || 'Failed to update role.' });
+            onToast({ type: 'error', message: err?.message || tm.roleUpdateFailed });
         } finally {
             setSavingRole(false);
         }
@@ -129,15 +132,15 @@ function MemberPanel({
         try {
             if (s.hasAccess) {
                 await api.revokeMemberStoreAccess(userId, s.storeId);
-                onToast({ type: 'success', message: `Removed access to ${s.storeName}.` });
+                onToast({ type: 'success', message: formatMessage(tm.accessRemoved, { store: s.storeName }) });
             } else {
                 await api.grantMemberStoreAccess(userId, { storeId: s.storeId, accessLevel: 'STORE_ONLY', seedDefaults: true });
-                onToast({ type: 'success', message: `Granted access to ${s.storeName}.` });
+                onToast({ type: 'success', message: formatMessage(tm.accessGranted, { store: s.storeName }) });
             }
             onChanged();
             await load();
         } catch (err: any) {
-            onToast({ type: 'error', message: err?.message || 'Failed to update branch access.' });
+            onToast({ type: 'error', message: err?.message || tm.branchAccessFailed });
         } finally {
             setBusyStore('');
         }
@@ -150,7 +153,7 @@ function MemberPanel({
             onChanged();
             await load();
         } catch (err: any) {
-            onToast({ type: 'error', message: err?.message || 'Failed to update access level.' });
+            onToast({ type: 'error', message: err?.message || tm.accessLevelFailed });
         } finally {
             setBusyStore('');
         }
@@ -168,11 +171,11 @@ function MemberPanel({
         setBusyStore(storeId);
         try {
             await api.setMemberStorePermissions(userId, storeId, Array.from(drafts[storeId] ?? []));
-            onToast({ type: 'success', message: `Permissions saved for ${storeName}.` });
+            onToast({ type: 'success', message: formatMessage(tm.permissionsSaved, { store: storeName }) });
             onChanged();
             await load();
         } catch (err: any) {
-            onToast({ type: 'error', message: err?.message || 'Failed to save permissions.' });
+            onToast({ type: 'error', message: err?.message || tm.permissionsSaveFailed });
         } finally {
             setBusyStore('');
         }
@@ -180,21 +183,21 @@ function MemberPanel({
 
     const remove = async () => {
         if (!detail) return;
-        if (!confirm(`Remove ${detail.name || detail.email} from this organization? Their transaction history is preserved.`)) return;
+        if (!confirm(formatMessage(tm.removeConfirm, { name: detail.name || detail.email }))) return;
         try {
             await api.removeMember(userId);
-            onToast({ type: 'success', message: 'Member removed.' });
+            onToast({ type: 'success', message: tm.memberRemoved });
             onChanged();
             onClose();
         } catch (err: any) {
-            onToast({ type: 'error', message: err?.message || 'Failed to remove member.' });
+            onToast({ type: 'error', message: err?.message || tm.removeFailed });
         }
     };
 
     if (loading || !detail) {
         return (
             <div className="flex items-center gap-2 text-sm text-gray-400 p-8">
-                <Loader2 className="w-4 h-4 animate-spin" /> Loading member…
+                <Loader2 className="w-4 h-4 animate-spin" /> {tm.loading}
             </div>
         );
     }
@@ -214,14 +217,14 @@ function MemberPanel({
                         <p className="text-xs text-gray-500 truncate">{detail.email}</p>
                     </div>
                 </div>
-                <button onClick={onClose} className="text-gray-400 hover:text-gray-700" aria-label="Close">
+                <button onClick={onClose} className="text-gray-400 hover:text-gray-700" aria-label={tm.closeAria}>
                     <X className="w-5 h-5" />
                 </button>
             </div>
 
             {/* Role */}
             <div className="rounded-2xl border border-gray-200 bg-white p-5 space-y-3">
-                <p className="text-sm font-black text-gray-800">Role</p>
+                <p className="text-sm font-black text-gray-800">{tm.role}</p>
                 <div className="flex flex-wrap items-center gap-3">
                     <select
                         value={role}
@@ -233,23 +236,23 @@ function MemberPanel({
                     </select>
                     <label className="flex items-center gap-2 text-xs font-semibold text-gray-600">
                         <input type="checkbox" checked={reseed} onChange={(e) => setReseed(e.target.checked)} className="rounded" />
-                        Reset branch permissions to role defaults
+                        {tm.reseedPermissions}
                     </label>
                     <button
                         onClick={saveRole}
                         disabled={savingRole || detail.isSelf || (role === detail.role && !reseed)}
                         className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-700 disabled:opacity-50"
                     >
-                        {savingRole && <Loader2 className="w-4 h-4 animate-spin" />} Save role
+                        {savingRole && <Loader2 className="w-4 h-4 animate-spin" />} {tm.saveRole}
                     </button>
                 </div>
-                {detail.isSelf && <p className="text-xs text-amber-600">You cannot change your own role.</p>}
-                {isOwner && <p className="text-xs text-gray-400">Owners have unrestricted access to every branch and feature.</p>}
+                {detail.isSelf && <p className="text-xs text-amber-600">{tm.cannotChangeOwnRole}</p>}
+                {isOwner && <p className="text-xs text-gray-400">{tm.ownerUnrestricted}</p>}
             </div>
 
             {/* Per-branch access + permissions */}
             <div className="space-y-4">
-                <p className="text-sm font-black text-gray-800">Branch access &amp; permissions</p>
+                <p className="text-sm font-black text-gray-800">{tm.branchAccessTitle}</p>
                 {detail.stores.map((s) => {
                     const draft = drafts[s.storeId] ?? new Set<string>();
                     const original = new Set(s.permissions);
@@ -269,8 +272,8 @@ function MemberPanel({
                                             disabled={busyStore === s.storeId}
                                             className="rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs font-semibold text-gray-700 outline-none"
                                         >
-                                            <option value="STORE_ONLY">Locked to branch</option>
-                                            <option value="MULTI_STORE_CAPABLE">Can switch branches</option>
+                                            <option value="STORE_ONLY">{tm.lockedToBranch}</option>
+                                            <option value="MULTI_STORE_CAPABLE">{tm.canSwitchBranches}</option>
                                         </select>
                                     )}
                                     <button
@@ -279,7 +282,7 @@ function MemberPanel({
                                         className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-black disabled:opacity-50 ${s.hasAccess ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-blue-50 text-blue-600 hover:bg-blue-100'}`}
                                     >
                                         {busyStore === s.storeId ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
-                                        {s.hasAccess ? 'Remove access' : 'Grant access'}
+                                        {s.hasAccess ? tm.removeAccess : tm.grantAccess}
                                     </button>
                                 </div>
                             </div>
@@ -287,7 +290,7 @@ function MemberPanel({
                             {s.hasAccess && (
                                 <div className="p-5 space-y-4">
                                     {isOwner ? (
-                                        <p className="text-xs text-gray-400">Owners bypass per-feature checks — all features are available in this branch.</p>
+                                        <p className="text-xs text-gray-400">{tm.ownerBypass}</p>
                                     ) : (
                                         <>
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
@@ -311,13 +314,17 @@ function MemberPanel({
                                                 ))}
                                             </div>
                                             <div className="flex items-center justify-end gap-3 pt-1 border-t border-gray-100">
-                                                <span className="text-xs text-gray-400">{draft.size} permission{draft.size !== 1 ? 's' : ''} selected</span>
+                                                <span className="text-xs text-gray-400">
+                                                    {draft.size === 1
+                                                        ? formatMessage(tm.permissionsSelected, { count: draft.size })
+                                                        : formatMessage(tm.permissionsSelectedPlural, { count: draft.size })}
+                                                </span>
                                                 <button
                                                     onClick={() => savePerms(s.storeId, s.storeName)}
                                                     disabled={!dirty || busyStore === s.storeId}
                                                     className="inline-flex items-center gap-2 rounded-xl bg-gray-900 px-4 py-2 text-sm font-bold text-white hover:bg-black disabled:opacity-40"
                                                 >
-                                                    {busyStore === s.storeId && <Loader2 className="w-4 h-4 animate-spin" />} Save permissions
+                                                    {busyStore === s.storeId && <Loader2 className="w-4 h-4 animate-spin" />} {tm.savePermissions}
                                                 </button>
                                             </div>
                                         </>
@@ -333,7 +340,7 @@ function MemberPanel({
             {!detail.isSelf && (
                 <div className="pt-2">
                     <button onClick={remove} className="inline-flex items-center gap-2 rounded-xl border border-red-200 px-4 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-50">
-                        <Trash2 className="w-4 h-4" /> Remove from organization
+                        <Trash2 className="w-4 h-4" /> {tm.removeFromOrg}
                     </button>
                 </div>
             )}
@@ -344,6 +351,8 @@ function MemberPanel({
 /* -------------------------------- Page -------------------------------- */
 
 export default function TeamPage() {
+    const { t } = useI18n();
+    const tm = t.teamManagement;
     const [members, setMembers] = useState<Member[]>([]);
     const [invitations, setInvitations] = useState<Invitation[]>([]);
     const [loading, setLoading] = useState(true);
@@ -362,7 +371,7 @@ export default function TeamPage() {
             setMembers(m ?? []);
             setInvitations(inv ?? []);
         } catch (err: any) {
-            setToast({ type: 'error', message: err?.message || 'Failed to load team.' });
+            setToast({ type: 'error', message: err?.message || tm.loadFailed });
         } finally {
             setLoading(false);
         }
@@ -375,11 +384,11 @@ export default function TeamPage() {
         setInviting(true);
         try {
             await api.sendTeamInvitation({ email: inviteEmail.trim(), role: inviteRole });
-            setToast({ type: 'success', message: `Invitation sent to ${inviteEmail.trim()}.` });
+            setToast({ type: 'success', message: formatMessage(tm.inviteSent, { email: inviteEmail.trim() }) });
             setInviteEmail('');
             await load();
         } catch (err: any) {
-            setToast({ type: 'error', message: err?.message || 'Failed to send invitation.' });
+            setToast({ type: 'error', message: err?.message || tm.inviteFailed });
         } finally {
             setInviting(false);
         }
@@ -388,10 +397,10 @@ export default function TeamPage() {
     const revokeInvite = async (id: string, email: string) => {
         try {
             await api.revokeTeamInvitation(id);
-            setToast({ type: 'success', message: `Invitation to ${email} revoked.` });
+            setToast({ type: 'success', message: formatMessage(tm.inviteRevoked, { email }) });
             await load();
         } catch (err: any) {
-            setToast({ type: 'error', message: err?.message || 'Failed to revoke invitation.' });
+            setToast({ type: 'error', message: err?.message || tm.revokeFailed });
         }
     };
 
@@ -402,25 +411,25 @@ export default function TeamPage() {
         <div className="h-full overflow-y-auto bg-[#f9fafb]">
             <div className="max-w-6xl mx-auto px-6 py-8 space-y-6">
                 <div>
-                    <h1 className="text-2xl font-black text-gray-900 tracking-tight">Team &amp; Permissions</h1>
-                    <p className="mt-1 text-sm text-gray-500">Invite staff, assign roles, and control what each person can do — branch by branch.</p>
+                    <h1 className="text-2xl font-black text-gray-900 tracking-tight">{tm.title}</h1>
+                    <p className="mt-1 text-sm text-gray-500">{tm.description}</p>
                 </div>
 
                 {/* Invite */}
                 <form onSubmit={sendInvite} className="rounded-2xl border border-gray-200 bg-white p-5">
                     <div className="flex flex-col sm:flex-row sm:items-end gap-3">
                         <div className="flex-1">
-                            <label className="block text-xs font-bold uppercase tracking-widest text-gray-500 mb-1.5">Invite by email</label>
+                            <label className="block text-xs font-bold uppercase tracking-widest text-gray-500 mb-1.5">{tm.inviteEmail}</label>
                             <input
                                 type="email"
                                 value={inviteEmail}
                                 onChange={(e) => setInviteEmail(e.target.value)}
-                                placeholder="colleague@example.com"
+                                placeholder={tm.emailPlaceholder}
                                 className="w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500"
                             />
                         </div>
                         <div>
-                            <label className="block text-xs font-bold uppercase tracking-widest text-gray-500 mb-1.5">Role</label>
+                            <label className="block text-xs font-bold uppercase tracking-widest text-gray-500 mb-1.5">{tm.role}</label>
                             <select
                                 value={inviteRole}
                                 onChange={(e) => setInviteRole(e.target.value as UserRole)}
@@ -435,13 +444,13 @@ export default function TeamPage() {
                             className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-blue-700 disabled:opacity-50"
                         >
                             {inviting ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
-                            Send invite
+                            {tm.sendInvite}
                         </button>
                     </div>
 
                     {invitations.length > 0 && (
                         <div className="mt-4 pt-4 border-t border-gray-100 space-y-2">
-                            <p className="text-xs font-bold uppercase tracking-widest text-gray-400">Pending invitations</p>
+                            <p className="text-xs font-bold uppercase tracking-widest text-gray-400">{tm.pendingInvitations}</p>
                             {invitations.map((inv) => (
                                 <div key={inv.id} className="flex items-center justify-between gap-3 text-sm">
                                     <div className="flex items-center gap-2 min-w-0">
@@ -449,7 +458,7 @@ export default function TeamPage() {
                                         <span className="font-semibold text-gray-700 truncate">{inv.email}</span>
                                         <span className={`rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wider ${ROLE_STYLES[inv.role] ?? 'bg-gray-100 text-gray-600'}`}>{inv.role}</span>
                                     </div>
-                                    <button onClick={() => revokeInvite(inv.id, inv.email)} className="text-xs font-semibold text-red-500 hover:text-red-700">Revoke</button>
+                                    <button onClick={() => revokeInvite(inv.id, inv.email)} className="text-xs font-semibold text-red-500 hover:text-red-700">{tm.revoke}</button>
                                 </div>
                             ))}
                         </div>
@@ -462,15 +471,15 @@ export default function TeamPage() {
                     <div className="rounded-2xl border border-gray-200 bg-white overflow-hidden self-start">
                         <div className="px-5 py-3.5 border-b border-gray-100 flex items-center gap-2">
                             <Users className="w-4 h-4 text-gray-400" />
-                            <span className="text-sm font-black text-gray-800">Members</span>
+                            <span className="text-sm font-black text-gray-800">{tm.members}</span>
                             <span className="text-xs text-gray-400">· {members.length}</span>
                         </div>
                         {loading ? (
                             <div className="p-8 flex items-center justify-center text-sm text-gray-400">
-                                <Loader2 className="w-4 h-4 animate-spin mr-2" /> Loading…
+                                <Loader2 className="w-4 h-4 animate-spin mr-2" /> {tm.loading}
                             </div>
                         ) : members.length === 0 ? (
-                            <div className="p-8 text-center text-sm text-gray-400">No members yet.</div>
+                            <div className="p-8 text-center text-sm text-gray-400">{tm.noMembers}</div>
                         ) : (
                             <div className="divide-y divide-gray-100">
                                 {members.map((m) => (
@@ -482,7 +491,11 @@ export default function TeamPage() {
                                         <div className="min-w-0">
                                             <p className="text-sm font-bold text-gray-900 truncate">{m.name || m.email}</p>
                                             <p className="text-xs text-gray-500 truncate">
-                                                {m.role === UserRole.OWNER ? 'All branches' : `${m.stores.length} branch${m.stores.length !== 1 ? 'es' : ''}`}
+                                                {m.role === UserRole.OWNER
+                                                    ? tm.allBranches
+                                                    : m.stores.length === 1
+                                                        ? formatMessage(tm.branchCount, { count: m.stores.length })
+                                                        : formatMessage(tm.branchCountPlural, { count: m.stores.length })}
                                             </p>
                                         </div>
                                         <div className="flex items-center gap-2 shrink-0">
@@ -507,7 +520,7 @@ export default function TeamPage() {
                         ) : (
                             <div className="h-full flex flex-col items-center justify-center text-center text-gray-400 py-16">
                                 <ShieldCheck className="w-10 h-10 mb-3 text-gray-300" />
-                                <p className="text-sm font-semibold">Select a member to manage their role, branch access, and permissions.</p>
+                                <p className="text-sm font-semibold">{tm.selectPrompt}</p>
                             </div>
                         )}
                     </div>

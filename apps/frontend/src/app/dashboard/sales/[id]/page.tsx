@@ -7,6 +7,7 @@ import { api } from '../../../../lib/api';
 import { formatBDT } from '../../../../lib/format';
 import { printPOSReceipt } from '../../../../lib/pos-receipt-printer';
 import Link from 'next/link';
+import { useI18n, formatMessage } from '@/lib/i18n';
 
 interface EditItem {
     productId: string;
@@ -25,6 +26,7 @@ const PAYMENT_METHODS = ['CASH', 'CARD', 'BANK_TRANSFER', 'MOBILE_PAYMENT', 'OTH
 const SALE_STATUSES = ['COMPLETED', 'REFUNDED', 'PARTIAL_REFUND'];
 
 function SaleDetailPageContent() {
+    const { t, locale } = useI18n();
     const params = useParams();
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -70,7 +72,7 @@ function SaleDetailPageContent() {
             setEditItems(
                 (sale.items || []).map((item: any) => ({
                     productId: item.product_id,
-                    productName: item.product?.name || 'Unknown',
+                    productName: item.product?.name || t.shared.unknown,
                     sku: item.product?.sku || '',
                     quantity: item.quantity,
                     priceAtSale: parseFloat(item.price_at_sale),
@@ -118,7 +120,7 @@ function SaleDetailPageContent() {
             router.push(`/dashboard/sales/${sale.id}`);
         } catch (error) {
             console.error('Failed to save sale', error);
-            alert('Failed to save sale. Please check your changes and try again.');
+            alert(t.shared.errors.saveSale);
         } finally {
             setSaving(false);
         }
@@ -199,7 +201,7 @@ function SaleDetailPageContent() {
             </head>
             <body>
                 ${printContent.innerHTML}
-                <div class="footer">Thank you for your purchase!</div>
+                <div class="footer">{t.shared.print.thankYouPurchase}</div>
             </body>
             </html>
         `);
@@ -223,7 +225,7 @@ function SaleDetailPageContent() {
             date: new Date(sale.created_at).toLocaleString(),
             customerName: sale.customer?.name,
             items: (sale.items || []).map((item: any) => ({
-                name: item.product?.name || 'Unknown',
+                name: item.product?.name || t.shared.unknown,
                 sku: item.product?.sku,
                 quantity: item.quantity,
                 unitPrice: parseFloat(item.price_at_sale),
@@ -243,7 +245,7 @@ function SaleDetailPageContent() {
     if (loading) {
         return (
             <div className="flex items-center justify-center h-full bg-[#f3f4f6]">
-                <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Loading sale...</p>
+                <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">{t.shared.loading.sale}</p>
             </div>
         );
     }
@@ -251,7 +253,7 @@ function SaleDetailPageContent() {
     if (!sale) {
         return (
             <div className="flex items-center justify-center h-full bg-[#f3f4f6]">
-                <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Sale not found</p>
+                <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">{t.shared.notFound.sale}</p>
             </div>
         );
     }
@@ -265,7 +267,7 @@ function SaleDetailPageContent() {
                         <div className="flex items-center space-x-3">
                             <Pencil className="w-4 h-4 text-amber-600" />
                             <span className="text-sm font-bold text-amber-800">
-                                Edit Mode — Modify items, payments, customer, status, and note
+                                {t.shared.editMode.sale}
                             </span>
                         </div>
                         <div className="flex items-center space-x-3">
@@ -275,14 +277,14 @@ function SaleDetailPageContent() {
                                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-lg font-bold text-xs uppercase tracking-widest shadow-sm flex items-center space-x-1.5 transition-all disabled:opacity-50"
                             >
                                 <Save className="w-3.5 h-3.5" />
-                                <span>{saving ? 'Saving...' : 'Save Changes'}</span>
+                                <span>{saving ? t.sales.detail.saving : t.common.saveChanges}</span>
                             </button>
                             <button
                                 onClick={() => router.push(`/dashboard/sales/${sale.id}`)}
                                 className="text-xs font-bold uppercase tracking-widest text-amber-600 hover:text-amber-800 transition-colors flex items-center space-x-1"
                             >
                                 <X className="w-3.5 h-3.5" />
-                                <span>Cancel</span>
+                                <span>{t.common.cancel}</span>
                             </button>
                         </div>
                     </div>
@@ -312,28 +314,28 @@ function SaleDetailPageContent() {
                                     className="bg-white hover:bg-amber-50 text-gray-700 hover:text-amber-700 border border-gray-200 hover:border-amber-300 px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest shadow-sm flex items-center space-x-2 transition-all hover:-translate-y-0.5"
                                 >
                                     <Pencil className="w-4 h-4" />
-                                    <span>Edit</span>
+                                    <span>{t.common.edit}</span>
                                 </button>
                                 <button
                                     onClick={handlePOSPrint}
                                     className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest shadow-md flex items-center space-x-2 transition-all hover:-translate-y-0.5"
                                 >
                                     <Printer className="w-4 h-4" />
-                                    <span>POS Receipt</span>
+                                    <span>{t.sales.detail.posReceipt}</span>
                                 </button>
                                 <button
                                     onClick={handlePrint}
                                     className="bg-gray-900 hover:bg-gray-700 text-white px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest shadow-md flex items-center space-x-2 transition-all hover:-translate-y-0.5"
                                 >
                                     <Printer className="w-4 h-4" />
-                                    <span>Print Preview</span>
+                                    <span>{t.sales.detail.printPreview}</span>
                                 </button>
                                 <Link
                                     href={`/dashboard/sales/${sale.id}/invoice`}
                                     className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest shadow-md flex items-center space-x-2 transition-all hover:-translate-y-0.5"
                                 >
                                     <Download className="w-4 h-4" />
-                                    <span>Invoice PDF</span>
+                                    <span>{t.sales.detail.invoicePdf}</span>
                                 </Link>
                             </>
                         )}
@@ -344,36 +346,38 @@ function SaleDetailPageContent() {
                 {isEditMode ? (
                     <div className="grid grid-cols-3 gap-4">
                         <div className="bg-white p-4 rounded-2xl shadow-sm">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-2">Status</label>
+                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-2">{t.common.status}</label>
                             <select
                                 value={editStatus}
                                 onChange={e => setEditStatus(e.target.value)}
                                 className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm font-bold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-300"
                             >
                                 {SALE_STATUSES.map(s => (
-                                    <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
+                                    <option key={s} value={s}>
+                                        {t.shared.statuses.sale[s as keyof typeof t.shared.statuses.sale] ?? s.replace(/_/g, ' ')}
+                                    </option>
                                 ))}
                             </select>
                         </div>
                         <div className="bg-white p-4 rounded-2xl shadow-sm">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-2">Customer</label>
+                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-2">{t.common.customer}</label>
                             <select
                                 value={editCustomerId || ''}
                                 onChange={e => setEditCustomerId(e.target.value || null)}
                                 className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm font-bold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-300"
                             >
-                                <option value="">Walk-in Customer</option>
+                                <option value="">{t.shared.walkInCustomer}</option>
                                 {customers.map((c: any) => (
                                     <option key={c.id} value={c.id}>{c.name}</option>
                                 ))}
                             </select>
                         </div>
                         <div className="bg-white p-4 rounded-2xl shadow-sm">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1">New Total</span>
-                            <span className="text-xl font-black text-blue-600">{formatBDT(editTotal)}</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1">{t.sales.detail.newTotal}</span>
+                            <span className="text-xl font-black text-blue-600">{formatBDT(editTotal, { locale })}</span>
                             {Math.abs(editPaid - editTotal) > 0.01 && (
                                 <span className={`block text-xs font-bold mt-1 ${editPaid >= editTotal ? 'text-green-600' : 'text-red-500'}`}>
-                                    Paid: {formatBDT(editPaid)} ({editPaid >= editTotal ? 'OK' : `Short ${formatBDT(editTotal - editPaid)}`})
+                                    {t.sales.columns.paid}: {formatBDT(editPaid, { locale })} ({editPaid >= editTotal ? t.shared.ok : formatMessage(t.shared.short, { amount: formatBDT(editTotal - editPaid, { locale }) })})
                                 </span>
                             )}
                         </div>
@@ -381,23 +385,23 @@ function SaleDetailPageContent() {
                 ) : (
                     <div className="grid grid-cols-4 gap-4">
                         <div className="bg-white p-4 rounded-2xl shadow-sm">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1">Status</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1">{t.common.status}</span>
                             <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${
                                 sale.status === 'COMPLETED' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-gray-50 text-gray-700 border-gray-200'
                             }`}>
-                                {sale.status}
+                                {t.shared.statuses.sale[sale.status as keyof typeof t.shared.statuses.sale] ?? sale.status}
                             </span>
                         </div>
                         <div className="bg-white p-4 rounded-2xl shadow-sm">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1">Total</span>
-                            <span className="text-xl font-black text-blue-600">{formatBDT(parseFloat(sale.total_amount))}</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1">{t.common.total}</span>
+                            <span className="text-xl font-black text-blue-600">{formatBDT(parseFloat(sale.total_amount), { locale })}</span>
                         </div>
                         <div className="bg-white p-4 rounded-2xl shadow-sm">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1">Paid</span>
-                            <span className="text-xl font-black text-gray-900">{formatBDT(parseFloat(sale.amount_paid))}</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1">{t.sales.columns.paid}</span>
+                            <span className="text-xl font-black text-gray-900">{formatBDT(parseFloat(sale.amount_paid), { locale })}</span>
                         </div>
                         <div className="bg-white p-4 rounded-2xl shadow-sm">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1">Items</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1">{t.sales.columns.items}</span>
                             <span className="text-xl font-black text-gray-900">{sale.items?.length || 0}</span>
                         </div>
                     </div>
@@ -406,42 +410,47 @@ function SaleDetailPageContent() {
                 {/* Print-ready content (hidden on screen, used for print) */}
                 <div ref={printRef} className="hidden">
                     <h1>{sale.serial_number}</h1>
-                    <div className="subtitle">Date: {new Date(sale.created_at).toLocaleString()} | Status: {sale.status}</div>
+                    <div className="subtitle">
+                        {formatMessage(t.shared.print.dateStatus, {
+                            date: new Date(sale.created_at).toLocaleString(),
+                            status: t.shared.statuses.sale[sale.status as keyof typeof t.shared.statuses.sale] ?? sale.status,
+                        })}
+                    </div>
                     <table>
                         <thead>
                             <tr>
-                                <th>Product</th>
-                                <th>Qty</th>
-                                <th>Price</th>
-                                <th>Subtotal</th>
+                                <th>{t.shared.columns.product}</th>
+                                <th>{t.shared.columns.qty}</th>
+                                <th>{t.shared.columns.price}</th>
+                                <th>{t.shared.columns.subtotal}</th>
                             </tr>
                         </thead>
                         <tbody>
                             {sale.items?.map((item: any) => (
                                 <tr key={item.id}>
-                                    <td>{item.product?.name || 'Unknown'}</td>
+                                    <td>{item.product?.name || t.shared.unknown}</td>
                                     <td>{item.quantity}</td>
-                                    <td>{formatBDT(parseFloat(item.price_at_sale))}</td>
-                                    <td>{formatBDT(item.quantity * parseFloat(item.price_at_sale))}</td>
+                                    <td>{formatBDT(parseFloat(item.price_at_sale), { locale })}</td>
+                                    <td>{formatBDT(item.quantity * parseFloat(item.price_at_sale), { locale })}</td>
                                 </tr>
                             ))}
                             <tr className="total-row">
-                                <td colSpan={3}>Total</td>
-                                <td>{formatBDT(parseFloat(sale.total_amount))}</td>
+                                <td colSpan={3}>{t.common.total}</td>
+                                <td>{formatBDT(parseFloat(sale.total_amount), { locale })}</td>
                             </tr>
                         </tbody>
                     </table>
                     <div className="payment-section">
-                        <strong>Payments:</strong>
+                        <strong>{t.shared.print.payments}</strong>
                         <ul>
                             {sale.payments?.map((p: any, i: number) => (
-                                <li key={i}>{p.payment_method}: {formatBDT(parseFloat(p.amount))}</li>
+                                <li key={i}>{p.payment_method}: {formatBDT(parseFloat(p.amount, { locale }))}</li>
                             ))}
                         </ul>
                     </div>
                     {sale.note && (
                         <div className="note-section">
-                            <strong>Note:</strong> {sale.note}
+                            <strong>{t.sales.detail.note}:</strong> {sale.note}
                         </div>
                     )}
                 </div>
@@ -453,7 +462,7 @@ function SaleDetailPageContent() {
                             <div className="p-2 bg-blue-50 rounded-xl text-blue-600">
                                 <Package className="w-5 h-5" />
                             </div>
-                            <h2 className="text-lg font-black tracking-tight">Line Items</h2>
+                            <h2 className="text-lg font-black tracking-tight">{t.sales.detail.lineItems}</h2>
                         </div>
                     </div>
 
@@ -465,7 +474,7 @@ function SaleDetailPageContent() {
                                     <Search className="w-4 h-4 text-gray-400" />
                                     <input
                                         type="text"
-                                        placeholder="Search products to add..."
+                                        placeholder={t.shared.form.searchProductsAdd}
                                         value={productSearch}
                                         onChange={e => { setProductSearch(e.target.value); setShowProductDropdown(true); }}
                                         onFocus={() => setShowProductDropdown(true)}
@@ -484,7 +493,7 @@ function SaleDetailPageContent() {
                                                     <span className="text-sm font-bold">{p.name}</span>
                                                     <span className="text-xs text-gray-400 ml-2">{p.sku}</span>
                                                 </div>
-                                                <span className="text-sm font-bold text-blue-600">{formatBDT(parseFloat(p.price))}</span>
+                                                <span className="text-sm font-bold text-blue-600">{formatBDT(parseFloat(p.price), { locale })}</span>
                                             </button>
                                         ))}
                                     </div>
@@ -495,16 +504,16 @@ function SaleDetailPageContent() {
                             {editItems.length === 0 ? (
                                 <div className="text-center py-8 text-gray-300">
                                     <Package className="w-8 h-8 mx-auto mb-2" />
-                                    <p className="text-xs font-bold uppercase tracking-widest">Search and add products above</p>
+                                    <p className="text-xs font-bold uppercase tracking-widest">{t.shared.empty.noItemsSearch}</p>
                                 </div>
                             ) : (
                                 <table className="w-full">
                                     <thead>
                                         <tr className="border-b border-gray-100">
-                                            <th className="text-left pb-2 text-[10px] font-black uppercase tracking-widest text-gray-400">Product</th>
-                                            <th className="text-center pb-2 text-[10px] font-black uppercase tracking-widest text-gray-400 w-24">Qty</th>
-                                            <th className="text-right pb-2 text-[10px] font-black uppercase tracking-widest text-gray-400 w-32">Price</th>
-                                            <th className="text-right pb-2 text-[10px] font-black uppercase tracking-widest text-gray-400 w-28">Subtotal</th>
+                                            <th className="text-left pb-2 text-[10px] font-black uppercase tracking-widest text-gray-400">{t.shared.columns.product}</th>
+                                            <th className="text-center pb-2 text-[10px] font-black uppercase tracking-widest text-gray-400 w-24">{t.shared.columns.qty}</th>
+                                            <th className="text-right pb-2 text-[10px] font-black uppercase tracking-widest text-gray-400 w-32">{t.shared.columns.price}</th>
+                                            <th className="text-right pb-2 text-[10px] font-black uppercase tracking-widest text-gray-400 w-28">{t.shared.columns.subtotal}</th>
                                             <th className="w-10"></th>
                                         </tr>
                                     </thead>
@@ -535,7 +544,7 @@ function SaleDetailPageContent() {
                                                     />
                                                 </td>
                                                 <td className="py-3 text-right text-sm font-black text-blue-600">
-                                                    {formatBDT(item.quantity * item.priceAtSale)}
+                                                    {formatBDT(item.quantity * item.priceAtSale, { locale })}
                                                 </td>
                                                 <td className="py-3 text-center">
                                                     <button
@@ -550,8 +559,8 @@ function SaleDetailPageContent() {
                                     </tbody>
                                     <tfoot>
                                         <tr className="border-t-2 border-gray-200">
-                                            <td colSpan={3} className="pt-3 text-right text-sm font-black uppercase tracking-widest">Total</td>
-                                            <td className="pt-3 text-right text-xl font-black text-blue-600">{formatBDT(editTotal)}</td>
+                                            <td colSpan={3} className="pt-3 text-right text-sm font-black uppercase tracking-widest">{t.common.total}</td>
+                                            <td className="pt-3 text-right text-xl font-black text-blue-600">{formatBDT(editTotal, { locale })}</td>
                                             <td></td>
                                         </tr>
                                     </tfoot>
@@ -563,11 +572,11 @@ function SaleDetailPageContent() {
                             <table className="w-full">
                                 <thead>
                                     <tr className="border-b border-gray-100">
-                                        <th className="text-left p-4 text-[10px] font-black uppercase tracking-widest text-gray-400">Product</th>
-                                        <th className="text-left p-4 text-[10px] font-black uppercase tracking-widest text-gray-400">SKU</th>
-                                        <th className="text-center p-4 text-[10px] font-black uppercase tracking-widest text-gray-400">Qty</th>
-                                        <th className="text-right p-4 text-[10px] font-black uppercase tracking-widest text-gray-400">Unit Price</th>
-                                        <th className="text-right p-4 text-[10px] font-black uppercase tracking-widest text-gray-400">Subtotal</th>
+                                        <th className="text-left p-4 text-[10px] font-black uppercase tracking-widest text-gray-400">{t.shared.columns.product}</th>
+                                        <th className="text-left p-4 text-[10px] font-black uppercase tracking-widest text-gray-400">{t.shared.columns.sku}</th>
+                                        <th className="text-center p-4 text-[10px] font-black uppercase tracking-widest text-gray-400">{t.shared.columns.qty}</th>
+                                        <th className="text-right p-4 text-[10px] font-black uppercase tracking-widest text-gray-400">{t.shared.columns.unitPrice}</th>
+                                        <th className="text-right p-4 text-[10px] font-black uppercase tracking-widest text-gray-400">{t.shared.columns.subtotal}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-50">
@@ -582,20 +591,20 @@ function SaleDetailPageContent() {
                                                             <Package className="w-4 h-4 text-gray-200" />
                                                         )}
                                                     </div>
-                                                    <span className="text-sm font-black text-gray-900">{item.product?.name || 'Unknown'}</span>
+                                                    <span className="text-sm font-black text-gray-900">{item.product?.name || t.shared.unknown}</span>
                                                 </div>
                                             </td>
-                                            <td className="p-4 text-xs font-bold text-gray-400 uppercase">{item.product?.sku || 'N/A'}</td>
+                                            <td className="p-4 text-xs font-bold text-gray-400 uppercase">{item.product?.sku || t.shared.notAvailable}</td>
                                             <td className="p-4 text-center text-sm font-black">{item.quantity}</td>
-                                            <td className="p-4 text-right text-sm font-bold text-gray-700">{formatBDT(parseFloat(item.price_at_sale))}</td>
-                                            <td className="p-4 text-right text-sm font-black text-blue-600">{formatBDT(item.quantity * parseFloat(item.price_at_sale))}</td>
+                                            <td className="p-4 text-right text-sm font-bold text-gray-700">{formatBDT(parseFloat(item.price_at_sale), { locale })}</td>
+                                            <td className="p-4 text-right text-sm font-black text-blue-600">{formatBDT(item.quantity * parseFloat(item.price_at_sale), { locale })}</td>
                                         </tr>
                                     ))}
                                 </tbody>
                                 <tfoot>
                                     <tr className="border-t-2 border-gray-200">
-                                        <td colSpan={4} className="p-4 text-right text-sm font-black uppercase tracking-widest">Total</td>
-                                        <td className="p-4 text-right text-xl font-black text-blue-600">{formatBDT(parseFloat(sale.total_amount))}</td>
+                                        <td colSpan={4} className="p-4 text-right text-sm font-black uppercase tracking-widest">{t.common.total}</td>
+                                        <td className="p-4 text-right text-xl font-black text-blue-600">{formatBDT(parseFloat(sale.total_amount), { locale })}</td>
                                     </tr>
                                 </tfoot>
                             </table>
@@ -610,7 +619,7 @@ function SaleDetailPageContent() {
                             <div className="p-2 bg-green-50 rounded-xl text-green-600">
                                 <CreditCard className="w-5 h-5" />
                             </div>
-                            <h2 className="text-lg font-black tracking-tight">Payment Records</h2>
+                            <h2 className="text-lg font-black tracking-tight">{t.sales.detail.paymentRecords}</h2>
                         </div>
                         {isEditMode && (
                             <button
@@ -618,7 +627,7 @@ function SaleDetailPageContent() {
                                 className="flex items-center space-x-1.5 text-blue-600 hover:text-blue-800 font-bold text-xs uppercase tracking-widest transition-colors"
                             >
                                 <Plus className="w-4 h-4" />
-                                <span>Add Payment</span>
+                                <span>{t.sales.detail.addPayment}</span>
                             </button>
                         )}
                     </div>
@@ -628,7 +637,7 @@ function SaleDetailPageContent() {
                             {editPayments.length === 0 ? (
                                 <div className="text-center py-6 text-gray-300">
                                     <CreditCard className="w-6 h-6 mx-auto mb-2" />
-                                    <p className="text-xs font-bold uppercase tracking-widest">No payments — click Add Payment above</p>
+                                    <p className="text-xs font-bold uppercase tracking-widest">{t.shared.empty.noPayments}</p>
                                 </div>
                             ) : (
                                 editPayments.map((p, idx) => (
@@ -664,7 +673,7 @@ function SaleDetailPageContent() {
                             )}
                             {editPayments.length > 0 && (
                                 <div className="flex justify-end pt-2 border-t border-gray-100">
-                                    <span className="text-sm font-black">Total Paid: <span className={editPaid >= editTotal ? 'text-green-600' : 'text-red-500'}>{formatBDT(editPaid)}</span></span>
+                                    <span className="text-sm font-black">{t.sales.detail.totalPaid} <span className={editPaid >= editTotal ? 'text-green-600' : 'text-red-500'}>{formatBDT(editPaid, { locale })}</span></span>
                                 </div>
                             )}
                         </div>
@@ -678,12 +687,12 @@ function SaleDetailPageContent() {
                                         </span>
                                         <span className="text-xs text-gray-400">{new Date(payment.created_at).toLocaleString()}</span>
                                     </div>
-                                    <span className="text-sm font-black text-gray-900">{formatBDT(parseFloat(payment.amount))}</span>
+                                    <span className="text-sm font-black text-gray-900">{formatBDT(parseFloat(payment.amount), { locale })}</span>
                                 </div>
                             ))}
                             {(!sale.payments || sale.payments.length === 0) && (
                                 <div className="p-8 text-center text-gray-300">
-                                    <p className="text-xs font-black uppercase tracking-widest">No payment records</p>
+                                    <p className="text-xs font-black uppercase tracking-widest">{t.shared.empty.noPaymentRecords}</p>
                                 </div>
                             )}
                         </div>
@@ -696,7 +705,7 @@ function SaleDetailPageContent() {
                         <div className="p-2 bg-amber-50 rounded-xl text-amber-600">
                             <FileText className="w-5 h-5" />
                         </div>
-                        <h2 className="text-lg font-black tracking-tight">Note</h2>
+                        <h2 className="text-lg font-black tracking-tight">{t.sales.detail.note}</h2>
                     </div>
                     <div className="p-6">
                         {isEditMode ? (
@@ -705,11 +714,11 @@ function SaleDetailPageContent() {
                                 onChange={(e) => setEditNote(e.target.value)}
                                 className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all shadow-sm resize-none"
                                 rows={4}
-                                placeholder="Add a note about this sale..."
+                                placeholder={t.sales.detail.notePlaceholder}
                             />
                         ) : (
                             <p className="text-sm text-gray-600">
-                                {sale.note || <span className="text-gray-300 italic">No note added</span>}
+                                {sale.note || <span className="text-gray-300 italic">{t.shared.empty.noNote}</span>}
                             </p>
                         )}
                     </div>
@@ -722,7 +731,7 @@ function SaleDetailPageContent() {
                             onClick={() => router.push(`/dashboard/sales/${sale.id}`)}
                             className="px-6 py-3 bg-white border border-gray-200 text-gray-700 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-gray-50 transition-all"
                         >
-                            Cancel
+                            {t.common.cancel}
                         </button>
                         <button
                             onClick={handleSave}
@@ -730,7 +739,7 @@ function SaleDetailPageContent() {
                             className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-md flex items-center space-x-2 transition-all hover:-translate-y-0.5 disabled:opacity-50"
                         >
                             <Save className="w-4 h-4" />
-                            <span>{saving ? 'Saving...' : 'Save All Changes'}</span>
+                            <span>{saving ? t.sales.detail.saving : t.sales.detail.saveAllChanges}</span>
                         </button>
                     </div>
                 )}

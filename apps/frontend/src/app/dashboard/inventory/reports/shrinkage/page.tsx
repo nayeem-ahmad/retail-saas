@@ -6,6 +6,7 @@ import { AlertTriangle } from 'lucide-react';
 import { DataTable } from '@/components/data-table';
 import { api } from '../../../../../lib/api';
 import { formatBDT } from '../../../../../lib/format';
+import { useI18n } from '@/lib/i18n';
 
 interface ShrinkageSummaryRow {
     warehouseName: string;
@@ -17,6 +18,7 @@ interface ShrinkageSummaryRow {
 const columnHelper = createColumnHelper<ShrinkageSummaryRow>();
 
 export default function ShrinkageReportPage() {
+    const { t } = useI18n();
     const [report, setReport] = useState<any>({ summary: { totalQuantity: 0, totalValue: 0, topReasons: [] }, rows: [], detailRows: [] });
     const [warehouses, setWarehouses] = useState<any[]>([]);
     const [reasons, setReasons] = useState<any[]>([]);
@@ -81,59 +83,59 @@ export default function ShrinkageReportPage() {
 
     const columns: ColumnDef<ShrinkageSummaryRow, any>[] = useMemo(
         () => [
-            columnHelper.accessor('warehouseName', { header: 'Warehouse', size: 220 }),
-            columnHelper.accessor('reasonLabel', { header: 'Reason', size: 220 }),
-            columnHelper.accessor('quantity', { header: 'Quantity Lost', size: 120 }),
+            columnHelper.accessor('warehouseName', { header: t.inventoryReports.shrinkage.columns.warehouse, size: 220 }),
+            columnHelper.accessor('reasonLabel', { header: t.inventoryReports.shrinkage.columns.reason, size: 220 }),
+            columnHelper.accessor('quantity', { header: t.inventoryReports.shrinkage.columns.quantityLost, size: 120 }),
             columnHelper.accessor('value', {
-                header: 'Estimated Value',
+                header: t.inventoryReports.shrinkage.columns.estimatedValue,
                 cell: (info) => <span className="text-sm font-black text-rose-600">{formatBDT(Number(info.getValue()))}</span>,
                 size: 150,
             }),
         ],
-        [],
+        [t],
     );
 
     return (
         <div className="overflow-y-auto h-full bg-[#f3f4f6] p-6 font-sans text-gray-900">
             <div className="max-w-[1400px] mx-auto space-y-6">
                 <div>
-                    <h1 className="text-2xl font-black tracking-tight">Shrinkage Report</h1>
+                    <h1 className="text-2xl font-black tracking-tight">{t.inventoryReports.shrinkage.title}</h1>
                     <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mt-0.5">
-                        Track inventory loss by warehouse, reason, and estimated value impact
+                        {t.inventoryReports.shrinkage.subtitleTrack}
                     </p>
                 </div>
 
                 <div className="grid md:grid-cols-3 gap-4">
                     <div className="bg-white border border-gray-100 rounded-2xl p-4">
-                        <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">Total Units Lost</div>
+                        <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">{t.inventoryReports.shrinkage.totalUnitsLost}</div>
                         <div className="mt-2 text-2xl font-black text-gray-900">{report.summary?.totalQuantity ?? 0}</div>
                     </div>
                     <div className="bg-white border border-gray-100 rounded-2xl p-4">
-                        <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">Estimated Value Lost</div>
+                        <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">{t.inventoryReports.shrinkage.estimatedValueLost}</div>
                         <div className="mt-2 text-2xl font-black text-rose-600">{formatBDT(Number(report.summary?.totalValue ?? 0))}</div>
                     </div>
                     <div className="bg-white border border-gray-100 rounded-2xl p-4">
-                        <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">Top Driver</div>
-                        <div className="mt-2 text-lg font-black text-gray-900">{report.summary?.topReasons?.[0]?.reasonLabel || 'No shrinkage logged'}</div>
-                        <div className="text-sm text-gray-500">{report.summary?.topReasons?.[0]?.warehouseName || 'All warehouses'}</div>
+                        <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">{t.inventoryReports.shrinkage.topDriver}</div>
+                        <div className="mt-2 text-lg font-black text-gray-900">{report.summary?.topReasons?.[0]?.reasonLabel || t.inventoryReports.shrinkage.noShrinkageLogged}</div>
+                        <div className="text-sm text-gray-500">{report.summary?.topReasons?.[0]?.warehouseName || t.inventoryReports.shrinkage.allWarehousesLabel}</div>
                     </div>
                 </div>
 
                 <div className="bg-white border border-gray-100 rounded-2xl p-4 grid md:grid-cols-6 gap-3 items-end">
                     <select value={warehouseId} onChange={(e) => setWarehouseId(e.target.value)} className="bg-gray-50 border-none rounded-xl py-3 px-4 text-sm font-medium">
-                        <option value="">All Warehouses</option>
+                        <option value="">{t.inventoryReports.reorder.allWarehouses}</option>
                         {warehouses.map((warehouse: any) => <option key={warehouse.id} value={warehouse.id}>{warehouse.name}</option>)}
                     </select>
                     <select value={reasonId} onChange={(e) => setReasonId(e.target.value)} className="bg-gray-50 border-none rounded-xl py-3 px-4 text-sm font-medium">
-                        <option value="">All Reasons</option>
+                        <option value="">{t.inventoryReports.shrinkage.allReasons}</option>
                         {reasons.map((reason: any) => <option key={reason.id} value={reason.id}>{reason.label}</option>)}
                     </select>
                     <select value={groupId} onChange={(e) => { setGroupId(e.target.value); setSubgroupId(''); }} className="bg-gray-50 border-none rounded-xl py-3 px-4 text-sm font-medium">
-                        <option value="">All Groups</option>
+                        <option value="">{t.inventoryReports.reorder.allGroups}</option>
                         {groups.map((group: any) => <option key={group.id} value={group.id}>{group.name}</option>)}
                     </select>
                     <select value={subgroupId} onChange={(e) => setSubgroupId(e.target.value)} className="bg-gray-50 border-none rounded-xl py-3 px-4 text-sm font-medium">
-                        <option value="">All Subgroups</option>
+                        <option value="">{t.inventoryReports.reorder.allSubgroups}</option>
                         {filteredSubgroups.map((subgroup: any) => <option key={subgroup.id} value={subgroup.id}>{subgroup.name}</option>)}
                     </select>
                     <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="bg-gray-50 border-none rounded-xl py-3 px-4 text-sm font-medium" />
@@ -144,11 +146,11 @@ export default function ShrinkageReportPage() {
                     tableId="inventory-shrinkage-report"
                     columns={columns}
                     data={report.rows || []}
-                    title="Shrinkage Summary"
+                    title={t.inventoryReports.shrinkage.shrinkageSummary}
                     isLoading={loading}
-                    emptyMessage="No shrinkage records match the current filters"
+                    emptyMessage={t.inventoryReports.shrinkage.emptyFiltered}
                     emptyIcon={<AlertTriangle className="w-16 h-16 text-gray-200" />}
-                    searchPlaceholder="Search shrinkage summary..."
+                    searchPlaceholder={t.inventoryReports.shrinkage.searchPlaceholder}
                 />
             </div>
         </div>

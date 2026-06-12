@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { formatBDT } from '@/lib/format';
+import { useI18n, formatMessage } from '@/lib/i18n';
 
 function defaultFrom() {
     const d = new Date();
@@ -29,18 +30,19 @@ function ActivitySection({ label, data, colorClass }: { label: string; data: { a
             {data.activities.map((a) => (
                 <div key={a.id} className="flex justify-between items-center px-6 py-1.5 text-sm text-gray-600 border-b border-gray-50">
                     <span>{a.name}</span>
-                    <span className={a.net_change >= 0 ? 'text-emerald-700' : 'text-red-700'}>{formatBDT(a.net_change)}</span>
+                    <span className={a.net_change >= 0 ? 'text-emerald-700' : 'text-red-700'}>{formatBDT(a.net_change, { locale })}</span>
                 </div>
             ))}
             <div className="flex justify-between items-center px-4 py-2 bg-gray-50 rounded-lg font-bold text-sm text-gray-700 mt-1">
                 <span>Net {label}</span>
-                <span className={data.net >= 0 ? 'text-emerald-700' : 'text-red-700'}>{formatBDT(data.net)}</span>
+                <span className={data.net >= 0 ? 'text-emerald-700' : 'text-red-700'}>{formatBDT(data.net, { locale })}</span>
             </div>
         </div>
     );
 }
 
 export default function CashFlowPage() {
+    const { t, locale } = useI18n();
     const [data, setData] = useState<CashFlowData | null>(null);
     const [fromDate, setFromDate] = useState(defaultFrom());
     const [toDate, setToDate] = useState(defaultTo());
@@ -86,21 +88,21 @@ export default function CashFlowPage() {
                             <p className="text-xs font-black uppercase tracking-widest text-gray-400">Period</p>
                             <p className="text-sm font-bold text-gray-700 mt-1">{data.filters.from} — {data.filters.to}</p>
                         </div>
-                        <ActivitySection label="Operating Activities" data={data.operating} colorClass="bg-blue-50 text-blue-700" />
-                        <ActivitySection label="Investing Activities" data={data.investing} colorClass="bg-purple-50 text-purple-700" />
-                        <ActivitySection label="Financing Activities" data={data.financing} colorClass="bg-orange-50 text-orange-700" />
+                        <ActivitySection label={t.reports.cashFlow.operating} data={data.operating} colorClass="bg-blue-50 text-blue-700" />
+                        <ActivitySection label={t.reports.cashFlow.investing} data={data.investing} colorClass="bg-purple-50 text-purple-700" />
+                        <ActivitySection label={t.reports.cashFlow.financing} data={data.financing} colorClass="bg-orange-50 text-orange-700" />
                         <div className="border-t border-gray-200 pt-4 space-y-2">
                             <div className="flex justify-between text-sm text-gray-600">
                                 <span>Opening Cash Balance</span>
-                                <span className="font-medium">{formatBDT(data.opening_cash_balance)}</span>
+                                <span className="font-medium">{formatBDT(data.opening_cash_balance, { locale })}</span>
                             </div>
                             <div className="flex justify-between text-sm text-gray-600">
                                 <span>Net Change in Cash</span>
-                                <span className={`font-medium ${data.net_change_in_cash >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>{formatBDT(data.net_change_in_cash)}</span>
+                                <span className={`font-medium ${data.net_change_in_cash >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>{formatBDT(data.net_change_in_cash, { locale })}</span>
                             </div>
                             <div className="flex justify-between font-black text-base border-t border-gray-200 pt-2">
                                 <span>Closing Cash Balance</span>
-                                <span className={data.closing_cash_balance >= 0 ? 'text-emerald-700' : 'text-red-700'}>{formatBDT(data.closing_cash_balance)}</span>
+                                <span className={data.closing_cash_balance >= 0 ? 'text-emerald-700' : 'text-red-700'}>{formatBDT(data.closing_cash_balance, { locale })}</span>
                             </div>
                         </div>
                         <p className="text-xs text-gray-400 italic">{data.note}</p>

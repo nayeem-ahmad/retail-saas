@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { formatBDT } from '@/lib/format';
+import { useI18n, formatMessage } from '@/lib/i18n';
 
 function defaultToday() {
     return new Date().toISOString().slice(0, 10);
@@ -26,6 +27,7 @@ interface TBData {
 }
 
 export default function TrialBalancePage() {
+    const { t, locale } = useI18n();
     const [data, setData] = useState<TBData | null>(null);
     const [asOfDate, setAsOfDate] = useState(defaultToday());
     const [loading, setLoading] = useState(true);
@@ -95,18 +97,18 @@ export default function TrialBalancePage() {
                                             <div className="text-xs text-gray-400">{row.account.group.name}</div>
                                         </td>
                                         <td className="px-4 py-2.5 text-xs text-gray-500">{row.account.type}</td>
-                                        <td className="px-4 py-2.5 text-right text-gray-700">{formatBDT(row.debit_total)}</td>
-                                        <td className="px-4 py-2.5 text-right text-gray-700">{formatBDT(row.credit_total)}</td>
-                                        <td className="px-4 py-2.5 text-right font-medium text-gray-800">{row.debit_balance > 0 ? formatBDT(row.debit_balance) : '—'}</td>
-                                        <td className="px-4 py-2.5 text-right font-medium text-gray-800">{row.credit_balance > 0 ? formatBDT(row.credit_balance) : '—'}</td>
+                                        <td className="px-4 py-2.5 text-right text-gray-700">{formatBDT(row.debit_total, { locale })}</td>
+                                        <td className="px-4 py-2.5 text-right text-gray-700">{formatBDT(row.credit_total, { locale })}</td>
+                                        <td className="px-4 py-2.5 text-right font-medium text-gray-800">{row.debit_balance > 0 ? formatBDT(row.debit_balance, { locale }) : '—'}</td>
+                                        <td className="px-4 py-2.5 text-right font-medium text-gray-800">{row.credit_balance > 0 ? formatBDT(row.credit_balance, { locale }) : '—'}</td>
                                     </tr>
                                 ))}
                             </tbody>
                             <tfoot>
                                 <tr className="bg-gray-50 font-black border-t border-gray-200">
                                     <td className="px-4 py-3 text-xs uppercase tracking-widest" colSpan={4}>Grand Totals</td>
-                                    <td className="px-4 py-3 text-right text-gray-900">{formatBDT(data.totals.debit)}</td>
-                                    <td className="px-4 py-3 text-right text-gray-900">{formatBDT(data.totals.credit)}</td>
+                                    <td className="px-4 py-3 text-right text-gray-900">{formatBDT(data.totals.debit, { locale })}</td>
+                                    <td className="px-4 py-3 text-right text-gray-900">{formatBDT(data.totals.credit, { locale })}</td>
                                 </tr>
                             </tfoot>
                         </table>

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Plus, Building2 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { formatBDT } from '@/lib/format';
+import { useI18n, formatMessage } from '@/lib/i18n';
 
 interface CostCenter { id: string; code: string; name: string; is_active: boolean; }
 
@@ -13,6 +14,7 @@ function defaultFrom() {
 }
 
 export default function CostCentersPage() {
+    const { t, locale } = useI18n();
     const [centers, setCenters] = useState<CostCenter[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -168,12 +170,12 @@ export default function CostCentersPage() {
                                                     <div key={g.group.id} className="mb-3">
                                                         <div className="flex justify-between px-3 py-1.5 bg-gray-50 rounded-lg text-sm font-bold text-gray-700">
                                                             <span>{g.group.name}</span>
-                                                            <span>{formatBDT(g.total)}</span>
+                                                            <span>{formatBDT(g.total, { locale })}</span>
                                                         </div>
                                                         {g.accounts.map((a: any) => (
                                                             <div key={a.id} className="flex justify-between px-5 py-1 text-sm text-gray-500">
                                                                 <span>{a.name}</span>
-                                                                <span>{formatBDT(a.balance)}</span>
+                                                                <span>{formatBDT(a.balance, { locale })}</span>
                                                             </div>
                                                         ))}
                                                     </div>

@@ -6,6 +6,7 @@ import { User, Phone, Mail, Calendar, Briefcase, LinkIcon, Unlink, Save, Chevron
 import { api } from '../../../../lib/api';
 import { formatDate } from '../../../../lib/format';
 import Link from 'next/link';
+import { useI18n } from '@/lib/i18n';
 
 interface Department { id: string; name: string; }
 interface Designation { id: string; name: string; }
@@ -30,6 +31,7 @@ interface Employee {
 }
 
 export default function EmployeeDetailPage() {
+    const { t } = useI18n();
     const params = useParams();
     const id = params.id as string;
     const [employee, setEmployee] = useState<Employee | null>(null);
@@ -68,7 +70,7 @@ export default function EmployeeDetailPage() {
                 designation_id: emp.designation_id ?? '',
                 status: emp.status ?? 'ACTIVE',
             });
-        }).catch(() => setError('Failed to load employee'))
+        }).catch(() => setError(t.employees.detail.loadFailed))
           .finally(() => setLoading(false));
     }, [id]);
 
@@ -105,9 +107,9 @@ export default function EmployeeDetailPage() {
 
             const updated = await api.updateEmployee(id, payload);
             setEmployee(updated);
-            setSuccess('Employee updated successfully.');
+            setSuccess(t.employees.detail.updateSuccess);
         } catch (err: any) {
-            setError(err.message || 'Failed to update employee.');
+            setError(err.message || t.employees.detail.updateFailed);
         } finally {
             setSaving(false);
         }
@@ -122,9 +124,9 @@ export default function EmployeeDetailPage() {
             const updated = await api.linkEmployeeUser(id, linkUserId);
             setEmployee(updated);
             setLinkUserId('');
-            setSuccess('User account linked.');
+            setSuccess(t.employees.detail.linkSuccess);
         } catch (err: any) {
-            setError(err.message || 'Failed to link user.');
+            setError(err.message || t.employees.detail.linkFailed);
         } finally {
             setLinkLoading(false);
         }
@@ -137,9 +139,9 @@ export default function EmployeeDetailPage() {
         try {
             const updated = await api.unlinkEmployeeUser(id);
             setEmployee(updated);
-            setSuccess('User account unlinked.');
+            setSuccess(t.employees.detail.unlinkSuccess);
         } catch (err: any) {
-            setError(err.message || 'Failed to unlink user.');
+            setError(err.message || t.employees.detail.unlinkFailed);
         } finally {
             setLinkLoading(false);
         }
@@ -151,7 +153,7 @@ export default function EmployeeDetailPage() {
     if (loading) {
         return (
             <div className="overflow-y-auto h-full bg-[#f3f4f6] p-6 flex items-center justify-center">
-                <p className="text-gray-400 font-bold">Loading...</p>
+                <p className="text-gray-400 font-bold">{t.employees.detail.loading}</p>
             </div>
         );
     }
@@ -159,7 +161,7 @@ export default function EmployeeDetailPage() {
     if (!employee) {
         return (
             <div className="overflow-y-auto h-full bg-[#f3f4f6] p-6 flex items-center justify-center">
-                <p className="text-red-500 font-bold">Employee not found.</p>
+                <p className="text-red-500 font-bold">{t.employees.detail.notFound}</p>
             </div>
         );
     }
@@ -169,7 +171,7 @@ export default function EmployeeDetailPage() {
             <div className="max-w-3xl mx-auto space-y-6">
                 {/* Breadcrumb */}
                 <div className="flex items-center gap-2 text-sm text-gray-500">
-                    <Link href="/dashboard/employees" className="hover:text-blue-600 font-bold transition-colors">Employees</Link>
+                    <Link href="/dashboard/employees" className="hover:text-blue-600 font-bold transition-colors">{t.employees.title}</Link>
                     <ChevronRight className="w-4 h-4" />
                     <span className="font-black text-gray-900">{employee.employee_code}</span>
                 </div>
@@ -187,19 +189,19 @@ export default function EmployeeDetailPage() {
                     </div>
                     <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                         <div>
-                            <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Department</p>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">{t.employees.detail.department}</p>
                             <p className="font-bold mt-0.5">{employee.department?.name ?? '—'}</p>
                         </div>
                         <div>
-                            <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Designation</p>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">{t.employees.detail.designation}</p>
                             <p className="font-bold mt-0.5">{employee.designation?.name ?? '—'}</p>
                         </div>
                         <div>
-                            <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Joined</p>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">{t.employees.detail.joined}</p>
                             <p className="font-bold mt-0.5">{employee.date_of_joining ? formatDate(employee.date_of_joining) : '—'}</p>
                         </div>
                         <div>
-                            <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Added</p>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">{t.employees.detail.added}</p>
                             <p className="font-bold mt-0.5">{formatDate(employee.created_at)}</p>
                         </div>
                     </div>
@@ -211,11 +213,11 @@ export default function EmployeeDetailPage() {
 
                 {/* Edit form */}
                 <form onSubmit={handleSave} className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm space-y-4">
-                    <h2 className="text-sm font-black uppercase tracking-widest text-gray-400">Profile</h2>
+                    <h2 className="text-sm font-black uppercase tracking-widest text-gray-400">{t.employees.detail.profile}</h2>
 
                     <div className="grid grid-cols-2 gap-4">
                         <div className="col-span-2 space-y-2">
-                            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">Full Name</label>
+                            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">{t.employees.detail.fullName}</label>
                             <div className="relative">
                                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                                 <input required type="text" value={form.name} onChange={set('name')}
@@ -224,7 +226,7 @@ export default function EmployeeDetailPage() {
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">Phone</label>
+                            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">{t.common.phone}</label>
                             <div className="relative">
                                 <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                                 <input required type="text" value={form.phone} onChange={set('phone')}
@@ -233,7 +235,7 @@ export default function EmployeeDetailPage() {
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">Email</label>
+                            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">{t.common.email}</label>
                             <div className="relative">
                                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                                 <input type="email" value={form.email} onChange={set('email')}
@@ -242,14 +244,14 @@ export default function EmployeeDetailPage() {
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">NID</label>
+                            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">{t.employees.detail.nationalId}</label>
                             <input type="text" value={form.nid} onChange={set('nid')}
                                 className="w-full bg-gray-50 border border-gray-100 rounded-xl py-3 px-4 font-bold text-gray-600 focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all text-sm"
-                                placeholder="National ID" />
+                                placeholder={t.employees.detail.nationalId} />
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">Date of Joining</label>
+                            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">{t.employees.detail.dateOfJoining}</label>
                             <div className="relative">
                                 <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                                 <input type="date" value={form.date_of_joining} onChange={set('date_of_joining')}
@@ -258,32 +260,32 @@ export default function EmployeeDetailPage() {
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">Department</label>
+                            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">{t.employees.detail.department}</label>
                             <div className="relative">
                                 <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                                 <select value={form.department_id} onChange={set('department_id')}
                                     className="w-full bg-gray-50 border border-gray-100 rounded-xl py-3 pl-10 pr-4 font-bold text-gray-600 text-sm focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all appearance-none">
-                                    <option value="">None</option>
+                                    <option value="">{t.common.none}</option>
                                     {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
                                 </select>
                             </div>
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">Designation</label>
+                            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">{t.employees.detail.designation}</label>
                             <select value={form.designation_id} onChange={set('designation_id')}
                                 className="w-full bg-gray-50 border border-gray-100 rounded-xl py-3 px-4 font-bold text-gray-600 text-sm focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all">
-                                <option value="">None</option>
+                                <option value="">{t.common.none}</option>
                                 {designations.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
                             </select>
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">Status</label>
+                            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">{t.common.status}</label>
                             <select value={form.status} onChange={set('status')}
                                 className="w-full bg-gray-50 border border-gray-100 rounded-xl py-3 px-4 font-black text-sm focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all">
-                                <option value="ACTIVE">Active</option>
-                                <option value="INACTIVE">Inactive</option>
+                                <option value="ACTIVE">{t.employees.detail.active}</option>
+                                <option value="INACTIVE">{t.employees.detail.inactive}</option>
                             </select>
                         </div>
                     </div>
@@ -292,14 +294,14 @@ export default function EmployeeDetailPage() {
                         <button disabled={saving} type="submit"
                             className="flex items-center gap-2 px-6 py-3 rounded-xl font-black text-sm bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200 transition-all hover:-translate-y-0.5 disabled:opacity-50">
                             <Save className="w-4 h-4" />
-                            {saving ? 'Saving...' : 'Save Changes'}
+                            {saving ? t.employees.detail.saving : t.employees.detail.saveChanges}
                         </button>
                     </div>
                 </form>
 
                 {/* System access / User link */}
                 <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm space-y-4">
-                    <h2 className="text-sm font-black uppercase tracking-widest text-gray-400">System Access</h2>
+                    <h2 className="text-sm font-black uppercase tracking-widest text-gray-400">{t.employees.detail.systemAccess}</h2>
 
                     {employee.user ? (
                         <div className="flex items-center justify-between p-4 bg-emerald-50 border border-emerald-100 rounded-xl">
@@ -318,13 +320,13 @@ export default function EmployeeDetailPage() {
                         </div>
                     ) : (
                         <div className="space-y-3">
-                            <p className="text-sm text-gray-500">Link this employee to a system user account so they can log in.</p>
+                            <p className="text-sm text-gray-500">{t.employees.detail.linkDescription}</p>
                             <div className="flex gap-3">
                                 <input
                                     type="text"
                                     value={linkUserId}
                                     onChange={(e) => setLinkUserId(e.target.value)}
-                                    placeholder="Paste User ID"
+                                    placeholder={t.employees.detail.pasteUserId}
                                     className="flex-1 bg-gray-50 border border-gray-100 rounded-xl py-3 px-4 font-mono text-sm focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all"
                                 />
                                 <button
@@ -336,7 +338,7 @@ export default function EmployeeDetailPage() {
                                     Link
                                 </button>
                             </div>
-                            <p className="text-xs text-gray-400">Tip: find the user ID from Settings &gt; Users, then paste it here.</p>
+                            <p className="text-xs text-gray-400">{t.employees.detail.linkTip}</p>
                         </div>
                     )}
                 </div>

@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, ShoppingCart } from 'lucide-react';
 import { api } from '@/lib/api';
 import { formatBDT, formatDate } from '@/lib/format';
+import { useI18n, formatMessage } from '@/lib/i18n';
 
 interface PurchaseQuotation {
     id: string;
@@ -55,6 +56,7 @@ const nextActions: Record<string, { label: string; next: string; color: string }
 };
 
 export default function PurchaseQuotationDetailPage() {
+    const { t, locale } = useI18n();
     const params = useParams();
     const router = useRouter();
     const [rfq, setRfq] = useState<PurchaseQuotation | null>(null);
@@ -95,12 +97,12 @@ export default function PurchaseQuotationDetailPage() {
 
     const handleConvert = async () => {
         if (!rfq) return;
-        if (!window.confirm(`Convert ${rfq.rfq_number} to a Purchase Order?`)) return;
+        if (!window.confirm(formatMessage(t.purchaseQuotations.convertConfirm, { rfqNumber: rfq.rfq_number }))) return;
         setUpdating(true);
         setError('');
         try {
             const po = await api.convertPurchaseQuotation(rfq.id);
-            alert(`Created Purchase Order ${po.po_number}`);
+            alert(formatMessage(t.purchaseQuotations.convertSuccess, { poNumber: po.po_number }));
             router.push(`/dashboard/purchase-orders/${po.id}`);
         } catch (err: any) {
             setError(err.message || 'Conversion failed');
@@ -122,13 +124,13 @@ export default function PurchaseQuotationDetailPage() {
                 <div className="flex items-center justify-between">
                     <button onClick={() => router.push('/dashboard/purchase-quotations')}
                         className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900">
-                        <ArrowLeft className="w-4 h-4" /> Back to RFQs
+                        <ArrowLeft className="w-4 h-4" /> {t.purchaseQuotations.detail.back}
                     </button>
                     {rfq.status === 'ACCEPTED' && (
                         <button onClick={handleConvert} disabled={updating}
                             className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-black uppercase tracking-widest shadow-md disabled:opacity-50 transition-all hover:-translate-y-0.5">
                             <ShoppingCart className="w-4 h-4" />
-                            Convert to Purchase Order
+                            {t.purchaseQuotations.detail.convertToPo}
                         </button>
                     )}
                 </div>
@@ -141,8 +143,8 @@ export default function PurchaseQuotationDetailPage() {
                         <div>
                             <h1 className="text-2xl font-black tracking-tight">{rfq.rfq_number}</h1>
                             <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mt-0.5">
-                                Created {formatDate(rfq.created_at)}
-                                {rfq.valid_until ? ` · Valid until ${formatDate(rfq.valid_until)}` : ''}
+                                Created {formatDate(rfq.created_at, locale)}
+                                {rfq.valid_until ? ` · Valid until ${formatDate(rfq.valid_until, locale)}` : ''}
                             </p>
                         </div>
                         <span className={`px-3 py-1.5 rounded-full text-xs font-black uppercase tracking-widest ${statusStyles[rfq.status]}`}>
@@ -152,17 +154,17 @@ export default function PurchaseQuotationDetailPage() {
 
                     <div className="grid grid-cols-2 gap-6 pt-2 border-t border-gray-100">
                         <div>
-                            <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Supplier</p>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">{t.purchaseQuotations.detail.supplier}</p>
                             {rfq.supplier ? (
                                 <div>
                                     <p className="text-sm font-bold text-gray-900">{rfq.supplier.name}</p>
                                     {rfq.supplier.phone && <p className="text-sm text-gray-500">{rfq.supplier.phone}</p>}
                                     {rfq.supplier.email && <p className="text-sm text-gray-500">{rfq.supplier.email}</p>}
                                 </div>
-                            ) : <p className="text-sm text-gray-400 italic">No supplier linked</p>}
+                            ) : <p className="text-sm text-gray-400 italic">{t.purchaseQuotations.detail.noSupplierLinked}</p>}
                         </div>
                         <div>
-                            <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Branch</p>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">{t.common.branch}</p>
                             <p className="text-sm font-bold text-gray-900">{rfq.store?.name ?? '—'}</p>
                         </div>
                     </div>
@@ -170,25 +172,25 @@ export default function PurchaseQuotationDetailPage() {
 
                 {/* Line items */}
                 <div className="bg-white rounded-2xl border border-gray-100 p-6">
-                    <h2 className="text-xs font-black uppercase tracking-widest text-gray-400 mb-4">Requested Items</h2>
+                    <h2 className="text-xs font-black uppercase tracking-widest text-gray-400 mb-4">{t.purchaseQuotations.detail.requestedItems}</h2>
                     <table className="w-full text-sm">
                         <thead>
                             <tr className="border-b border-gray-100">
-                                <th className="text-left pb-3 text-[10px] font-black uppercase tracking-widest text-gray-400">Product</th>
-                                <th className="text-left pb-3 text-[10px] font-black uppercase tracking-widest text-gray-400">SKU</th>
-                                <th className="text-center pb-3 text-[10px] font-black uppercase tracking-widest text-gray-400">Qty</th>
-                                <th className="text-right pb-3 text-[10px] font-black uppercase tracking-widest text-gray-400">Unit Cost</th>
-                                <th className="text-right pb-3 text-[10px] font-black uppercase tracking-widest text-gray-400">Line Total</th>
+                                <th className="text-left pb-3 text-[10px] font-black uppercase tracking-widest text-gray-400">{t.common.product}</th>
+                                <th className="text-left pb-3 text-[10px] font-black uppercase tracking-widest text-gray-400">{t.purchases.invoice.sku}</th>
+                                <th className="text-center pb-3 text-[10px] font-black uppercase tracking-widest text-gray-400">{t.purchaseShared.qty}</th>
+                                <th className="text-right pb-3 text-[10px] font-black uppercase tracking-widest text-gray-400">{t.purchaseShared.unitCost}</th>
+                                <th className="text-right pb-3 text-[10px] font-black uppercase tracking-widest text-gray-400">{t.purchaseShared.lineTotal}</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
                             {rfq.items.map((item) => (
                                 <tr key={item.id}>
-                                    <td className="py-3 font-medium">{item.product?.name ?? 'Unknown'}</td>
+                                    <td className="py-3 font-medium">{item.product?.name ?? t.purchaseShared.unknownProduct}</td>
                                     <td className="py-3 text-gray-400 font-mono text-xs">{item.product?.sku ?? '—'}</td>
                                     <td className="py-3 text-center">{item.quantity}</td>
-                                    <td className="py-3 text-right">{formatBDT(parseFloat(item.unit_cost))}</td>
-                                    <td className="py-3 text-right font-bold">{formatBDT(parseFloat(item.line_total))}</td>
+                                    <td className="py-3 text-right">{formatBDT(parseFloat(item.unit_cost), { locale })}</td>
+                                    <td className="py-3 text-right font-bold">{formatBDT(parseFloat(item.line_total), { locale })}</td>
                                 </tr>
                             ))}
                         </tbody>
@@ -197,8 +199,8 @@ export default function PurchaseQuotationDetailPage() {
                     <div className="flex justify-end mt-4 pt-4 border-t border-gray-100">
                         <div className="w-48 text-sm">
                             <div className="flex justify-between font-black text-base">
-                                <span>Total</span>
-                                <span className="text-blue-700">{formatBDT(total)}</span>
+                                <span>{t.purchases.invoice.total}</span>
+                                <span className="text-blue-700">{formatBDT(total, { locale })}</span>
                             </div>
                         </div>
                     </div>
@@ -206,25 +208,25 @@ export default function PurchaseQuotationDetailPage() {
 
                 {rfq.notes && (
                     <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800">
-                        <span className="font-bold">Note: </span>{rfq.notes}
+                        <span className="font-bold">{t.purchases.invoice.notePrefix} </span>{rfq.notes}
                     </div>
                 )}
 
                 {/* Status actions */}
                 {actions.length > 0 && (
                     <div className="bg-white rounded-2xl border border-gray-100 p-6">
-                        <h2 className="text-xs font-black uppercase tracking-widest text-gray-400 mb-4">Actions</h2>
+                        <h2 className="text-xs font-black uppercase tracking-widest text-gray-400 mb-4">{t.purchaseQuotations.detail.actions}</h2>
                         <div className="flex gap-3">
                             {actions.map((action) => (
                                 <button key={action.next} onClick={() => handleStatusUpdate(action.next)} disabled={updating}
                                     className={`px-5 py-2.5 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-md disabled:opacity-50 transition-all hover:-translate-y-0.5 ${action.color}`}>
-                                    {updating ? 'Updating…' : action.label}
+                                    {updating ? t.purchaseQuotations.detail.updating : action.label}
                                 </button>
                             ))}
                         </div>
                         {rfq.status === 'RECEIVED' && (
                             <p className="text-xs text-gray-400 mt-3">
-                                Accept the quote to enable &quot;Convert to Purchase Order&quot;.
+                                {t.purchaseQuotations.detail.acceptHint}
                             </p>
                         )}
                     </div>
@@ -232,15 +234,15 @@ export default function PurchaseQuotationDetailPage() {
 
                 {rfq.status === 'ACCEPTED' && (
                     <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-sm text-emerald-800">
-                        <span className="font-bold">Quote accepted.</span> Click &quot;Convert to Purchase Order&quot; above to create a PO from this RFQ.
+                        <span className="font-bold">{t.purchaseQuotations.detail.quoteAccepted}</span> {t.purchaseQuotations.detail.quoteAcceptedHint}
                     </div>
                 )}
 
                 {rfq.status === 'CONVERTED' && (
                     <div className="bg-violet-50 border border-violet-200 rounded-xl p-4 text-sm text-violet-800">
-                        <span className="font-bold">Converted.</span> This RFQ has been converted to a Purchase Order.{' '}
+                        <span className="font-bold">{t.purchaseQuotations.detail.convertedBanner}</span> {t.purchaseQuotations.detail.convertedMessage}{' '}
                         <button onClick={() => router.push('/dashboard/purchase-orders')} className="underline font-bold">
-                            View Purchase Orders →
+                            {t.purchaseQuotations.detail.viewPurchaseOrders}
                         </button>
                     </div>
                 )}

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { CreditCard, ArrowLeft, Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { fetchWithAuth } from '@/lib/api';
+import { useI18n } from '@/lib/i18n';
 
 type SslSettings = { store_id: string; store_password: string; is_sandbox: string };
 type BkashSettings = { app_key: string; app_secret: string; username: string; password: string; is_sandbox: string };
@@ -41,7 +42,14 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
     );
 }
 
-function SandboxToggle({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+function SandboxToggle({
+    value, onChange, onLabel, offLabel,
+}: {
+    value: string;
+    onChange: (v: string) => void;
+    onLabel: string;
+    offLabel: string;
+}) {
     const on = value === 'true';
     return (
         <div className="flex items-center gap-3">
@@ -54,7 +62,7 @@ function SandboxToggle({ value, onChange }: { value: string; onChange: (v: strin
             >
                 <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${on ? 'translate-x-5' : 'translate-x-0'}`} />
             </button>
-            <span className="text-sm text-gray-600">{on ? 'Sandbox mode (test)' : 'Live mode (production)'}</span>
+            <span className="text-sm text-gray-600">{on ? onLabel : offLabel}</span>
         </div>
     );
 }
@@ -64,12 +72,16 @@ function GatewayCard({
     subtitle,
     saving,
     onSave,
+    saveLabel,
+    savingLabel,
     children,
 }: {
     title: string;
     subtitle: string;
     saving: boolean;
     onSave: () => void;
+    saveLabel: string;
+    savingLabel: string;
     children: React.ReactNode;
 }) {
     return (
@@ -87,7 +99,7 @@ function GatewayCard({
                     className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors shadow-sm"
                 >
                     {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-                    {saving ? 'Saving…' : 'Save'}
+                    {saving ? savingLabel : saveLabel}
                 </button>
             </div>
         </div>
@@ -95,9 +107,11 @@ function GatewayCard({
 }
 
 const inputCls = 'w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition';
-const secretHint = 'Leave blank to keep the existing value unchanged.';
 
 export default function PlatformPaymentsSettingsPage() {
+    const { t } = useI18n();
+    const m = t.admin.platformSettings.payments;
+    const c = t.admin.platformSettings.common;
     const [ssl, setSsl] = useState<SslSettings>(SSL_DEFAULTS);
     const [bkash, setBkash] = useState<BkashSettings>(BKASH_DEFAULTS);
     const [nagad, setNagad] = useState<NagadSettings>(NAGAD_DEFAULTS);
@@ -122,7 +136,7 @@ export default function PlatformPaymentsSettingsPage() {
             setNagad({ merchant_id: n.merchant_id ?? '', merchant_private_key: n.merchant_private_key === '••••••••' ? '' : (n.merchant_private_key ?? ''), merchant_public_key: n.merchant_public_key ?? '', is_sandbox: n.is_sandbox ?? 'true' });
         };
         load()
-            .catch(() => setToast({ type: 'error', message: 'Failed to load payment settings.' }))
+            .catch(() => setToast({ type: 'error', message: m.loadFailed }))
             .finally(() => setLoading(false));
     }, []);
 
@@ -135,9 +149,9 @@ export default function PlatformPaymentsSettingsPage() {
                 body: JSON.stringify({ settings: payload }),
             });
             if (!res.ok) throw new Error('Save failed');
-            setToast({ type: 'success', message: 'Settings saved.' });
+            setToast({ type: 'success', message: c.saved });
         } catch (e: any) {
-            setToast({ type: 'error', message: e.message ?? 'Failed to save.' });
+            setToast({ type: 'error', message: e.message ?? c.saveFailed });
         } finally {
             setSaving(false);
         }
@@ -173,58 +187,55 @@ export default function PlatformPaymentsSettingsPage() {
                         <ArrowLeft className="w-4 h-4 text-gray-500" />
                     </Link>
                     <CreditCard className="w-5 h-5 text-violet-600" />
-                    <h1 className="text-xl font-black tracking-tight">Payment Gateways</h1>
+                    <h1 className="text-xl font-black tracking-tight">{m.title}</h1>
                 </div>
 
                 {loading ? (
                     <div className="flex items-center gap-2 text-gray-400 text-sm py-8 justify-center">
-                        <Loader2 className="w-4 h-4 animate-spin" /> Loading…
+                        <Loader2 className="w-4 h-4 animate-spin" /> {c.loading}
                     </div>
                 ) : (
                     <>
-                        {/* SSL Wireless */}
-                        <GatewayCard title="SSL Wireless" subtitle="Popular Bangladeshi payment gateway." saving={savingSSL} onSave={handleSaveSSL}>
-                            <SandboxToggle value={ssl.is_sandbox} onChange={(v) => setSsl((s) => ({ ...s, is_sandbox: v }))} />
-                            <Field label="Store ID">
+                        <GatewayCard title={m.ssl.title} subtitle={m.ssl.subtitle} saving={savingSSL} onSave={handleSaveSSL} saveLabel={c.save} savingLabel={c.saving}>
+                            <SandboxToggle value={ssl.is_sandbox} onChange={(v) => setSsl((s) => ({ ...s, is_sandbox: v }))} onLabel={m.sandboxOn} offLabel={m.sandboxOff} />
+                            <Field label={m.ssl.storeId}>
                                 <input type="text" value={ssl.store_id} onChange={(e) => setSsl((s) => ({ ...s, store_id: e.target.value }))} placeholder="your_store_id" className={inputCls} />
                             </Field>
-                            <Field label="Store Password" hint={secretHint}>
-                                <input type="password" autoComplete="new-password" value={ssl.store_password} onChange={(e) => setSsl((s) => ({ ...s, store_password: e.target.value }))} placeholder="Enter new password (leave blank to keep existing)" className={inputCls} />
+                            <Field label={m.ssl.storePassword} hint={c.secretHint}>
+                                <input type="password" autoComplete="new-password" value={ssl.store_password} onChange={(e) => setSsl((s) => ({ ...s, store_password: e.target.value }))} placeholder={m.ssl.passwordPlaceholder} className={inputCls} />
                             </Field>
                         </GatewayCard>
 
-                        {/* bKash */}
-                        <GatewayCard title="bKash" subtitle="bKash Payment Gateway for checkout." saving={savingBkash} onSave={handleSaveBkash}>
-                            <SandboxToggle value={bkash.is_sandbox} onChange={(v) => setBkash((s) => ({ ...s, is_sandbox: v }))} />
+                        <GatewayCard title={m.bkash.title} subtitle={m.bkash.subtitle} saving={savingBkash} onSave={handleSaveBkash} saveLabel={c.save} savingLabel={c.saving}>
+                            <SandboxToggle value={bkash.is_sandbox} onChange={(v) => setBkash((s) => ({ ...s, is_sandbox: v }))} onLabel={m.sandboxOn} offLabel={m.sandboxOff} />
                             <div className="grid grid-cols-2 gap-4">
-                                <Field label="App Key">
+                                <Field label={m.bkash.appKey}>
                                     <input type="text" value={bkash.app_key} onChange={(e) => setBkash((s) => ({ ...s, app_key: e.target.value }))} placeholder="app_key" className={inputCls} />
                                 </Field>
-                                <Field label="App Secret" hint={secretHint}>
-                                    <input type="password" autoComplete="new-password" value={bkash.app_secret} onChange={(e) => setBkash((s) => ({ ...s, app_secret: e.target.value }))} placeholder="Leave blank to keep" className={inputCls} />
+                                <Field label={m.bkash.appSecret} hint={c.secretHint}>
+                                    <input type="password" autoComplete="new-password" value={bkash.app_secret} onChange={(e) => setBkash((s) => ({ ...s, app_secret: e.target.value }))} placeholder={m.bkash.leaveBlank} className={inputCls} />
                                 </Field>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
-                                <Field label="Username">
+                                <Field label={m.bkash.username}>
                                     <input type="text" value={bkash.username} onChange={(e) => setBkash((s) => ({ ...s, username: e.target.value }))} placeholder="username" className={inputCls} />
                                 </Field>
-                                <Field label="Password" hint={secretHint}>
-                                    <input type="password" autoComplete="new-password" value={bkash.password} onChange={(e) => setBkash((s) => ({ ...s, password: e.target.value }))} placeholder="Leave blank to keep" className={inputCls} />
+                                <Field label={m.bkash.password} hint={c.secretHint}>
+                                    <input type="password" autoComplete="new-password" value={bkash.password} onChange={(e) => setBkash((s) => ({ ...s, password: e.target.value }))} placeholder={m.bkash.leaveBlank} className={inputCls} />
                                 </Field>
                             </div>
                         </GatewayCard>
 
-                        {/* Nagad */}
-                        <GatewayCard title="Nagad" subtitle="Nagad Digital Financial Service." saving={savingNagad} onSave={handleSaveNagad}>
-                            <SandboxToggle value={nagad.is_sandbox} onChange={(v) => setNagad((s) => ({ ...s, is_sandbox: v }))} />
-                            <Field label="Merchant ID">
+                        <GatewayCard title={m.nagad.title} subtitle={m.nagad.subtitle} saving={savingNagad} onSave={handleSaveNagad} saveLabel={c.save} savingLabel={c.saving}>
+                            <SandboxToggle value={nagad.is_sandbox} onChange={(v) => setNagad((s) => ({ ...s, is_sandbox: v }))} onLabel={m.sandboxOn} offLabel={m.sandboxOff} />
+                            <Field label={m.nagad.merchantId}>
                                 <input type="text" value={nagad.merchant_id} onChange={(e) => setNagad((s) => ({ ...s, merchant_id: e.target.value }))} placeholder="merchant_id" className={inputCls} />
                             </Field>
-                            <Field label="Merchant Public Key">
-                                <textarea rows={3} value={nagad.merchant_public_key} onChange={(e) => setNagad((s) => ({ ...s, merchant_public_key: e.target.value }))} placeholder="-----BEGIN PUBLIC KEY-----" className={`${inputCls} resize-none font-mono text-xs`} />
+                            <Field label={m.nagad.publicKey}>
+                                <textarea rows={3} value={nagad.merchant_public_key} onChange={(e) => setNagad((s) => ({ ...s, merchant_public_key: e.target.value }))} placeholder={m.nagad.publicKeyPlaceholder} className={`${inputCls} resize-none font-mono text-xs`} />
                             </Field>
-                            <Field label="Merchant Private Key" hint={secretHint}>
-                                <textarea rows={3} autoComplete="new-password" value={nagad.merchant_private_key} onChange={(e) => setNagad((s) => ({ ...s, merchant_private_key: e.target.value }))} placeholder="Leave blank to keep existing key" className={`${inputCls} resize-none font-mono text-xs`} />
+                            <Field label={m.nagad.privateKey} hint={c.secretHint}>
+                                <textarea rows={3} autoComplete="new-password" value={nagad.merchant_private_key} onChange={(e) => setNagad((s) => ({ ...s, merchant_private_key: e.target.value }))} placeholder={m.nagad.privateKeyPlaceholder} className={`${inputCls} resize-none font-mono text-xs`} />
                             </Field>
                         </GatewayCard>
                     </>

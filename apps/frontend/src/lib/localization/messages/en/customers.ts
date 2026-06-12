@@ -1,0 +1,214 @@
+export const customersMessages = {
+    "customers": {
+        "title": "Customers",
+        "subtitle": "Track profiles, segmentation, and purchase value",
+        "newCustomer": "New Customer",
+        "runSegmentation": "Run Segmentation",
+        "running": "Running...",
+        "runSegmentationTitle": "Re-evaluate customer segments now",
+        "totalCustomers": "Total Customers",
+        "percentOfTotal": "{percent}% of total",
+        "segmentationComplete": "Segmentation complete — {count} customer(s) updated.",
+        "evaluateFailed": "Failed to evaluate segments.",
+        "emptyMessage": "No customers found",
+        "searchPlaceholder": "Search by code, customer, group, territory, or segment...",
+        "columns": {
+            "code": "Code",
+            "customer": "Customer",
+            "type": "Type",
+            "group": "Group",
+            "territory": "Territory",
+            "totalSpent": "Total Spent",
+            "points": "Points",
+            "pointsSuffix": "pts",
+            "segment": "Segment",
+            "registered": "Registered"
+        },
+        "filters": {
+            "vip": "VIP",
+            "atRisk": "At-Risk",
+            "organizations": "Organizations"
+        },
+        "modal": {
+            "title": "New Customer",
+            "subtitle": "Add to database",
+            "fullName": "Full Name",
+            "phoneNumber": "Phone Number",
+            "customerType": "Customer Type",
+            "customerGroup": "Customer Group",
+            "creditLimit": "Credit Limit",
+            "discountPct": "Discount %",
+            "individual": "Individual",
+            "organization": "Organization",
+            "adding": "Adding...",
+            "addCustomer": "Add Customer",
+            "addFailed": "Failed to add customer. Phone might already exist.",
+            "placeholders": {
+                "name": "John Doe",
+                "phone": "+8801234567890",
+                "email": "john@example.com",
+                "address": "123 Main St..."
+            }
+        },
+        "profile": {
+            "back": "Back to Customers",
+            "loading": "Loading profile...",
+            "notFound": "Customer not found.",
+            "lifetimeValue": "Lifetime Value",
+            "transactions": "{count} transaction",
+            "transactionsPlural": "{count} transactions",
+            "dueBalance": "Due Balance",
+            "customerGroup": "Customer Group",
+            "territory": "Territory",
+            "creditLimit": "Credit Limit",
+            "defaultDiscount": "Default Discount",
+            "individual": "Individual",
+            "tabs": {
+                "history": "Purchase History",
+                "interactions": "Interactions",
+                "credit": "Credit / Due",
+                "tasks": "Tasks"
+            },
+            "noTransactions": "No transactions found.",
+            "unknownItem": "Unknown Item",
+            "previous": "Previous",
+            "next": "Next",
+            "totalTransactions": "{count} total transactions",
+            "logInteraction": "Log Interaction",
+            "summary": "Summary *",
+            "outcome": "Outcome (optional)",
+            "noInteractions": "No interactions logged yet",
+            "by": "by",
+            "creditEnabled": "Credit Enabled",
+            "creditDisabled": "Credit Disabled",
+            "recordPayment": "Record Payment",
+            "amountPlaceholder": "Amount (৳)",
+            "notesOptional": "Notes (optional)",
+            "confirmPayment": "Confirm Payment",
+            "balanceAfter": "Balance After",
+            "noCreditTransactions": "No credit transactions yet",
+            "addTask": "Add Task",
+            "taskTitle": "Task title *",
+            "saveTask": "Save Task",
+            "noTasks": "No tasks yet",
+            "due": "Due",
+            "done": "Done",
+            "deleteInteractionConfirm": "Delete this interaction?",
+            "loadFailed": "Failed to load customer",
+            "creditColumns": {
+                "date": "Date",
+                "type": "Type",
+                "amount": "Amount",
+                "notes": "Notes"
+            }
+        },
+        "history": {
+            "loading": "Loading history...",
+            "notAvailable": "History not available.",
+            "backToProfile": "Back to Profile",
+            "title": "Purchase History",
+            "totalOrders": "Total Orders",
+            "lifetimeSpend": "Lifetime Spend",
+            "avgOrderValue": "Avg. Order Value",
+            "purchaseFrequency": "Purchase Frequency",
+            "everyDays": "every {days}d",
+            "purchaseTimeline": "Purchase Timeline",
+            "monthlySpending": "Monthly Spending",
+            "ordersCount": "({count} orders)",
+            "topProducts": "Top Purchased Products",
+            "units": "{count} units",
+            "allTransactions": "All Transactions",
+            "searchPlaceholder": "Search by reference or product...",
+            "noTransactions": "No transactions found.",
+            "unknownItem": "Unknown Item"
+        },
+        "dueAging": {
+            "title": "Due Aging Report",
+            "subtitle": "Customer credit balances bucketed by age of debt",
+            "bucket0_30": "0–30 days",
+            "bucket31_60": "31–60 days",
+            "bucket61_90": "61–90 days",
+            "bucket90plus": "90+ days",
+            "totalDue": "Total Due",
+            "emptyTitle": "No outstanding credit",
+            "emptyDescription": "All customer credit balances are settled.",
+            "exportCsv": "Export CSV",
+            "columns": {
+                "customer": "Customer",
+                "phone": "Phone"
+            }
+        }
+    },
+    "brands": {
+        "title": "Brands",
+        "subtitle": "Manage your product brands",
+        "newBrand": "New Brand",
+        "editBrand": "Edit Brand",
+        "emptyMessage": "No brands yet. Add your first brand.",
+        "searchPlaceholder": "Search brands...",
+        "nameRequired": "Brand name is required.",
+        "saveFailed": "Failed to save brand.",
+        "deleteTitle": "Delete Brand?",
+        "deleteDescription": "This brand will be removed. Products linked to it will become unbranded.",
+        "columns": {
+            "brand": "Brand",
+            "website": "Website",
+            "added": "Added"
+        },
+        "placeholders": {
+            "name": "e.g., Samsung, Apple, Nike",
+            "description": "Optional brand description",
+            "website": "https://brand.com"
+        },
+        "saving": "Saving..."
+    },
+    "customerGroups": {
+        "title": "Customer Groups",
+        "subtitle": "Organize customers with reusable pricing rules",
+        "newGroup": "New Group",
+        "editGroup": "Edit Group",
+        "emptyMessage": "No customer groups found",
+        "searchPlaceholder": "Search by group name...",
+        "noDescription": "No description",
+        "defaultDiscount": "Default Discount",
+        "deleteConfirm": "Delete this group? Customers in this group will be unassigned.",
+        "deleteFailed": "Cannot delete group with assigned customers.",
+        "saveFailed": "Failed to save",
+        "columns": {
+            "group": "Group",
+            "customers": "Customers"
+        },
+        "placeholders": {
+            "name": "e.g. Wholesale",
+            "description": "Group description"
+        },
+        "discountPct": "Discount %",
+        "saving": "Saving..."
+    },
+    "territories": {
+        "title": "Territories",
+        "subtitle": "Manage the customer geography hierarchy",
+        "newTerritory": "New Territory",
+        "editTerritory": "Edit Territory",
+        "emptyMessage": "No territories found",
+        "searchPlaceholder": "Search by territory or parent...",
+        "parent": "Parent",
+        "root": "Root",
+        "level": "Level",
+        "subTerritories": "Sub Territories",
+        "parentTerritory": "Parent Territory",
+        "noneRoot": "None (Root)",
+        "deleteConfirm": "Delete this territory?",
+        "deleteFailed": "Cannot delete territory with children or assigned customers.",
+        "saveFailed": "Failed to save",
+        "columns": {
+            "territory": "Territory",
+            "customers": "Customers"
+        },
+        "placeholders": {
+            "name": "e.g. Dhaka",
+            "description": "Description"
+        },
+        "saving": "Saving..."
+    }
+} as const;

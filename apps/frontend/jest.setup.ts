@@ -1,6 +1,25 @@
 import '@testing-library/jest-dom';
 import React from 'react';
 
+jest.mock('@/lib/i18n', () => {
+    const { enMessages } = require('@/lib/localization/messages/en');
+    return {
+        useI18n: () => ({
+            locale: 'en',
+            setLocale: jest.fn(),
+            locales: [],
+            localeInfo: { code: 'en', label: 'English', nativeLabel: 'English', htmlLang: 'en', dir: 'ltr', numberLocale: 'en-US', dateLocale: 'en-GB', enabled: true },
+            t: enMessages,
+        }),
+        formatMessage: (template: string, values: Record<string, string | number> = {}) =>
+            Object.entries(values).reduce(
+                (result, [key, value]) => result.replaceAll(`{${key}}`, String(value)),
+                template ?? '',
+            ),
+        I18nProvider: ({ children }: { children: React.ReactNode }) => children,
+    };
+});
+
 const mockIcon = (name: string) => (props: any) => React.createElement('div', { ...props, 'data-testid': `${name}-icon` });
 
 const icons: any = {

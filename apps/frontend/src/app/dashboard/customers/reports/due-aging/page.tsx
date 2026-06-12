@@ -5,6 +5,7 @@ import { Clock, RefreshCw, AlertTriangle, Download } from 'lucide-react';
 import { api } from '../../../../../lib/api';
 import { formatBDT } from '../../../../../lib/format';
 import Link from 'next/link';
+import { useI18n } from '@/lib/i18n';
 
 interface AgingRow {
     customer: { id: string; name: string; phone: string };
@@ -16,6 +17,7 @@ interface AgingRow {
 }
 
 export default function DueAgingReportPage() {
+    const { t } = useI18n();
     const [rows, setRows] = useState<AgingRow[]>([]);
     const [loading, setLoading] = useState(true);
 

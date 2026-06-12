@@ -5,6 +5,7 @@ import { createColumnHelper, type ColumnDef } from '@tanstack/react-table';
 import { BookOpen, RefreshCw } from 'lucide-react';
 import { DataTable } from '@/components/data-table';
 import { api } from '../../../../lib/api';
+import { useI18n } from '@/lib/i18n';
 
 interface LedgerRow {
     id: string;
@@ -21,6 +22,7 @@ interface LedgerRow {
 const columnHelper = createColumnHelper<LedgerRow>();
 
 export default function InventoryLedgerPage() {
+    const { t } = useI18n();
     const [rows, setRows] = useState<LedgerRow[]>([]);
     const [warehouses, setWarehouses] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -59,26 +61,26 @@ export default function InventoryLedgerPage() {
     const columns: ColumnDef<LedgerRow, any>[] = useMemo(
         () => [
             columnHelper.accessor('created_at', {
-                header: 'Timestamp',
+                header: t.inventoryLedger.columns.timestamp,
                 cell: (info) => new Date(info.getValue()).toLocaleString(),
                 size: 170,
             }),
             columnHelper.accessor((row) => row.product?.name || '-', {
                 id: 'product',
-                header: 'Product',
+                header: t.inventoryLedger.columns.product,
                 size: 220,
             }),
             columnHelper.accessor((row) => row.warehouse?.name || '-', {
                 id: 'warehouse',
-                header: 'Warehouse',
+                header: t.inventoryLedger.columns.warehouse,
                 size: 160,
             }),
             columnHelper.accessor('movement_type', {
-                header: 'Movement',
+                header: t.inventoryLedger.columns.movement,
                 size: 160,
             }),
             columnHelper.accessor('quantity_delta', {
-                header: 'Delta',
+                header: t.inventoryLedger.columns.delta,
                 cell: (info) => {
                     const value = Number(info.getValue() || 0);
                     return <span className={value >= 0 ? 'text-emerald-600 font-black' : 'text-rose-600 font-black'}>{value}</span>;
@@ -86,17 +88,17 @@ export default function InventoryLedgerPage() {
                 size: 80,
             }),
             columnHelper.accessor('balance_after', {
-                header: 'Balance',
+                header: t.inventoryLedger.columns.balance,
                 cell: (info) => <span className="font-bold">{info.getValue() ?? '-'}</span>,
                 size: 90,
             }),
             columnHelper.accessor((row) => row.reference_type && row.reference_id ? `${row.reference_type} • ${row.reference_id}` : '-', {
                 id: 'reference',
-                header: 'Reference',
+                header: t.inventoryLedger.columns.reference,
                 size: 220,
             }),
         ],
-        [],
+        [t],
     );
 
     return (
@@ -104,29 +106,29 @@ export default function InventoryLedgerPage() {
             <div className="max-w-[1400px] mx-auto space-y-6">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-black tracking-tight">Inventory Ledger</h1>
+                        <h1 className="text-2xl font-black tracking-tight">{t.inventoryLedger.title}</h1>
                         <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mt-0.5">
-                            Review stock movement history across products and warehouses
+                            {t.inventoryLedger.subtitle}
                         </p>
                     </div>
                     <button onClick={() => void loadLedger()} className="bg-white border border-gray-200 text-gray-700 px-4 py-2.5 rounded-xl font-bold text-sm flex items-center">
-                        <RefreshCw className="w-4 h-4 mr-2" /> Refresh
+                        <RefreshCw className="w-4 h-4 mr-2" /> {t.common.refresh}
                     </button>
                 </div>
 
                 <div className="bg-white border border-gray-100 rounded-2xl p-4 flex flex-wrap gap-3 items-end">
                     <div className="min-w-[220px]">
-                        <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 ml-1">Warehouse</label>
+                        <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 ml-1">{t.inventoryLedger.warehouseLabel}</label>
                         <select value={warehouseId} onChange={(e) => setWarehouseId(e.target.value)} className="w-full bg-gray-50 border-none rounded-xl py-3 px-4 text-sm font-medium">
-                            <option value="">All Warehouses</option>
+                            <option value="">{t.inventoryLedger.allWarehouses}</option>
                             {warehouses.map((warehouse) => (
                                 <option key={warehouse.id} value={warehouse.id}>{warehouse.name}</option>
                             ))}
                         </select>
                     </div>
                     <div className="min-w-[220px]">
-                        <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 ml-1">Movement Type</label>
-                        <input value={movementType} onChange={(e) => setMovementType(e.target.value)} placeholder="e.g. SALE" className="w-full bg-gray-50 border-none rounded-xl py-3 px-4 text-sm font-medium" />
+                        <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 ml-1">{t.inventoryLedger.movementType}</label>
+                        <input value={movementType} onChange={(e) => setMovementType(e.target.value)} placeholder={t.inventoryLedger.movementPlaceholder} className="w-full bg-gray-50 border-none rounded-xl py-3 px-4 text-sm font-medium" />
                     </div>
                 </div>
 
@@ -134,11 +136,11 @@ export default function InventoryLedgerPage() {
                     tableId="inventory-ledger"
                     columns={columns}
                     data={rows}
-                    title="Stock Ledger"
+                    title={t.inventoryLedger.stockLedger}
                     isLoading={loading}
-                    emptyMessage="No inventory movements recorded yet"
+                    emptyMessage={t.inventoryLedger.emptyMessage}
                     emptyIcon={<BookOpen className="w-16 h-16 text-gray-200" />}
-                    searchPlaceholder="Search by product, warehouse, or movement..."
+                    searchPlaceholder={t.inventoryLedger.searchPlaceholder}
                 />
             </div>
         </div>

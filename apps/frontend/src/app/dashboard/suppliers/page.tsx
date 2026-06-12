@@ -6,6 +6,7 @@ import { Truck, Plus, Pencil, Trash2, X } from 'lucide-react';
 import { DataTable } from '@/components/data-table';
 import { api } from '@/lib/api';
 import { formatDate } from '@/lib/format';
+import { useI18n } from '@/lib/i18n';
 
 interface Supplier {
     id: string;
@@ -21,6 +22,7 @@ const emptyForm = { name: '', phone: '', email: '', address: '' };
 const columnHelper = createColumnHelper<Supplier>();
 
 export default function SuppliersPage() {
+    const { t, locale } = useI18n();
     const [suppliers, setSuppliers] = useState<Supplier[]>([]);
     const [loading, setLoading] = useState(true);
     const [modalOpen, setModalOpen] = useState(false);
@@ -73,7 +75,7 @@ export default function SuppliersPage() {
 
     const handleSave = async () => {
         if (!form.name.trim()) {
-            setError('Supplier name is required.');
+            setError(t.suppliers.nameRequired);
             return;
         }
         setSaving(true);
@@ -97,7 +99,7 @@ export default function SuppliersPage() {
             closeModal();
             void load();
         } catch (err: any) {
-            setError(err.message || 'Failed to save supplier.');
+            setError(err.message || t.suppliers.saveFailed);
         } finally {
             setSaving(false);
         }
@@ -117,56 +119,56 @@ export default function SuppliersPage() {
     const columns: ColumnDef<Supplier, any>[] = useMemo(
         () => [
             columnHelper.accessor('name', {
-                header: 'Supplier',
+                header: t.suppliers.columns.supplier,
                 cell: (info) => (
                     <span className="text-sm font-black text-gray-900">{info.getValue()}</span>
                 ),
                 size: 220,
             }),
             columnHelper.accessor('phone', {
-                header: 'Phone',
+                header: t.suppliers.columns.phone,
                 cell: (info) => (
                     <span className="text-sm text-gray-600">{info.getValue() ?? '-'}</span>
                 ),
                 size: 150,
             }),
             columnHelper.accessor('email', {
-                header: 'Email',
+                header: t.suppliers.columns.email,
                 cell: (info) => (
                     <span className="text-sm text-gray-600">{info.getValue() ?? '-'}</span>
                 ),
                 size: 200,
             }),
             columnHelper.accessor('address', {
-                header: 'Address',
+                header: t.suppliers.columns.address,
                 cell: (info) => (
                     <span className="text-sm text-gray-500 truncate max-w-xs block">{info.getValue() ?? '-'}</span>
                 ),
                 size: 240,
             }),
             columnHelper.accessor('created_at', {
-                header: 'Added',
+                header: t.suppliers.columns.added,
                 cell: (info) => (
-                    <span className="text-sm text-gray-500">{formatDate(info.getValue())}</span>
+                    <span className="text-sm text-gray-500">{formatDate(info.getValue(), locale)}</span>
                 ),
                 size: 130,
             }),
             columnHelper.display({
                 id: 'actions',
-                header: 'Actions',
+                header: t.suppliers.columns.actions,
                 cell: (info) => (
                     <div className="flex items-center gap-1">
                         <button
                             onClick={() => openEdit(info.row.original)}
                             className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-                            title="Edit"
+                            title={t.common.edit}
                         >
                             <Pencil className="w-4 h-4" />
                         </button>
                         <button
                             onClick={() => setDeleteId(info.row.original.id)}
                             className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                            title="Delete"
+                            title={t.common.delete}
                         >
                             <Trash2 className="w-4 h-4" />
                         </button>
@@ -177,7 +179,7 @@ export default function SuppliersPage() {
                 size: 90,
             }),
         ],
-        [],
+        [t, locale],
     );
 
     return (
@@ -185,9 +187,9 @@ export default function SuppliersPage() {
             <div className="max-w-[1400px] mx-auto space-y-6">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-black tracking-tight">Suppliers</h1>
+                        <h1 className="text-2xl font-black tracking-tight">{t.suppliers.title}</h1>
                         <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mt-0.5">
-                            Manage your supplier directory
+                            {t.suppliers.subtitle}
                         </p>
                     </div>
                     <button
@@ -195,7 +197,7 @@ export default function SuppliersPage() {
                         className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl font-bold text-sm flex items-center shadow-lg shadow-blue-200 transition-all hover:-translate-y-0.5 active:translate-y-0"
                     >
                         <Plus className="w-4 h-4 mr-2" />
-                        New Supplier
+                        {t.suppliers.newSupplier}
                     </button>
                 </div>
 
@@ -203,21 +205,20 @@ export default function SuppliersPage() {
                     tableId="suppliers"
                     columns={columns}
                     data={suppliers}
-                    title="Suppliers"
+                    title={t.suppliers.tableTitle}
                     isLoading={loading}
-                    emptyMessage="No suppliers yet. Add your first supplier."
+                    emptyMessage={t.suppliers.emptyMessage}
                     emptyIcon={<Truck className="w-16 h-16 text-gray-200" />}
-                    searchPlaceholder="Search by name, phone, or email..."
+                    searchPlaceholder={t.suppliers.searchPlaceholder}
                 />
             </div>
 
-            {/* Create / Edit Modal */}
             {modalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
                     <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl">
                         <div className="p-6 border-b border-gray-100 flex items-center justify-between">
                             <h2 className="text-lg font-black tracking-tight">
-                                {editTarget ? 'Edit Supplier' : 'New Supplier'}
+                                {editTarget ? t.suppliers.editSupplier : t.suppliers.newSupplier}
                             </h2>
                             <button onClick={closeModal} className="p-2 hover:bg-gray-50 rounded-xl text-gray-400">
                                 <X className="w-5 h-5" />
@@ -229,42 +230,42 @@ export default function SuppliersPage() {
                             )}
                             <div>
                                 <label className="text-xs font-black uppercase tracking-widest text-gray-500 block mb-1.5">
-                                    Name <span className="text-red-500">*</span>
+                                    {t.common.name} <span className="text-red-500">*</span>
                                 </label>
                                 <input
                                     type="text"
                                     value={form.name}
                                     onChange={(e) => setForm({ ...form, name: e.target.value })}
-                                    placeholder="Supplier name"
+                                    placeholder={t.purchaseShared.supplierNamePlaceholder}
                                     className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-bold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-300 outline-none"
                                 />
                             </div>
                             <div>
-                                <label className="text-xs font-black uppercase tracking-widest text-gray-500 block mb-1.5">Phone</label>
+                                <label className="text-xs font-black uppercase tracking-widest text-gray-500 block mb-1.5">{t.common.phone}</label>
                                 <input
                                     type="text"
                                     value={form.phone}
                                     onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                                    placeholder="01XXXXXXXXX"
+                                    placeholder={t.purchaseShared.phonePlaceholder}
                                     className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-300 outline-none"
                                 />
                             </div>
                             <div>
-                                <label className="text-xs font-black uppercase tracking-widest text-gray-500 block mb-1.5">Email</label>
+                                <label className="text-xs font-black uppercase tracking-widest text-gray-500 block mb-1.5">{t.common.email}</label>
                                 <input
                                     type="email"
                                     value={form.email}
                                     onChange={(e) => setForm({ ...form, email: e.target.value })}
-                                    placeholder="supplier@example.com"
+                                    placeholder={t.purchaseShared.emailPlaceholder}
                                     className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-300 outline-none"
                                 />
                             </div>
                             <div>
-                                <label className="text-xs font-black uppercase tracking-widest text-gray-500 block mb-1.5">Address</label>
+                                <label className="text-xs font-black uppercase tracking-widest text-gray-500 block mb-1.5">{t.common.address}</label>
                                 <textarea
                                     value={form.address}
                                     onChange={(e) => setForm({ ...form, address: e.target.value })}
-                                    placeholder="Street address"
+                                    placeholder={t.purchaseShared.addressPlaceholder}
                                     rows={3}
                                     className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-300 outline-none resize-none"
                                 />
@@ -275,40 +276,39 @@ export default function SuppliersPage() {
                                 onClick={closeModal}
                                 className="px-5 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-gray-50"
                             >
-                                Cancel
+                                {t.common.cancel}
                             </button>
                             <button
                                 onClick={handleSave}
                                 disabled={saving}
                                 className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-md disabled:opacity-50"
                             >
-                                {saving ? 'Saving...' : editTarget ? 'Save Changes' : 'Create'}
+                                {saving ? t.suppliers.saving : editTarget ? t.common.saveChanges : t.common.create}
                             </button>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* Delete Confirm */}
             {deleteId && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
                     <div className="bg-white w-full max-w-sm rounded-3xl shadow-2xl p-6 space-y-4">
-                        <h2 className="text-lg font-black tracking-tight">Delete Supplier?</h2>
+                        <h2 className="text-lg font-black tracking-tight">{t.suppliers.deleteTitle}</h2>
                         <p className="text-sm text-gray-500">
-                            This supplier will be removed from your directory. Existing purchases linked to them will not be affected.
+                            {t.suppliers.deleteDescription}
                         </p>
                         <div className="flex justify-end gap-3 pt-2">
                             <button
                                 onClick={() => setDeleteId(null)}
                                 className="px-5 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-gray-50"
                             >
-                                Cancel
+                                {t.common.cancel}
                             </button>
                             <button
                                 onClick={() => handleDelete(deleteId)}
                                 className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-md"
                             >
-                                Delete
+                                {t.common.delete}
                             </button>
                         </div>
                     </div>

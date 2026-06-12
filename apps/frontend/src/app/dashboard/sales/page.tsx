@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { createColumnHelper, type ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table';
 import { PostingBadge } from '@/components/PostingBadge';
+import { useI18n, formatMessage } from '@/lib/i18n';
 
 interface Sale {
     id: string;
@@ -33,6 +34,7 @@ const statusColors: Record<string, string> = {
 const columnHelper = createColumnHelper<Sale>();
 
 export default function SalesPage() {
+    const { t, locale } = useI18n();
     const [sales, setSales] = useState<Sale[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -54,19 +56,19 @@ export default function SalesPage() {
     const columns: ColumnDef<Sale, any>[] = useMemo(
         () => [
             columnHelper.accessor('serial_number', {
-                header: 'Serial #',
+                header: t.sales.columns.serialNumber,
                 cell: (info) => (
                     <span className="text-sm font-black text-gray-900">{info.getValue()}</span>
                 ),
                 size: 140,
             }),
             columnHelper.accessor('created_at', {
-                header: 'Date',
+                header: t.sales.columns.date,
                 cell: (info) => {
                     const d = new Date(info.getValue());
                     return (
                         <div>
-                            <span className="text-sm text-gray-600">{formatDate(info.getValue())}</span>
+                            <span className="text-sm text-gray-600">{formatDate(info.getValue(), locale)}</span>
                             <span className="text-xs text-gray-400 block">{d.toLocaleTimeString()}</span>
                         </div>
                     );
@@ -76,27 +78,29 @@ export default function SalesPage() {
             }),
             columnHelper.accessor((row) => row.customer?.name ?? '', {
                 id: 'customer',
-                header: 'Customer',
+                header: t.sales.columns.customer,
                 cell: (info) => (
                     <span className="text-sm text-gray-700 font-medium">
-                        {info.getValue() || <span className="text-gray-300">Walk-in</span>}
+                        {info.getValue() || <span className="text-gray-300">{t.shared.walkIn}</span>}
                     </span>
                 ),
                 size: 150,
             }),
             columnHelper.accessor((row) => row.items?.length ?? 0, {
                 id: 'item_count',
-                header: 'Items',
+                header: t.sales.columns.items,
                 cell: (info) => (
-                    <span className="text-sm font-bold text-gray-700">{info.getValue()} items</span>
+                    <span className="text-sm font-bold text-gray-700">
+                        {formatMessage(t.shared.itemsCount, { count: info.getValue() })}
+                    </span>
                 ),
                 size: 80,
             }),
             columnHelper.accessor('total_amount', {
-                header: 'Total',
+                header: t.sales.columns.total,
                 cell: (info) => (
                     <span className="text-sm font-black text-blue-600">
-                        {formatBDT(parseFloat(info.getValue()))}
+                        {formatBDT(parseFloat(info.getValue()), { locale })}
                     </span>
                 ),
                 sortingFn: (a, b) =>
@@ -104,10 +108,10 @@ export default function SalesPage() {
                 size: 110,
             }),
             columnHelper.accessor('amount_paid', {
-                header: 'Paid',
+                header: t.sales.columns.paid,
                 cell: (info) => (
                     <span className="text-sm font-bold text-gray-700">
-                        {formatBDT(parseFloat(info.getValue()))}
+                        {formatBDT(parseFloat(info.getValue()), { locale })}
                     </span>
                 ),
                 sortingFn: (a, b) =>
@@ -115,7 +119,7 @@ export default function SalesPage() {
                 size: 110,
             }),
             columnHelper.accessor('status', {
-                header: 'Status',
+                header: t.sales.columns.status,
                 cell: (info) => {
                     const status = info.getValue();
                     return (
@@ -124,7 +128,7 @@ export default function SalesPage() {
                                 statusColors[status] ?? 'bg-gray-50 text-gray-700 border-gray-200'
                             }`}
                         >
-                            {status}
+                            {t.shared.statuses.sale[status as keyof typeof t.shared.statuses.sale] ?? status}
                         </span>
                     );
                 },
@@ -134,7 +138,7 @@ export default function SalesPage() {
                 (row) => row.payments?.map((p) => p.payment_method).join(', ') ?? '',
                 {
                     id: 'payments',
-                    header: 'Payments',
+                    header: t.sales.columns.payments,
                     cell: (info) => {
                         const row = info.row.original;
                         return (
@@ -155,7 +159,7 @@ export default function SalesPage() {
             ),
             columnHelper.display({
                 id: 'posting',
-                header: 'Voucher',
+                header: t.sales.columns.voucher,
                 cell: ({ row }) => (
                     <PostingBadge
                         status={row.original.posting_status}
@@ -166,20 +170,20 @@ export default function SalesPage() {
             }),
             columnHelper.display({
                 id: 'actions',
-                header: 'Actions',
+                header: t.sales.columns.actions,
                 cell: (info) => (
                     <div className="flex items-center justify-end space-x-1">
                         <Link
                             href={`/dashboard/sales/${info.row.original.id}`}
                             className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors"
-                            title="View"
+                            title={t.common.view}
                         >
                             <Eye className="w-4 h-4" />
                         </Link>
                         <Link
                             href={`/dashboard/sales/${info.row.original.id}?edit=true`}
                             className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
-                            title="Edit"
+                            title={t.common.edit}
                         >
                             <Edit2 className="w-4 h-4" />
                         </Link>
@@ -191,27 +195,26 @@ export default function SalesPage() {
                 size: 90,
             }),
         ],
-        [],
+        [t, locale],
     );
 
     const filterPresets = useMemo(
         () => [
-            { label: 'Completed', filters: [{ id: 'status', value: 'COMPLETED' }] },
-            { label: 'Refunded', filters: [{ id: 'status', value: 'REFUNDED' }] },
-            { label: 'Partial Refund', filters: [{ id: 'status', value: 'PARTIAL_REFUND' }] },
+            { label: t.sales.filterPresets.completed, filters: [{ id: 'status', value: 'COMPLETED' }] },
+            { label: t.sales.filterPresets.refunded, filters: [{ id: 'status', value: 'REFUNDED' }] },
+            { label: t.sales.filterPresets.partialRefund, filters: [{ id: 'status', value: 'PARTIAL_REFUND' }] },
         ],
-        [],
+        [t],
     );
 
     return (
         <div className="overflow-y-auto h-full bg-[#f3f4f6] p-6 font-sans text-gray-900">
             <div className="max-w-[1400px] mx-auto space-y-6">
-                {/* Header */}
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-black tracking-tight">Sales</h1>
+                        <h1 className="text-2xl font-black tracking-tight">{t.sales.title}</h1>
                         <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mt-0.5">
-                            All transactions
+                            {t.sales.subtitle}
                         </p>
                     </div>
                     <Link
@@ -219,20 +222,19 @@ export default function SalesPage() {
                         className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl font-bold text-sm flex items-center shadow-lg shadow-blue-200 transition-all hover:-translate-y-0.5 active:translate-y-0"
                     >
                         <Plus className="w-4 h-4 mr-2" />
-                        New Sale
+                        {t.sales.newSale}
                     </Link>
                 </div>
 
-                {/* DataTable */}
                 <DataTable<Sale>
                     tableId="sales"
                     columns={columns}
                     data={sales}
-                    title="Sales"
+                    title={t.sales.dataTable.title}
                     isLoading={loading}
-                    emptyMessage="No sales found"
+                    emptyMessage={t.sales.dataTable.emptyMessage}
                     emptyIcon={<Receipt className="w-16 h-16 text-gray-200" />}
-                    searchPlaceholder="Search by serial, customer, status..."
+                    searchPlaceholder={t.sales.dataTable.searchPlaceholder}
                     filterPresets={filterPresets}
                     enableRowSelection
                 />

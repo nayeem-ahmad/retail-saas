@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { formatBDT } from '@/lib/format';
+import { useI18n, formatMessage } from '@/lib/i18n';
 
 interface BudgetRow {
     account: { id: string; name: string; code?: string | null; type: string };
@@ -26,6 +27,7 @@ function varianceColor(row: BudgetRow) {
 }
 
 export default function BudgetVsActualPage() {
+    const { t, locale } = useI18n();
     const currentYear = new Date().getFullYear();
     const [fiscalYear, setFiscalYear] = useState(currentYear);
     const [month, setMonth] = useState<number | ''>('');
@@ -109,10 +111,10 @@ export default function BudgetVsActualPage() {
                                             {row.account.code && <span className="ml-2 text-xs text-gray-400">{row.account.code}</span>}
                                         </td>
                                         <td className="px-5 py-3 text-gray-400 text-xs capitalize">{row.account.type.toLowerCase()}</td>
-                                        <td className="px-5 py-3 text-right">{formatBDT(row.budget)}</td>
-                                        <td className="px-5 py-3 text-right">{formatBDT(row.actual)}</td>
+                                        <td className="px-5 py-3 text-right">{formatBDT(row.budget, { locale })}</td>
+                                        <td className="px-5 py-3 text-right">{formatBDT(row.actual, { locale })}</td>
                                         <td className={`px-5 py-3 text-right font-bold ${varianceColor(row)}`}>
-                                            {row.variance >= 0 ? '+' : ''}{formatBDT(row.variance)}
+                                            {row.variance >= 0 ? '+' : ''}{formatBDT(row.variance, { locale })}
                                         </td>
                                         <td className={`px-5 py-3 text-right font-bold ${varianceColor(row)}`}>
                                             {row.variance_pct !== null ? `${row.variance_pct >= 0 ? '+' : ''}${row.variance_pct.toFixed(1)}%` : '—'}
@@ -123,10 +125,10 @@ export default function BudgetVsActualPage() {
                             <tfoot>
                                 <tr className="border-t border-gray-200 bg-gray-50">
                                     <td className="px-5 py-3 font-black text-sm text-gray-700" colSpan={2}>Totals</td>
-                                    <td className="px-5 py-3 text-right font-black text-sm">{formatBDT(data.totals.budget)}</td>
-                                    <td className="px-5 py-3 text-right font-black text-sm">{formatBDT(data.totals.actual)}</td>
+                                    <td className="px-5 py-3 text-right font-black text-sm">{formatBDT(data.totals.budget, { locale })}</td>
+                                    <td className="px-5 py-3 text-right font-black text-sm">{formatBDT(data.totals.actual, { locale })}</td>
                                     <td className={`px-5 py-3 text-right font-black text-sm ${data.totals.variance >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>
-                                        {data.totals.variance >= 0 ? '+' : ''}{formatBDT(data.totals.variance)}
+                                        {data.totals.variance >= 0 ? '+' : ''}{formatBDT(data.totals.variance, { locale })}
                                     </td>
                                     <td />
                                 </tr>

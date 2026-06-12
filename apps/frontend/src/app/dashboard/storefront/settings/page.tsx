@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Settings, Globe, ToggleLeft, ToggleRight, Save, ExternalLink } from 'lucide-react';
 import { fetchWithAuth } from '@/lib/api';
+import { useI18n } from '@/lib/i18n';
 
 const isBrowser = Boolean(globalThis.window);
 
@@ -21,6 +22,8 @@ interface StorefrontSettings {
 }
 
 export default function StorefrontSettingsPage() {
+    const { t } = useI18n();
+    const m = t.storefront.dashboard.settings;
     const [loading, setLoading] = useState(true);
 
     const [slug, setSlug] = useState('');
@@ -71,7 +74,7 @@ export default function StorefrontSettingsPage() {
             setSaveSuccess(true);
             setTimeout(() => setSaveSuccess(false), 3000);
         } catch (err: any) {
-            setSaveError(err.message || 'Failed to save settings');
+            setSaveError(err.message || m.saveFailed);
         } finally {
             setSaving(false);
         }
@@ -89,8 +92,8 @@ export default function StorefrontSettingsPage() {
                         <Settings className="w-5 h-5 text-white" />
                     </div>
                     <div>
-                        <h1 className="text-xl font-bold tracking-tight">Storefront Settings</h1>
-                        <p className="text-sm text-gray-500">Configure your public online store</p>
+                        <h1 className="text-xl font-bold tracking-tight">{m.title}</h1>
+                        <p className="text-sm text-gray-500">{m.description}</p>
                     </div>
                 </div>
 
@@ -103,16 +106,14 @@ export default function StorefrontSettingsPage() {
                         {/* Enable / Disable toggle */}
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="font-semibold text-gray-900">Enable Storefront</p>
-                                <p className="text-sm text-gray-500 mt-0.5">
-                                    Make your store publicly accessible at your slug URL
-                                </p>
+                                <p className="font-semibold text-gray-900">{m.enable.title}</p>
+                                <p className="text-sm text-gray-500 mt-0.5">{m.enable.description}</p>
                             </div>
                             <button
                                 type="button"
                                 onClick={() => setEnabled((v) => !v)}
                                 className="flex items-center space-x-2 focus:outline-none"
-                                aria-label="Toggle storefront"
+                                aria-label={m.enable.toggleAria}
                             >
                                 {enabled ? (
                                     <ToggleRight className="w-10 h-10 text-blue-600" />
@@ -127,22 +128,22 @@ export default function StorefrontSettingsPage() {
                         {/* Store Slug */}
                         <div>
                             <label htmlFor="store-slug" className="block text-sm font-semibold text-gray-700 mb-1.5">
-                                Store Slug
+                                {m.slug.label}
                             </label>
                             <div className="flex items-center space-x-2">
-                                <span className="text-sm text-gray-400 whitespace-nowrap">/store/</span>
+                                <span className="text-sm text-gray-400 whitespace-nowrap">{m.slug.prefix}</span>
                                 <input
                                     id="store-slug"
                                     type="text"
                                     value={slug}
                                     onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 50))}
-                                    placeholder="my-store"
+                                    placeholder={m.slug.placeholder}
                                     maxLength={50}
                                     className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 />
                             </div>
                             <p className="text-xs text-gray-400 mt-1">
-                                Lowercase letters, numbers, hyphens only. Max 50 characters.
+                                {m.slug.hint}
                             </p>
                         </div>
 
@@ -160,7 +161,7 @@ export default function StorefrontSettingsPage() {
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="flex-shrink-0 ml-3 text-blue-600 hover:text-blue-800"
-                                    title="Open store"
+                                    title={m.publicUrl.open}
                                 >
                                     <ExternalLink className="w-4 h-4" />
                                 </a>
@@ -170,56 +171,56 @@ export default function StorefrontSettingsPage() {
                         {/* Banner Text */}
                         <div>
                             <label htmlFor="store-banner" className="block text-sm font-semibold text-gray-700 mb-1.5">
-                                Banner Text
+                                {m.banner.label}
                             </label>
                             <textarea
                                 id="store-banner"
                                 value={banner}
                                 onChange={(e) => setBanner(e.target.value)}
-                                placeholder="Free delivery on orders over ৳500!"
+                                placeholder={m.banner.placeholder}
                                 rows={2}
                                 className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                             />
                             <p className="text-xs text-gray-400 mt-1">
-                                Shown as a banner at the top of your storefront.
+                                {m.banner.hint}
                             </p>
-                            <p className="text-xs text-gray-400 mt-1">Optional.</p>
+                            <p className="text-xs text-gray-400 mt-1">{m.banner.optional}</p>
                         </div>
 
                         <div>
                             <label htmlFor="store-hero-headline" className="block text-sm font-semibold text-gray-700 mb-1.5">
-                                Hero Headline
+                                {m.heroHeadline.label}
                             </label>
                             <input
                                 id="store-hero-headline"
                                 type="text"
                                 value={heroHeadline}
                                 onChange={(e) => setHeroHeadline(e.target.value)}
-                                placeholder="New Season Arrivals"
+                                placeholder={m.heroHeadline.placeholder}
                                 className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
                             <p className="text-xs text-gray-400 mt-1">
-                                Used as the main headline in the storefront hero.
+                                {m.heroHeadline.hint}
                             </p>
-                            <p className="text-xs text-gray-400 mt-1">Optional.</p>
+                            <p className="text-xs text-gray-400 mt-1">{m.heroHeadline.optional}</p>
                         </div>
 
                         <div>
                             <label htmlFor="store-hero-image" className="block text-sm font-semibold text-gray-700 mb-1.5">
-                                Hero Image URL
+                                {m.heroImage.label}
                             </label>
                             <input
                                 id="store-hero-image"
                                 type="url"
                                 value={heroImage}
                                 onChange={(e) => setHeroImage(e.target.value)}
-                                placeholder="https://..."
+                                placeholder={m.heroImage.placeholder}
                                 className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
                             <p className="text-xs text-gray-400 mt-1">
-                                If empty, the storefront uses a default Unsplash hero image.
+                                {m.heroImage.hint}
                             </p>
-                            <p className="text-xs text-gray-400 mt-1">Optional.</p>
+                            <p className="text-xs text-gray-400 mt-1">{m.heroImage.optional}</p>
                         </div>
 
                         {saveError && (
@@ -230,7 +231,7 @@ export default function StorefrontSettingsPage() {
 
                         {saveSuccess && (
                             <p className="text-emerald-700 text-sm bg-emerald-50 rounded-lg px-3 py-2">
-                                Settings saved successfully!
+                                {m.savedExclaim}
                             </p>
                         )}
 
@@ -241,7 +242,7 @@ export default function StorefrontSettingsPage() {
                                 className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white font-bold px-5 py-2.5 rounded-xl transition-colors disabled:opacity-60"
                             >
                                 <Save className="w-4 h-4" />
-                                <span>{saving ? 'Saving...' : 'Save Settings'}</span>
+                                <span>{saving ? m.savingAlt : m.save}</span>
                             </button>
                         </div>
                     </form>

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Mail, ArrowLeft, Loader2, CheckCircle, XCircle, Send } from 'lucide-react';
 import { fetchWithAuth } from '@/lib/api';
+import { useI18n } from '@/lib/i18n';
 
 type EmailSettings = {
     smtp_host: string;
@@ -53,6 +54,9 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
 }
 
 export default function PlatformEmailSettingsPage() {
+    const { t } = useI18n();
+    const m = t.admin.platformSettings.email;
+    const c = t.admin.platformSettings.common;
     const [settings, setSettings] = useState<EmailSettings>(DEFAULTS);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -74,7 +78,7 @@ export default function PlatformEmailSettingsPage() {
                     frontend_url: d.frontend_url ?? DEFAULTS.frontend_url,
                 });
             })
-            .catch(() => setToast({ type: 'error', message: 'Failed to load email settings.' }))
+            .catch(() => setToast({ type: 'error', message: m.loadFailed }))
             .finally(() => setLoading(false));
     }, []);
 
@@ -101,9 +105,9 @@ export default function PlatformEmailSettingsPage() {
             });
             if (!res.ok) throw new Error('Save failed');
             setSettings((prev) => ({ ...prev, smtp_pass: '' }));
-            setToast({ type: 'success', message: 'Email settings saved.' });
+            setToast({ type: 'success', message: m.saved });
         } catch (e: any) {
-            setToast({ type: 'error', message: e.message ?? 'Failed to save.' });
+            setToast({ type: 'error', message: e.message ?? c.saveFailed });
         } finally {
             setSaving(false);
         }
@@ -121,10 +125,10 @@ export default function PlatformEmailSettingsPage() {
             });
             if (!res.ok) throw new Error('Test failed');
             const json = await res.json();
-            const msg = (json?.data ?? json)?.message ?? 'Test email dispatched.';
+            const msg = (json?.data ?? json)?.message ?? m.test.success;
             setToast({ type: 'success', message: msg });
         } catch (e: any) {
-            setToast({ type: 'error', message: e.message ?? 'Test email failed.' });
+            setToast({ type: 'error', message: e.message ?? m.test.failed });
         } finally {
             setTesting(false);
         }
@@ -140,17 +144,17 @@ export default function PlatformEmailSettingsPage() {
                         <ArrowLeft className="w-4 h-4 text-gray-500" />
                     </Link>
                     <Mail className="w-5 h-5 text-blue-600" />
-                    <h1 className="text-xl font-black tracking-tight">Email / SMTP</h1>
+                    <h1 className="text-xl font-black tracking-tight">{m.title}</h1>
                 </div>
 
                 {loading ? (
                     <div className="flex items-center gap-2 text-gray-400 text-sm py-8 justify-center">
-                        <Loader2 className="w-4 h-4 animate-spin" /> Loading…
+                        <Loader2 className="w-4 h-4 animate-spin" /> {c.loading}
                     </div>
                 ) : (
                     <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-5">
                         <div className="grid grid-cols-2 gap-4">
-                            <Field label="SMTP Host">
+                            <Field label={m.smtpHost}>
                                 <input
                                     type="text"
                                     value={settings.smtp_host}
@@ -159,7 +163,7 @@ export default function PlatformEmailSettingsPage() {
                                     className={inputCls}
                                 />
                             </Field>
-                            <Field label="SMTP Port">
+                            <Field label={m.smtpPort}>
                                 <input
                                     type="number"
                                     value={settings.smtp_port}
@@ -170,7 +174,7 @@ export default function PlatformEmailSettingsPage() {
                             </Field>
                         </div>
 
-                        <Field label="SMTP Username">
+                        <Field label={m.smtpUser}>
                             <input
                                 type="text"
                                 autoComplete="username"
@@ -181,18 +185,18 @@ export default function PlatformEmailSettingsPage() {
                             />
                         </Field>
 
-                        <Field label="SMTP Password" hint="Leave blank to keep the existing password unchanged.">
+                        <Field label={m.smtpPass.label} hint={c.secretPasswordHint}>
                             <input
                                 type="password"
                                 autoComplete="new-password"
                                 value={settings.smtp_pass}
                                 onChange={(e) => set('smtp_pass', e.target.value)}
-                                placeholder="Enter new password (leave blank to keep existing)"
+                                placeholder={m.smtpPass.placeholder}
                                 className={inputCls}
                             />
                         </Field>
 
-                        <Field label="From Address" hint="The email address shown in the From field.">
+                        <Field label={m.fromAddress.label} hint={m.fromAddress.hint}>
                             <input
                                 type="email"
                                 value={settings.email_from}
@@ -202,7 +206,7 @@ export default function PlatformEmailSettingsPage() {
                             />
                         </Field>
 
-                        <Field label="Frontend URL" hint="Base URL of the frontend app, used for links in emails.">
+                        <Field label={m.frontendUrl.label} hint={m.frontendUrl.hint}>
                             <input
                                 type="url"
                                 value={settings.frontend_url}
@@ -219,7 +223,7 @@ export default function PlatformEmailSettingsPage() {
                                 className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors shadow-sm"
                             >
                                 {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-                                {saving ? 'Saving…' : 'Save Settings'}
+                                {saving ? c.saving : c.saveSettings}
                             </button>
                         </div>
                     </div>
@@ -227,11 +231,11 @@ export default function PlatformEmailSettingsPage() {
 
                 {/* Test panel */}
                 <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4">
-                    <h2 className="text-sm font-black uppercase tracking-widest text-gray-400">Send Test Email</h2>
+                    <h2 className="text-sm font-black uppercase tracking-widest text-gray-400">{m.test.title}</h2>
                     <div className="flex gap-3">
                         <input
                             type="email"
-                            placeholder="Recipient address (leave blank for your account email)"
+                            placeholder={m.test.placeholder}
                             value={testEmail}
                             onChange={(e) => setTestEmail(e.target.value)}
                             className="flex-1 rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
@@ -242,10 +246,10 @@ export default function PlatformEmailSettingsPage() {
                             className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors shadow-sm"
                         >
                             {testing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                            {testing ? 'Sending…' : 'Send'}
+                            {testing ? c.sending : c.send}
                         </button>
                     </div>
-                    <p className="text-xs text-gray-400">Uses the currently saved credentials. Save first to test new ones.</p>
+                    <p className="text-xs text-gray-400">{c.testHint}</p>
                 </div>
             </div>
 

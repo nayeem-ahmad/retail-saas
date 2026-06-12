@@ -6,6 +6,7 @@ import { api } from '../../../lib/api';
 import { formatBDT } from '../../../lib/format';
 import { isCompoundUnit, CompoundUnitType } from '../../../lib/compound-units';
 import CompoundUnitInput from '../../../components/CompoundUnitInput';
+import { useI18n } from '@/lib/i18n';
 
 interface CreateQuotationModalProps {
     isOpen: boolean;
@@ -23,6 +24,7 @@ interface QuoteItem {
 }
 
 export default function CreateQuotationModal({ isOpen, onClose, onSuccess }: CreateQuotationModalProps) {
+    const { t, locale } = useI18n();
     const [customers, setCustomers] = useState<any[]>([]);
     const [products, setProducts] = useState<any[]>([]);
     const [customerId, setCustomerId] = useState('');
@@ -98,7 +100,7 @@ export default function CreateQuotationModal({ isOpen, onClose, onSuccess }: Cre
 
     const handleSubmit = async () => {
         if (items.length === 0) {
-            setError('Add at least one item.');
+            setError(t.shared.form.addAtLeastOneItem);
             return;
         }
 
@@ -124,7 +126,7 @@ export default function CreateQuotationModal({ isOpen, onClose, onSuccess }: Cre
             onClose();
             reset();
         } catch (err: any) {
-            setError(err.message || 'Failed to create quotation');
+            setError(err.message || t.shared.errors.createQuotation);
         } finally {
             setLoading(false);
         }
@@ -140,8 +142,8 @@ export default function CreateQuotationModal({ isOpen, onClose, onSuccess }: Cre
             <div className="bg-white w-full max-w-3xl rounded-3xl shadow-2xl flex flex-col max-h-[90vh]">
                 <div className="p-6 border-b border-gray-100 flex items-center justify-between">
                     <div>
-                        <h2 className="text-xl font-black tracking-tight">New Sales Quotation</h2>
-                        <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-0.5">Create a quote draft</p>
+                        <h2 className="text-xl font-black tracking-tight">{t.quotes.createModal.title}</h2>
+                        <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-0.5">{t.quotes.createModal.subtitle}</p>
                     </div>
                     <button onClick={handleClose} className="p-2 hover:bg-gray-50 rounded-xl text-gray-400">
                         <X className="w-5 h-5" />
@@ -155,20 +157,20 @@ export default function CreateQuotationModal({ isOpen, onClose, onSuccess }: Cre
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block mb-2">Customer</label>
+                            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block mb-2">{t.common.customer}</label>
                             <select
                                 value={customerId}
                                 onChange={(e) => setCustomerId(e.target.value)}
                                 className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-bold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-300"
                             >
-                                <option value="">Walk-in Customer</option>
+                                <option value="">{t.shared.walkInCustomer}</option>
                                 {customers.map((customer: any) => (
                                     <option key={customer.id} value={customer.id}>{customer.name}</option>
                                 ))}
                             </select>
                         </div>
                         <div>
-                            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block mb-2">Valid Until</label>
+                            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block mb-2">{t.shared.form.validUntil}</label>
                             <input
                                 type="date"
                                 value={validUntil}
@@ -179,24 +181,24 @@ export default function CreateQuotationModal({ isOpen, onClose, onSuccess }: Cre
                     </div>
 
                     <div>
-                        <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block mb-2">Notes</label>
+                        <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block mb-2">{t.common.notes}</label>
                         <textarea
                             value={notes}
                             onChange={(e) => setNotes(e.target.value)}
                             rows={3}
                             className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-300 resize-none"
-                            placeholder="Terms, delivery assumptions, or internal notes"
+                            placeholder={t.shared.form.notesPlaceholder}
                         />
                     </div>
 
                     <div>
-                        <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block mb-2">Add Products</label>
+                        <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block mb-2">{t.shared.form.addProducts}</label>
                         <div className="relative">
                             <div className="flex items-center space-x-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5">
                                 <Search className="w-4 h-4 text-gray-400" />
                                 <input
                                     type="text"
-                                    placeholder="Search products by name or SKU..."
+                                    placeholder={t.shared.form.searchProducts}
                                     value={productSearch}
                                     onChange={(e) => {
                                         setProductSearch(e.target.value);
@@ -230,10 +232,10 @@ export default function CreateQuotationModal({ isOpen, onClose, onSuccess }: Cre
                         <table className="w-full">
                             <thead>
                                 <tr className="border-b border-gray-100">
-                                    <th className="text-left pb-2 text-[10px] font-black uppercase tracking-widest text-gray-400">Product</th>
-                                    <th className="text-center pb-2 text-[10px] font-black uppercase tracking-widest text-gray-400 w-24">Qty</th>
-                                    <th className="text-right pb-2 text-[10px] font-black uppercase tracking-widest text-gray-400 w-32">Unit Price</th>
-                                    <th className="text-right pb-2 text-[10px] font-black uppercase tracking-widest text-gray-400 w-28">Subtotal</th>
+                                    <th className="text-left pb-2 text-[10px] font-black uppercase tracking-widest text-gray-400">{t.shared.columns.product}</th>
+                                    <th className="text-center pb-2 text-[10px] font-black uppercase tracking-widest text-gray-400 w-24">{t.shared.columns.qty}</th>
+                                    <th className="text-right pb-2 text-[10px] font-black uppercase tracking-widest text-gray-400 w-32">{t.shared.columns.unitPrice}</th>
+                                    <th className="text-right pb-2 text-[10px] font-black uppercase tracking-widest text-gray-400 w-28">{t.shared.columns.subtotal}</th>
                                     <th className="w-10"></th>
                                 </tr>
                             </thead>
@@ -285,7 +287,7 @@ export default function CreateQuotationModal({ isOpen, onClose, onSuccess }: Cre
                             </tbody>
                             <tfoot>
                                 <tr className="border-t-2 border-gray-200">
-                                    <td colSpan={3} className="pt-3 text-right text-sm font-black uppercase tracking-widest">Total</td>
+                                    <td colSpan={3} className="pt-3 text-right text-sm font-black uppercase tracking-widest">{t.common.total}</td>
                                     <td className="pt-3 text-right text-xl font-black text-blue-600">{formatBDT(total)}</td>
                                     <td></td>
                                 </tr>
@@ -299,14 +301,14 @@ export default function CreateQuotationModal({ isOpen, onClose, onSuccess }: Cre
                         onClick={handleClose}
                         className="px-6 py-3 bg-white border border-gray-200 text-gray-700 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-gray-50 transition-all"
                     >
-                        Cancel
+                        {t.common.cancel}
                     </button>
                     <button
                         onClick={handleSubmit}
                         disabled={loading || items.length === 0}
                         className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-md transition-all hover:-translate-y-0.5 disabled:opacity-50"
                     >
-                        {loading ? 'Creating...' : 'Create Quotation'}
+                        {loading ? t.quotes.createModal.creating : t.quotes.createModal.createQuotation}
                     </button>
                 </div>
             </div>

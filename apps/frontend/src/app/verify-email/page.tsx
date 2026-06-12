@@ -1,4 +1,5 @@
 'use client';
+import { useI18n, formatMessage } from '@/lib/i18n';
 
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -19,6 +20,8 @@ export default function VerifyEmailPage() {
 }
 
 function VerifyEmailContent() {
+    const { t } = useI18n();
+    const m = t.auth.verifyEmail;
     const searchParams = useSearchParams();
     const token = searchParams.get('token');
     const pending = searchParams.get('pending') === '1';
@@ -53,15 +56,15 @@ function VerifyEmailContent() {
 
                     {/* Header logo */}
                     <div className="text-center mb-8">
-                        <span className="text-xl font-black tracking-tight text-blue-600">RetailSaaS</span>
+                        <span className="text-xl font-black tracking-tight text-blue-600">{m.brand}</span>
                     </div>
 
                     {status === 'loading' && (
                         <div className="flex flex-col items-center gap-5 py-6">
                             <Loader2 className="w-12 h-12 text-blue-500 animate-spin" />
                             <div className="text-center">
-                                <p className="font-semibold text-gray-800 text-lg">Verifying your email…</p>
-                                <p className="text-sm text-gray-400 mt-1">This will only take a moment.</p>
+                                <p className="font-semibold text-gray-800 text-lg">{m.loadingTitle}</p>
+                                <p className="text-sm text-gray-400 mt-1">{m.loadingDescription}</p>
                             </div>
                         </div>
                     )}
@@ -72,7 +75,7 @@ function VerifyEmailContent() {
                                 <CheckCircle2 className="w-9 h-9 text-blue-500" />
                             </div>
                             <div>
-                                <h1 className="text-2xl font-bold tracking-tight text-gray-900">Check your inbox</h1>
+                                <h1 className="text-2xl font-bold tracking-tight text-gray-900">{m.pendingTitle}</h1>
                                 <p className="text-gray-500 mt-2 text-sm leading-relaxed">
                                     We sent a verification link{email ? ` to ${email}` : ''}. Open it to activate your account, then continue to the dashboard.
                                 </p>
@@ -81,7 +84,7 @@ function VerifyEmailContent() {
                                 href="/dashboard/onboarding"
                                 className="mt-2 inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-xl shadow-lg shadow-blue-200 transition-all group"
                             >
-                                Continue to setup
+                                {m.continueSetup}
                                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                             </Link>
                         </div>
@@ -93,16 +96,16 @@ function VerifyEmailContent() {
                                 <CheckCircle2 className="w-9 h-9 text-green-500" />
                             </div>
                             <div>
-                                <h1 className="text-2xl font-bold tracking-tight text-gray-900">Email verified!</h1>
+                                <h1 className="text-2xl font-bold tracking-tight text-gray-900">{m.successTitle}</h1>
                                 <p className="text-gray-500 mt-2 text-sm leading-relaxed">
-                                    Your account is now active. You can sign in and start using RetailSaaS.
+                                    Your account is now active. You can sign in and start using {m.brand}.
                                 </p>
                             </div>
                             <Link
                                 href="/dashboard/onboarding"
                                 className="mt-2 inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-xl shadow-lg shadow-blue-200 transition-all group"
                             >
-                                Continue to setup
+                                {m.continueSetup}
                                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                             </Link>
                         </div>
@@ -114,7 +117,7 @@ function VerifyEmailContent() {
                                 <XCircle className="w-9 h-9 text-red-500" />
                             </div>
                             <div>
-                                <h1 className="text-2xl font-bold tracking-tight text-gray-900">Verification failed</h1>
+                                <h1 className="text-2xl font-bold tracking-tight text-gray-900">{m.errorTitle}</h1>
                                 <p className="text-gray-500 mt-2 text-sm leading-relaxed">
                                     This verification link is invalid or has expired.
                                     <br />
@@ -125,14 +128,14 @@ function VerifyEmailContent() {
                                 href="/login"
                                 className="mt-2 inline-flex items-center gap-2 bg-gray-900 hover:bg-gray-700 text-white font-semibold py-3 px-8 rounded-xl transition-colors"
                             >
-                                Back to sign in
+                                {m.backToSignIn}
                             </Link>
                         </div>
                     )}
                 </div>
 
                 <p className="mt-8 text-center text-xs text-gray-400 uppercase tracking-widest font-semibold">
-                    Retail SaaS Platform v0.1
+                    {m.version}
                 </p>
             </div>
         </div>

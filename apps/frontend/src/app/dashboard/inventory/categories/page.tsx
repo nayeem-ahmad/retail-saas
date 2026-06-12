@@ -5,6 +5,8 @@ import { createColumnHelper, type ColumnDef } from '@tanstack/react-table';
 import { FolderTree, Plus, Tag, Trash2, Pencil, X } from 'lucide-react';
 import { DataTable } from '@/components/data-table';
 import { api } from '../../../../lib/api';
+import { useI18n } from '@/lib/i18n';
+import type { MessageDictionary } from '@/lib/localization/messages/types';
 
 interface ProductGroup {
     id: string;
@@ -27,25 +29,25 @@ interface ProductSubgroup {
 const groupColumnHelper = createColumnHelper<ProductGroup>();
 const subgroupColumnHelper = createColumnHelper<ProductSubgroup>();
 
-function GroupNameCell({ group }: { readonly group: ProductGroup }) {
+function GroupNameCell({ group, noDescription, featured }: { readonly group: ProductGroup; readonly noDescription: string; readonly featured: string }) {
     return (
         <div>
             <span className="block text-sm font-black text-gray-900">{group.name}</span>
-            <span className="block text-xs text-gray-400">{group.description || 'No description'}</span>
+            <span className="block text-xs text-gray-400">{group.description || noDescription}</span>
             {group.is_featured && (
                 <span className="mt-1 inline-flex rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-black uppercase tracking-widest text-emerald-700">
-                    Featured
+                    {featured}
                 </span>
             )}
         </div>
     );
 }
 
-function SubgroupNameCell({ subgroup }: { readonly subgroup: ProductSubgroup }) {
+function SubgroupNameCell({ subgroup, noDescription }: { readonly subgroup: ProductSubgroup; readonly noDescription: string }) {
     return (
         <div>
             <span className="block text-sm font-black text-gray-900">{subgroup.name}</span>
-            <span className="block text-xs text-gray-400">{subgroup.description || 'No description'}</span>
+            <span className="block text-xs text-gray-400">{subgroup.description || noDescription}</span>
         </div>
     );
 }
@@ -68,36 +70,37 @@ function ActionsCell({ onEdit, onDelete }: { readonly onEdit: () => void; readon
 }
 
 function buildGroupColumns(
+    t: MessageDictionary,
     onEditGroup: (group: ProductGroup) => void,
     onDeleteGroup: (id: string) => void,
 ): ColumnDef<ProductGroup, any>[] {
     return [
         groupColumnHelper.accessor('name', {
-            header: 'Group',
-            cell: (info) => <GroupNameCell group={info.row.original} />,
+            header: t.inventoryCategories.columns.group,
+            cell: (info) => <GroupNameCell group={info.row.original} noDescription={t.inventoryCategories.noDescription} featured={t.inventoryCategories.featured} />,
             size: 220,
         }),
         groupColumnHelper.accessor((row) => (row.is_featured ? 'Yes' : 'No'), {
             id: 'featured',
-            header: 'Featured',
+            header: t.inventoryCategories.columns.featured,
             cell: (info) => <NumberCell value={info.getValue() === 'Yes' ? 1 : 0} />,
             size: 100,
         }),
         groupColumnHelper.accessor((row) => row._count?.subgroups ?? 0, {
             id: 'subgroups',
-            header: 'Subgroups',
+            header: t.inventoryCategories.columns.subgroups,
             cell: (info) => <NumberCell value={info.getValue()} />,
             size: 100,
         }),
         groupColumnHelper.accessor((row) => row._count?.products ?? 0, {
             id: 'products',
-            header: 'Products',
+            header: t.inventoryCategories.columns.products,
             cell: (info) => <NumberCell value={info.getValue()} />,
             size: 100,
         }),
         groupColumnHelper.display({
             id: 'actions',
-            header: 'Actions',
+            header: t.common.actions,
             cell: (info) => (
                 <ActionsCell
                     onEdit={() => onEditGroup(info.row.original)}
@@ -111,30 +114,31 @@ function buildGroupColumns(
 }
 
 function buildSubgroupColumns(
+    t: MessageDictionary,
     onEditSubgroup: (subgroup: ProductSubgroup) => void,
     onDeleteSubgroup: (id: string) => void,
 ): ColumnDef<ProductSubgroup, any>[] {
     return [
         subgroupColumnHelper.accessor('name', {
-            header: 'Subgroup',
-            cell: (info) => <SubgroupNameCell subgroup={info.row.original} />,
+            header: t.inventoryCategories.columns.subgroup,
+            cell: (info) => <SubgroupNameCell subgroup={info.row.original} noDescription={t.inventoryCategories.noDescription} />,
             size: 220,
         }),
         subgroupColumnHelper.accessor((row) => row.group?.name || '-', {
             id: 'group',
-            header: 'Parent Group',
+            header: t.inventoryCategories.parentGroup,
             cell: (info) => <span className="text-sm font-bold text-gray-700">{info.getValue()}</span>,
             size: 170,
         }),
         subgroupColumnHelper.accessor((row) => row._count?.products ?? 0, {
             id: 'products',
-            header: 'Products',
+            header: t.inventoryCategories.columns.products,
             cell: (info) => <NumberCell value={info.getValue()} />,
             size: 100,
         }),
         subgroupColumnHelper.display({
             id: 'actions',
-            header: 'Actions',
+            header: t.common.actions,
             cell: (info) => (
                 <ActionsCell
                     onEdit={() => onEditSubgroup(info.row.original)}
@@ -148,6 +152,7 @@ function buildSubgroupColumns(
 }
 
 export default function InventoryCategoriesPage() {
+    const { t } = useI18n();
     const [groups, setGroups] = useState<ProductGroup[]>([]);
     const [subgroups, setSubgroups] = useState<ProductSubgroup[]>([]);
     const [loading, setLoading] = useState(true);
@@ -174,45 +179,47 @@ export default function InventoryCategoriesPage() {
     };
 
     const handleDeleteGroup = async (id: string) => {
-        if (!globalThis.confirm('Delete this group?')) return;
+        if (!globalThis.confirm(t.inventoryCategories.deleteGroupConfirm)) return;
         try {
             await api.deleteProductGroup(id);
             await refreshAll();
         } catch (error: any) {
-            globalThis.alert(error.message || 'Failed to delete product group.');
+            globalThis.alert(error.message || t.inventoryCategories.deleteGroupFailed);
         }
     };
 
     const handleDeleteSubgroup = async (id: string) => {
-        if (!globalThis.confirm('Delete this subgroup?')) return;
+        if (!globalThis.confirm(t.inventoryCategories.deleteSubgroupConfirm)) return;
         try {
             await api.deleteProductSubgroup(id);
             await refreshAll();
         } catch (error: any) {
-            globalThis.alert(error.message || 'Failed to delete product subgroup.');
+            globalThis.alert(error.message || t.inventoryCategories.deleteSubgroupFailed);
         }
     };
 
     const groupColumns = useMemo(
         () => buildGroupColumns(
+            t,
             (group) => {
                 setEditingGroup(group);
                 setGroupFormOpen(true);
             },
             (id) => void handleDeleteGroup(id),
         ),
-        [groups],
+        [t, groups],
     );
 
     const subgroupColumns = useMemo(
         () => buildSubgroupColumns(
+            t,
             (subgroup) => {
                 setEditingSubgroup(subgroup);
                 setSubgroupFormOpen(true);
             },
             (id) => void handleDeleteSubgroup(id),
         ),
-        [subgroups],
+        [t, subgroups],
     );
 
     return (
@@ -220,9 +227,9 @@ export default function InventoryCategoriesPage() {
             <div className="max-w-[1400px] mx-auto space-y-6">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-black tracking-tight">Product Categories</h1>
+                        <h1 className="text-2xl font-black tracking-tight">{t.inventoryCategories.title}</h1>
                         <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mt-0.5">
-                            Organize products into groups and subgroups for cleaner inventory browsing and reporting
+                            {t.inventoryCategories.subtitle}
                         </p>
                     </div>
                     <div className="flex gap-3">
@@ -235,7 +242,7 @@ export default function InventoryCategoriesPage() {
                             className="bg-white border border-gray-200 text-gray-700 px-4 py-2.5 rounded-xl font-bold text-sm flex items-center"
                         >
                             <Tag className="w-4 h-4 mr-2" />
-                            New Subgroup
+                            {t.inventoryCategories.newSubgroup}
                         </button>
                         <button
                             type="button"
@@ -246,7 +253,7 @@ export default function InventoryCategoriesPage() {
                             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl font-bold text-sm flex items-center shadow-lg shadow-blue-200"
                         >
                             <Plus className="w-4 h-4 mr-2" />
-                            New Group
+                            {t.inventoryCategories.newGroup}
                         </button>
                     </div>
                 </div>
@@ -286,22 +293,22 @@ export default function InventoryCategoriesPage() {
                     tableId="product-groups"
                     columns={groupColumns}
                     data={groups}
-                    title="Product Groups"
+                    title={t.inventoryCategories.productGroups}
                     isLoading={loading}
-                    emptyMessage="No product groups found"
+                    emptyMessage={t.inventoryCategories.emptyGroups}
                     emptyIcon={<FolderTree className="w-16 h-16 text-gray-200" />}
-                    searchPlaceholder="Search groups..."
+                    searchPlaceholder={t.inventoryCategories.searchGroups}
                 />
 
                 <DataTable<ProductSubgroup>
                     tableId="product-subgroups"
                     columns={subgroupColumns}
                     data={subgroups}
-                    title="Product Subgroups"
+                    title={t.inventoryCategories.productSubgroups}
                     isLoading={loading}
-                    emptyMessage="No product subgroups found"
+                    emptyMessage={t.inventoryCategories.emptySubgroups}
                     emptyIcon={<Tag className="w-16 h-16 text-gray-200" />}
-                    searchPlaceholder="Search subgroups..."
+                    searchPlaceholder={t.inventoryCategories.searchSubgroups}
                 />
             </div>
         </div>
@@ -317,6 +324,7 @@ function ProductGroupForm({
     onCancel: () => void;
     onSaved: () => Promise<void>;
 }>) {
+    const { t } = useI18n();
     const [name, setName] = useState(group?.name ?? '');
     const [description, setDescription] = useState(group?.description ?? '');
     const [isFeatured, setIsFeatured] = useState(group?.is_featured ?? false);
@@ -345,23 +353,23 @@ function ProductGroupForm({
 
             await onSaved();
         } catch (err: any) {
-            setError(err.message || 'Failed to save product group.');
+            setError(err.message || t.inventoryCategories.saveGroupFailed);
         } finally {
             setLoading(false);
         }
     };
 
-    let submitLabel = 'Create Group';
+    let submitLabel = t.inventoryCategories.createGroup;
     if (loading) {
-        submitLabel = 'Saving...';
+        submitLabel = t.inventoryCategories.saving;
     } else if (group) {
-        submitLabel = 'Update Group';
+        submitLabel = t.inventoryCategories.updateGroup;
     }
 
     return (
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
             <div className="flex items-center justify-between mb-4">
-                <h3 className="font-black text-sm">{group ? 'Edit Product Group' : 'New Product Group'}</h3>
+                <h3 className="font-black text-sm">{group ? t.inventoryCategories.editProductGroup : t.inventoryCategories.newProductGroup}</h3>
                 <button type="button" onClick={onCancel} className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400">
                     <X className="w-4 h-4" />
                 </button>
@@ -369,15 +377,15 @@ function ProductGroupForm({
             {error ? <div className="p-3 bg-red-50 text-red-600 rounded-xl text-sm font-bold mb-4">{error}</div> : null}
             <form onSubmit={handleSubmit} className="flex flex-wrap gap-4 items-end">
                 <div className="flex-1 min-w-[220px]">
-                    <label htmlFor="group-name" className="text-xs font-bold text-gray-500 uppercase tracking-widest block mb-1">Name</label>
+                    <label htmlFor="group-name" className="text-xs font-bold text-gray-500 uppercase tracking-widest block mb-1">{t.common.name}</label>
                     <input id="group-name" value={name} onChange={(event) => setName(event.target.value)} required className="w-full bg-gray-50 border border-gray-100 rounded-xl py-2.5 px-4 text-sm font-bold" />
                 </div>
                 <div className="flex-1 min-w-[260px]">
-                    <label htmlFor="group-description" className="text-xs font-bold text-gray-500 uppercase tracking-widest block mb-1">Description</label>
+                    <label htmlFor="group-description" className="text-xs font-bold text-gray-500 uppercase tracking-widest block mb-1">{t.common.description}</label>
                     <input id="group-description" value={description} onChange={(event) => setDescription(event.target.value)} className="w-full bg-gray-50 border border-gray-100 rounded-xl py-2.5 px-4 text-sm" />
                 </div>
                 <div className="min-w-[180px]">
-                    <label htmlFor="group-image-url" className="text-xs font-bold text-gray-500 uppercase tracking-widest block mb-1">Category Image URL</label>
+                    <label htmlFor="group-image-url" className="text-xs font-bold text-gray-500 uppercase tracking-widest block mb-1">{t.inventoryCategories.categoryImageUrl}</label>
                     <input id="group-image-url" value={imageUrl} onChange={(event) => setImageUrl(event.target.value)} placeholder="https://..." className="w-full bg-gray-50 border border-gray-100 rounded-xl py-2.5 px-4 text-sm" />
                 </div>
                 <label className="inline-flex items-center gap-2 rounded-xl border border-gray-100 bg-gray-50 px-4 py-2.5 text-sm font-bold text-gray-700">
@@ -387,7 +395,7 @@ function ProductGroupForm({
                         onChange={(event) => setIsFeatured(event.target.checked)}
                         className="h-4 w-4 rounded border-gray-300"
                     />
-                    <span>Featured</span>
+                    <span>{t.inventoryCategories.featured}</span>
                 </label>
                 <button disabled={loading} type="submit" className="px-6 py-2.5 rounded-xl font-black text-sm bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50">
                     {submitLabel}
@@ -408,6 +416,7 @@ function ProductSubgroupForm({
     onCancel: () => void;
     onSaved: () => Promise<void>;
 }>) {
+    const { t } = useI18n();
     const [groupId, setGroupId] = useState(subgroup?.group_id ?? groups[0]?.id ?? '');
     const [name, setName] = useState(subgroup?.name ?? '');
     const [description, setDescription] = useState(subgroup?.description ?? '');
@@ -430,23 +439,23 @@ function ProductSubgroupForm({
 
             await onSaved();
         } catch (err: any) {
-            setError(err.message || 'Failed to save product subgroup.');
+            setError(err.message || t.inventoryCategories.saveSubgroupFailed);
         } finally {
             setLoading(false);
         }
     };
 
-    let submitLabel = 'Create Subgroup';
+    let submitLabel = t.inventoryCategories.createSubgroup;
     if (loading) {
-        submitLabel = 'Saving...';
+        submitLabel = t.inventoryCategories.saving;
     } else if (subgroup) {
-        submitLabel = 'Update Subgroup';
+        submitLabel = t.inventoryCategories.updateSubgroup;
     }
 
     return (
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
             <div className="flex items-center justify-between mb-4">
-                <h3 className="font-black text-sm">{subgroup ? 'Edit Product Subgroup' : 'New Product Subgroup'}</h3>
+                <h3 className="font-black text-sm">{subgroup ? t.inventoryCategories.editProductSubgroup : t.inventoryCategories.newProductSubgroup}</h3>
                 <button type="button" onClick={onCancel} className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400">
                     <X className="w-4 h-4" />
                 </button>
@@ -454,7 +463,7 @@ function ProductSubgroupForm({
             {error ? <div className="p-3 bg-red-50 text-red-600 rounded-xl text-sm font-bold mb-4">{error}</div> : null}
             <form onSubmit={handleSubmit} className="flex flex-wrap gap-4 items-end">
                 <div className="min-w-[220px]">
-                    <label htmlFor="subgroup-parent" className="text-xs font-bold text-gray-500 uppercase tracking-widest block mb-1">Parent Group</label>
+                    <label htmlFor="subgroup-parent" className="text-xs font-bold text-gray-500 uppercase tracking-widest block mb-1">{t.inventoryCategories.parentGroup}</label>
                     <select id="subgroup-parent" value={groupId} onChange={(event) => setGroupId(event.target.value)} className="w-full bg-gray-50 border border-gray-100 rounded-xl py-2.5 px-4 text-sm font-bold">
                         {groups.map((group) => (
                             <option key={group.id} value={group.id}>
@@ -464,11 +473,11 @@ function ProductSubgroupForm({
                     </select>
                 </div>
                 <div className="flex-1 min-w-[220px]">
-                    <label htmlFor="subgroup-name" className="text-xs font-bold text-gray-500 uppercase tracking-widest block mb-1">Name</label>
+                    <label htmlFor="subgroup-name" className="text-xs font-bold text-gray-500 uppercase tracking-widest block mb-1">{t.common.name}</label>
                     <input id="subgroup-name" value={name} onChange={(event) => setName(event.target.value)} required className="w-full bg-gray-50 border border-gray-100 rounded-xl py-2.5 px-4 text-sm font-bold" />
                 </div>
                 <div className="flex-1 min-w-[260px]">
-                    <label htmlFor="subgroup-description" className="text-xs font-bold text-gray-500 uppercase tracking-widest block mb-1">Description</label>
+                    <label htmlFor="subgroup-description" className="text-xs font-bold text-gray-500 uppercase tracking-widest block mb-1">{t.common.description}</label>
                     <input id="subgroup-description" value={description} onChange={(event) => setDescription(event.target.value)} className="w-full bg-gray-50 border border-gray-100 rounded-xl py-2.5 px-4 text-sm" />
                 </div>
                 <button disabled={loading} type="submit" className="px-6 py-2.5 rounded-xl font-black text-sm bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50">

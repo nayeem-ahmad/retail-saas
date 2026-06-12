@@ -9,6 +9,7 @@ import { api } from '../../../lib/api';
 import { formatBDT, formatDate } from '../../../lib/format';
 import CreatePurchaseModal from './CreatePurchaseModal';
 import { PostingBadge } from '@/components/PostingBadge';
+import { useI18n, formatMessage } from '@/lib/i18n';
 
 interface PurchaseItem {
     id: string;
@@ -37,6 +38,7 @@ interface Purchase {
 const columnHelper = createColumnHelper<Purchase>();
 
 export default function PurchasesPage() {
+    const { t, locale } = useI18n();
     const [purchases, setPurchases] = useState<Purchase[]>([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -59,15 +61,15 @@ export default function PurchasesPage() {
     const columns: ColumnDef<Purchase, any>[] = useMemo(
         () => [
             columnHelper.accessor('purchase_number', {
-                header: 'Purchase #',
+                header: t.purchases.columns.purchaseNumber,
                 cell: (info) => (
                     <span className="text-sm font-black text-gray-900">{info.getValue()}</span>
                 ),
                 size: 150,
             }),
-            columnHelper.accessor((row) => row.supplier?.name ?? 'Unlinked', {
+            columnHelper.accessor((row) => row.supplier?.name ?? t.purchaseShared.unlinked, {
                 id: 'supplier',
-                header: 'Supplier',
+                header: t.purchases.columns.supplier,
                 cell: (info) => (
                     <span className="text-sm font-bold text-gray-700">{info.getValue()}</span>
                 ),
@@ -75,25 +77,27 @@ export default function PurchasesPage() {
             }),
             columnHelper.accessor((row) => row.items?.length ?? 0, {
                 id: 'item_count',
-                header: 'Items',
+                header: t.purchases.columns.items,
                 cell: (info) => (
-                    <span className="text-sm font-bold text-gray-700">{info.getValue()} items</span>
+                    <span className="text-sm font-bold text-gray-700">
+                        {formatMessage(t.purchaseShared.itemsCount, { count: info.getValue() })}
+                    </span>
                 ),
                 size: 90,
             }),
             columnHelper.accessor((row) => row.items.map((item) => item.product?.name).filter(Boolean).join(', '), {
                 id: 'products',
-                header: 'Products',
+                header: t.purchases.columns.products,
                 cell: (info) => (
                     <span className="text-sm text-gray-500 line-clamp-2">{info.getValue() || '-'}</span>
                 ),
                 size: 320,
             }),
             columnHelper.accessor('total_amount', {
-                header: 'Total',
+                header: t.purchases.columns.total,
                 cell: (info) => (
                     <span className="text-sm font-black text-emerald-600">
-                        {formatBDT(Number(info.getValue() || 0))}
+                        {formatBDT(Number(info.getValue() || 0), { locale })}
                     </span>
                 ),
                 sortingFn: (a, b) =>
@@ -101,12 +105,12 @@ export default function PurchasesPage() {
                 size: 120,
             }),
             columnHelper.accessor('created_at', {
-                header: 'Received',
+                header: t.purchases.columns.received,
                 cell: (info) => {
                     const date = new Date(info.getValue());
                     return (
                         <div>
-                            <span className="text-sm text-gray-600">{formatDate(info.getValue())}</span>
+                            <span className="text-sm text-gray-600">{formatDate(info.getValue(), locale)}</span>
                             <span className="text-xs text-gray-400 block">{date.toLocaleTimeString()}</span>
                         </div>
                     );
@@ -116,7 +120,7 @@ export default function PurchasesPage() {
             }),
             columnHelper.display({
                 id: 'posting',
-                header: 'Voucher',
+                header: t.purchases.columns.voucher,
                 cell: ({ row }) => (
                     <PostingBadge
                         status={row.original.posting_status}
@@ -132,7 +136,7 @@ export default function PurchasesPage() {
                     <Link
                         href={`/dashboard/purchases/${row.original.id}/invoice`}
                         className="p-1.5 rounded-lg text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 transition-colors inline-flex"
-                        title="Print Invoice"
+                        title={t.purchases.printInvoice}
                     >
                         <Printer className="w-4 h-4" />
                     </Link>
@@ -142,7 +146,7 @@ export default function PurchasesPage() {
                 size: 50,
             }),
         ],
-        [],
+        [t, locale],
     );
 
     return (
@@ -150,9 +154,9 @@ export default function PurchasesPage() {
             <div className="max-w-[1400px] mx-auto space-y-6">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-black tracking-tight">Purchases</h1>
+                        <h1 className="text-2xl font-black tracking-tight">{t.purchases.title}</h1>
                         <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mt-0.5">
-                            Record stock receipts and supplier-linked procurement activity
+                            {t.purchases.subtitle}
                         </p>
                     </div>
                     <button
@@ -160,7 +164,7 @@ export default function PurchasesPage() {
                         className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl font-bold text-sm flex items-center shadow-lg shadow-emerald-200 transition-all hover:-translate-y-0.5 active:translate-y-0"
                     >
                         <Plus className="w-4 h-4 mr-2" />
-                        Record Purchase
+                        {t.purchases.recordPurchase}
                     </button>
                 </div>
 
@@ -174,11 +178,11 @@ export default function PurchasesPage() {
                     tableId="purchases"
                     columns={columns}
                     data={purchases}
-                    title="Purchases"
+                    title={t.purchases.tableTitle}
                     isLoading={loading}
-                    emptyMessage="No purchases recorded yet"
+                    emptyMessage={t.purchases.emptyMessage}
                     emptyIcon={<ClipboardList className="w-16 h-16 text-gray-200" />}
-                    searchPlaceholder="Search by purchase #, supplier, or product..."
+                    searchPlaceholder={t.purchases.searchPlaceholder}
                     enableRowSelection
                 />
             </div>

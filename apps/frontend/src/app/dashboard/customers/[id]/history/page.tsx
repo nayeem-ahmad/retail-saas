@@ -7,6 +7,7 @@ import { formatBDT, formatDate } from '../../../../../lib/format';
 import {
     ArrowLeft, ShoppingBag, TrendingUp, Calendar, Clock, Package, BarChart3, Search,
 } from 'lucide-react';
+import { useI18n, formatMessage } from '@/lib/i18n';
 
 interface MonthlyTotal {
     month: string;
@@ -67,6 +68,7 @@ const SEGMENT_COLORS: Record<string, string> = {
 };
 
 export default function PurchaseHistoryPage() {
+    const { t } = useI18n();
     const { id } = useParams();
     const router = useRouter();
     const [data, setData] = useState<PurchaseHistory | null>(null);
@@ -82,8 +84,8 @@ export default function PurchaseHistoryPage() {
         }
     }, [id]);
 
-    if (loading) return <div className="p-8 font-black uppercase tracking-widest text-gray-400">Loading history...</div>;
-    if (!data) return <div className="p-8 font-black text-rose-500 uppercase">History not available.</div>;
+    if (loading) return <div className="p-8 font-black uppercase tracking-widest text-gray-400">{t.customers.history.loading}</div>;
+    if (!data) return <div className="p-8 font-black text-rose-500 uppercase">{t.customers.history.notAvailable}</div>;
 
     const { customer, summary, monthlyTotals, topProducts, transactions } = data;
     const maxMonthlySpend = Math.max(...monthlyTotals.map(m => m.spent), 1);
@@ -100,7 +102,7 @@ export default function PurchaseHistoryPage() {
                     onClick={() => router.push(`/dashboard/customers/${id}`)}
                     className="flex items-center text-sm font-bold text-gray-500 hover:text-gray-900 transition-colors"
                 >
-                    <ArrowLeft className="w-4 h-4 mr-2" /> Back to Profile
+                    <ArrowLeft className="w-4 h-4 mr-2" /> {t.customers.history.backToProfile}
                 </button>
                 <div className="flex items-center space-x-3">
                     <span className="font-mono text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded">
@@ -114,32 +116,32 @@ export default function PurchaseHistoryPage() {
 
             <div>
                 <h1 className="text-3xl font-black tracking-tight">{customer.name}</h1>
-                <p className="text-sm text-gray-500 font-medium mt-1">Purchase History</p>
+                <p className="text-sm text-gray-500 font-medium mt-1">{t.customers.history.title}</p>
             </div>
 
             {/* Summary Cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
                 <SummaryCard
-                    label="Total Orders"
+                    label={t.customers.history.totalOrders}
                     value={String(summary.totalOrders)}
                     icon={<ShoppingBag className="w-5 h-5 text-blue-600" />}
                     accent="blue"
                 />
                 <SummaryCard
-                    label="Lifetime Spend"
+                    label={t.customers.history.lifetimeSpend}
                     value={`৳${summary.totalSpent.toLocaleString('en-BD', { minimumFractionDigits: 2 })}`}
                     icon={<TrendingUp className="w-5 h-5 text-emerald-600" />}
                     accent="emerald"
                 />
                 <SummaryCard
-                    label="Avg. Order Value"
+                    label={t.customers.history.avgOrderValue}
                     value={`৳${summary.avgOrderValue.toLocaleString('en-BD', { minimumFractionDigits: 2 })}`}
                     icon={<BarChart3 className="w-5 h-5 text-amber-600" />}
                     accent="amber"
                 />
                 <SummaryCard
-                    label="Purchase Frequency"
-                    value={summary.purchaseFrequencyDays != null ? `every ${summary.purchaseFrequencyDays}d` : '—'}
+                    label={t.customers.history.purchaseFrequency}
+                    value={summary.purchaseFrequencyDays != null ? formatMessage(t.customers.history.everyDays, { days: summary.purchaseFrequencyDays }) : '—'}
                     icon={<Clock className="w-5 h-5 text-purple-600" />}
                     accent="purple"
                 />
@@ -149,7 +151,7 @@ export default function PurchaseHistoryPage() {
                 <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm flex items-center space-x-6">
                     <Calendar className="w-5 h-5 text-gray-400 flex-shrink-0" />
                     <div>
-                        <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Purchase Timeline</p>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">{t.customers.history.purchaseTimeline}</p>
                         <p className="text-sm font-bold text-gray-700 mt-0.5">
                             {formatDate(summary.firstPurchase)} — {formatDate(summary.lastPurchase)}
                         </p>
@@ -157,10 +159,10 @@ export default function PurchaseHistoryPage() {
                 </div>
             )}
 
-            {/* Monthly Spending Chart */}
+            {/* {t.customers.history.monthlySpending} Chart */}
             {monthlyTotals.length > 0 && (
                 <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
-                    <p className="text-xs font-black uppercase tracking-widest text-gray-400 mb-5">Monthly Spending</p>
+                    <p className="text-xs font-black uppercase tracking-widest text-gray-400 mb-5">{t.customers.history.monthlySpending}</p>
                     <div className="space-y-3">
                         {monthlyTotals.slice(-12).map(month => (
                             <div key={month.month} className="flex items-center space-x-3">
@@ -173,7 +175,7 @@ export default function PurchaseHistoryPage() {
                                 </div>
                                 <div className="text-right flex-shrink-0 w-32">
                                     <span className="text-xs font-black text-gray-900">৳{month.spent.toFixed(0)}</span>
-                                    <span className="text-[10px] text-gray-400 ml-1">({month.orders} orders)</span>
+                                    <span className="text-[10px] text-gray-400 ml-1">{formatMessage(t.customers.history.ordersCount, { count: month.orders })}</span>
                                 </div>
                             </div>
                         ))}
@@ -185,7 +187,7 @@ export default function PurchaseHistoryPage() {
             {topProducts.length > 0 && (
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                     <p className="text-xs font-black uppercase tracking-widest text-gray-400 mb-4 flex items-center">
-                        <Package className="w-4 h-4 mr-2" /> Top Purchased Products
+                        <Package className="w-4 h-4 mr-2" /> {t.customers.history.topProducts}
                     </p>
                     <div className="space-y-3">
                         {topProducts.map((item, i) => (
@@ -197,7 +199,7 @@ export default function PurchaseHistoryPage() {
                                     <span className="font-bold text-sm">{item.name}</span>
                                 </div>
                                 <div className="flex items-center space-x-4">
-                                    <span className="text-xs text-gray-500 font-medium">{item.quantity} units</span>
+                                    <span className="text-xs text-gray-500 font-medium">{formatMessage(t.customers.history.units, { count: item.quantity })}</span>
                                     <span className="font-black text-sm">{formatBDT(item.totalValue)}</span>
                                 </div>
                             </div>
@@ -210,14 +212,14 @@ export default function PurchaseHistoryPage() {
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
                 <div className="p-6 border-b border-gray-100 flex items-center justify-between">
                     <h2 className="text-lg font-black flex items-center">
-                        <ShoppingBag className="w-5 h-5 mr-2 text-blue-600" /> All Transactions
+                        <ShoppingBag className="w-5 h-5 mr-2 text-blue-600" /> {t.customers.history.allTransactions}
                         <span className="ml-2 text-xs font-bold text-gray-400">({filteredTransactions.length})</span>
                     </h2>
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                         <input
                             type="text"
-                            placeholder="Search by reference or product..."
+                            placeholder={t.customers.history.searchPlaceholder}
                             value={search}
                             onChange={e => setSearch(e.target.value)}
                             className="pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 w-72"
@@ -227,7 +229,7 @@ export default function PurchaseHistoryPage() {
                 <div className="divide-y divide-gray-50">
                     {filteredTransactions.length === 0 ? (
                         <div className="p-8 text-center text-gray-400 font-bold uppercase tracking-widest text-xs">
-                            No transactions found.
+                            {t.customers.history.noTransactions}
                         </div>
                     ) : (
                         filteredTransactions.map(sale => (
@@ -253,7 +255,7 @@ export default function PurchaseHistoryPage() {
                                     {sale.items.map(item => (
                                         <div key={item.id} className="flex justify-between text-sm">
                                             <span className="font-medium text-gray-700">
-                                                {item.quantity}× {item.product?.name ?? 'Unknown Item'}
+                                                {item.quantity}× {item.product?.name ?? t.customers.history.unknownItem}
                                             </span>
                                             <span className="font-bold text-gray-900">
                                                 {formatBDT(Number(item.price_at_sale) * item.quantity)}

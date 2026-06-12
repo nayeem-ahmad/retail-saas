@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Search, Trash2, X } from 'lucide-react';
 import { api } from '@/lib/api';
 import { formatBDT } from '@/lib/format';
+import { useI18n, formatMessage } from '@/lib/i18n';
 
 interface Product {
     id: string;
@@ -32,6 +33,7 @@ interface Props {
 }
 
 export default function CreatePurchaseOrderModal({ isOpen, onClose, onSuccess }: Props) {
+    const { t, locale } = useI18n();
     const [products, setProducts] = useState<Product[]>([]);
     const [suppliers, setSuppliers] = useState<Supplier[]>([]);
     const [items, setItems] = useState<DraftItem[]>([]);
@@ -101,7 +103,7 @@ export default function CreatePurchaseOrderModal({ isOpen, onClose, onSuccess }:
     const total = subtotal + tax + freight - discount;
 
     const handleSubmit = async () => {
-        if (items.length === 0) { setError('Add at least one product.'); return; }
+        if (items.length === 0) { setError(t.purchaseShared.addOneProduct); return; }
         setLoading(true);
         setError('');
         try {
@@ -119,7 +121,7 @@ export default function CreatePurchaseOrderModal({ isOpen, onClose, onSuccess }:
             onSuccess();
             onClose();
         } catch (err: any) {
-            setError(err.message || 'Failed to create purchase order');
+            setError(err.message || t.purchaseShared.failedCreatePo);
         } finally {
             setLoading(false);
         }
@@ -132,9 +134,9 @@ export default function CreatePurchaseOrderModal({ isOpen, onClose, onSuccess }:
             <div className="bg-white w-full max-w-4xl rounded-3xl shadow-2xl flex flex-col max-h-[90vh]">
                 <div className="p-6 border-b border-gray-100 flex items-center justify-between">
                     <div>
-                        <h2 className="text-xl font-black tracking-tight">New Purchase Order</h2>
+                        <h2 className="text-xl font-black tracking-tight">{t.purchaseOrders.modal.title}</h2>
                         <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-0.5">
-                            Draft a PO to send to a supplier
+                            {t.purchaseOrders.modal.subtitle}
                         </p>
                     </div>
                     <button onClick={onClose} className="p-2 hover:bg-gray-50 rounded-xl text-gray-400">
@@ -149,13 +151,13 @@ export default function CreatePurchaseOrderModal({ isOpen, onClose, onSuccess }:
                         {/* Left: products */}
                         <div className="space-y-4">
                             <div>
-                                <label className="text-xs font-black uppercase tracking-widest text-gray-500 block mb-2">Add Products</label>
+                                <label className="text-xs font-black uppercase tracking-widest text-gray-500 block mb-2">{t.purchaseShared.addProducts}</label>
                                 <div className="relative">
                                     <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5">
                                         <Search className="w-4 h-4 text-gray-400" />
                                         <input
                                             type="text"
-                                            placeholder="Search by name or SKU..."
+                                            placeholder={t.purchaseShared.searchProductsShort}
                                             value={productSearch}
                                             onChange={(e) => { setProductSearch(e.target.value); setShowDropdown(true); }}
                                             onFocus={() => setShowDropdown(true)}
@@ -171,7 +173,7 @@ export default function CreatePurchaseOrderModal({ isOpen, onClose, onSuccess }:
                                                         <span className="text-sm font-bold">{p.name}</span>
                                                         <span className="text-xs text-gray-400 ml-2">{p.sku}</span>
                                                     </div>
-                                                    <span className="text-sm font-bold text-blue-600">{formatBDT(Number(p.price || 0))}</span>
+                                                    <span className="text-sm font-bold text-blue-600">{formatBDT(Number(p.price || 0), { locale })}</span>
                                                 </button>
                                             ))}
                                         </div>
@@ -183,10 +185,10 @@ export default function CreatePurchaseOrderModal({ isOpen, onClose, onSuccess }:
                                 <table className="w-full">
                                     <thead>
                                         <tr className="border-b border-gray-100">
-                                            <th className="text-left pb-2 text-[10px] font-black uppercase tracking-widest text-gray-400">Product</th>
-                                            <th className="text-center pb-2 text-[10px] font-black uppercase tracking-widest text-gray-400 w-24">Qty</th>
-                                            <th className="text-right pb-2 text-[10px] font-black uppercase tracking-widest text-gray-400 w-32">Unit Cost</th>
-                                            <th className="text-right pb-2 text-[10px] font-black uppercase tracking-widest text-gray-400 w-28">Total</th>
+                                            <th className="text-left pb-2 text-[10px] font-black uppercase tracking-widest text-gray-400">{t.common.product}</th>
+                                            <th className="text-center pb-2 text-[10px] font-black uppercase tracking-widest text-gray-400 w-24">{t.purchaseShared.qty}</th>
+                                            <th className="text-right pb-2 text-[10px] font-black uppercase tracking-widest text-gray-400 w-32">{t.purchaseShared.unitCost}</th>
+                                            <th className="text-right pb-2 text-[10px] font-black uppercase tracking-widest text-gray-400 w-28">{t.common.total}</th>
                                             <th className="w-10"></th>
                                         </tr>
                                     </thead>
@@ -208,7 +210,7 @@ export default function CreatePurchaseOrderModal({ isOpen, onClose, onSuccess }:
                                                         className="w-full text-right bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 text-sm font-bold" />
                                                 </td>
                                                 <td className="py-3 text-right text-sm font-black text-blue-600">
-                                                    {formatBDT(item.quantity * item.unitCost)}
+                                                    {formatBDT(item.quantity * item.unitCost, { locale })}
                                                 </td>
                                                 <td className="py-3 text-center">
                                                     <button onClick={() => removeItem(idx)} className="p-1 text-gray-300 hover:text-red-500">
@@ -225,25 +227,25 @@ export default function CreatePurchaseOrderModal({ isOpen, onClose, onSuccess }:
                         {/* Right: supplier + adjustments */}
                         <div className="space-y-5">
                             <div className="rounded-2xl border border-gray-100 bg-gray-50/70 p-4 space-y-3">
-                                <h3 className="text-sm font-black tracking-tight">Supplier</h3>
+                                <h3 className="text-sm font-black tracking-tight">{t.common.supplier}</h3>
                                 <select value={supplierId} onChange={(e) => setSupplierId(e.target.value)}
                                     className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-bold focus:ring-2 focus:ring-blue-500/20">
-                                    <option value="">No supplier selected</option>
+                                    <option value="">{t.purchaseShared.noSupplier}</option>
                                     {suppliers.map((s) => (
                                         <option key={s.id} value={s.id}>{s.name}</option>
                                     ))}
                                 </select>
                                 <div>
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1">Expected Delivery Date</label>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1">{t.purchaseShared.expectedDeliveryDate}</label>
                                     <input type="date" value={expectedDate} onChange={(e) => setExpectedDate(e.target.value)}
                                         className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-medium focus:ring-2 focus:ring-blue-500/20" />
                                 </div>
                             </div>
 
                             <div className="rounded-2xl border border-gray-100 bg-gray-50/70 p-4 space-y-3">
-                                <h3 className="text-sm font-black tracking-tight">Cost Adjustments</h3>
+                                <h3 className="text-sm font-black tracking-tight">{t.purchaseShared.costAdjustments}</h3>
                                 <div className="grid grid-cols-3 gap-3">
-                                    {[['Tax', taxAmount, setTaxAmount], ['Discount', discountAmount, setDiscountAmount], ['Freight', freightAmount, setFreightAmount]].map(([label, val, setter]) => (
+                                    {[ [t.common.tax, taxAmount, setTaxAmount], [t.common.discount, discountAmount, setDiscountAmount], [t.purchaseShared.freight, freightAmount, setFreightAmount] ].map(([label, val, setter]) => (
                                         <div key={label as string}>
                                             <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1">{label as string}</label>
                                             <input type="number" min={0} step={0.01} value={val as string}
@@ -252,26 +254,26 @@ export default function CreatePurchaseOrderModal({ isOpen, onClose, onSuccess }:
                                         </div>
                                     ))}
                                 </div>
-                                <textarea placeholder="Notes" value={notes} onChange={(e) => setNotes(e.target.value)}
+                                <textarea placeholder={t.purchaseShared.notesPlaceholder} value={notes} onChange={(e) => setNotes(e.target.value)}
                                     rows={2} className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-medium focus:ring-2 focus:ring-blue-500/20" />
                             </div>
 
                             <div className="rounded-2xl bg-blue-950 text-white p-5 space-y-2">
                                 <div className="flex justify-between text-sm font-bold text-blue-100">
-                                    <span>Subtotal</span><span>{formatBDT(subtotal)}</span>
+                                    <span>{t.common.subtotal}</span><span>{formatBDT(subtotal, { locale })}</span>
                                 </div>
                                 <div className="flex justify-between text-sm font-bold text-blue-100">
-                                    <span>Tax</span><span>{formatBDT(tax)}</span>
+                                    <span>{t.common.tax}</span><span>{formatBDT(tax, { locale })}</span>
                                 </div>
                                 <div className="flex justify-between text-sm font-bold text-blue-100">
-                                    <span>Freight</span><span>{formatBDT(freight)}</span>
+                                    <span>{t.purchaseShared.freight}</span><span>{formatBDT(freight, { locale })}</span>
                                 </div>
                                 <div className="flex justify-between text-sm font-bold text-blue-100">
-                                    <span>Discount</span><span>-{formatBDT(discount)}</span>
+                                    <span>{t.common.discount}</span><span>-{formatBDT(discount, { locale })}</span>
                                 </div>
                                 <div className="border-t border-blue-800 pt-2 flex justify-between">
-                                    <span className="text-xs font-black uppercase tracking-widest text-blue-200">PO Total</span>
-                                    <span className="text-2xl font-black">{formatBDT(total)}</span>
+                                    <span className="text-xs font-black uppercase tracking-widest text-blue-200">{t.purchaseShared.poTotal}</span>
+                                    <span className="text-2xl font-black">{formatBDT(total, { locale })}</span>
                                 </div>
                             </div>
                         </div>
@@ -285,7 +287,7 @@ export default function CreatePurchaseOrderModal({ isOpen, onClose, onSuccess }:
                     </button>
                     <button onClick={handleSubmit} disabled={loading || items.length === 0}
                         className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-md disabled:opacity-50">
-                        {loading ? 'Creating...' : 'Create PO'}
+                        {loading ? t.purchaseOrders.modal.creating : t.purchaseOrders.modal.createPo}
                     </button>
                 </div>
             </div>

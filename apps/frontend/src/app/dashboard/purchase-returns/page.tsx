@@ -9,6 +9,7 @@ import { api } from '../../../lib/api';
 import CreatePurchaseReturnModal from './CreatePurchaseReturnModal';
 import { PostingBadge } from '@/components/PostingBadge';
 import { formatBDT, formatDate } from '../../../lib/format';
+import { useI18n, formatMessage } from '@/lib/i18n';
 
 interface PurchaseReturnRecord {
     id: string;
@@ -31,6 +32,7 @@ interface PurchaseReturnRecord {
 const columnHelper = createColumnHelper<PurchaseReturnRecord>();
 
 export default function PurchaseReturnsPage() {
+    const { t, locale } = useI18n();
     const [purchaseReturns, setPurchaseReturns] = useState<PurchaseReturnRecord[]>([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -52,7 +54,7 @@ export default function PurchaseReturnsPage() {
     };
 
     const handleDelete = async (id: string) => {
-        if (!window.confirm('Are you sure you want to delete this purchase return?')) {
+        if (!window.confirm(t.purchaseReturns.deleteConfirm)) {
             return;
         }
 
@@ -61,7 +63,7 @@ export default function PurchaseReturnsPage() {
             setPurchaseReturns((current) => current.filter((purchaseReturn) => purchaseReturn.id !== id));
         } catch (error) {
             console.error('Failed to delete purchase return', error);
-            window.alert('Failed to delete purchase return. Please try again.');
+            window.alert(t.purchaseReturns.deleteFailed);
         }
     };
 
@@ -77,45 +79,49 @@ export default function PurchaseReturnsPage() {
     const columns: ColumnDef<PurchaseReturnRecord, any>[] = useMemo(
         () => [
             columnHelper.accessor('return_number', {
-                header: 'Return #',
+                header: t.purchaseReturns.columns.returnNumber,
                 cell: (info) => <span className="text-sm font-black text-gray-900">{info.getValue()}</span>,
                 size: 150,
             }),
             columnHelper.accessor((row) => row.purchase?.purchase_number ?? '-', {
                 id: 'purchase_number',
-                header: 'Source Purchase',
+                header: t.purchaseReturns.columns.sourcePurchase,
                 cell: (info) => <span className="text-sm font-bold text-gray-700">{info.getValue()}</span>,
                 size: 160,
             }),
-            columnHelper.accessor((row) => row.supplier?.name ?? 'Unlinked', {
+            columnHelper.accessor((row) => row.supplier?.name ?? t.purchaseShared.unlinked, {
                 id: 'supplier',
-                header: 'Supplier',
+                header: t.purchaseQuotations.columns.supplier,
                 cell: (info) => <span className="text-sm font-bold text-gray-700">{info.getValue()}</span>,
                 size: 190,
             }),
             columnHelper.accessor((row) => row.items?.length ?? 0, {
                 id: 'item_count',
-                header: 'Items',
-                cell: (info) => <span className="text-sm font-bold text-gray-700">{info.getValue()} lines</span>,
+                header: t.purchaseReturns.columns.items,
+                cell: (info) => (
+                    <span className="text-sm font-bold text-gray-700">
+                        {formatMessage(t.purchaseShared.linesCount, { count: info.getValue() })}
+                    </span>
+                ),
                 size: 100,
             }),
             columnHelper.accessor('total_amount', {
-                header: 'Total',
+                header: t.purchaseQuotations.columns.total,
                 cell: (info) => (
                     <span className="text-sm font-black text-emerald-600">
-                        {formatBDT(Number(info.getValue() || 0))}
+                        {formatBDT(Number(info.getValue() || 0), { locale })}
                     </span>
                 ),
                 sortingFn: (a, b) => Number(a.getValue('total_amount') || 0) - Number(b.getValue('total_amount') || 0),
                 size: 120,
             }),
             columnHelper.accessor('created_at', {
-                header: 'Created',
+                header: t.purchaseReturns.columns.created,
                 cell: (info) => {
                     const date = new Date(info.getValue());
                     return (
                         <div>
-                            <span className="text-sm text-gray-600">{formatDate(info.getValue())}</span>
+                            <span className="text-sm text-gray-600">{formatDate(info.getValue(), locale)}</span>
                             <span className="text-xs text-gray-400 block">{date.toLocaleTimeString()}</span>
                         </div>
                     );
@@ -125,7 +131,7 @@ export default function PurchaseReturnsPage() {
             }),
             columnHelper.display({
                 id: 'posting',
-                header: 'Voucher',
+                header: t.purchaseReturns.columns.voucher,
                 cell: ({ row }) => (
                     <PostingBadge
                         status={row.original.posting_status}
@@ -136,7 +142,7 @@ export default function PurchaseReturnsPage() {
             }),
             columnHelper.display({
                 id: 'actions',
-                header: 'Actions',
+                header: t.purchaseQuotations.columns.actions,
                 cell: (info) => {
                     const row = info.row.original;
                     return (
@@ -144,35 +150,35 @@ export default function PurchaseReturnsPage() {
                             <button
                                 onClick={() => openCreateModal(row.purchase?.id)}
                                 className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors"
-                                title="Create another return from this purchase"
+                                title={t.purchaseReturns.createAnother}
                             >
                                 <Plus className="w-4 h-4" />
                             </button>
                             <Link
                                 href={`/dashboard/purchase-returns/${row.id}`}
                                 className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors"
-                                title="View"
+                                title={t.common.view}
                             >
                                 <Eye className="w-4 h-4" />
                             </Link>
                             <Link
                                 href={`/dashboard/purchase-returns/${row.id}?edit=true`}
                                 className="p-1.5 rounded-lg text-amber-600 hover:bg-amber-50 transition-colors"
-                                title="Edit"
+                                title={t.common.edit}
                             >
                                 <Pencil className="w-4 h-4" />
                             </Link>
                             <button
                                 onClick={() => handlePrint(row.id)}
                                 className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
-                                title="Print"
+                                title={t.purchaseReturns.detail.print}
                             >
                                 <Printer className="w-4 h-4" />
                             </button>
                             <button
                                 onClick={() => handleDelete(row.id)}
                                 className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 transition-colors"
-                                title="Delete"
+                                title={t.common.delete}
                             >
                                 <Trash2 className="w-4 h-4" />
                             </button>
@@ -185,7 +191,7 @@ export default function PurchaseReturnsPage() {
                 size: 180,
             }),
         ],
-        [],
+        [t, locale],
     );
 
     return (
@@ -193,9 +199,9 @@ export default function PurchaseReturnsPage() {
             <div className="max-w-[1400px] mx-auto space-y-6">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-black tracking-tight">Purchase Returns</h1>
+                        <h1 className="text-2xl font-black tracking-tight">{t.purchaseReturns.title}</h1>
                         <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mt-0.5">
-                            Track supplier returns and start new returns from original purchase receipts
+                            {t.purchaseReturns.subtitle}
                         </p>
                     </div>
                     <button
@@ -218,11 +224,11 @@ export default function PurchaseReturnsPage() {
                     tableId="purchase-returns"
                     columns={columns}
                     data={purchaseReturns}
-                    title="Purchase Returns"
+                    title={t.purchaseReturns.tableTitle}
                     isLoading={loading}
-                    emptyMessage="No purchase returns recorded yet"
+                    emptyMessage={t.purchaseReturns.emptyMessage}
                     emptyIcon={<RotateCcw className="w-16 h-16 text-gray-200" />}
-                    searchPlaceholder="Search by return #, source purchase, or supplier..."
+                    searchPlaceholder={t.purchaseReturns.searchPlaceholder}
                     enableRowSelection
                 />
             </div>

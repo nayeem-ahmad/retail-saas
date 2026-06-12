@@ -14,7 +14,7 @@ import {
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../../lib/api';
 import { formatBDT, formatDate } from '../../lib/format';
-import { formatMessage, useI18n } from '../../lib/i18n';
+import { formatMessage, useI18n } from '@/lib/i18n';
 
 type FinancialKpis = {
     cash_inflow: number;

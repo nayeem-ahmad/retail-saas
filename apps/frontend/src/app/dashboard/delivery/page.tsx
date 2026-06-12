@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Truck, Plus, X, RefreshCw } from 'lucide-react';
 import { fetchWithAuth } from '@/lib/api';
 import { formatDate } from '@/lib/format';
+import { useI18n } from '@/lib/i18n';
 
 interface DeliveryOrder {
     id: string;
@@ -42,6 +43,7 @@ const EMPTY_FORM = {
 };
 
 export default function DeliveryPage() {
+    const { t } = useI18n();
     const [orders, setOrders] = useState<DeliveryOrder[]>([]);
     const [total, setTotal] = useState(0);
     const [page, setPage] = useState(1);
@@ -321,7 +323,7 @@ export default function DeliveryPage() {
                                         type="text"
                                         value={form.saleId}
                                         onChange={e => setForm(f => ({ ...f, saleId: e.target.value }))}
-                                        placeholder="Link to a sale ID"
+                                        placeholder={t.delivery.placeholders.saleId}
                                         className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
                                     />
                                 </div>

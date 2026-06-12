@@ -8,6 +8,7 @@ import { HelpTooltip } from '@/components/HelpTooltip';
 import { AccountCategory, VoucherType } from '@retail-saas/shared-types';
 import { api } from '../../../../lib/api';
 import { formatBDT } from '../../../../lib/format';
+import { useI18n, formatMessage } from '@/lib/i18n';
 
 type VoucherAccount = {
     id: string;
@@ -62,15 +63,21 @@ function createEmptyRow(): VoucherRow {
     };
 }
 
+function VoucherLoadingFallback() {
+    const { t } = useI18n();
+    return <div className="p-6 text-sm text-gray-500">{t.vouchers.loading}</div>;
+}
+
 export default function AccountingVouchersPage() {
     return (
-        <Suspense fallback={<div className="p-6 text-sm text-gray-500">Loading vouchers...</div>}>
+        <Suspense fallback={<VoucherLoadingFallback />}>
             <AccountingVouchersPageContent />
         </Suspense>
     );
 }
 
 function AccountingVouchersPageContent() {
+    const { t, locale } = useI18n();
     const router = useRouter();
     const searchParams = useSearchParams();
     const [voucherType, setVoucherType] = useState<VoucherType>(VoucherType.CASH_PAYMENT);
@@ -298,7 +305,7 @@ function AccountingVouchersPageContent() {
                         </div>
                         <div className="space-y-2">
                             <p className="text-xs font-black uppercase tracking-[0.24em] text-gray-400">Story 30.5</p>
-                            <h1 className="text-2xl font-black tracking-tight inline-flex items-center gap-2">Voucher Entry Workbench <HelpTooltip text="Journal vouchers record financial transactions as debit/credit pairs. Every transaction must balance — total debits must equal total credits." /></h1>
+                            <h1 className="text-2xl font-black tracking-tight inline-flex items-center gap-2">{t.vouchers.workbenchTitle} <HelpTooltip text={t.vouchers.workbenchHelp} /></h1>
                             <p className="text-sm text-gray-500 max-w-2xl">
                                 Build balanced multi-line vouchers with live debit and credit totals, account-aware row controls, and server-issued numbering.
                             </p>
@@ -328,7 +335,7 @@ function AccountingVouchersPageContent() {
                                 <span>Voucher type</span>
                                 <select
                                     id="voucher-type-select"
-                                    aria-label="Voucher type"
+                                    aria-label={t.vouchers.voucherTypeAria}
                                     value={voucherType}
                                     onChange={(event) => handleVoucherTypeChange(event.target.value as VoucherType)}
                                     className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-900 outline-none transition focus:border-gray-400"
@@ -344,7 +351,7 @@ function AccountingVouchersPageContent() {
                             <label className="block text-xs font-bold uppercase tracking-[0.24em] text-gray-400">
                                 <span>Voucher date</span>
                                 <input
-                                    aria-label="Voucher date"
+                                    aria-label={t.vouchers.voucherDateAria}
                                     type="date"
                                     value={voucherDate}
                                     onChange={(event) => setVoucherDate(event.target.value)}
@@ -355,7 +362,7 @@ function AccountingVouchersPageContent() {
                             <label className="block text-xs font-bold uppercase tracking-[0.24em] text-gray-400">
                                 <span>Reference number</span>
                                 <input
-                                    aria-label="Reference number"
+                                    aria-label={t.vouchers.referenceAria}
                                     value={referenceNumber}
                                     onChange={(event) => setReferenceNumber(event.target.value)}
                                     placeholder="CP-REF-01"
@@ -375,11 +382,11 @@ function AccountingVouchersPageContent() {
                         <label className="block text-xs font-bold uppercase tracking-[0.24em] text-gray-400">
                             <span>Description</span>
                             <textarea
-                                aria-label="Description"
+                                aria-label={t.vouchers.descriptionAria}
                                 value={description}
                                 onChange={(event) => setDescription(event.target.value)}
                                 rows={3}
-                                placeholder="Narrate the accounting event for audit clarity"
+                                placeholder="{t.vouchers.narrationPlaceholder}"
                                 className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-900 outline-none transition focus:border-gray-400"
                             />
                         </label>
@@ -470,7 +477,7 @@ function AccountingVouchersPageContent() {
                                                         value={row.comment}
                                                         onChange={(event) => updateRow(row.id, 'comment', event.target.value)}
                                                         className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-900"
-                                                        placeholder="Optional row note"
+                                                        placeholder={t.vouchers.optionalRowNote}
                                                     />
                                                 </label>
 
@@ -499,8 +506,8 @@ function AccountingVouchersPageContent() {
                                 <h2 className="text-lg font-black tracking-tight">Balance status</h2>
                             </div>
                             <div className="mt-5 grid gap-3">
-                                <BalanceStat label="Debit total" value={debitTotal} tone="debit" />
-                                <BalanceStat label="Credit total" value={creditTotal} tone="credit" />
+                                <BalanceStat label={t.accountingShared.debitTotal} value={debitTotal} tone="debit" locale={locale} />
+                                <BalanceStat label={t.accountingShared.creditTotal} value={creditTotal} tone="credit" locale={locale} />
                                 <div className={`rounded-2xl border px-4 py-4 ${isBalanced ? 'border-emerald-200 bg-emerald-50 text-emerald-900' : 'border-red-200 bg-red-50 text-red-900'}`}>
                                     <p className="text-xs font-black uppercase tracking-[0.24em]">Balance</p>
                                     <p className="mt-2 text-2xl font-black tracking-tight">
@@ -611,7 +618,7 @@ function getRowError(row: VoucherRow, accounts: VoucherAccount[], voucherType: V
     return '';
 }
 
-function BalanceStat({ label, value, tone }: { label: string; value: number; tone: 'debit' | 'credit' }) {
+function BalanceStat({ label, value, tone, locale }: { label: string; value: number; tone: 'debit' | 'credit'; locale: string }) {
     const classes = tone === 'debit'
         ? 'border-amber-200 bg-amber-50 text-amber-900'
         : 'border-sky-200 bg-sky-50 text-sky-900';
@@ -619,7 +626,7 @@ function BalanceStat({ label, value, tone }: { label: string; value: number; ton
     return (
         <div className={`rounded-2xl border px-4 py-4 ${classes}`}>
             <p className="text-xs font-black uppercase tracking-[0.24em]">{label}</p>
-            <p className="mt-2 text-2xl font-black tracking-tight">{formatBDT(value)}</p>
+            <p className="mt-2 text-2xl font-black tracking-tight">{formatBDT(value, { locale })}</p>
         </div>
     );
 }

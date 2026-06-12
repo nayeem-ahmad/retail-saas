@@ -6,6 +6,7 @@ import { Users } from 'lucide-react';
 import { DataTable } from '@/components/data-table';
 import { api } from '@/lib/api';
 import { formatBDT } from '@/lib/format';
+import { useI18n } from '@/lib/i18n';
 
 interface CustomerRow {
     customer: {
@@ -39,6 +40,7 @@ function defaultTo() {
 }
 
 export default function SalesByCustomerPage() {
+    const { t, locale } = useI18n();
     const [rows, setRows] = useState<CustomerRow[]>([]);
     const [summary, setSummary] = useState<Summary | null>(null);
     const [fromDate, setFromDate] = useState(defaultFrom());
@@ -67,66 +69,66 @@ export default function SalesByCustomerPage() {
 
     const columns: ColumnDef<CustomerRow, any>[] = useMemo(() => [
         columnHelper.accessor((row) => row.customer.name, {
-            id: 'customer', header: 'Customer', size: 220,
+            id: 'customer', header: t.salesReports.common.customer, size: 220,
         }),
-        columnHelper.accessor((row) => row.customer.phone ?? '-', {
-            id: 'phone', header: 'Phone', size: 140,
+        columnHelper.accessor((row) => row.customer.phone ?? t.shared.dash, {
+            id: 'phone', header: t.salesReports.common.phone, size: 140,
         }),
-        columnHelper.accessor((row) => row.customer.customer_code ?? '-', {
-            id: 'code', header: 'Code', size: 100,
+        columnHelper.accessor((row) => row.customer.customer_code ?? t.shared.dash, {
+            id: 'code', header: t.salesReports.common.code, size: 100,
         }),
         columnHelper.accessor('orderCount', {
-            header: 'Orders', size: 90,
+            header: t.salesReports.common.orders, size: 90,
         }),
         columnHelper.accessor('revenue', {
-            header: 'Revenue',
-            cell: (info) => <span className="font-bold text-blue-700">{formatBDT(Number(info.getValue()))}</span>,
+            header: t.salesReports.common.revenue,
+            cell: (info) => <span className="font-bold text-blue-700">{formatBDT(Number(info.getValue()), { locale })}</span>,
             size: 140,
         }),
         columnHelper.accessor('avgOrderValue', {
-            header: 'Avg Order',
-            cell: (info) => formatBDT(Number(info.getValue())),
+            header: t.salesReports.common.avgOrder,
+            cell: (info) => formatBDT(Number(info.getValue()), { locale }),
             size: 130,
         }),
-    ], []);
+    ], [t, locale]);
 
     return (
         <div className="overflow-y-auto h-full bg-[#f3f4f6] p-6 font-sans text-gray-900">
             <div className="max-w-[1400px] mx-auto space-y-6">
                 <div>
-                    <h1 className="text-2xl font-black tracking-tight">Customer-wise Sales Summary</h1>
+                    <h1 className="text-2xl font-black tracking-tight">{t.salesReports.customers.title}</h1>
                     <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mt-0.5">
-                        Revenue and order volume per customer over a date range
+                        {t.salesReports.customers.subtitle}
                     </p>
                 </div>
 
                 <div className="grid md:grid-cols-4 gap-4">
                     <div className="bg-white border border-gray-100 rounded-2xl p-5">
-                        <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">Total Revenue</div>
-                        <div className="text-2xl font-black text-blue-700 mt-2">{formatBDT(Number(summary?.totalRevenue ?? 0))}</div>
+                        <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">{t.salesReports.common.totalRevenue}</div>
+                        <div className="text-2xl font-black text-blue-700 mt-2">{formatBDT(Number(summary?.totalRevenue ?? 0), { locale })}</div>
                     </div>
                     <div className="bg-white border border-gray-100 rounded-2xl p-5">
-                        <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">Total Orders</div>
+                        <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">{t.salesReports.common.totalOrders}</div>
                         <div className="text-2xl font-black text-gray-900 mt-2">{summary?.totalOrders ?? 0}</div>
                     </div>
                     <div className="bg-white border border-gray-100 rounded-2xl p-5">
-                        <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">Customers</div>
+                        <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">{t.salesReports.common.customers}</div>
                         <div className="text-2xl font-black text-gray-900 mt-2">{summary?.customerCount ?? 0}</div>
                     </div>
                     <div className="bg-white border border-gray-100 rounded-2xl p-5">
-                        <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">Avg Order Value</div>
-                        <div className="text-2xl font-black text-gray-900 mt-2">{formatBDT(Number(summary?.avgOrderValue ?? 0))}</div>
+                        <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">{t.salesReports.common.avgOrderValue}</div>
+                        <div className="text-2xl font-black text-gray-900 mt-2">{formatBDT(Number(summary?.avgOrderValue ?? 0), { locale })}</div>
                     </div>
                 </div>
 
                 <div className="bg-white border border-gray-100 rounded-2xl p-4 flex flex-wrap gap-3 items-end">
                     <div className="flex flex-col gap-1">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">From</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">{t.salesReports.common.from}</span>
                         <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)}
                             className="bg-gray-50 border-none rounded-xl py-3 px-4 text-sm font-medium" />
                     </div>
                     <div className="flex flex-col gap-1">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">To</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">{t.salesReports.common.to}</span>
                         <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)}
                             className="bg-gray-50 border-none rounded-xl py-3 px-4 text-sm font-medium" />
                     </div>
@@ -136,11 +138,11 @@ export default function SalesByCustomerPage() {
                     tableId="sales-by-customer"
                     columns={columns}
                     data={rows}
-                    title="Customer Performance"
+                    title={t.salesReports.customers.customerPerformance}
                     isLoading={loading}
-                    emptyMessage="No sales recorded in this period"
+                    emptyMessage={t.salesReports.common.noSalesInPeriod}
                     emptyIcon={<Users className="w-16 h-16 text-gray-200" />}
-                    searchPlaceholder="Search customers..."
+                    searchPlaceholder={t.salesReports.customers.searchPlaceholder}
                 />
             </div>
         </div>

@@ -9,6 +9,7 @@ import { ContextualHelpPanel } from '@/components/ContextualHelpPanel';
 import { HelpTooltip } from '@/components/HelpTooltip';
 import { COA_FIELD_HELP, COA_HELP } from '@/lib/help/contextual-help';
 import { api } from '../../../../lib/api';
+import { useI18n, formatMessage } from '@/lib/i18n';
 
 type AccountType = 'asset' | 'liability' | 'equity' | 'revenue' | 'expense';
 type AccountCategory = 'cash' | 'bank' | 'general';
@@ -43,6 +44,7 @@ const ACCOUNT_CATEGORIES: AccountCategory[] = ['cash', 'bank', 'general'];
 const columnHelper = createColumnHelper<Account>();
 
 export default function ChartOfAccountsPage() {
+    const { t, locale } = useI18n();
     const [groups, setGroups] = useState<AccountGroup[]>([]);
     const [subgroups, setSubgroups] = useState<AccountSubgroup[]>([]);
     const [accounts, setAccounts] = useState<Account[]>([]);
@@ -96,39 +98,39 @@ export default function ChartOfAccountsPage() {
     const columns: ColumnDef<Account, any>[] = useMemo(
         () => [
             columnHelper.accessor('name', {
-                header: 'Account',
+                header: t.accountingShared.account,
                 cell: (info) => (
                     <div>
                         <span className="block text-sm font-black text-gray-900">{info.row.original.name}</span>
-                        <span className="block text-xs text-gray-400">{info.row.original.code || 'No code'}</span>
+                        <span className="block text-xs text-gray-400">{info.row.original.code || t.accountingShared.noCode}</span>
                     </div>
                 ),
                 size: 240,
             }),
             columnHelper.accessor('type', {
-                header: 'Type',
+                header: t.accountingShared.type,
                 cell: (info) => <Badge>{info.getValue()}</Badge>,
                 size: 120,
             }),
             columnHelper.accessor('category', {
-                header: 'Category',
+                header: t.accountingShared.category,
                 cell: (info) => <Badge tone="secondary">{info.getValue()}</Badge>,
                 size: 120,
             }),
             columnHelper.accessor((row) => row.group?.name || '-', {
                 id: 'group',
-                header: 'Group',
+                header: t.accountingShared.group,
                 cell: (info) => <span className="text-sm font-bold text-gray-700">{info.getValue()}</span>,
                 size: 180,
             }),
-            columnHelper.accessor((row) => row.subgroup?.name || 'Unassigned', {
+            columnHelper.accessor((row) => row.subgroup?.name || t.coa.unassigned, {
                 id: 'subgroup',
-                header: 'Subgroup',
+                header: t.accountingShared.subgroup,
                 cell: (info) => <span className="text-sm text-gray-500">{info.getValue()}</span>,
                 size: 180,
             }),
         ],
-        [],
+        [t],
     );
 
     return (
@@ -136,38 +138,38 @@ export default function ChartOfAccountsPage() {
             <div className="max-w-[1400px] mx-auto space-y-6">
                 <Link href="/dashboard/accounting" className="inline-flex items-center text-sm font-bold text-gray-500 hover:text-gray-900 transition-colors">
                     <ArrowLeft className="w-4 h-4 mr-2" />
-                    Back to Accounting
+                    {t.accountingShared.backToAccounting}
                 </Link>
 
                 <div className="flex items-start justify-between gap-4 flex-wrap">
                     <div>
-                        <p className="text-xs font-black uppercase tracking-[0.24em] text-gray-400">Story 30.2</p>
+                        <p className="text-xs font-black uppercase tracking-[0.24em] text-gray-400">{t.coa.story}</p>
                         <h1 className="text-3xl font-black tracking-tight inline-flex items-center gap-2">
-                            Chart of Accounts
+                            {t.coa.title}
                             <HelpTooltip text={COA_FIELD_HELP.page} wide />
                         </h1>
                         <p className="text-sm text-gray-500 mt-2 max-w-3xl">
-                            Define tenant-specific account groups, subgroups, and accounts so every financial workflow posts into a clean chart structure.
+                            {t.coa.pageSubtitle}
                         </p>
                     </div>
                     <div className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3">
-                        <p className="text-[11px] font-black uppercase tracking-[0.24em] text-amber-700">Bootstrap active</p>
-                        <p className="text-sm font-bold text-amber-900">New tenants receive a default cash, bank, liability, equity, revenue, and expense skeleton.</p>
+                        <p className="text-[11px] font-black uppercase tracking-[0.24em] text-amber-700">{t.coa.bootstrapActive}</p>
+                        <p className="text-sm font-bold text-amber-900">{t.coa.bootstrapHint}</p>
                     </div>
                 </div>
 
                 <ContextualHelpPanel {...COA_HELP} />
 
                 <div className="grid gap-4 xl:grid-cols-3">
-                    <InlineFormCard icon={<FolderTree className="w-5 h-5" />} title="New Group" subtitle="Create top-level financial groups" helpText={COA_FIELD_HELP.group}>
+                    <InlineFormCard icon={<FolderTree className="w-5 h-5" />} title={t.coa.newGroup} subtitle={t.coa.createGroupHint} helpText={COA_FIELD_HELP.group}>
                         <AccountGroupForm onSuccess={refreshAll} />
                     </InlineFormCard>
 
-                    <InlineFormCard icon={<BookOpen className="w-5 h-5" />} title="New Subgroup" subtitle="Attach subgroups beneath a selected group" helpText={COA_FIELD_HELP.subgroup}>
+                    <InlineFormCard icon={<BookOpen className="w-5 h-5" />} title={t.coa.newSubgroup} subtitle={t.coa.createSubgroupHint} helpText={COA_FIELD_HELP.subgroup}>
                         <AccountSubgroupForm groups={groups} onSuccess={refreshAll} />
                     </InlineFormCard>
 
-                    <InlineFormCard icon={<Landmark className="w-5 h-5" />} title="New Account" subtitle="Create posting accounts with type and category" helpText={COA_FIELD_HELP.account}>
+                    <InlineFormCard icon={<Landmark className="w-5 h-5" />} title={t.coa.newAccount} subtitle={t.coa.createAccountHint} helpText={COA_FIELD_HELP.account}>
                         <AccountForm groups={groups} subgroups={subgroups} onSuccess={refreshAll} />
                     </InlineFormCard>
                 </div>
@@ -176,13 +178,13 @@ export default function ChartOfAccountsPage() {
                     <section className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm space-y-4">
                         <div className="flex items-center justify-between gap-4 flex-wrap">
                             <div>
-                                <h2 className="text-xl font-black tracking-tight">Account Directory</h2>
-                                <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mt-1">Searchable list with type, category, and hierarchy filters</p>
+                                <h2 className="text-xl font-black tracking-tight">{t.coa.accountDirectory}</h2>
+                                <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mt-1">{t.coa.directorySubtitle}</p>
                             </div>
                             <div className="flex gap-3 flex-wrap">
-                                <FilterSelect label="Filter by group" value={groupFilter} onChange={setGroupFilter} options={groups.map((group) => ({ value: group.id, label: group.name }))} />
-                                <FilterSelect label="Filter by type" value={typeFilter} onChange={setTypeFilter} options={ACCOUNT_TYPES.map((type) => ({ value: type, label: type }))} helpText={COA_FIELD_HELP.accountType} />
-                                <FilterSelect label="Filter by category" value={categoryFilter} onChange={setCategoryFilter} options={ACCOUNT_CATEGORIES.map((category) => ({ value: category, label: category }))} helpText={COA_FIELD_HELP.accountCategory} />
+                                <FilterSelect label={t.coa.filterByGroup} value={groupFilter} onChange={setGroupFilter} options={groups.map((group) => ({ value: group.id, label: group.name }))} />
+                                <FilterSelect label={t.coa.filterByType} value={typeFilter} onChange={setTypeFilter} options={ACCOUNT_TYPES.map((type) => ({ value: type, label: type }))} helpText={COA_FIELD_HELP.accountType} />
+                                <FilterSelect label={t.coa.filterByCategory} value={categoryFilter} onChange={setCategoryFilter} options={ACCOUNT_CATEGORIES.map((category) => ({ value: category, label: category }))} helpText={COA_FIELD_HELP.accountCategory} />
                             </div>
                         </div>
 
@@ -190,18 +192,18 @@ export default function ChartOfAccountsPage() {
                             tableId="accounting-coa-accounts"
                             columns={columns}
                             data={accounts}
-                            title="Chart of Accounts"
+                            title={t.coa.title}
                             isLoading={loading}
-                            emptyMessage="No accounts found for the selected filters"
+                            emptyMessage={t.coa.emptyMessage}
                             emptyIcon={<BookOpen className="w-16 h-16 text-gray-200" />}
-                            searchPlaceholder="Search accounts by name or code..."
+                            searchPlaceholder={t.coa.searchPlaceholder}
                         />
                     </section>
 
                     <section className="space-y-4">
                         <HierarchySummaryCard
-                            title="Groups"
-                            subtitle="Top-level financial structure"
+                            title={t.coa.groups}
+                            subtitle={t.coa.groupsSubtitle}
                             items={groups.map((group) => ({
                                 id: group.id,
                                 title: group.name,
@@ -210,12 +212,12 @@ export default function ChartOfAccountsPage() {
                             icon={<FolderTree className="w-5 h-5" />}
                         />
                         <HierarchySummaryCard
-                            title="Subgroups"
-                            subtitle="Reusable hierarchy beneath groups"
+                            title={t.coa.subgroups}
+                            subtitle={t.coa.subgroupsSubtitle}
                             items={subgroups.map((subgroup) => ({
                                 id: subgroup.id,
                                 title: subgroup.name,
-                                meta: `${subgroup.group?.name || 'Unknown group'} • ${subgroup._count?.accounts ?? 0} accounts`,
+                                meta: `${subgroup.group?.name || t.coa.unknownGroup} • ${subgroup._count?.accounts ?? 0} accounts`,
                             }))}
                             icon={<BookOpen className="w-5 h-5" />}
                         />
@@ -296,6 +298,7 @@ function Badge({ children, tone = 'primary' }: { children: React.ReactNode; tone
 }
 
 function AccountGroupForm({ onSuccess }: { onSuccess: () => Promise<void> }) {
+    const { t } = useI18n();
     const [name, setName] = useState('');
     const [type, setType] = useState<AccountType>('asset');
     const [saving, setSaving] = useState(false);
@@ -311,7 +314,7 @@ function AccountGroupForm({ onSuccess }: { onSuccess: () => Promise<void> }) {
             setType('asset');
             await onSuccess();
         } catch (submitError: any) {
-            setError(submitError.message || 'Failed to create account group.');
+            setError(submitError.message || t.coa.createGroupFailed);
         } finally {
             setSaving(false);
         }
@@ -321,24 +324,25 @@ function AccountGroupForm({ onSuccess }: { onSuccess: () => Promise<void> }) {
         <form className="space-y-4" onSubmit={handleSubmit}>
             {error ? <div className="rounded-2xl bg-red-50 px-4 py-3 text-sm font-bold text-red-600">{error}</div> : null}
             <label className="block text-xs font-bold uppercase tracking-widest text-gray-400">
-                <span>Account group name</span>
-                <input aria-label="Account group name" value={name} onChange={(event) => setName(event.target.value)} required className="mt-1 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-bold text-gray-800" placeholder="Current Assets" />
+                <span>{t.coa.groupName}</span>
+                <input aria-label={t.coa.groupName} value={name} onChange={(event) => setName(event.target.value)} required className="mt-1 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-bold text-gray-800" placeholder={t.coa.currentAssets} />
             </label>
             <label className="block text-xs font-bold uppercase tracking-widest text-gray-400">
-                <span>Group type</span>
-                <select aria-label="Group type" value={type} onChange={(event) => setType(event.target.value as AccountType)} className="mt-1 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-bold text-gray-800">
-                    {ACCOUNT_TYPES.map((option) => <option key={option} value={option}>{option}</option>)}
+                <span>{t.coa.groupType}</span>
+                <select aria-label={t.coa.groupType} value={type} onChange={(event) => setType(event.target.value as AccountType)} className="mt-1 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-bold text-gray-800">
+                    {ACCOUNT_TYPES.map((option) => <option key={option} value={option}>{t.accountingShared.accountTypes[option]}</option>)}
                 </select>
             </label>
             <button type="submit" disabled={saving} className="inline-flex items-center rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-black text-white shadow-lg shadow-blue-200 disabled:opacity-60">
                 <Plus className="w-4 h-4 mr-2" />
-                {saving ? 'Creating...' : 'Create Group'}
+                {saving ? t.coa.creating : t.coa.createGroup}
             </button>
         </form>
     );
 }
 
 function AccountSubgroupForm({ groups, onSuccess }: { groups: AccountGroup[]; onSuccess: () => Promise<void> }) {
+    const { t } = useI18n();
     const [groupId, setGroupId] = useState('');
     const [name, setName] = useState('');
     const [saving, setSaving] = useState(false);
@@ -354,7 +358,7 @@ function AccountSubgroupForm({ groups, onSuccess }: { groups: AccountGroup[]; on
             setGroupId('');
             await onSuccess();
         } catch (submitError: any) {
-            setError(submitError.message || 'Failed to create account subgroup.');
+            setError(submitError.message || t.coa.createSubgroupFailed);
         } finally {
             setSaving(false);
         }
@@ -364,25 +368,26 @@ function AccountSubgroupForm({ groups, onSuccess }: { groups: AccountGroup[]; on
         <form className="space-y-4" onSubmit={handleSubmit}>
             {error ? <div className="rounded-2xl bg-red-50 px-4 py-3 text-sm font-bold text-red-600">{error}</div> : null}
             <label className="block text-xs font-bold uppercase tracking-widest text-gray-400">
-                <span>Parent group</span>
+                <span>{t.coa.parentGroup}</span>
                 <select value={groupId} onChange={(event) => setGroupId(event.target.value)} required className="mt-1 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-bold text-gray-800">
-                    <option value="">Select group</option>
+                    <option value="">{t.coa.selectGroup}</option>
                     {groups.map((group) => <option key={group.id} value={group.id}>{group.name}</option>)}
                 </select>
             </label>
             <label className="block text-xs font-bold uppercase tracking-widest text-gray-400">
-                <span>Subgroup name</span>
-                <input value={name} onChange={(event) => setName(event.target.value)} required className="mt-1 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-bold text-gray-800" placeholder="Cash and Bank" />
+                <span>{t.coa.subgroupName}</span>
+                <input value={name} onChange={(event) => setName(event.target.value)} required className="mt-1 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-bold text-gray-800" placeholder={t.coa.cashAndBank} />
             </label>
             <button type="submit" disabled={saving} className="inline-flex items-center rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-black text-white shadow-lg shadow-emerald-200 disabled:opacity-60">
                 <Plus className="w-4 h-4 mr-2" />
-                {saving ? 'Creating...' : 'Create Subgroup'}
+                {saving ? t.coa.creating : t.coa.createSubgroup}
             </button>
         </form>
     );
 }
 
 function AccountForm({ groups, subgroups, onSuccess }: { groups: AccountGroup[]; subgroups: AccountSubgroup[]; onSuccess: () => Promise<void> }) {
+    const { t } = useI18n();
     const [groupId, setGroupId] = useState('');
     const [subgroupId, setSubgroupId] = useState('');
     const [name, setName] = useState('');
@@ -423,7 +428,7 @@ function AccountForm({ groups, subgroups, onSuccess }: { groups: AccountGroup[];
             setCategory('general');
             await onSuccess();
         } catch (submitError: any) {
-            setError(submitError.message || 'Failed to create account.');
+            setError(submitError.message || t.coa.createAccountFailed);
         } finally {
             setSaving(false);
         }
@@ -433,44 +438,44 @@ function AccountForm({ groups, subgroups, onSuccess }: { groups: AccountGroup[];
         <form className="space-y-4" onSubmit={handleSubmit}>
             {error ? <div className="rounded-2xl bg-red-50 px-4 py-3 text-sm font-bold text-red-600">{error}</div> : null}
             <label className="block text-xs font-bold uppercase tracking-widest text-gray-400">
-                <span>Account group</span>
+                <span>{t.coa.accountGroup}</span>
                 <select value={groupId} onChange={(event) => setGroupId(event.target.value)} required className="mt-1 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-bold text-gray-800">
-                    <option value="">Select group</option>
+                    <option value="">{t.coa.selectGroup}</option>
                     {groups.map((group) => <option key={group.id} value={group.id}>{group.name}</option>)}
                 </select>
             </label>
             <label className="block text-xs font-bold uppercase tracking-widest text-gray-400">
-                <span>Account subgroup</span>
+                <span>{t.coa.accountSubgroup}</span>
                 <select value={subgroupId} onChange={(event) => setSubgroupId(event.target.value)} className="mt-1 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-bold text-gray-800">
-                    <option value="">Optional</option>
+                    <option value="">{t.accountingShared.optional}</option>
                     {filteredSubgroups.map((subgroup) => <option key={subgroup.id} value={subgroup.id}>{subgroup.name}</option>)}
                 </select>
             </label>
             <label className="block text-xs font-bold uppercase tracking-widest text-gray-400">
-                <span>Account name</span>
-                <input value={name} onChange={(event) => setName(event.target.value)} required className="mt-1 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-bold text-gray-800" placeholder="Cash in Hand" />
+                <span>{t.coa.accountName}</span>
+                <input value={name} onChange={(event) => setName(event.target.value)} required className="mt-1 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-bold text-gray-800" placeholder={t.coa.cashInHand} />
             </label>
             <label className="block text-xs font-bold uppercase tracking-widest text-gray-400">
-                <span>Account code</span>
+                <span>{t.coa.accountCode}</span>
                 <input value={code} onChange={(event) => setCode(event.target.value)} className="mt-1 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-bold text-gray-800" placeholder="1010" />
             </label>
             <div className="grid grid-cols-2 gap-3">
                 <label className="block text-xs font-bold uppercase tracking-widest text-gray-400">
-                    <span>Account type</span>
+                    <span>{t.coa.accountType}</span>
                     <select value={type} onChange={(event) => setType(event.target.value as AccountType)} className="mt-1 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-bold text-gray-800">
-                        {ACCOUNT_TYPES.map((option) => <option key={option} value={option}>{option}</option>)}
+                        {ACCOUNT_TYPES.map((option) => <option key={option} value={option}>{t.accountingShared.accountTypes[option]}</option>)}
                     </select>
                 </label>
                 <label className="block text-xs font-bold uppercase tracking-widest text-gray-400">
-                    <span>Category</span>
+                    <span>{t.accountingShared.category}</span>
                     <select value={category} onChange={(event) => setCategory(event.target.value as AccountCategory)} className="mt-1 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-bold text-gray-800">
-                        {ACCOUNT_CATEGORIES.map((option) => <option key={option} value={option}>{option}</option>)}
+                        {ACCOUNT_CATEGORIES.map((option) => <option key={option} value={option}>{t.accountingShared.accountCategories[option]}</option>)}
                     </select>
                 </label>
             </div>
             <button type="submit" disabled={saving} className="inline-flex items-center rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-black text-white shadow-lg shadow-violet-200 disabled:opacity-60">
                 <Plus className="w-4 h-4 mr-2" />
-                {saving ? 'Creating...' : 'Create Account'}
+                {saving ? t.coa.creating : t.coa.createAccount}
             </button>
         </form>
     );

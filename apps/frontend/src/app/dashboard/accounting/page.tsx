@@ -1,183 +1,40 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ArrowRight, BookOpen, Calculator, ClipboardList, Download, FileText, Settings, AlertTriangle, ChevronDown, TrendingUp, LayoutDashboard, Landmark, Scale, Clock, Building2, Cpu, RefreshCw, GitMerge, Lock, Upload, Target, BarChart3, Waves } from 'lucide-react';
 import { HelpTooltip } from '@/components/HelpTooltip';
 import { api } from '@/lib/api';
+import { useI18n, formatMessage } from '@/lib/i18n';
 
-const ACCOUNTING_LINKS = [
-    {
-        href: '/dashboard/accounting/coa',
-        title: 'Chart of Accounts',
-        description: 'Define account structure for assets, liabilities, equity, revenue, and expense heads.',
-        icon: BookOpen,
-        accent: 'bg-amber-50 text-amber-700 border-amber-100',
-    },
-    {
-        href: '/dashboard/accounting/vouchers',
-        title: 'Voucher Entry',
-        description: 'Prepare cash, bank, transfer, and journal voucher workflows for upcoming posting stories.',
-        icon: FileText,
-        accent: 'bg-emerald-50 text-emerald-700 border-emerald-100',
-    },
-    {
-        href: '/dashboard/accounting/journal',
-        title: 'Journal',
-        description: 'Review voucher activity chronologically once voucher posting is enabled.',
-        icon: ClipboardList,
-        accent: 'bg-sky-50 text-sky-700 border-sky-100',
-    },
-    {
-        href: '/dashboard/accounting/ledger',
-        title: 'Ledger',
-        description: 'Navigate into account-level running balances and audit trails from a single report hub.',
-        icon: Calculator,
-        accent: 'bg-violet-50 text-violet-700 border-violet-100',
-    },
-    {
-        href: '/dashboard/accounting/posting-rules',
-        title: 'Posting Rules',
-        description: 'Configure which accounts are debited and credited for each operational event type.',
-        icon: Settings,
-        accent: 'bg-indigo-50 text-indigo-700 border-indigo-100',
-    },
-    {
-        href: '/dashboard/accounting/reconciliation',
-        title: 'Posting Exceptions',
-        description: 'Monitor and retry failed or skipped auto-posting events for reconciliation.',
-        icon: AlertTriangle,
-        accent: 'bg-rose-50 text-rose-700 border-rose-100',
-    },
-    {
-        href: '/dashboard/accounting/fiscal-periods',
-        title: 'Fiscal Periods',
-        description: 'Lock closed months and fiscal years to prevent backdated voucher entry.',
-        icon: Lock,
-        accent: 'bg-slate-50 text-slate-700 border-slate-100',
-    },
-    {
-        href: '/dashboard/accounting/opening-balances',
-        title: 'Opening Balances',
-        description: 'Import account opening balances when migrating from another system.',
-        icon: Upload,
-        accent: 'bg-teal-50 text-teal-700 border-teal-100',
-    },
-    {
-        href: '/dashboard/accounting/cost-centers',
-        title: 'Cost Centers',
-        description: 'Tag voucher lines by department or branch for segment-level P&L reporting.',
-        icon: Building2,
-        accent: 'bg-cyan-50 text-cyan-700 border-cyan-100',
-    },
-    {
-        href: '/dashboard/accounting/fixed-assets',
-        title: 'Fixed Assets',
-        description: 'Asset register with auto-calculated depreciation schedules and journal postings.',
-        icon: Cpu,
-        accent: 'bg-orange-50 text-orange-700 border-orange-100',
-    },
-    {
-        href: '/dashboard/accounting/recurring-journals',
-        title: 'Recurring Journals',
-        description: 'Schedule repeating journal entries — rent, salaries, subscriptions.',
-        icon: RefreshCw,
-        accent: 'bg-purple-50 text-purple-700 border-purple-100',
-    },
-    {
-        href: '/dashboard/accounting/reconciliation/bank',
-        title: 'Bank Reconciliation',
-        description: 'Import bank statements and match entries against bookkeeping records.',
-        icon: GitMerge,
-        accent: 'bg-blue-50 text-blue-700 border-blue-100',
-    },
+const ACCOUNTING_LINK_CONFIG = [
+    { href: '/dashboard/accounting/coa', key: 'coa' as const, icon: BookOpen, accent: 'bg-amber-50 text-amber-700 border-amber-100' },
+    { href: '/dashboard/accounting/vouchers', key: 'vouchers' as const, icon: FileText, accent: 'bg-emerald-50 text-emerald-700 border-emerald-100' },
+    { href: '/dashboard/accounting/journal', key: 'journal' as const, icon: ClipboardList, accent: 'bg-sky-50 text-sky-700 border-sky-100' },
+    { href: '/dashboard/accounting/ledger', key: 'ledger' as const, icon: Calculator, accent: 'bg-violet-50 text-violet-700 border-violet-100' },
+    { href: '/dashboard/accounting/posting-rules', key: 'postingRules' as const, icon: Settings, accent: 'bg-indigo-50 text-indigo-700 border-indigo-100' },
+    { href: '/dashboard/accounting/reconciliation', key: 'postingExceptions' as const, icon: AlertTriangle, accent: 'bg-rose-50 text-rose-700 border-rose-100' },
+    { href: '/dashboard/accounting/fiscal-periods', key: 'fiscalPeriods' as const, icon: Lock, accent: 'bg-slate-50 text-slate-700 border-slate-100' },
+    { href: '/dashboard/accounting/opening-balances', key: 'openingBalances' as const, icon: Upload, accent: 'bg-teal-50 text-teal-700 border-teal-100' },
+    { href: '/dashboard/accounting/cost-centers', key: 'costCenters' as const, icon: Building2, accent: 'bg-cyan-50 text-cyan-700 border-cyan-100' },
+    { href: '/dashboard/accounting/fixed-assets', key: 'fixedAssets' as const, icon: Cpu, accent: 'bg-orange-50 text-orange-700 border-orange-100' },
+    { href: '/dashboard/accounting/recurring-journals', key: 'recurringJournals' as const, icon: RefreshCw, accent: 'bg-purple-50 text-purple-700 border-purple-100' },
+    { href: '/dashboard/accounting/reconciliation/bank', key: 'bankReconciliation' as const, icon: GitMerge, accent: 'bg-blue-50 text-blue-700 border-blue-100' },
 ];
 
-const REPORT_LINKS = [
-    {
-        href: '/dashboard/accounting/reports/pl',
-        title: 'Profit & Loss',
-        description: 'Income statement — revenue vs expenses and net profit for any date range.',
-        icon: TrendingUp,
-        accent: 'bg-emerald-50 text-emerald-700 border-emerald-100',
-    },
-    {
-        href: '/dashboard/accounting/reports/balance-sheet',
-        title: 'Balance Sheet',
-        description: 'Assets, liabilities, and equity snapshot as of any date.',
-        icon: LayoutDashboard,
-        accent: 'bg-sky-50 text-sky-700 border-sky-100',
-    },
-    {
-        href: '/dashboard/accounting/reports/cashbook',
-        title: 'Cashbook',
-        description: 'Cash receipts and payments with running balance.',
-        icon: BookOpen,
-        accent: 'bg-amber-50 text-amber-700 border-amber-100',
-    },
-    {
-        href: '/dashboard/accounting/reports/bankbook',
-        title: 'Bankbook',
-        description: 'Bank deposits and withdrawals ledger with running balance.',
-        icon: Landmark,
-        accent: 'bg-violet-50 text-violet-700 border-violet-100',
-    },
-    {
-        href: '/dashboard/accounting/reports/trial-balance',
-        title: 'Trial Balance',
-        description: 'All accounts with debit/credit totals and closing balance — standard pre-audit report.',
-        icon: Scale,
-        accent: 'bg-slate-50 text-slate-700 border-slate-100',
-    },
-    {
-        href: '/dashboard/accounting/reports/comparative-pl',
-        title: 'Comparative P&L',
-        description: 'Side-by-side: current period, previous period, and same month last year.',
-        icon: BarChart3,
-        accent: 'bg-emerald-50 text-emerald-700 border-emerald-100',
-    },
-    {
-        href: '/dashboard/accounting/reports/ar-aging',
-        title: 'AR Aging',
-        description: 'Receivables bucketed by 0–30 / 31–60 / 61–90 / 90+ days.',
-        icon: Clock,
-        accent: 'bg-sky-50 text-sky-700 border-sky-100',
-    },
-    {
-        href: '/dashboard/accounting/reports/ap-aging',
-        title: 'AP Aging',
-        description: 'Payables bucketed by age — know which suppliers are due for payment.',
-        icon: Clock,
-        accent: 'bg-amber-50 text-amber-700 border-amber-100',
-    },
-    {
-        href: '/dashboard/accounting/reports/vat-tax',
-        title: 'VAT / Tax Report',
-        description: 'Output VAT collected, input VAT paid, and net payable to NBR.',
-        icon: FileText,
-        accent: 'bg-rose-50 text-rose-700 border-rose-100',
-    },
-    {
-        href: '/dashboard/accounting/reports/budget-vs-actual',
-        title: 'Budget vs. Actual',
-        description: 'Compare planned budget against actual activity with variance analysis.',
-        icon: Target,
-        accent: 'bg-indigo-50 text-indigo-700 border-indigo-100',
-    },
-    {
-        href: '/dashboard/accounting/reports/cash-flow',
-        title: 'Cash Flow Statement',
-        description: 'Operating, investing, and financing activities — net change in cash.',
-        icon: Waves,
-        accent: 'bg-teal-50 text-teal-700 border-teal-100',
-    },
-    {
-        href: '/dashboard/accounting/reports/financial-ratios',
-        title: 'Financial Ratios',
-        description: 'Current ratio, margins, DSO, DPO — key performance indicators at a glance.',
-        icon: Calculator,
-        accent: 'bg-purple-50 text-purple-700 border-purple-100',
-    },
+const REPORT_LINK_CONFIG = [
+    { href: '/dashboard/accounting/reports/pl', key: 'pl' as const, icon: TrendingUp, accent: 'bg-emerald-50 text-emerald-700 border-emerald-100' },
+    { href: '/dashboard/accounting/reports/balance-sheet', key: 'balanceSheet' as const, icon: LayoutDashboard, accent: 'bg-sky-50 text-sky-700 border-sky-100' },
+    { href: '/dashboard/accounting/reports/cashbook', key: 'cashbook' as const, icon: BookOpen, accent: 'bg-amber-50 text-amber-700 border-amber-100' },
+    { href: '/dashboard/accounting/reports/bankbook', key: 'bankbook' as const, icon: Landmark, accent: 'bg-violet-50 text-violet-700 border-violet-100' },
+    { href: '/dashboard/accounting/reports/trial-balance', key: 'trialBalance' as const, icon: Scale, accent: 'bg-slate-50 text-slate-700 border-slate-100' },
+    { href: '/dashboard/accounting/reports/comparative-pl', key: 'comparativePl' as const, icon: BarChart3, accent: 'bg-emerald-50 text-emerald-700 border-emerald-100' },
+    { href: '/dashboard/accounting/reports/ar-aging', key: 'arAging' as const, icon: Clock, accent: 'bg-sky-50 text-sky-700 border-sky-100' },
+    { href: '/dashboard/accounting/reports/ap-aging', key: 'apAging' as const, icon: Clock, accent: 'bg-amber-50 text-amber-700 border-amber-100' },
+    { href: '/dashboard/accounting/reports/vat-tax', key: 'vatTax' as const, icon: FileText, accent: 'bg-rose-50 text-rose-700 border-rose-100' },
+    { href: '/dashboard/accounting/reports/budget-vs-actual', key: 'budgetVsActual' as const, icon: Target, accent: 'bg-indigo-50 text-indigo-700 border-indigo-100' },
+    { href: '/dashboard/accounting/reports/cash-flow', key: 'cashFlow' as const, icon: Waves, accent: 'bg-teal-50 text-teal-700 border-teal-100' },
+    { href: '/dashboard/accounting/reports/financial-ratios', key: 'financialRatios' as const, icon: Calculator, accent: 'bg-purple-50 text-purple-700 border-purple-100' },
 ];
 
 type ExportFormat = 'tally' | 'quickbooks';
@@ -204,6 +61,7 @@ function triggerBlobDownload(blob: Blob, filename: string) {
 }
 
 export default function AccountingPage() {
+    const { t, locale } = useI18n();
     const defaults = getDefaultDateRange();
 
     const [showExportMenu, setShowExportMenu] = useState(false);
@@ -215,6 +73,28 @@ export default function AccountingPage() {
     const [exportError, setExportError] = useState<string | null>(null);
 
     const exportMenuRef = useRef<HTMLDivElement>(null);
+
+    const accountingLinks = useMemo(
+        () => ACCOUNTING_LINK_CONFIG.map(({ href, key, icon, accent }) => ({
+            href,
+            title: t.accounting.links[key].title,
+            description: t.accounting.links[key].description,
+            icon,
+            accent,
+        })),
+        [t],
+    );
+
+    const reportLinks = useMemo(
+        () => REPORT_LINK_CONFIG.map(({ href, key, icon, accent }) => ({
+            href,
+            title: t.accounting.links[key].title,
+            description: t.accounting.links[key].description,
+            icon,
+            accent,
+        })),
+        [t],
+    );
 
     function openExportModal(format: ExportFormat) {
         setPendingFormat(format);
@@ -236,7 +116,7 @@ export default function AccountingPage() {
             triggerBlobDownload(blob, filename);
             setShowDateModal(false);
         } catch (err: any) {
-            setExportError(err?.message ?? 'Export failed. Please try again.');
+            setExportError(err?.message ?? t.accountingShared.exportFailed);
         } finally {
             setExporting(false);
         }
@@ -246,13 +126,12 @@ export default function AccountingPage() {
         <div className="overflow-y-auto h-full bg-[#f3f4f6] p-6 font-sans text-gray-900">
             <div className="max-w-[1200px] mx-auto space-y-6">
                 <div className="space-y-2">
-                    <p className="text-xs font-black uppercase tracking-[0.24em] text-gray-400">Accounting Module</p>
+                    <p className="text-xs font-black uppercase tracking-[0.24em] text-gray-400">{t.accounting.moduleLabel}</p>
                     <div className="flex items-end justify-between gap-6 flex-wrap">
                         <div>
-                            <h1 className="text-3xl font-black tracking-tight text-gray-950 inline-flex items-center gap-2">Financial Ledgers & Core Accounting <HelpTooltip text="The Chart of Accounts (COA) organises all your financial accounts. Assets, liabilities, income, and expenses each have their own account codes used in journal entries." /></h1>
+                            <h1 className="text-3xl font-black tracking-tight text-gray-950 inline-flex items-center gap-2">{t.accounting.title} <HelpTooltip text={t.accounting.titleHelp} /></h1>
                             <p className="text-sm text-gray-500 max-w-3xl mt-2">
-                                The accounting foundation is live. Use these entry points to configure the Chart of Accounts,
-                                prepare vouchers, review the journal flow, and drill into ledger reporting as the next stories land.
+                                {t.accounting.subtitle}
                             </p>
                         </div>
                         <div className="flex items-center gap-3 flex-wrap">
@@ -263,7 +142,7 @@ export default function AccountingPage() {
                                     className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-bold text-gray-700 shadow-sm transition hover:bg-gray-50 hover:shadow"
                                 >
                                     <Download className="h-4 w-4" />
-                                    Export
+                                    {t.accounting.export}
                                     <ChevronDown className="h-3.5 w-3.5 text-gray-400" />
                                 </button>
                                 {showExportMenu && (
@@ -275,28 +154,28 @@ export default function AccountingPage() {
                                             onClick={() => openExportModal('tally')}
                                             className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
                                         >
-                                            Tally XML
+                                            {t.accounting.tallyXml}
                                         </button>
                                         <button
                                             onClick={() => openExportModal('quickbooks')}
                                             className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
                                         >
-                                            QuickBooks IIF
+                                            {t.accounting.quickbooksIif}
                                         </button>
                                     </div>
                                 )}
                             </div>
 
                             <div className="rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-right">
-                                <p className="text-[11px] font-black uppercase tracking-[0.24em] text-blue-500">Epic 30</p>
-                                <p className="text-sm font-bold text-blue-900">Foundation routes and access controls are enabled</p>
+                                <p className="text-[11px] font-black uppercase tracking-[0.24em] text-blue-500">{t.accounting.epicLabel}</p>
+                                <p className="text-sm font-bold text-blue-900">{t.accounting.epicStatus}</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                    {ACCOUNTING_LINKS.map(({ href, title, description, icon: Icon, accent }) => (
+                    {accountingLinks.map(({ href, title, description, icon: Icon, accent }) => (
                         <Link
                             key={title}
                             href={href}
@@ -310,7 +189,7 @@ export default function AccountingPage() {
                                 <p className="text-sm leading-6 text-gray-500">{description}</p>
                             </div>
                             <div className="mt-5 flex items-center text-sm font-bold text-gray-900">
-                                Open section
+                                {t.accountingShared.openSection}
                                 <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
                             </div>
                         </Link>
@@ -318,9 +197,9 @@ export default function AccountingPage() {
                 </div>
 
                 <div className="space-y-2">
-                    <p className="text-xs font-black uppercase tracking-[0.24em] text-gray-400">Financial Reports</p>
+                    <p className="text-xs font-black uppercase tracking-[0.24em] text-gray-400">{t.accounting.financialReports}</p>
                     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                        {REPORT_LINKS.map(({ href, title, description, icon: Icon, accent }) => (
+                        {reportLinks.map(({ href, title, description, icon: Icon, accent }) => (
                             <Link
                                 key={title}
                                 href={href}
@@ -334,7 +213,7 @@ export default function AccountingPage() {
                                     <p className="text-sm leading-6 text-gray-500">{description}</p>
                                 </div>
                                 <div className="mt-5 flex items-center text-sm font-bold text-gray-900">
-                                    View report
+                                    {t.accountingShared.viewReport}
                                     <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
                                 </div>
                             </Link>
@@ -351,16 +230,18 @@ export default function AccountingPage() {
                 >
                     <div className="w-full max-w-sm rounded-3xl border border-gray-200 bg-white p-6 shadow-2xl">
                         <h2 className="text-lg font-black tracking-tight text-gray-950 mb-1">
-                            Export {pendingFormat === 'tally' ? 'Tally XML' : 'QuickBooks IIF'}
+                            {formatMessage(t.accounting.exportModalTitle, {
+                                format: pendingFormat === 'tally' ? t.accounting.tallyXml : t.accounting.quickbooksIif,
+                            })}
                         </h2>
                         <p className="text-sm text-gray-500 mb-5">
-                            Select the date range for vouchers to include. Leave blank to export all.
+                            {t.accounting.exportModalDescription}
                         </p>
 
                         <div className="space-y-4">
                             <div>
                                 <label className="block text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">
-                                    From
+                                    {t.accountingShared.from}
                                 </label>
                                 <input
                                     type="date"
@@ -371,7 +252,7 @@ export default function AccountingPage() {
                             </div>
                             <div>
                                 <label className="block text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">
-                                    To
+                                    {t.accountingShared.to}
                                 </label>
                                 <input
                                     type="date"
@@ -391,7 +272,7 @@ export default function AccountingPage() {
                                 onClick={() => setShowDateModal(false)}
                                 className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-bold text-gray-700 hover:bg-gray-50 transition"
                             >
-                                Cancel
+                                {t.common.cancel}
                             </button>
                             <button
                                 onClick={handleExport}
@@ -399,7 +280,7 @@ export default function AccountingPage() {
                                 className="inline-flex items-center gap-2 rounded-xl bg-gray-900 px-4 py-2 text-sm font-bold text-white hover:bg-gray-700 disabled:opacity-60 transition"
                             >
                                 <Download className="h-4 w-4" />
-                                {exporting ? 'Downloading…' : 'Download'}
+                                {exporting ? t.accountingShared.downloading : t.accountingShared.download}
                             </button>
                         </div>
                     </div>

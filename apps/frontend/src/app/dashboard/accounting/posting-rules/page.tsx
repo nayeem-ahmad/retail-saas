@@ -9,6 +9,7 @@ import { ContextualHelpPanel } from '@/components/ContextualHelpPanel';
 import { HelpTooltip } from '@/components/HelpTooltip';
 import { POSTING_RULES_FIELD_HELP, POSTING_RULES_HELP } from '@/lib/help/contextual-help';
 import { api } from '../../../../lib/api';
+import { useI18n, formatMessage } from '@/lib/i18n';
 
 const EVENT_TYPE_LABELS: Record<string, string> = {
     sale: 'Sale',
@@ -65,6 +66,7 @@ interface EditForm {
 const columnHelper = createColumnHelper<PostingRule>();
 
 export default function PostingRulesPage() {
+    const { t, locale } = useI18n();
     const [rules, setRules] = useState<PostingRule[]>([]);
     const [accounts, setAccounts] = useState<Account[]>([]);
     const [loading, setLoading] = useState(true);
@@ -298,7 +300,7 @@ export default function PostingRulesPage() {
                     <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
                         <DataTable
                             tableId="posting-rules"
-                            title="Posting Rules"
+                            title={t.postingRules.title}
                             columns={columns}
                             data={filteredRules}
                         />

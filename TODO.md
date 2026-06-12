@@ -125,11 +125,11 @@ Track all work here. Check off items as they're completed. Add new items as they
 - [ ] Video walkthroughs or screenshot tours of key workflows
 
 ### Localization
-- [x] Bangla (Bengali) language support — i18n foundation + LanguageSwitcher; core flows localized (login, signup, sidebar, onboarding, dashboard home, POS, inventory, billing, settings) — done 2026-06-12
-- [ ] Migrate remaining frontend literal strings to localization catalogs (sales, purchases, accounting, CRM, storefront, reports, admin — core paths done)
-- [ ] Verify consistent BDT currency formatting throughout UI
-- [ ] Date format localization (BD convention)
-- [ ] Bangla number formatting option
+- [x] Bangla (Bengali) language support — modular catalogs (en/bn/ms), LanguageSwitcher, full dashboard + marketing + storefront UI — done 2026-06-12
+- [x] Migrate remaining frontend literal strings to localization catalogs — modular message files per domain; DataTable + shared components localized — done 2026-06-12
+- [x] Verify consistent BDT currency formatting throughout UI — formatBDT() via Intl; locale-aware in migrated pages — done 2026-06-12
+- [x] Date format localization (BD convention) — formatDate() with bn-BD / en-GB — done 2026-06-12
+- [x] Bangla number formatting option — formatNumber() with bn-BD locale — done 2026-06-12
 
 ### Accounting Reports
 - [x] Profit & Loss account (income statement) — revenue vs expenses, net profit/loss for a date range — done 2026-05-29

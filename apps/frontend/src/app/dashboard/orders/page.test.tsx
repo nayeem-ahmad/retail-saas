@@ -1,4 +1,20 @@
 'use client';
+jest.mock('@/lib/i18n', () => {
+  const { enMessages } = require('@/lib/localization/messages/en');
+
+  return {
+    useI18n: () => ({
+      t: enMessages,
+      locale: 'en',
+    }),
+    formatMessage: (template, values = {}) =>
+      Object.entries(values).reduce(
+        (result, [key, value]) => result.replaceAll(`{${key}}`, String(value)),
+        template,
+      ),
+  };
+}, { virtual: true });
+
 
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import OrdersPage from './page';

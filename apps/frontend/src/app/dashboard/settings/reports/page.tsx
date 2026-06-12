@@ -1,4 +1,5 @@
 'use client';
+import { useI18n, formatMessage } from '@/lib/i18n';
 
 import { useState, useEffect } from 'react';
 import { BarChart3, CheckCircle, Info, Loader2 } from 'lucide-react';
@@ -43,6 +44,8 @@ function Toggle({
 }
 
 export default function ReportSettingsPage() {
+    const { t } = useI18n();
+    const m = t.settingsExtras.reportEmails;
     const [settings, setSettings] = useState<ReportSettings>({
         report_weekly_enabled: false,
         report_monthly_enabled: false,
@@ -66,7 +69,7 @@ export default function ReportSettingsPage() {
                     });
                 }
             })
-            .catch(() => setError('Failed to load report settings.'))
+            .catch(() => setError(m.loadFailed))
             .finally(() => setLoading(false));
     }, []);
 
@@ -88,7 +91,7 @@ export default function ReportSettingsPage() {
             setSuccess(true);
             setTimeout(() => setSuccess(false), 3000);
         } catch (e: any) {
-            setError(e.message ?? 'Failed to save report settings.');
+            setError(e.message ?? m.saveFailed);
         } finally {
             setSaving(false);
         }
@@ -102,23 +105,21 @@ export default function ReportSettingsPage() {
         <div className="p-6 max-w-2xl space-y-6">
             <div className="flex items-center gap-2">
                 <BarChart3 className="h-6 w-6 text-gray-600" />
-                <h1 className="text-2xl font-bold text-gray-900">Automated Reports</h1>
+                <h1 className="text-2xl font-bold text-gray-900">{m.title}</h1>
             </div>
 
             {/* Info box */}
             <div className="flex gap-3 bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">
                 <Info className="h-5 w-5 flex-shrink-0 mt-0.5 text-blue-500" />
                 <div>
-                    <strong>Automated sales report emails</strong> — enable weekly or monthly reports to
-                    receive a summary of your sales, top products, and new customers delivered to your
-                    inbox. Reports are sent to your account email unless you specify an override below.
+                    <strong>{m.infoTitle}</strong> — {m.infoBody}
                 </div>
             </div>
 
             {loading ? (
                 <div className="flex items-center gap-2 text-gray-400 py-8 justify-center text-sm">
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    Loading&hellip;
+                    {m.loading}
                 </div>
             ) : (
                 <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-6">
@@ -132,7 +133,7 @@ export default function ReportSettingsPage() {
                                 Enable Weekly Report
                             </label>
                             <p className="mt-0.5 text-xs text-gray-500">
-                                Sent every Monday morning with last week&apos;s sales summary (Mon–Sun).
+                                {m.weekly.hint}
                             </p>
                         </div>
                         <Toggle
@@ -154,7 +155,7 @@ export default function ReportSettingsPage() {
                                 Enable Monthly Report
                             </label>
                             <p className="mt-0.5 text-xs text-gray-500">
-                                Sent on the 1st of each month with the previous month&apos;s full sales summary.
+                                {m.monthly.hint}
                             </p>
                         </div>
                         <Toggle
@@ -173,19 +174,18 @@ export default function ReportSettingsPage() {
                             className="block text-sm font-semibold text-gray-800"
                         >
                             Report Email Address
-                            <span className="ml-1.5 text-xs font-normal text-gray-400">(optional)</span>
+                            <span className="ml-1.5 text-xs font-normal text-gray-400">{m.email.optional}</span>
                         </label>
                         <input
                             id="report_email"
                             type="email"
                             value={settings.report_email ?? ''}
                             onChange={(e) => updateSetting('report_email', e.target.value)}
-                            placeholder="Leave blank to use your account email"
+                            placeholder={m.email.placeholder}
                             className="w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                         />
                         <p className="text-xs text-gray-400">
-                            Send reports to this email instead of your account email. Useful for sending
-                            reports to a shared inbox or an accountant.
+                            {m.email.hint}
                         </p>
                     </div>
 
@@ -198,7 +198,7 @@ export default function ReportSettingsPage() {
                     {success && (
                         <div className="flex items-center gap-2 bg-green-50 border border-green-200 text-green-700 rounded-lg p-3 text-sm">
                             <CheckCircle className="h-4 w-4 flex-shrink-0" />
-                            Report settings saved successfully.
+                            {m.saved}
                         </div>
                     )}
 
@@ -209,7 +209,7 @@ export default function ReportSettingsPage() {
                             className="inline-flex items-center gap-2 px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
                             {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-                            {saving ? 'Saving…' : 'Save Report Settings'}
+                            {saving ? m.saving : m.saveButton}
                         </button>
                     </div>
                 </div>

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
 import { formatBDT, formatDate } from '@/lib/format';
+import { useI18n, formatMessage } from '@/lib/i18n';
 import { TrendingUp, ShoppingCart, BarChart3, Package } from 'lucide-react';
 
 /* ------------------------------------------------------------------ */
@@ -108,7 +109,7 @@ function SummaryCard({
 /*  Bar Chart (CSS-only)                                               */
 /* ------------------------------------------------------------------ */
 
-function RevenueBarChart({ stores }: { stores: StoreRow[] }) {
+function RevenueBarChart({ stores, title }: { stores: StoreRow[]; title: string }) {
     if (stores.length === 0) return null;
 
     const maxRevenue = Math.max(...stores.map((s) => s.revenue), 1);
@@ -116,7 +117,7 @@ function RevenueBarChart({ stores }: { stores: StoreRow[] }) {
     return (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
             <h3 className="text-sm font-bold uppercase tracking-widest text-gray-400 mb-5">
-                Revenue by Store
+                {title}
             </h3>
             <div className="space-y-3">
                 {stores.map((store) => {
@@ -153,12 +154,12 @@ function RevenueBarChart({ stores }: { stores: StoreRow[] }) {
 /*  Store Breakdown Table                                              */
 /* ------------------------------------------------------------------ */
 
-function StoreTable({ stores }: { stores: StoreRow[] }) {
+function StoreTable({ stores, m }: { stores: StoreRow[]; m: ReturnType<typeof useI18n>['t']['reports']['consolidated'] }) {
     return (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-100">
                 <h3 className="text-sm font-bold uppercase tracking-widest text-gray-400">
-                    Store Breakdown
+                    {m.storeBreakdown}
                 </h3>
             </div>
             <div className="overflow-x-auto">
@@ -166,19 +167,19 @@ function StoreTable({ stores }: { stores: StoreRow[] }) {
                     <thead>
                         <tr className="bg-gray-50">
                             <th className="text-left px-6 py-3 text-xs font-semibold uppercase tracking-widest text-gray-400">
-                                Store Name
+                                {m.columns.storeName}
                             </th>
                             <th className="text-right px-4 py-3 text-xs font-semibold uppercase tracking-widest text-gray-400">
-                                Revenue (৳)
+                                {m.columns.revenue}
                             </th>
                             <th className="text-right px-4 py-3 text-xs font-semibold uppercase tracking-widest text-gray-400">
-                                Transactions
+                                {m.columns.transactions}
                             </th>
                             <th className="text-right px-4 py-3 text-xs font-semibold uppercase tracking-widest text-gray-400">
-                                Avg Order
+                                {m.columns.avgOrder}
                             </th>
                             <th className="px-4 py-3 text-xs font-semibold uppercase tracking-widest text-gray-400 min-w-[160px]">
-                                Revenue Share
+                                {m.columns.revenueShare}
                             </th>
                         </tr>
                     </thead>
@@ -226,15 +227,15 @@ function StoreTable({ stores }: { stores: StoreRow[] }) {
 /*  Empty State                                                        */
 /* ------------------------------------------------------------------ */
 
-function EmptyState() {
+function EmptyState({ m }: { m: ReturnType<typeof useI18n>['t']['reports']['consolidated'] }) {
     return (
         <div className="flex flex-col items-center justify-center py-20 text-center">
             <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mb-4">
                 <BarChart3 className="w-8 h-8 text-gray-300" />
             </div>
-            <p className="text-base font-semibold text-gray-500">No sales data found</p>
+            <p className="text-base font-semibold text-gray-500">{m.empty.title}</p>
             <p className="text-sm text-gray-400 mt-1">
-                There are no completed sales in the selected date range.
+                {m.empty.description}
             </p>
         </div>
     );
@@ -245,6 +246,8 @@ function EmptyState() {
 /* ------------------------------------------------------------------ */
 
 export default function ConsolidatedReportPage() {
+    const { t } = useI18n();
+    const m = t.reports.consolidated;
     const [from, setFrom] = useState(defaultFrom);
     const [to, setTo] = useState(defaultTo);
     const [inputFrom, setInputFrom] = useState(defaultFrom);
@@ -260,7 +263,7 @@ export default function ConsolidatedReportPage() {
             const data = await api.getConsolidatedReport({ from: fromDate, to: toDate });
             setReport(data as ConsolidatedReport);
         } catch (err: any) {
-            setError(err?.message ?? 'Failed to load report');
+            setError(err?.message ?? m.loadFailed);
         } finally {
             setLoading(false);
         }
@@ -287,9 +290,9 @@ export default function ConsolidatedReportPage() {
                 {/* ---- Header ---- */}
                 <div className="flex flex-col sm:flex-row sm:items-end gap-4">
                     <div className="flex-1">
-                        <h1 className="text-2xl font-bold text-gray-900">Consolidated Report</h1>
+                        <h1 className="text-2xl font-bold text-gray-900">{m.title}</h1>
                         <p className="mt-1 text-sm text-gray-500">
-                            Cross-branch revenue and transaction overview
+                            {m.description}
                         </p>
                     </div>
 
@@ -297,7 +300,7 @@ export default function ConsolidatedReportPage() {
                     <div className="flex flex-wrap items-center gap-2">
                         <div className="flex items-center gap-1.5 bg-white border border-gray-200 rounded-xl px-3 py-2 shadow-sm">
                             <label className="text-xs font-semibold text-gray-400 uppercase tracking-widest shrink-0">
-                                From
+                                {m.fromLabel}
                             </label>
                             <input
                                 type="date"
@@ -309,7 +312,7 @@ export default function ConsolidatedReportPage() {
                         </div>
                         <div className="flex items-center gap-1.5 bg-white border border-gray-200 rounded-xl px-3 py-2 shadow-sm">
                             <label className="text-xs font-semibold text-gray-400 uppercase tracking-widest shrink-0">
-                                To
+                                {m.toLabel}
                             </label>
                             <input
                                 type="date"
@@ -324,7 +327,7 @@ export default function ConsolidatedReportPage() {
                             disabled={loading}
                             className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-semibold px-4 py-2 rounded-xl shadow-sm transition-colors"
                         >
-                            {loading ? 'Loading...' : 'Generate'}
+                            {loading ? m.loading : m.generate}
                         </button>
                     </div>
                 </div>
@@ -332,14 +335,7 @@ export default function ConsolidatedReportPage() {
                 {/* Period badge */}
                 {!loading && report && (
                     <p className="text-xs text-gray-400">
-                        Showing data from{' '}
-                        <span className="font-semibold text-gray-600">
-                            {formatDate(from)}
-                        </span>{' '}
-                        to{' '}
-                        <span className="font-semibold text-gray-600">
-                            {formatDate(to)}
-                        </span>
+                        {formatMessage(m.periodLabel, { from: formatDate(from), to: formatDate(to) })}
                     </p>
                 )}
 
@@ -368,38 +364,38 @@ export default function ConsolidatedReportPage() {
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                             <SummaryCard
                                 icon={TrendingUp}
-                                label="Total Revenue"
+                                label={m.summary.totalRevenue}
                                 value={formatBDT(report.overall.revenue)}
                                 accent="bg-blue-500"
                             />
                             <SummaryCard
                                 icon={ShoppingCart}
-                                label="Total Transactions"
+                                label={m.summary.totalTransactions}
                                 value={report.overall.transactions.toLocaleString()}
                                 accent="bg-emerald-500"
                             />
                             <SummaryCard
                                 icon={BarChart3}
-                                label="Avg Order Value"
+                                label={m.summary.avgOrderValue}
                                 value={formatBDT(report.overall.avg_order)}
                                 accent="bg-violet-500"
                             />
                             <SummaryCard
                                 icon={Package}
-                                label="Top Product"
-                                value={report.overall.top_product ?? '—'}
+                                label={m.summary.topProduct}
+                                value={report.overall.top_product ?? m.summary.none}
                                 accent="bg-amber-500"
                             />
                         </div>
 
                         {/* Empty state */}
-                        {!hasData && <EmptyState />}
+                        {!hasData && <EmptyState m={m} />}
 
                         {/* Store table + bar chart */}
                         {hasData && (
                             <>
-                                <StoreTable stores={report.by_store} />
-                                <RevenueBarChart stores={report.by_store} />
+                                <StoreTable stores={report.by_store} m={m} />
+                                <RevenueBarChart stores={report.by_store} title={m.revenueByStore} />
                             </>
                         )}
                     </>

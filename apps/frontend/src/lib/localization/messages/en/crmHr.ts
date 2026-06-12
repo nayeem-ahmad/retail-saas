@@ -1,0 +1,360 @@
+export const crmHrMessages = {
+    "crmTasks": {
+        "title": "CRM Tasks",
+        "subtitle": "Follow-ups, collections, and customer reminders in one queue",
+        "dueToday": "Due Today",
+        "overdue": "Overdue",
+        "total": "Total",
+        "pending": "Pending",
+        "done": "Done",
+        "all": "All",
+        "dueTodayOnly": "Due today only",
+        "emptyMessage": "No tasks found",
+        "deleteConfirm": "Delete this task?",
+        "markDone": "Mark Done",
+        "viewCustomer": "View Customer",
+        "columns": {
+            "customer": "Customer",
+            "type": "Type",
+            "title": "Title",
+            "dueDate": "Due Date",
+            "assignee": "Assignee",
+            "status": "Status"
+        },
+        "types": {
+            "followUp": "Follow Up",
+            "collection": "Collection",
+            "birthday": "Birthday",
+            "reorderReminder": "Reorder"
+        }
+    },
+    "crmCampaigns": {
+        "title": "SMS Campaigns",
+        "subtitle": "Create and send bulk SMS campaigns to customer segments",
+        "newCampaign": "New Campaign",
+        "emptyMessage": "No campaigns yet",
+        "sendConfirm": "Send \"{name}\" to {count} recipients now?",
+        "deleteConfirm": "Delete this campaign?",
+        "viewSend": "View / Send",
+        "placeholders": {
+            "name": "Campaign name *",
+            "message": "Your message text..."
+        },
+        "columns": {
+            "name": "Campaign",
+            "segment": "Segment",
+            "recipients": "Recipients",
+            "status": "Status",
+            "created": "Created"
+        },
+        "created": "Campaign created",
+        "createFailed": "Failed to create campaign",
+        "sendFailed": "Failed to send",
+        "deleted": "Campaign deleted",
+        "deleteFailed": "Failed to delete",
+        "creating": "Creating...",
+        "createCampaign": "Create Campaign",
+        "sending": "Sending...",
+        "sendNow": "Send Now",
+        "segmentLabel": "Segment:",
+        "channels": {
+            "sms": "SMS",
+            "whatsapp": "WHATSAPP",
+            "email": "EMAIL"
+        },
+        "segments": {
+            "all": "ALL",
+            "vip": "VIP",
+            "atRisk": "At-Risk",
+            "regular": "Regular",
+            "new": "New"
+        }
+    },
+    "employees": {
+        "title": "Employees",
+        "subtitle": "Manage staff records, departments, and system access",
+        "newEmployee": "New Employee",
+        "emptyMessage": "No employees found",
+        "searchPlaceholder": "Search employees...",
+        "noAccess": "No access",
+        "columns": {
+            "code": "Code",
+            "employee": "Employee",
+            "department": "Department",
+            "designation": "Designation",
+            "joined": "Joined",
+            "systemAccess": "System Access"
+        },
+        "modal": {
+            "title": "New Employee",
+            "subtitle": "Add to staff directory",
+            "fullName": "Full Name",
+            "phone": "Phone",
+            "email": "Email",
+            "dateOfJoining": "Date of Joining",
+            "department": "Department",
+            "designation": "Designation",
+            "status": "Status",
+            "nationalId": "National ID",
+            "adding": "Adding...",
+            "addEmployee": "Add Employee",
+            "addFailed": "Failed to add employee.",
+            "placeholders": {
+                "name": "Rahim Uddin",
+                "phone": "+8801234567890",
+                "email": "rahim@example.com",
+                "nationalId": "National ID number"
+            }
+        },
+        "detail": {
+            "loading": "Loading...",
+            "notFound": "Employee not found.",
+            "loadFailed": "Failed to load employee",
+            "updateFailed": "Failed to update employee.",
+            "updateSuccess": "Employee updated successfully.",
+            "linkFailed": "Failed to link user.",
+            "unlinkFailed": "Failed to unlink user.",
+            "linkSuccess": "User account linked.",
+            "unlinkSuccess": "User account unlinked.",
+            "nationalId": "National ID",
+            "pasteUserId": "Paste User ID",
+            "profile": "Profile",
+            "fullName": "Full Name",
+            "dateOfJoining": "Date of Joining",
+            "department": "Department",
+            "designation": "Designation",
+            "joined": "Joined",
+            "added": "Added",
+            "active": "Active",
+            "inactive": "Inactive",
+            "saving": "Saving...",
+            "saveChanges": "Save Changes",
+            "systemAccess": "System Access",
+            "unlink": "Unlink",
+            "link": "Link",
+            "linkDescription": "Link this employee to a system user account so they can log in.",
+            "linkTip": "Tip: find the user ID from Settings > Users, then paste it here."
+        },
+        "filterPresets": {
+            "active": "Active",
+            "inactive": "Inactive"
+        }
+    },
+    "attendance": {
+        "title": "Attendance",
+        "subtitle": "Track daily clock-in/out and attendance status",
+        "logAttendance": "Log Attendance",
+        "emptyMessage": "No attendance records found",
+        "recordsTitle": "Attendance Records",
+        "deleteConfirm": "Delete this attendance record?",
+        "deleteFailed": "Failed to delete record",
+        "logFailed": "Failed to log attendance",
+        "allEmployees": "All Employees",
+        "pageSubtitle": "Daily clock-in / clock-out records",
+        "searchPlaceholder": "Search by employee name...",
+        "filters": {
+            "from": "From",
+            "to": "To"
+        },
+        "columns": {
+            "employee": "Employee",
+            "date": "Date",
+            "status": "Status",
+            "clockIn": "Clock In",
+            "clockOut": "Clock Out",
+            "notes": "Notes",
+            "actions": "Actions"
+        },
+        "statuses": {
+            "present": "Present",
+            "absent": "Absent",
+            "halfDay": "Half Day",
+            "holiday": "Holiday"
+        },
+        "modal": {
+            "title": "Log Attendance",
+            "employee": "Employee",
+            "date": "Date",
+            "status": "Status",
+            "clockIn": "Clock In",
+            "clockOut": "Clock Out",
+            "notes": "Notes",
+            "selectEmployee": "Select employee…",
+            "notesPlaceholder": "Optional notes…",
+            "submitting": "Saving...",
+            "submit": "Save Record"
+        }
+    },
+    "leaves": {
+        "title": "Leaves",
+        "subtitle": "Leave requests and leave type management",
+        "tabs": {
+            "requests": "Leave Requests",
+            "types": "Leave Types"
+        },
+        "newRequest": "New Request",
+        "newLeaveRequest": "New Leave Request",
+        "newLeaveType": "New Leave Type",
+        "addLeaveType": "Add Leave Type",
+        "emptyRequests": "No leave requests found",
+        "emptyTypes": "No leave types configured",
+        "noLeaveTypesDefined": "No leave types defined yet",
+        "allStatuses": "All Statuses",
+        "allEmployees": "All Employees",
+        "searchRequestsPlaceholder": "Search by employee or leave type...",
+        "cancelRequestConfirm": "Cancel this leave request?",
+        "submitRequest": "Submit Request",
+        "submittingRequest": "Submitting…",
+        "add": "Add",
+        "name": "Name",
+        "selectEmployee": "Select employee…",
+        "selectLeaveType": "Select leave type…",
+        "numberOfDays": "Number of Days",
+        "daysPerYearSuffix": "days/yr",
+        "placeholders": {
+            "leaveTypeName": "e.g. Annual Leave",
+            "daysPerYear": "e.g. 15",
+            "numberOfDays": "e.g. 2"
+        },
+        "columns": {
+            "employee": "Employee",
+            "leaveType": "Leave Type",
+            "startDate": "Start",
+            "endDate": "End",
+            "days": "Days",
+            "daysPerYear": "Days/Year",
+            "period": "Period",
+            "status": "Status",
+            "reason": "Reason",
+            "actions": "Actions"
+        },
+        "statuses": {
+            "pending": "PENDING",
+            "approved": "APPROVED",
+            "rejected": "REJECTED",
+            "cancelled": "CANCELLED"
+        },
+        "approve": "Approve",
+        "reject": "Reject",
+        "cancel": "Cancel",
+        "deleteTypeConfirm": "Delete this leave type?",
+        "createRequestFailed": "Failed to create leave request",
+        "updateRequestFailed": "Failed to update leave request",
+        "cancelRequestFailed": "Failed to cancel leave request",
+        "createTypeFailed": "Failed to create leave type",
+        "deleteTypeFailed": "Failed to delete leave type",
+        "filterPresets": {
+            "pending": "Pending",
+            "approved": "Approved",
+            "rejected": "Rejected"
+        }
+    },
+    "delivery": {
+        "title": "Delivery Orders",
+        "subtitle": "Schedule and track customer deliveries",
+        "newDelivery": "New Delivery",
+        "editDelivery": "Edit Delivery",
+        "loadFailed": "Failed to load deliveries",
+        "cancelConfirm": "Cancel this delivery?",
+        "cancelFailed": "Failed to cancel delivery",
+        "emptyMessage": "No delivery orders yet",
+        "allStatuses": "All Statuses",
+        "columns": {
+            "customer": "Customer",
+            "address": "Address",
+            "driver": "Driver",
+            "scheduled": "Scheduled",
+            "delivered": "Delivered"
+        },
+        "placeholders": {
+            "saleId": "Link to a sale ID"
+        },
+        "statuses": {
+            "pending": "PENDING",
+            "inTransit": "IN_TRANSIT",
+            "delivered": "DELIVERED",
+            "failed": "FAILED",
+            "cancelled": "CANCELLED"
+        }
+    },
+    "manufacturing": {
+        "title": "Manufacturing",
+        "subtitle": "Bill of materials and production job management",
+        "tabs": {
+            "boms": "Bill of Materials",
+            "jobs": "Production Jobs"
+        },
+        "newBom": "New BOM",
+        "newJob": "New Job",
+        "recipeCount": "{count} recipe",
+        "recipeCountPlural": "{count} recipes",
+        "jobCount": "{count} job",
+        "jobCountPlural": "{count} jobs",
+        "loadBomsFailed": "Failed to load BOMs",
+        "loadBomDetailFailed": "Failed to load BOM details",
+        "deleteBomConfirm": "Delete this BOM recipe? This cannot be undone.",
+        "deleteBomFailed": "Failed to delete BOM",
+        "loadJobsFailed": "Failed to load production jobs",
+        "jobActionConfirm": "{action} this production job?",
+        "emptyBoms": "No BOM recipes yet. Create one to get started.",
+        "emptyJobs": "No production jobs yet.",
+        "productIdRequired": "Product ID is required.",
+        "outputQtyMin": "Output quantity must be at least 1.",
+        "recipeIdRequired": "Recipe ID is required.",
+        "quantityMin": "Quantity must be at least 1.",
+        "saveFailed": "Save failed",
+        "createJobFailed": "Failed to create job",
+        "jobActionFailed": "Failed to {action} job",
+        "editBomRecipe": "Edit BOM Recipe",
+        "newBomRecipe": "New BOM Recipe",
+        "newProductionJob": "New Production Job",
+        "outputProductId": "Output Product ID *",
+        "outputQuantity": "Output Quantity *",
+        "outputQtyHint": "Number of output units produced per production run",
+        "componentsLabel": "Components / Raw Materials",
+        "addComponent": "Add Component",
+        "noComponents": "No components added yet.",
+        "bomRecipeId": "BOM Recipe ID *",
+        "quantityLabel": "Quantity *",
+        "quantityHint": "Number of production runs (multiplied by recipe output qty)",
+        "creating": "Creating…",
+        "createJob": "Create Job",
+        "saving": "Saving…",
+        "update": "Update",
+        "create": "Create",
+        "edit": "Edit",
+        "delete": "Delete",
+        "filterAll": "All",
+        "pageOf": "Page {page} of {pages}",
+        "columns": {
+            "product": "Product",
+            "outputQty": "Output Qty",
+            "components": "Components",
+            "notes": "Notes",
+            "created": "Created",
+            "actions": "Actions",
+            "jobId": "Job ID",
+            "qty": "Qty",
+            "status": "Status",
+            "started": "Started",
+            "completed": "Completed"
+        },
+        "placeholders": {
+            "productId": "Product ID of the manufactured item",
+            "componentProductId": "Component Product ID",
+            "qty": "Qty",
+            "recipeId": "Recipe ID"
+        },
+        "jobActions": {
+            "start": "Start",
+            "complete": "Complete",
+            "cancel": "Cancel"
+        },
+        "jobStatuses": {
+            "draft": "Draft",
+            "inProgress": "In Progress",
+            "completed": "Completed",
+            "cancelled": "Cancelled"
+        }
+    }
+} as const;

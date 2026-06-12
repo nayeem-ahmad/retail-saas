@@ -6,6 +6,7 @@ import { Landmark } from 'lucide-react';
 import { DataTable } from '@/components/data-table';
 import { api } from '@/lib/api';
 import { formatBDT } from '@/lib/format';
+import { useI18n, formatMessage } from '@/lib/i18n';
 
 interface BookRow {
     id: string;
@@ -50,6 +51,7 @@ function defaultTo() {
 }
 
 export default function BankbookPage() {
+    const { t, locale } = useI18n();
     const [data, setData] = useState<BookData | null>(null);
     const [fromDate, setFromDate] = useState(defaultFrom());
     const [toDate, setToDate] = useState(defaultTo());
@@ -80,28 +82,28 @@ export default function BankbookPage() {
 
     const columns: ColumnDef<BookRow, any>[] = useMemo(() => [
         columnHelper.accessor((row) => String(row.date).slice(0, 10), {
-            id: 'date', header: 'Date', size: 110,
+            id: 'date', header: t.accountingShared.date, size: 110,
         }),
-        columnHelper.accessor('voucher_number', { header: 'Voucher #', size: 120 }),
+        columnHelper.accessor('voucher_number', { header: t.journal.columns.voucherNumber, size: 120 }),
         columnHelper.accessor((row) => row.description ?? row.reference_number ?? '-', {
-            id: 'description', header: 'Description', size: 240,
+            id: 'description', header: t.accountingShared.description, size: 240,
         }),
         columnHelper.accessor('account_name', { header: 'Bank Account', size: 180 }),
         columnHelper.accessor('receipts', {
-            header: 'Deposits',
-            cell: (info) => info.getValue() > 0 ? <span className="text-emerald-700 font-bold">{formatBDT(Number(info.getValue()))}</span> : <span className="text-gray-300">—</span>,
+            header: t.reports.bankbook.deposits,
+            cell: (info) => info.getValue() > 0 ? <span className="text-emerald-700 font-bold">{formatBDT(Number(info.getValue()), { locale })}</span> : <span className="text-gray-300">—</span>,
             size: 130,
         }),
         columnHelper.accessor('payments', {
-            header: 'Withdrawals',
-            cell: (info) => info.getValue() > 0 ? <span className="text-rose-600 font-bold">{formatBDT(Number(info.getValue()))}</span> : <span className="text-gray-300">—</span>,
+            header: t.reports.bankbook.withdrawals,
+            cell: (info) => info.getValue() > 0 ? <span className="text-rose-600 font-bold">{formatBDT(Number(info.getValue()), { locale })}</span> : <span className="text-gray-300">—</span>,
             size: 130,
         }),
         columnHelper.accessor('running_balance', {
-            header: 'Balance',
+            header: t.reports.cashbook.balance,
             cell: (info) => (
                 <span className="font-black text-blue-700">
-                    {formatBDT(Number(info.getValue()))}
+                    {formatBDT(Number(info.getValue()), { locale })}
                     <span className="ml-1 text-xs font-normal text-gray-400">{info.row.original.running_balance_side}</span>
                 </span>
             ),
@@ -123,20 +125,20 @@ export default function BankbookPage() {
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <div className="bg-white border border-gray-100 rounded-2xl p-5">
                             <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">Opening Balance</div>
-                            <div className="text-xl font-black text-gray-900 mt-2">{formatBDT(data.opening_balance)}</div>
+                            <div className="text-xl font-black text-gray-900 mt-2">{formatBDT(data.opening_balance, { locale })}</div>
                             <div className="text-xs text-gray-400 mt-0.5">{data.opening_balance_side}</div>
                         </div>
                         <div className="bg-white border border-gray-100 rounded-2xl p-5">
                             <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">Total Deposits</div>
-                            <div className="text-xl font-black text-emerald-700 mt-2">{formatBDT(data.totals.receipts)}</div>
+                            <div className="text-xl font-black text-emerald-700 mt-2">{formatBDT(data.totals.receipts, { locale })}</div>
                         </div>
                         <div className="bg-white border border-gray-100 rounded-2xl p-5">
                             <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">Total Withdrawals</div>
-                            <div className="text-xl font-black text-rose-600 mt-2">{formatBDT(data.totals.payments)}</div>
+                            <div className="text-xl font-black text-rose-600 mt-2">{formatBDT(data.totals.payments, { locale })}</div>
                         </div>
                         <div className="bg-white border border-gray-100 rounded-2xl p-5">
                             <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">Closing Balance</div>
-                            <div className="text-xl font-black text-blue-700 mt-2">{formatBDT(data.closing_balance)}</div>
+                            <div className="text-xl font-black text-blue-700 mt-2">{formatBDT(data.closing_balance, { locale })}</div>
                             <div className="text-xs text-gray-400 mt-0.5">{data.closing_balance_side}</div>
                         </div>
                     </div>
@@ -153,12 +155,12 @@ export default function BankbookPage() {
                         </select>
                     )}
                     <div className="flex flex-col gap-1">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">From</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">{t.accountingShared.from}</span>
                         <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)}
                             className="bg-gray-50 border-none rounded-xl py-3 px-4 text-sm font-medium" />
                     </div>
                     <div className="flex flex-col gap-1">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">To</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">{t.accountingShared.to}</span>
                         <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)}
                             className="bg-gray-50 border-none rounded-xl py-3 px-4 text-sm font-medium" />
                     </div>
@@ -170,11 +172,11 @@ export default function BankbookPage() {
                     tableId="bankbook"
                     columns={columns}
                     data={data?.rows ?? []}
-                    title="Bank Transactions"
+                    title={t.accountingShared.bankTransactions}
                     isLoading={loading}
-                    emptyMessage="No bank transactions in this period"
+                    emptyMessage={t.accountingShared.noBankTransactions}
                     emptyIcon={<Landmark className="w-16 h-16 text-gray-200" />}
-                    searchPlaceholder="Search transactions..."
+                    searchPlaceholder={t.accountingShared.searchTransactions}
                 />
             </div>
         </div>

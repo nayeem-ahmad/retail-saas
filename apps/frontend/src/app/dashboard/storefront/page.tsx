@@ -1,4 +1,5 @@
 'use client';
+import { useI18n, formatMessage } from '@/lib/i18n';
 
 import { useEffect, useState } from 'react';
 import { ShoppingBag, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
@@ -38,6 +39,8 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function StorefrontOrdersPage() {
+    const { t } = useI18n();
+    const m = t.storefront.dashboard.orders;
     const [data, setData] = useState<PaginatedOrders | null>(null);
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
@@ -69,7 +72,7 @@ export default function StorefrontOrdersPage() {
             });
             await loadOrders(page);
         } catch (err: any) {
-            alert(err.message || 'Failed to update status');
+            alert(err.message || m.updateFailed);
         } finally {
             setUpdatingId(null);
         }
@@ -85,8 +88,8 @@ export default function StorefrontOrdersPage() {
                             <ShoppingBag className="w-5 h-5 text-white" />
                         </div>
                         <div>
-                            <h1 className="text-xl font-bold tracking-tight">Storefront Orders</h1>
-                            <p className="text-sm text-gray-500">Online orders from your public store</p>
+                            <h1 className="text-xl font-bold tracking-tight">{m.title}</h1>
+                            <p className="text-sm text-gray-500">{m.description}</p>
                         </div>
                     </div>
                     <Link
@@ -94,7 +97,7 @@ export default function StorefrontOrdersPage() {
                         className="flex items-center space-x-2 text-sm font-semibold text-blue-600 hover:text-blue-700 bg-blue-50 px-3 py-2 rounded-xl"
                     >
                         <ExternalLink className="w-4 h-4" />
-                        <span>Store Settings</span>
+                        <span>{m.storeSettings}</span>
                     </Link>
                 </div>
 
@@ -107,20 +110,20 @@ export default function StorefrontOrdersPage() {
                     ) : !data || data.items.length === 0 ? (
                         <div className="text-center py-16 text-gray-400">
                             <ShoppingBag className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                            <p className="font-medium">No orders yet</p>
-                            <p className="text-sm mt-1">Orders placed on your storefront will appear here.</p>
+                            <p className="font-medium">{m.emptyTitle}</p>
+                            <p className="text-sm mt-1">{m.emptyDescription}</p>
                         </div>
                     ) : (
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm">
                                 <thead>
                                     <tr className="border-b bg-gray-50 text-left">
-                                        <th className="px-5 py-3 font-semibold text-gray-600">Order ID</th>
-                                        <th className="px-5 py-3 font-semibold text-gray-600">Customer</th>
-                                        <th className="px-5 py-3 font-semibold text-gray-600">Items</th>
-                                        <th className="px-5 py-3 font-semibold text-gray-600">Total</th>
-                                        <th className="px-5 py-3 font-semibold text-gray-600">Date</th>
-                                        <th className="px-5 py-3 font-semibold text-gray-600">Status</th>
+                                        <th className="px-5 py-3 font-semibold text-gray-600">{m.columns.orderId}</th>
+                                        <th className="px-5 py-3 font-semibold text-gray-600">{m.columns.customer}</th>
+                                        <th className="px-5 py-3 font-semibold text-gray-600">{m.columns.items}</th>
+                                        <th className="px-5 py-3 font-semibold text-gray-600">{m.columns.total}</th>
+                                        <th className="px-5 py-3 font-semibold text-gray-600">{m.columns.date}</th>
+                                        <th className="px-5 py-3 font-semibold text-gray-600">{m.columns.status}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-50">
@@ -162,9 +165,9 @@ export default function StorefrontOrdersPage() {
                                                         STATUS_COLORS[order.status] || 'bg-gray-50 text-gray-700 border-gray-200'
                                                     }`}
                                                 >
-                                                    <option value="PENDING">PENDING</option>
-                                                    <option value="CONFIRMED">CONFIRMED</option>
-                                                    <option value="CANCELLED">CANCELLED</option>
+                                                    <option value="PENDING">{m.status.pending}</option>
+                                                    <option value="CONFIRMED">{m.status.confirmed}</option>
+                                                    <option value="CANCELLED">{m.status.cancelled}</option>
                                                 </select>
                                             </td>
                                         </tr>
@@ -179,7 +182,7 @@ export default function StorefrontOrdersPage() {
                 {data && data.pages > 1 && (
                     <div className="flex items-center justify-between">
                         <p className="text-sm text-gray-500">
-                            Showing {(page - 1) * 20 + 1}–{Math.min(page * 20, data.total)} of {data.total} orders
+                            {formatMessage(m.pagination, { start: (page - 1) * 20 + 1, end: Math.min(page * 20, data.total), total: data.total })}
                         </p>
                         <div className="flex items-center space-x-2">
                             <button

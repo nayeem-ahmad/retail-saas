@@ -404,7 +404,7 @@ describe('api.getProductSubgroups', () => {
         mockOk({ data: [] });
         await api.getProductSubgroups();
         expect(lastUrl()).toContain('/product-subgroups');
-        expect(lastUrl()).not.toContain('?');
+        expect(lastUrl()).toContain('limit=100');
     });
 
     it('appends groupId when provided', async () => {

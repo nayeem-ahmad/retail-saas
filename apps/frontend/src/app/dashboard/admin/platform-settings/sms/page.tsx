@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { MessageSquare, ArrowLeft, Loader2, CheckCircle, XCircle, Send } from 'lucide-react';
 import { fetchWithAuth } from '@/lib/api';
+import { useI18n, formatMessage } from '@/lib/i18n';
 
 type SmsSettings = {
     provider: string;
@@ -49,6 +50,9 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
 }
 
 export default function PlatformSmsSeetingsPage() {
+    const { t } = useI18n();
+    const m = t.admin.platformSettings.sms;
+    const c = t.admin.platformSettings.common;
     const [settings, setSettings] = useState<SmsSettings>(DEFAULTS);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -68,7 +72,7 @@ export default function PlatformSmsSeetingsPage() {
                     base_url: d.base_url ?? DEFAULTS.base_url,
                 });
             })
-            .catch(() => setToast({ type: 'error', message: 'Failed to load SMS settings.' }))
+            .catch(() => setToast({ type: 'error', message: m.loadFailed }))
             .finally(() => setLoading(false));
     }, []);
 
@@ -90,9 +94,9 @@ export default function PlatformSmsSeetingsPage() {
             });
             if (!res.ok) throw new Error('Save failed');
             setSettings((prev) => ({ ...prev, api_key: '' }));
-            setToast({ type: 'success', message: 'SMS settings saved.' });
+            setToast({ type: 'success', message: m.saved });
         } catch (e: any) {
-            setToast({ type: 'error', message: e.message ?? 'Failed to save.' });
+            setToast({ type: 'error', message: e.message ?? c.saveFailed });
         } finally {
             setSaving(false);
         }
@@ -108,9 +112,9 @@ export default function PlatformSmsSeetingsPage() {
                 body: JSON.stringify({ phone: testPhone }),
             });
             if (!res.ok) throw new Error('Test failed');
-            setToast({ type: 'success', message: `Test SMS dispatched to ${testPhone}.` });
+            setToast({ type: 'success', message: formatMessage(m.test.success, { phone: testPhone }) });
         } catch (e: any) {
-            setToast({ type: 'error', message: e.message ?? 'Test SMS failed.' });
+            setToast({ type: 'error', message: e.message ?? m.test.failed });
         } finally {
             setTesting(false);
         }
@@ -126,40 +130,40 @@ export default function PlatformSmsSeetingsPage() {
                         <ArrowLeft className="w-4 h-4 text-gray-500" />
                     </Link>
                     <MessageSquare className="w-5 h-5 text-green-600" />
-                    <h1 className="text-xl font-black tracking-tight">SMS Gateway</h1>
+                    <h1 className="text-xl font-black tracking-tight">{m.title}</h1>
                 </div>
 
                 {loading ? (
                     <div className="flex items-center gap-2 text-gray-400 text-sm py-8 justify-center">
-                        <Loader2 className="w-4 h-4 animate-spin" /> Loading…
+                        <Loader2 className="w-4 h-4 animate-spin" /> {c.loading}
                     </div>
                 ) : (
                     <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-5">
-                        <Field label="Provider" hint="The SMS gateway service you are using.">
+                        <Field label={m.provider.label} hint={m.provider.hint}>
                             <select
                                 value={settings.provider}
                                 onChange={(e) => setSettings((s) => ({ ...s, provider: e.target.value }))}
                                 className={inputCls}
                             >
-                                <option value="bulksmsbd">Bulk SMS BD</option>
-                                <option value="ssl_wireless">SSL Wireless</option>
-                                <option value="alpha_net">Alpha Net</option>
-                                <option value="other">Other</option>
+                                <option value="bulksmsbd">{m.providers.bulksmsbd}</option>
+                                <option value="ssl_wireless">{m.providers.sslWireless}</option>
+                                <option value="alpha_net">{m.providers.alphaNet}</option>
+                                <option value="other">{m.providers.other}</option>
                             </select>
                         </Field>
 
-                        <Field label="API Key" hint="Leave blank to keep the existing key unchanged.">
+                        <Field label={m.apiKey.label} hint={c.apiKeyHint}>
                             <input
                                 type="password"
                                 autoComplete="new-password"
-                                placeholder="Enter new API key (leave blank to keep existing)"
+                                placeholder={m.apiKey.placeholder}
                                 value={settings.api_key}
                                 onChange={(e) => setSettings((s) => ({ ...s, api_key: e.target.value }))}
                                 className={inputCls}
                             />
                         </Field>
 
-                        <Field label="Sender ID" hint="The sender name or number shown on recipient devices.">
+                        <Field label={m.senderId.label} hint={m.senderId.hint}>
                             <input
                                 type="text"
                                 value={settings.sender_id}
@@ -168,7 +172,7 @@ export default function PlatformSmsSeetingsPage() {
                             />
                         </Field>
 
-                        <Field label="API Base URL" hint="The HTTP endpoint for your provider's send API.">
+                        <Field label={m.baseUrl.label} hint={m.baseUrl.hint}>
                             <input
                                 type="url"
                                 value={settings.base_url}
@@ -184,19 +188,18 @@ export default function PlatformSmsSeetingsPage() {
                                 className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors shadow-sm"
                             >
                                 {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-                                {saving ? 'Saving…' : 'Save Settings'}
+                                {saving ? c.saving : c.saveSettings}
                             </button>
                         </div>
                     </div>
                 )}
 
-                {/* Test panel */}
                 <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4">
-                    <h2 className="text-sm font-black uppercase tracking-widest text-gray-400">Send Test SMS</h2>
+                    <h2 className="text-sm font-black uppercase tracking-widest text-gray-400">{m.test.title}</h2>
                     <div className="flex gap-3">
                         <input
                             type="tel"
-                            placeholder="e.g. 01712345678"
+                            placeholder={m.test.placeholder}
                             value={testPhone}
                             onChange={(e) => setTestPhone(e.target.value)}
                             className="flex-1 rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
@@ -207,10 +210,10 @@ export default function PlatformSmsSeetingsPage() {
                             className="inline-flex items-center gap-2 rounded-xl bg-green-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-green-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors shadow-sm"
                         >
                             {testing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                            {testing ? 'Sending…' : 'Send'}
+                            {testing ? c.sending : c.send}
                         </button>
                     </div>
-                    <p className="text-xs text-gray-400">Uses the currently saved credentials. Save first to test new ones.</p>
+                    <p className="text-xs text-gray-400">{c.testHint}</p>
                 </div>
             </div>
 

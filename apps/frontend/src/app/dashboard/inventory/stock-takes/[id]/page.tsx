@@ -8,8 +8,10 @@ import { HelpTooltip } from '@/components/HelpTooltip';
 import { STOCK_TAKES_FIELD_HELP, STOCK_TAKE_DETAIL_HELP } from '@/lib/help/contextual-help';
 import { api } from '../../../../../lib/api';
 import { formatBDT } from '../../../../../lib/format';
+import { useI18n, formatMessage } from '@/lib/i18n';
 
 export default function StockTakeDetailPage() {
+    const { t } = useI18n();
     const params = useParams();
     const id = Array.isArray(params.id) ? params.id[0] : params.id;
     const [session, setSession] = useState<any>(null);
@@ -64,30 +66,30 @@ export default function StockTakeDetailPage() {
                     }))
                     .filter((line: any) => Number.isFinite(line.countedQuantity)),
             });
-            setMessage('Count lines saved.');
+            setMessage(t.inventoryStockTakeDetail.countsSaved);
             await loadSession();
         } catch (error: any) {
-            setMessage(error.message || 'Failed to save count lines.');
+            setMessage(error.message || t.inventoryStockTakeDetail.saveFailed);
         }
     };
 
     const handleMoveToReview = async () => {
         try {
             await api.updateStockTakeStatus(String(id), { status: 'REVIEW' });
-            setMessage('Session moved to review.');
+            setMessage(t.inventoryStockTakeDetail.movedToReview);
             await loadSession();
         } catch (error: any) {
-            setMessage(error.message || 'Failed to update session status.');
+            setMessage(error.message || t.inventoryStockTakeDetail.statusUpdateFailed);
         }
     };
 
     const handlePost = async () => {
         try {
             await api.postStockTake(String(id));
-            setMessage('Stock-take posted to inventory.');
+            setMessage(t.inventoryStockTakeDetail.posted);
             await loadSession();
         } catch (error: any) {
-            setMessage(error.message || 'Failed to post stock-take.');
+            setMessage(error.message || t.inventoryStockTakeDetail.postFailed);
         }
     };
 
@@ -102,7 +104,7 @@ export default function StockTakeDetailPage() {
     const canPost = session?.status !== 'POSTED' && (!requiresReview || session?.status === 'REVIEW');
 
     if (!session) {
-        return <div className="p-6 text-sm text-gray-500">Loading stock-take session…</div>;
+        return <div className="p-6 text-sm text-gray-500">{t.inventoryStockTakeDetail.loading}</div>;
     }
 
     return (
@@ -111,29 +113,33 @@ export default function StockTakeDetailPage() {
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-2xl font-black tracking-tight inline-flex items-center gap-2">
-                            Stock Take {session.session_number}
+                            {formatMessage(t.inventoryStockTakeDetail.title, { number: session.session_number })}
                             <HelpTooltip text={STOCK_TAKES_FIELD_HELP.page} wide />
                         </h1>
                         <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mt-0.5">
-                            {session.warehouse?.name} • {session.status} • {discrepancyCount} discrepant lines
+                            {formatMessage(t.inventoryStockTakeDetail.subtitle, {
+                                warehouse: session.warehouse?.name ?? '-',
+                                status: session.status,
+                                count: discrepancyCount,
+                            })}
                         </p>
                     </div>
                     <div className="flex items-center gap-3">
                         <button onClick={() => void handleSave()} className="bg-white border border-gray-200 text-gray-700 px-4 py-2.5 rounded-xl font-bold text-sm flex items-center">
-                            <Save className="w-4 h-4 mr-2" /> Save Counts
+                            <Save className="w-4 h-4 mr-2" /> {t.inventoryStockTakeDetail.saveCounts}
                         </button>
                         {canMoveToReview ? (
-                            <button onClick={() => void handleMoveToReview()} className="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2.5 rounded-xl font-bold text-sm">Move to Review</button>
+                            <button onClick={() => void handleMoveToReview()} className="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2.5 rounded-xl font-bold text-sm">{t.inventoryStockTakeDetail.moveToReview}</button>
                         ) : null}
                         {canReturnToCounting ? (
-                            <button onClick={() => void api.updateStockTakeStatus(String(id), { status: 'COUNTING' }).then(loadSession).catch((error: any) => setMessage(error.message || 'Failed to return to counting.'))} className="bg-white border border-gray-200 text-gray-700 px-4 py-2.5 rounded-xl font-bold text-sm">
-                                Return to Counting
+                            <button onClick={() => void api.updateStockTakeStatus(String(id), { status: 'COUNTING' }).then(loadSession).catch((error: any) => setMessage(error.message || t.inventoryStockTakeDetail.returnFailed))} className="bg-white border border-gray-200 text-gray-700 px-4 py-2.5 rounded-xl font-bold text-sm">
+                                {t.inventoryStockTakeDetail.returnToCounting}
                             </button>
                         ) : null}
                         <button disabled={!canPost} onClick={() => void handlePost()} className="bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 text-white px-4 py-2.5 rounded-xl font-bold text-sm flex items-center shadow-lg shadow-emerald-200 disabled:shadow-none">
                             <CheckCircle2 className="w-4 h-4 mr-2" />
                             <span className="inline-flex items-center gap-1.5">
-                                Post Session
+                                {t.inventoryStockTakeDetail.postSession}
                                 <HelpTooltip text={STOCK_TAKES_FIELD_HELP.post} side="left" />
                             </span>
                         </button>
@@ -146,26 +152,26 @@ export default function StockTakeDetailPage() {
 
                 <div className="grid md:grid-cols-4 gap-4">
                     <div className="bg-white border border-gray-100 rounded-2xl p-4">
-                        <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">Approval Threshold</div>
+                        <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">{t.inventoryStockTakeDetail.approvalThreshold}</div>
                         <div className="mt-2 text-2xl font-black text-gray-900">{session.summary?.approvalThreshold ?? 0}</div>
                     </div>
                     <div className="bg-white border border-gray-100 rounded-2xl p-4">
-                        <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">Max Variance</div>
+                        <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">{t.inventoryStockTakeDetail.maxVariance}</div>
                         <div className="mt-2 text-2xl font-black text-gray-900">{session.summary?.maxVariance ?? 0}</div>
                     </div>
                     <div className="bg-white border border-gray-100 rounded-2xl p-4">
-                        <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">Net Quantity Impact</div>
+                        <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">{t.inventoryStockTakeDetail.netQuantityImpact}</div>
                         <div className={`mt-2 text-2xl font-black ${(session.summary?.netQuantityImpact ?? 0) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{session.summary?.netQuantityImpact ?? 0}</div>
                     </div>
                     <div className="bg-white border border-gray-100 rounded-2xl p-4">
-                        <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">Estimated Value Impact</div>
+                        <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">{t.inventoryStockTakeDetail.estimatedValueImpact}</div>
                         <div className={`mt-2 text-2xl font-black ${(session.summary?.netValueImpact ?? 0) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{formatBDT(Number(session.summary?.netValueImpact ?? 0))}</div>
                     </div>
                 </div>
 
                 {requiresReview ? (
                     <div className="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 text-sm font-bold text-amber-900">
-                        This session exceeds the discrepancy threshold and must be moved to review before posting.
+                        {t.inventoryStockTakeDetail.reviewRequired}
                     </div>
                 ) : null}
 
@@ -177,19 +183,23 @@ export default function StockTakeDetailPage() {
                             <div key={line.id} className="grid lg:grid-cols-[1.3fr_140px_140px_220px_1fr] gap-4 items-center rounded-xl bg-gray-50 px-4 py-3">
                                 <div>
                                     <div className="text-sm font-black text-gray-900">{line.product?.name}</div>
-                                    <div className="text-xs text-gray-500">Expected {line.expected_quantity}</div>
+                                    <div className="text-xs text-gray-500">
+                                        {formatMessage(t.inventoryStockTakeDetail.expected, { qty: line.expected_quantity })}
+                                    </div>
                                 </div>
-                                <div className="text-sm font-bold text-gray-700">Expected {line.expected_quantity}</div>
-                                <input type="number" min="0" value={values.countedQuantity} onChange={(event) => setDraftCounts((current) => ({ ...current, [line.product_id]: { ...values, countedQuantity: event.target.value } }))} className="w-full bg-white border border-gray-200 rounded-xl py-2.5 px-4 text-sm font-medium" placeholder="Counted" title={STOCK_TAKES_FIELD_HELP.countedQuantity} />
+                                <div className="text-sm font-bold text-gray-700">
+                                    {formatMessage(t.inventoryStockTakeDetail.expected, { qty: line.expected_quantity })}
+                                </div>
+                                <input type="number" min="0" value={values.countedQuantity} onChange={(event) => setDraftCounts((current) => ({ ...current, [line.product_id]: { ...values, countedQuantity: event.target.value } }))} className="w-full bg-white border border-gray-200 rounded-xl py-2.5 px-4 text-sm font-medium" placeholder={t.inventoryStockTakeDetail.counted} title={STOCK_TAKES_FIELD_HELP.countedQuantity} />
                                 <select value={values.reasonId} onChange={(event) => setDraftCounts((current) => ({ ...current, [line.product_id]: { ...values, reasonId: event.target.value } }))} className="w-full bg-white border border-gray-200 rounded-xl py-2.5 px-4 text-sm font-medium" title={STOCK_TAKES_FIELD_HELP.reason}>
-                                    <option value="">No reason</option>
+                                    <option value="">{t.inventoryStockTakeDetail.noReason}</option>
                                     {reasons.map((reason) => <option key={reason.id} value={reason.id}>{reason.label}</option>)}
                                 </select>
                                 <div className="space-y-2">
                                     <div className={`text-sm font-black ${variance === 0 ? 'text-gray-500' : variance > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                                        Variance {Number.isFinite(variance) ? variance : '-'}
+                                        {formatMessage(t.inventoryStockTakeDetail.variance, { value: Number.isFinite(variance) ? variance : '-' })}
                                     </div>
-                                    <input value={values.note} onChange={(event) => setDraftCounts((current) => ({ ...current, [line.product_id]: { ...values, note: event.target.value } }))} className="w-full bg-white border border-gray-200 rounded-xl py-2.5 px-4 text-sm font-medium" placeholder="Note" />
+                                    <input value={values.note} onChange={(event) => setDraftCounts((current) => ({ ...current, [line.product_id]: { ...values, note: event.target.value } }))} className="w-full bg-white border border-gray-200 rounded-xl py-2.5 px-4 text-sm font-medium" placeholder={t.inventoryStockTakeDetail.note} />
                                 </div>
                             </div>
                         );

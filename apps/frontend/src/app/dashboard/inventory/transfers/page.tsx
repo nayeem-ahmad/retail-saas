@@ -7,6 +7,7 @@ import { ArrowRightLeft, Plus, Truck } from 'lucide-react';
 import { DataTable } from '@/components/data-table';
 import { api } from '../../../../lib/api';
 import { PostingBadge } from '@/components/PostingBadge';
+import { useI18n } from '@/lib/i18n';
 
 interface WarehouseTransfer {
     id: string;
@@ -25,6 +26,7 @@ interface WarehouseTransfer {
 const columnHelper = createColumnHelper<WarehouseTransfer>();
 
 export default function InventoryTransfersPage() {
+    const { t } = useI18n();
     const [transfers, setTransfers] = useState<WarehouseTransfer[]>([]);
     const [warehouses, setWarehouses] = useState<any[]>([]);
     const [products, setProducts] = useState<any[]>([]);
@@ -103,7 +105,7 @@ export default function InventoryTransfersPage() {
                     quantity: Number(item.quantity),
                 })),
             });
-            setMessage('Transfer created.');
+            setMessage(t.inventoryTransfers.transferCreated);
             setForm({
                 sourceWarehouseId: '',
                 destinationWarehouseId: '',
@@ -113,51 +115,51 @@ export default function InventoryTransfersPage() {
             });
             await loadTransfers();
         } catch (error: any) {
-            setMessage(error.message || 'Failed to create transfer.');
+            setMessage(error.message || t.inventoryTransfers.createFailed);
         }
     };
 
     const columns: ColumnDef<WarehouseTransfer, any>[] = useMemo(
         () => [
             columnHelper.accessor('transfer_number', {
-                header: 'Transfer #',
+                header: t.inventoryTransfers.columns.transferNumber,
                 cell: (info) => <span className="text-sm font-black text-gray-900">{info.getValue()}</span>,
                 size: 150,
             }),
             columnHelper.accessor((row) => row.sourceWarehouse?.name || '-', {
                 id: 'sourceWarehouse',
-                header: 'Source',
+                header: t.inventoryTransfers.columns.source,
                 size: 170,
             }),
             columnHelper.accessor((row) => row.destinationWarehouse?.name || '-', {
                 id: 'destinationWarehouse',
-                header: 'Destination',
+                header: t.inventoryTransfers.columns.destination,
                 size: 170,
             }),
             columnHelper.accessor('status', {
-                header: 'Status',
+                header: t.common.status,
                 cell: (info) => <span className="text-xs font-black uppercase tracking-widest text-blue-700">{info.getValue()}</span>,
                 size: 140,
             }),
             columnHelper.accessor((row) => row.items.map((item) => item.product?.name).filter(Boolean).join(', '), {
                 id: 'products',
-                header: 'Products',
+                header: t.nav.products,
                 cell: (info) => <span className="text-sm text-gray-600 line-clamp-2">{info.getValue() || '-'}</span>,
                 size: 260,
             }),
             columnHelper.accessor((row) => row.items.reduce((sum, item) => sum + (item.quantity_sent - item.quantity_received), 0), {
                 id: 'outstanding',
-                header: 'Outstanding',
+                header: t.inventoryTransfers.columns.outstanding,
                 size: 110,
             }),
             columnHelper.accessor('created_at', {
-                header: 'Created',
+                header: t.inventoryTransfers.columns.created,
                 cell: (info) => new Date(info.getValue()).toLocaleString(),
                 size: 170,
             }),
             columnHelper.display({
                 id: 'posting',
-                header: 'Voucher',
+                header: t.inventoryTransfers.columns.voucher,
                 cell: ({ row }) => (
                     <PostingBadge
                         status={row.original.posting_status}
@@ -168,16 +170,16 @@ export default function InventoryTransfersPage() {
             }),
             columnHelper.display({
                 id: 'actions',
-                header: 'Actions',
+                header: t.common.actions,
                 cell: (info) => (
                     <Link href={`/dashboard/inventory/transfers/${info.row.original.id}`} className="text-sm font-black text-blue-700 hover:text-blue-900">
-                        View
+                        {t.common.view}
                     </Link>
                 ),
                 size: 100,
             }),
         ],
-        [],
+        [t],
     );
 
     return (
@@ -185,33 +187,33 @@ export default function InventoryTransfersPage() {
             <div className="max-w-[1400px] mx-auto space-y-6">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-black tracking-tight">Warehouse Transfers</h1>
+                        <h1 className="text-2xl font-black tracking-tight">{t.inventoryTransfers.title}</h1>
                         <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mt-0.5">
-                            Send stock between warehouses and receive it only when it physically arrives
+                            {t.inventoryTransfers.subtitle}
                         </p>
                     </div>
                     <div className="flex items-center gap-3">
                         <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-bold text-gray-700">
-                            <option value="">All Statuses</option>
-                            <option value="DRAFT">Draft</option>
-                            <option value="SENT">Sent</option>
-                            <option value="PARTIALLY_RECEIVED">Partially Received</option>
-                            <option value="RECEIVED">Received</option>
+                            <option value="">{t.inventoryTransfers.allStatuses}</option>
+                            <option value="DRAFT">{t.inventoryTransfers.statuses.draft}</option>
+                            <option value="SENT">{t.inventoryTransfers.statuses.sent}</option>
+                            <option value="PARTIALLY_RECEIVED">{t.inventoryTransfers.statuses.partiallyReceived}</option>
+                            <option value="RECEIVED">{t.inventoryTransfers.statuses.received}</option>
                         </select>
                     </div>
                 </div>
 
                 <div className="bg-white border border-gray-100 rounded-2xl p-4 grid md:grid-cols-5 gap-3 items-end">
                     <select value={sourceWarehouseId} onChange={(e) => setSourceWarehouseId(e.target.value)} className="bg-gray-50 border-none rounded-xl py-3 px-4 text-sm font-medium">
-                        <option value="">All Sources</option>
+                        <option value="">{t.inventoryTransfers.allSources}</option>
                         {warehouses.map((warehouse) => <option key={warehouse.id} value={warehouse.id}>{warehouse.name}</option>)}
                     </select>
                     <select value={destinationWarehouseId} onChange={(e) => setDestinationWarehouseId(e.target.value)} className="bg-gray-50 border-none rounded-xl py-3 px-4 text-sm font-medium">
-                        <option value="">All Destinations</option>
+                        <option value="">{t.inventoryTransfers.allDestinations}</option>
                         {warehouses.map((warehouse) => <option key={warehouse.id} value={warehouse.id}>{warehouse.name}</option>)}
                     </select>
                     <select value={productId} onChange={(e) => setProductId(e.target.value)} className="bg-gray-50 border-none rounded-xl py-3 px-4 text-sm font-medium">
-                        <option value="">All Products</option>
+                        <option value="">{t.inventoryTransfers.allProducts}</option>
                         {products.map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}
                     </select>
                     <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="bg-gray-50 border-none rounded-xl py-3 px-4 text-sm font-medium" />
@@ -221,34 +223,34 @@ export default function InventoryTransfersPage() {
                 <form onSubmit={handleCreate} className="bg-white border border-gray-100 rounded-2xl p-6 space-y-4">
                     <div className="flex items-center gap-2">
                         <Truck className="w-5 h-5 text-blue-600" />
-                        <h2 className="font-black text-lg">New Transfer</h2>
+                        <h2 className="font-black text-lg">{t.inventoryTransfers.newTransfer}</h2>
                     </div>
                     {message ? <div className="text-sm font-bold text-gray-700 bg-gray-50 rounded-xl px-4 py-3">{message}</div> : null}
                     <div className="grid md:grid-cols-4 gap-4">
                         <div>
-                            <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 ml-1">Source Warehouse</label>
+                            <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 ml-1">{t.inventoryTransfers.sourceWarehouse}</label>
                             <select required value={form.sourceWarehouseId} onChange={(e) => setForm((current: any) => ({ ...current, sourceWarehouseId: e.target.value }))} className="w-full bg-gray-50 border-none rounded-xl py-3 px-4 text-sm font-medium">
-                                <option value="">Select source</option>
+                                <option value="">{t.inventoryTransfers.selectSource}</option>
                                 {warehouses.map((warehouse) => <option key={warehouse.id} value={warehouse.id}>{warehouse.name}</option>)}
                             </select>
                         </div>
                         <div>
-                            <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 ml-1">Destination Warehouse</label>
+                            <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 ml-1">{t.inventoryTransfers.destinationWarehouse}</label>
                             <select required value={form.destinationWarehouseId} onChange={(e) => setForm((current: any) => ({ ...current, destinationWarehouseId: e.target.value }))} className="w-full bg-gray-50 border-none rounded-xl py-3 px-4 text-sm font-medium">
-                                <option value="">Select destination</option>
+                                <option value="">{t.inventoryTransfers.selectDestination}</option>
                                 {warehouses.map((warehouse) => <option key={warehouse.id} value={warehouse.id}>{warehouse.name}</option>)}
                             </select>
                         </div>
                         <div>
-                            <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 ml-1">Initial Status</label>
+                            <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 ml-1">{t.inventoryTransfers.initialStatus}</label>
                             <select value={form.status} onChange={(e) => setForm((current: any) => ({ ...current, status: e.target.value }))} className="w-full bg-gray-50 border-none rounded-xl py-3 px-4 text-sm font-medium">
-                                <option value="SENT">Send Now</option>
-                                <option value="DRAFT">Save as Draft</option>
+                                <option value="SENT">{t.inventoryTransfers.sendNow}</option>
+                                <option value="DRAFT">{t.inventoryTransfers.saveAsDraft}</option>
                             </select>
                         </div>
                         <div>
-                            <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 ml-1">Notes</label>
-                            <input value={form.notes} onChange={(e) => setForm((current: any) => ({ ...current, notes: e.target.value }))} className="w-full bg-gray-50 border-none rounded-xl py-3 px-4 text-sm font-medium" placeholder="Optional" />
+                            <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 ml-1">{t.common.notes}</label>
+                            <input value={form.notes} onChange={(e) => setForm((current: any) => ({ ...current, notes: e.target.value }))} className="w-full bg-gray-50 border-none rounded-xl py-3 px-4 text-sm font-medium" placeholder={t.common.optional} />
                         </div>
                     </div>
 
@@ -256,18 +258,18 @@ export default function InventoryTransfersPage() {
                         {form.items.map((item: any, index: number) => (
                             <div key={index} className="grid md:grid-cols-[1fr_160px_120px] gap-3 items-end">
                                 <div>
-                                    <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 ml-1">Product</label>
+                                    <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 ml-1">{t.common.product}</label>
                                     <select required value={item.productId} onChange={(e) => setForm((current: any) => ({ ...current, items: current.items.map((line: any, lineIndex: number) => lineIndex === index ? { ...line, productId: e.target.value } : line) }))} className="w-full bg-gray-50 border-none rounded-xl py-3 px-4 text-sm font-medium">
-                                        <option value="">Select product</option>
+                                        <option value="">{t.inventoryTransfers.selectProduct}</option>
                                         {products.map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 ml-1">Quantity</label>
+                                    <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 ml-1">{t.common.quantity}</label>
                                     <input type="number" min="1" value={item.quantity} onChange={(e) => setForm((current: any) => ({ ...current, items: current.items.map((line: any, lineIndex: number) => lineIndex === index ? { ...line, quantity: e.target.value } : line) }))} className="w-full bg-gray-50 border-none rounded-xl py-3 px-4 text-sm font-medium" />
                                 </div>
                                 <button type="button" onClick={() => setForm((current: any) => ({ ...current, items: current.items.length === 1 ? current.items : current.items.filter((_: any, lineIndex: number) => lineIndex !== index) }))} className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-3 rounded-xl text-sm font-bold">
-                                    Remove
+                                    {t.inventoryShrinkage.remove}
                                 </button>
                             </div>
                         ))}
@@ -275,10 +277,10 @@ export default function InventoryTransfersPage() {
 
                     <div className="flex items-center justify-between">
                         <button type="button" onClick={() => setForm((current: any) => ({ ...current, items: [...current.items, { productId: '', quantity: 1 }] }))} className="bg-white border border-gray-200 text-gray-700 px-4 py-2.5 rounded-xl font-bold text-sm flex items-center">
-                            <Plus className="w-4 h-4 mr-2" /> Add Line
+                            <Plus className="w-4 h-4 mr-2" /> {t.inventoryTransfers.addLine}
                         </button>
                         <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl font-bold text-sm flex items-center shadow-lg shadow-blue-200">
-                            <ArrowRightLeft className="w-4 h-4 mr-2" /> Create Transfer
+                            <ArrowRightLeft className="w-4 h-4 mr-2" /> {t.inventoryTransfers.createTransfer}
                         </button>
                     </div>
                 </form>
@@ -287,11 +289,11 @@ export default function InventoryTransfersPage() {
                     tableId="inventory-transfers"
                     columns={columns}
                     data={transfers}
-                    title="Warehouse Transfers"
+                    title={t.inventoryTransfers.title}
                     isLoading={loading}
-                    emptyMessage="No warehouse transfers recorded yet"
+                    emptyMessage={t.inventoryTransfers.emptyMessage}
                     emptyIcon={<Truck className="w-16 h-16 text-gray-200" />}
-                    searchPlaceholder="Search transfers..."
+                    searchPlaceholder={t.inventoryTransfers.searchPlaceholder}
                 />
             </div>
         </div>

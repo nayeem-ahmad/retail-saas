@@ -5,6 +5,7 @@ import { Printer, Search, Tag, X } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useBranding } from '@/lib/branding';
 import BarcodeLabel from '@/components/BarcodeLabel';
+import { useI18n } from '@/lib/i18n';
 
 interface Product {
     id: string;
@@ -45,6 +46,7 @@ const PRINT_CSS = `
 `;
 
 export default function PrintLabelsPage() {
+    const { t } = useI18n();
     const { businessName } = useBranding();
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
@@ -129,7 +131,7 @@ export default function PrintLabelsPage() {
                 <div className="px-4 py-4 border-b border-gray-100">
                     <div className="flex items-center gap-2 mb-3">
                         <Tag className="w-5 h-5 text-blue-600" />
-                        <h1 className="text-base font-bold text-gray-900">Print Labels</h1>
+                        <h1 className="text-base font-bold text-gray-900">{t.inventoryLabels.title}</h1>
                     </div>
 
                     {/* Search */}
@@ -137,7 +139,7 @@ export default function PrintLabelsPage() {
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                         <input
                             type="text"
-                            placeholder="Search products…"
+                            placeholder={t.inventoryLabels.searchPlaceholder}
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -158,17 +160,17 @@ export default function PrintLabelsPage() {
                             onClick={selectAll}
                             className="text-xs text-blue-600 hover:underline"
                         >
-                            Select all
+                            {t.inventoryLabels.selectAll}
                         </button>
                         <span className="text-xs text-gray-400">
-                            {selected.size} selected
+                            {t.inventoryLabels.selected.replace('{count}', String(selected.size))}
                         </span>
                         {selected.size > 0 && (
                             <button
                                 onClick={clearAll}
                                 className="text-xs text-gray-500 hover:underline"
                             >
-                                Clear
+                                {t.inventoryLabels.clear}
                             </button>
                         )}
                     </div>
@@ -177,9 +179,9 @@ export default function PrintLabelsPage() {
                 {/* Product list */}
                 <div className="flex-1 overflow-y-auto py-1">
                     {loading ? (
-                        <div className="px-4 py-6 text-center text-sm text-gray-400">Loading…</div>
+                        <div className="px-4 py-6 text-center text-sm text-gray-400">{t.inventoryLabels.loading}</div>
                     ) : filteredProducts.length === 0 ? (
-                        <div className="px-4 py-6 text-center text-sm text-gray-400">No products found</div>
+                        <div className="px-4 py-6 text-center text-sm text-gray-400">{t.inventoryLabels.noProducts}</div>
                     ) : (
                         filteredProducts.map((product) => (
                             <label
@@ -197,7 +199,7 @@ export default function PrintLabelsPage() {
                                         {product.name}
                                     </div>
                                     <div className="text-xs text-gray-400 font-mono">
-                                        {product.sku ?? 'No SKU'} &middot; ৳{Number(product.price).toFixed(2)}
+                                        {product.sku ?? t.inventoryLabels.noSku} &middot; ৳{Number(product.price).toFixed(2)}
                                     </div>
                                 </div>
                             </label>
@@ -209,7 +211,7 @@ export default function PrintLabelsPage() {
                 <div className="px-4 py-4 border-t border-gray-100 space-y-3">
                     <div className="flex items-center justify-between">
                         <label className="text-sm font-medium text-gray-700">
-                            Copies per label
+                            {t.inventoryLabels.copiesPerLabel}
                         </label>
                         <input
                             type="number"
@@ -228,7 +230,7 @@ export default function PrintLabelsPage() {
                         className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white text-sm font-semibold py-2.5 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                         <Printer className="w-4 h-4" />
-                        Print Selected ({selected.size * copies})
+                        {t.inventoryLabels.printSelected.replace('{count}', String(selected.size * copies))}
                     </button>
                 </div>
             </aside>
@@ -238,20 +240,22 @@ export default function PrintLabelsPage() {
                 {labelsToRender.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-64 text-gray-400">
                         <Tag className="w-12 h-12 mb-3 opacity-30" />
-                        <p className="text-sm">Select products on the left to preview labels</p>
+                        <p className="text-sm">{t.inventoryLabels.previewEmpty}</p>
                     </div>
                 ) : (
                     <>
                         <div className="flex items-center justify-between mb-4 print:hidden">
                             <h2 className="text-sm font-semibold text-gray-600">
-                                Preview — {labelsToRender.length} label{labelsToRender.length !== 1 ? 's' : ''}
+                                {labelsToRender.length === 1
+                                    ? t.inventoryLabels.previewTitle.replace('{count}', String(labelsToRender.length))
+                                    : t.inventoryLabels.previewTitlePlural.replace('{count}', String(labelsToRender.length))}
                             </h2>
                             <button
                                 onClick={handlePrint}
                                 className="flex items-center gap-1.5 text-sm text-blue-600 hover:underline"
                             >
                                 <Printer className="w-4 h-4" />
-                                Print
+                                {t.inventoryLabels.print}
                             </button>
                         </div>
 

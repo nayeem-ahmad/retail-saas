@@ -1,4 +1,5 @@
 'use client';
+import { useI18n, formatMessage } from '@/lib/i18n';
 
 import Link from 'next/link';
 import { useState } from 'react';
@@ -56,6 +57,8 @@ function FaqItem({ q, a }: { q: string; a: string }) {
 }
 
 export default function PricingPage() {
+    const { t } = useI18n();
+    const m = t.marketing.pricing;
     const [yearly, setYearly] = useState(false);
 
     return (
@@ -65,15 +68,15 @@ export default function PricingPage() {
             <section className="pt-32 pb-16 px-6 bg-gradient-to-b from-blue-50 to-white text-center">
                 <div className="max-w-3xl mx-auto space-y-4">
                     <h1 className="text-5xl md:text-6xl font-black tracking-tighter leading-none text-gray-900">
-                        Simple, transparent pricing
+                        {m.title}
                     </h1>
                     <p className="text-xl text-gray-500 max-w-xl mx-auto">
-                        Built for Bangladeshi retail businesses. Start free — upgrade when you&apos;re ready.
+                        {m.description}
                     </p>
 
                     <div className="flex items-center justify-center gap-4 pt-4">
                         <span className={`text-sm font-semibold ${!yearly ? 'text-gray-900' : 'text-gray-400'}`}>
-                            Monthly
+                            {m.monthly}
                         </span>
                         <button
                             onClick={() => setYearly((prev) => !prev)}
@@ -85,7 +88,7 @@ export default function PricingPage() {
                             />
                         </button>
                         <span className={`text-sm font-semibold ${yearly ? 'text-gray-900' : 'text-gray-400'}`}>
-                            Yearly
+                            {m.yearly}
                         </span>
                         {yearly && (
                             <span className="bg-green-100 text-green-700 text-xs font-bold px-3 py-1 rounded-full">
@@ -157,7 +160,7 @@ export default function PricingPage() {
                                             : 'bg-gray-900 hover:bg-gray-700 text-white'
                                     }`}
                                 >
-                                    {plan.monthlyPrice === 0 ? 'Start free' : 'Start free trial'}
+                                    {plan.monthlyPrice === 0 ? 'Start free' : m.ctaButton}
                                 </Link>
                             </div>
                         );
@@ -235,7 +238,7 @@ export default function PricingPage() {
             <section className="py-20 px-6 bg-white">
                 <div className="max-w-2xl mx-auto">
                     <h2 className="text-3xl font-black tracking-tight text-center mb-10">
-                        Frequently asked questions
+                        {m.faqTitle}
                     </h2>
                     <div className="space-y-3">
                         {PRICING_FAQS.map((faq) => (

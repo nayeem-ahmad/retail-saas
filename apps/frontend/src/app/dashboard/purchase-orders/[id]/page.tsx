@@ -6,6 +6,7 @@ import { ArrowLeft, Printer } from 'lucide-react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
 import { formatBDT, formatDate } from '@/lib/format';
+import { useI18n, formatMessage } from '@/lib/i18n';
 
 interface PurchaseOrder {
     id: string;
@@ -46,6 +47,7 @@ const nextActions: Record<string, { label: string; next: string; color: string }
 };
 
 export default function PurchaseOrderDetailPage() {
+    const { t, locale } = useI18n();
     const params = useParams();
     const router = useRouter();
     const [po, setPo] = useState<PurchaseOrder | null>(null);
@@ -102,7 +104,7 @@ export default function PurchaseOrderDetailPage() {
                 <div className="flex items-center justify-between">
                     <button onClick={() => router.push('/dashboard/purchase-orders')}
                         className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900">
-                        <ArrowLeft className="w-4 h-4" /> Back to Purchase Orders
+                        <ArrowLeft className="w-4 h-4" /> {t.purchaseOrders.detail.back}
                     </button>
                     <Link href={`/dashboard/purchase-orders/${po.id}/invoice`}
                         className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 shadow-sm">
@@ -118,9 +120,9 @@ export default function PurchaseOrderDetailPage() {
                         <div>
                             <h1 className="text-2xl font-black tracking-tight">{po.po_number}</h1>
                             <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mt-0.5">
-                                Created {formatDate(po.created_at)}
-                                {po.expected_date ? ` · Expected ${formatDate(po.expected_date)}` : ''}
-                                {po.received_at ? ` · Received ${formatDate(po.received_at)}` : ''}
+                                Created {formatDate(po.created_at, locale)}
+                                {po.expected_date ? ` · Expected ${formatDate(po.expected_date, locale)}` : ''}
+                                {po.received_at ? ` · Received ${formatDate(po.received_at, locale)}` : ''}
                             </p>
                         </div>
                         <span className={`px-3 py-1.5 rounded-full text-xs font-black uppercase tracking-widest ${statusStyles[po.status]}`}>
@@ -130,17 +132,17 @@ export default function PurchaseOrderDetailPage() {
 
                     <div className="grid grid-cols-2 gap-6 pt-2 border-t border-gray-100">
                         <div>
-                            <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Supplier</p>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">{t.common.supplier}</p>
                             {po.supplier ? (
                                 <div>
                                     <p className="text-sm font-bold text-gray-900">{po.supplier.name}</p>
                                     {po.supplier.phone && <p className="text-sm text-gray-500">{po.supplier.phone}</p>}
                                     {po.supplier.email && <p className="text-sm text-gray-500">{po.supplier.email}</p>}
                                 </div>
-                            ) : <p className="text-sm text-gray-400 italic">No supplier linked</p>}
+                            ) : <p className="text-sm text-gray-400 italic">{t.purchaseQuotations.detail.noSupplierLinked}</p>}
                         </div>
                         <div>
-                            <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Branch</p>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">{t.common.branch}</p>
                             <p className="text-sm font-bold text-gray-900">{po.store?.name ?? '—'}</p>
                         </div>
                     </div>
@@ -148,15 +150,15 @@ export default function PurchaseOrderDetailPage() {
 
                 {/* Line items */}
                 <div className="bg-white rounded-2xl border border-gray-100 p-6">
-                    <h2 className="text-xs font-black uppercase tracking-widest text-gray-400 mb-4">Items</h2>
+                    <h2 className="text-xs font-black uppercase tracking-widest text-gray-400 mb-4">{t.purchaseOrders.detail.items}</h2>
                     <table className="w-full text-sm">
                         <thead>
                             <tr className="border-b border-gray-100">
-                                <th className="text-left pb-3 text-[10px] font-black uppercase tracking-widest text-gray-400">Product</th>
-                                <th className="text-left pb-3 text-[10px] font-black uppercase tracking-widest text-gray-400">SKU</th>
-                                <th className="text-center pb-3 text-[10px] font-black uppercase tracking-widest text-gray-400">Qty</th>
-                                <th className="text-right pb-3 text-[10px] font-black uppercase tracking-widest text-gray-400">Unit Cost</th>
-                                <th className="text-right pb-3 text-[10px] font-black uppercase tracking-widest text-gray-400">Line Total</th>
+                                <th className="text-left pb-3 text-[10px] font-black uppercase tracking-widest text-gray-400">{t.common.product}</th>
+                                <th className="text-left pb-3 text-[10px] font-black uppercase tracking-widest text-gray-400">{t.purchases.invoice.sku}</th>
+                                <th className="text-center pb-3 text-[10px] font-black uppercase tracking-widest text-gray-400">{t.purchaseShared.qty}</th>
+                                <th className="text-right pb-3 text-[10px] font-black uppercase tracking-widest text-gray-400">{t.purchaseShared.unitCost}</th>
+                                <th className="text-right pb-3 text-[10px] font-black uppercase tracking-widest text-gray-400">{t.purchaseShared.lineTotal}</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
@@ -172,15 +174,15 @@ export default function PurchaseOrderDetailPage() {
                         </tbody>
                     </table>
 
-                    {/* Totals */}
+                    {/* {t.accountingShared.totals} */}
                     <div className="flex justify-end mt-4 pt-4 border-t border-gray-100">
                         <div className="w-64 space-y-1.5 text-sm">
-                            <div className="flex justify-between text-gray-600"><span>Subtotal</span><span>{formatBDT(subtotal)}</span></div>
-                            {tax > 0 && <div className="flex justify-between text-gray-600"><span>Tax</span><span>{formatBDT(tax)}</span></div>}
-                            {freight > 0 && <div className="flex justify-between text-gray-600"><span>Freight</span><span>{formatBDT(freight)}</span></div>}
-                            {discount > 0 && <div className="flex justify-between text-gray-600"><span>Discount</span><span className="text-red-500">−{formatBDT(discount)}</span></div>}
+                            <div className="flex justify-between text-gray-600"><span>{t.common.subtotal}</span><span>{formatBDT(subtotal, { locale })}</span></div>
+                            {tax > 0 && <div className="flex justify-between text-gray-600"><span>{t.common.tax}</span><span>{formatBDT(tax, { locale })}</span></div>}
+                            {freight > 0 && <div className="flex justify-between text-gray-600"><span>{t.purchaseShared.freight}</span><span>{formatBDT(freight, { locale })}</span></div>}
+                            {discount > 0 && <div className="flex justify-between text-gray-600"><span>{t.common.discount}</span><span className="text-red-500">−{formatBDT(discount, { locale })}</span></div>}
                             <div className="flex justify-between font-black text-base pt-2 border-t border-gray-200">
-                                <span>Total</span><span className="text-blue-700">{formatBDT(total)}</span>
+                                <span>{t.purchases.invoice.total}</span><span className="text-blue-700">{formatBDT(total, { locale })}</span>
                             </div>
                         </div>
                     </div>
@@ -195,7 +197,7 @@ export default function PurchaseOrderDetailPage() {
                 {/* Status actions */}
                 {actions.length > 0 && (
                     <div className="bg-white rounded-2xl border border-gray-100 p-6">
-                        <h2 className="text-xs font-black uppercase tracking-widest text-gray-400 mb-4">Actions</h2>
+                        <h2 className="text-xs font-black uppercase tracking-widest text-gray-400 mb-4">{t.purchaseQuotations.detail.actions}</h2>
                         <div className="flex gap-3">
                             {actions.map((action) => (
                                 <button key={action.next} onClick={() => handleStatusUpdate(action.next)} disabled={updating}

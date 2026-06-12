@@ -1,5 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 
+jest.unmock('@/lib/i18n');
+
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import { I18nProvider } from './i18n';
 

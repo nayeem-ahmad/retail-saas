@@ -5,6 +5,7 @@ const pushMock = jest.fn();
 
 jest.mock('next/navigation', () => ({
     useRouter: () => ({ push: pushMock }),
+    useSearchParams: () => ({ get: () => null }),
 }));
 
 jest.mock('../../lib/api', () => ({

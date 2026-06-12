@@ -1,3 +1,21 @@
+jest.mock('@/lib/i18n', () => {
+  const { enMessages } = require('@/lib/localization/messages/en');
+
+  return {
+    useI18n: () => ({
+      t: enMessages,
+      locale: 'en',
+    }),
+    formatMessage: (template, values = {}) =>
+      Object.entries(values).reduce(
+        (result, [key, value]) => result.replaceAll(`{${key}}`, String(value)),
+        template,
+      ),
+  };
+}, { virtual: true });
+
+const { enMessages } = require('@/lib/localization/messages/en');
+
 import React from 'react';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import ReturnDetailPage from './page';
@@ -125,7 +143,7 @@ describe('ReturnDetailPage', () => {
     it('shows COMPLETED status badge', async () => {
         render(<ReturnDetailPage />);
         await waitFor(() => {
-            expect(screen.getByText('COMPLETED')).toBeInTheDocument();
+            expect(screen.getByText(enMessages.shared.statuses.return.COMPLETED)).toBeInTheDocument();
         });
     });
 

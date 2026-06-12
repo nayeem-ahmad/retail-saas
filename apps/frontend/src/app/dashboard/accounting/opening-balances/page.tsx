@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Plus, Trash2, CheckCircle } from 'lucide-react';
 import { api } from '@/lib/api';
 import { formatBDT } from '@/lib/format';
+import { useI18n, formatMessage } from '@/lib/i18n';
 
 interface Account { id: string; name: string; code?: string | null; type: string; }
 interface EntryRow { accountId: string; debitAmount: string; creditAmount: string; }
@@ -11,6 +12,7 @@ interface EntryRow { accountId: string; debitAmount: string; creditAmount: strin
 function today() { return new Date().toISOString().slice(0, 10); }
 
 export default function OpeningBalancesPage() {
+    const { t, locale } = useI18n();
     const [accounts, setAccounts] = useState<Account[]>([]);
     const [asOfDate, setAsOfDate] = useState(today());
     const [rows, setRows] = useState<EntryRow[]>([
@@ -145,8 +147,8 @@ export default function OpeningBalancesPage() {
                         <tfoot>
                             <tr className="border-t border-gray-200 bg-gray-50">
                                 <td className="px-4 py-3 text-xs font-black uppercase tracking-widest text-gray-500">Totals</td>
-                                <td className="px-4 py-3 text-right font-black text-sm">{formatBDT(totalDebit)}</td>
-                                <td className="px-4 py-3 text-right font-black text-sm">{formatBDT(totalCredit)}</td>
+                                <td className="px-4 py-3 text-right font-black text-sm">{formatBDT(totalDebit, { locale })}</td>
+                                <td className="px-4 py-3 text-right font-black text-sm">{formatBDT(totalCredit, { locale })}</td>
                                 <td />
                             </tr>
                         </tfoot>

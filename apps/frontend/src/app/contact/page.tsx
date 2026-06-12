@@ -3,11 +3,14 @@
 import Link from 'next/link';
 import { useState, FormEvent } from 'react';
 import { Mail, MapPin, Clock } from 'lucide-react';
+import { useI18n, formatMessage } from '@/lib/i18n';
 
 export default function ContactPage() {
+    const { t } = useI18n();
+    const m = t.marketing.contact;
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
-    const [subject, setSubject] = useState('General Inquiry');
+    const [subject, setSubject] = useState(m.subjects[0]);
     const [message, setMessage] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [success, setSuccess] = useState(false);
@@ -19,16 +22,16 @@ export default function ContactPage() {
 
         // Frontend validation
         if (!name.trim() || !email.trim() || !subject.trim() || !message.trim()) {
-            setError('All fields are required.');
+            setError(m.validation.required);
             return;
         }
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email)) {
-            setError('Please enter a valid email address.');
+            setError(m.validation.invalidEmail);
             return;
         }
         if (message.trim().length < 10) {
-            setError('Message must be at least 10 characters.');
+            setError(m.validation.messageTooShort);
             return;
         }
 
@@ -44,13 +47,13 @@ export default function ContactPage() {
             );
             if (!res.ok) {
                 const data = await res.json().catch(() => ({}));
-                const msg = data?.message ?? data?.error ?? 'Something went wrong. Please try again.';
+                const msg = data?.message ?? data?.error ?? m.errors.default;
                 setError(Array.isArray(msg) ? msg.join(' ') : String(msg));
             } else {
                 setSuccess(true);
             }
         } catch {
-            setError('Unable to send your message. Please check your connection and try again.');
+            setError(m.errors.network);
         } finally {
             setSubmitting(false);
         }
@@ -65,13 +68,13 @@ export default function ContactPage() {
                     <Link href="/" className="text-xl font-black tracking-tight text-blue-600">RetailSaaS</Link>
                     <div className="flex items-center gap-3">
                         <Link href="/login" className="text-sm font-semibold text-gray-700 hover:text-gray-900 px-4 py-2">
-                            Sign in
+                            {m.nav.signIn}
                         </Link>
                         <Link
                             href="/signup"
                             className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-5 py-2 rounded-xl transition-colors"
                         >
-                            Start free trial
+                            {m.nav.startFreeTrial}
                         </Link>
                     </div>
                 </div>
@@ -82,8 +85,8 @@ export default function ContactPage() {
 
                     {/* Hero */}
                     <div className="text-center mb-16">
-                        <h1 className="text-5xl font-black tracking-tight text-gray-900 mb-4">Get in touch</h1>
-                        <p className="text-lg text-gray-500">We&apos;d love to hear from you</p>
+                        <h1 className="text-5xl font-black tracking-tight text-gray-900 mb-4">{m.title}</h1>
+                        <p className="text-lg text-gray-500">{m.subtitle}</p>
                     </div>
 
                     {/* Two-column layout */}
@@ -91,10 +94,8 @@ export default function ContactPage() {
 
                         {/* Left: contact info */}
                         <div className="space-y-6">
-                            <h2 className="text-2xl font-bold text-gray-900">Contact Information</h2>
-                            <p className="text-gray-500">
-                                Reach out through the form or contact us directly using the details below.
-                            </p>
+                            <h2 className="text-2xl font-bold text-gray-900">{m.infoTitle}</h2>
+                            <p className="text-gray-500">{m.infoDescription}</p>
 
                             <div className="space-y-4 mt-8">
                                 <div className="flex items-start gap-4 p-5 bg-gray-50 rounded-2xl">
@@ -102,12 +103,12 @@ export default function ContactPage() {
                                         <Mail className="w-5 h-5 text-blue-600" />
                                     </div>
                                     <div>
-                                        <p className="font-semibold text-gray-900 mb-1">Email</p>
+                                        <p className="font-semibold text-gray-900 mb-1">{m.info.email}</p>
                                         <a
-                                            href="mailto:support@retailsaas.app"
+                                            href={`mailto:${m.info.emailValue}`}
                                             className="text-blue-600 hover:underline text-sm"
                                         >
-                                            support@retailsaas.app
+                                            {m.info.emailValue}
                                         </a>
                                     </div>
                                 </div>
@@ -117,8 +118,8 @@ export default function ContactPage() {
                                         <MapPin className="w-5 h-5 text-blue-600" />
                                     </div>
                                     <div>
-                                        <p className="font-semibold text-gray-900 mb-1">Location</p>
-                                        <p className="text-gray-500 text-sm">Dhaka, Bangladesh</p>
+                                        <p className="font-semibold text-gray-900 mb-1">{m.info.location}</p>
+                                        <p className="text-gray-500 text-sm">{m.info.addressValue}</p>
                                     </div>
                                 </div>
 
@@ -127,8 +128,8 @@ export default function ContactPage() {
                                         <Clock className="w-5 h-5 text-blue-600" />
                                     </div>
                                     <div>
-                                        <p className="font-semibold text-gray-900 mb-1">Response time</p>
-                                        <p className="text-gray-500 text-sm">Within 24 hours</p>
+                                        <p className="font-semibold text-gray-900 mb-1">{m.info.responseTime}</p>
+                                        <p className="text-gray-500 text-sm">{m.info.responseTimeValue}</p>
                                     </div>
                                 </div>
                             </div>
@@ -140,14 +141,12 @@ export default function ContactPage() {
                                 <div className="flex flex-col items-center justify-center h-full py-16 text-center">
                                     <div className="bg-green-50 border border-green-200 rounded-2xl p-10">
                                         <div className="text-green-600 text-5xl mb-4">&#10003;</div>
-                                        <p className="text-green-800 font-semibold text-lg">
-                                            Message sent! We&apos;ll get back to you within 24 hours.
-                                        </p>
+                                        <p className="text-green-800 font-semibold text-lg">{m.form.successTitle}</p>
                                     </div>
                                 </div>
                             ) : (
                                 <form onSubmit={handleSubmit} className="space-y-5" noValidate>
-                                    <h2 className="text-2xl font-bold text-gray-900 mb-6">Send us a message</h2>
+                                    <h2 className="text-2xl font-bold text-gray-900 mb-6">{m.form.title}</h2>
 
                                     {error && (
                                         <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-4 py-3">
@@ -158,7 +157,7 @@ export default function ContactPage() {
                                     {/* Name */}
                                     <div>
                                         <label htmlFor="name" className="block text-sm font-semibold text-gray-700 mb-1.5">
-                                            Name <span className="text-red-500">*</span>
+                                            {m.form.name} <span className="text-red-500">*</span>
                                         </label>
                                         <input
                                             id="name"
@@ -166,7 +165,7 @@ export default function ContactPage() {
                                             required
                                             value={name}
                                             onChange={(e) => setName(e.target.value)}
-                                            placeholder="Your full name"
+                                            placeholder={m.form.namePlaceholder}
                                             className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                                         />
                                     </div>
@@ -174,7 +173,7 @@ export default function ContactPage() {
                                     {/* Email */}
                                     <div>
                                         <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-1.5">
-                                            Email <span className="text-red-500">*</span>
+                                            {m.form.email} <span className="text-red-500">*</span>
                                         </label>
                                         <input
                                             id="email"
@@ -182,7 +181,7 @@ export default function ContactPage() {
                                             required
                                             value={email}
                                             onChange={(e) => setEmail(e.target.value)}
-                                            placeholder="you@example.com"
+                                            placeholder={m.form.emailPlaceholder}
                                             className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                                         />
                                     </div>
@@ -190,7 +189,7 @@ export default function ContactPage() {
                                     {/* Subject dropdown */}
                                     <div>
                                         <label htmlFor="subject" className="block text-sm font-semibold text-gray-700 mb-1.5">
-                                            Subject <span className="text-red-500">*</span>
+                                            {m.form.subject} <span className="text-red-500">*</span>
                                         </label>
                                         <select
                                             id="subject"
@@ -199,17 +198,16 @@ export default function ContactPage() {
                                             onChange={(e) => setSubject(e.target.value)}
                                             className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                                         >
-                                            <option value="General Inquiry">General Inquiry</option>
-                                            <option value="Sales">Sales</option>
-                                            <option value="Technical Support">Technical Support</option>
-                                            <option value="Billing">Billing</option>
+                                            {m.subjects.slice(0, 4).map((s) => (
+                                                <option key={s} value={s}>{s}</option>
+                                            ))}
                                         </select>
                                     </div>
 
                                     {/* Message */}
                                     <div>
                                         <label htmlFor="message" className="block text-sm font-semibold text-gray-700 mb-1.5">
-                                            Message <span className="text-red-500">*</span>
+                                            {m.form.message} <span className="text-red-500">*</span>
                                         </label>
                                         <textarea
                                             id="message"
@@ -218,7 +216,7 @@ export default function ContactPage() {
                                             rows={5}
                                             value={message}
                                             onChange={(e) => setMessage(e.target.value)}
-                                            placeholder="Tell us how we can help you (min. 10 characters)"
+                                            placeholder={m.form.messagePlaceholder}
                                             className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition resize-none"
                                         />
                                     </div>
@@ -228,7 +226,7 @@ export default function ContactPage() {
                                         disabled={submitting}
                                         className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold py-3 px-6 rounded-xl transition-colors"
                                     >
-                                        {submitting ? 'Sending…' : 'Send message'}
+                                        {submitting ? m.form.submitting : m.form.submit}
                                     </button>
                                 </form>
                             )}
@@ -243,14 +241,14 @@ export default function ContactPage() {
                 <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-gray-400">
                     <span className="font-black text-lg text-blue-600">RetailSaaS</span>
                     <div className="flex items-center gap-6">
-                        <Link href="/terms" className="hover:text-gray-700 transition-colors">Terms of Service</Link>
-                        <Link href="/privacy" className="hover:text-gray-700 transition-colors">Privacy Policy</Link>
-                        <Link href="/contact" className="hover:text-gray-700 transition-colors">Contact</Link>
-                        <Link href="/status" className="hover:text-gray-700 transition-colors">Status</Link>
-                        <Link href="/login" className="hover:text-gray-700 transition-colors">Sign in</Link>
-                        <Link href="/signup" className="hover:text-gray-700 transition-colors">Sign up</Link>
+                        <Link href="/terms" className="hover:text-gray-700 transition-colors">{m.footer.terms}</Link>
+                        <Link href="/privacy" className="hover:text-gray-700 transition-colors">{m.footer.privacy}</Link>
+                        <Link href="/contact" className="hover:text-gray-700 transition-colors">{m.footer.contact}</Link>
+                        <Link href="/status" className="hover:text-gray-700 transition-colors">{m.footer.status}</Link>
+                        <Link href="/login" className="hover:text-gray-700 transition-colors">{m.footer.signIn}</Link>
+                        <Link href="/signup" className="hover:text-gray-700 transition-colors">{m.footer.signUp}</Link>
                     </div>
-                    <span>&copy; {new Date().getFullYear()} RetailSaaS. All rights reserved.</span>
+                    <span>{formatMessage(m.footer.copyright, { year: new Date().getFullYear() })}</span>
                 </div>
             </footer>
         </div>

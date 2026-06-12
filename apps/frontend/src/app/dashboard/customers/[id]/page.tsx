@@ -9,16 +9,22 @@ import {
     FolderTree, Map, ChevronLeft, ChevronRight, MessageSquare, Wallet,
     Plus, Trash2, CheckCircle2, Send, ClipboardList, AlertCircle,
 } from 'lucide-react';
+import { useI18n, formatMessage } from '@/lib/i18n';
 
 type Tab = 'history' | 'interactions' | 'credit' | 'tasks';
 
 const TASK_TYPES = ['FOLLOW_UP', 'COLLECTION', 'BIRTHDAY', 'REORDER_REMINDER'] as const;
-const taskTypeLabels: Record<string, string> = {
-    FOLLOW_UP: 'Follow Up', COLLECTION: 'Collection', BIRTHDAY: 'Birthday', REORDER_REMINDER: 'Reorder',
-};
+
 const taskTypeColors: Record<string, string> = {
     FOLLOW_UP: 'bg-blue-50 text-blue-700', COLLECTION: 'bg-amber-50 text-amber-700',
     BIRTHDAY: 'bg-rose-50 text-rose-700', REORDER_REMINDER: 'bg-violet-50 text-violet-700',
+};
+
+const TASK_TYPE_KEYS: Record<string, 'followUp' | 'collection' | 'birthday' | 'reorderReminder'> = {
+    FOLLOW_UP: 'followUp',
+    COLLECTION: 'collection',
+    BIRTHDAY: 'birthday',
+    REORDER_REMINDER: 'reorderReminder',
 };
 
 const INTERACTION_TYPES = ['CALL', 'SMS', 'WHATSAPP', 'EMAIL', 'VISIT', 'NOTE'] as const;
@@ -27,6 +33,7 @@ const typeIcons: Record<string, string> = {
 };
 
 export default function CustomerProfile() {
+    const { t } = useI18n();
     const { id } = useParams();
     const router = useRouter();
     const [customer, setCustomer] = useState<any>(null);
@@ -161,7 +168,7 @@ export default function CustomerProfile() {
     };
 
     const deleteInteraction = async (interactionId: string) => {
-        if (!confirm('Delete this interaction?')) return;
+        if (!confirm(t.customers.profile.deleteInteractionConfirm)) return;
         await api.deleteCrmInteraction(interactionId);
         await loadInteractions();
     };
@@ -182,8 +189,8 @@ export default function CustomerProfile() {
         }
     };
 
-    if (loading) return <div className="p-8 font-black uppercase tracking-widest text-gray-400">Loading profile...</div>;
-    if (!customer) return <div className="p-8 font-black text-rose-500 uppercase">Customer not found.</div>;
+    if (loading) return <div className="p-8 font-black uppercase tracking-widest text-gray-400">{t.customers.profile.loading}</div>;
+    if (!customer) return <div className="p-8 font-black text-rose-500 uppercase">{t.customers.profile.notFound}</div>;
 
     const segmentClass =
         customer.segment_category === 'VIP' ? 'bg-emerald-50 text-emerald-600' :
@@ -193,7 +200,7 @@ export default function CustomerProfile() {
     return (
         <div className="overflow-y-auto h-full p-8 bg-[#f9fafb] space-y-6">
             <button onClick={() => router.back()} className="flex items-center text-sm font-bold text-gray-500 hover:text-gray-900 transition-colors">
-                <ArrowLeft className="w-4 h-4 mr-2" /> Back to Customers
+                <ArrowLeft className="w-4 h-4 mr-2" /> {t.customers.profile.back}
             </button>
 
             {/* Profile Header */}
@@ -208,7 +215,7 @@ export default function CustomerProfile() {
                         <h1 className="text-3xl font-black tracking-tight">{customer.name}</h1>
                         <span className="font-mono text-xs text-gray-400 bg-gray-50 px-2 py-1 rounded">{customer.customer_code}</span>
                         <span className={`px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-tighter ${customer.customer_type === 'ORGANIZATION' ? 'bg-purple-50 text-purple-600' : 'bg-gray-100 text-gray-600'}`}>
-                            {customer.customer_type || 'Individual'}
+                            {customer.customer_type || t.customers.profile.individual}
                         </span>
                         {customer.segment_category && (
                             <span className={`px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-tighter ${segmentClass}`}>
@@ -224,15 +231,15 @@ export default function CustomerProfile() {
                 </div>
                 <div className="text-right shrink-0 space-y-2">
                     <div>
-                        <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Lifetime Value</p>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">{t.customers.profile.lifetimeValue}</p>
                         <p className="text-4xl font-black text-blue-600">{formatBDT(Number(customer.total_spent))}</p>
                         {history && (
-                            <p className="text-xs text-gray-400 font-bold mt-1">{history.total} transaction{history.total !== 1 ? 's' : ''}</p>
+                            <p className="text-xs text-gray-400 font-bold mt-1">{formatMessage(history.total !== 1 ? t.customers.profile.transactionsPlural : t.customers.profile.transactions, { count: history.total })}</p>
                         )}
                     </div>
                     {Number(customer.due_balance) > 0 && (
                         <div className="bg-rose-50 border border-rose-200 rounded-xl px-3 py-2">
-                            <p className="text-[10px] font-black uppercase tracking-widest text-rose-400 mb-0.5">Due Balance</p>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-rose-400 mb-0.5">{t.customers.profile.dueBalance}</p>
                             <p className="text-xl font-black text-rose-600">{formatBDT(Number(customer.due_balance))}</p>
                         </div>
                     )}
@@ -241,20 +248,20 @@ export default function CustomerProfile() {
 
             {/* Info Cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <InfoCard label="Customer Group" value={customer.customerGroup?.name || '—'} icon={<FolderTree className="w-5 h-5 text-blue-600" />} />
-                <InfoCard label="Territory" value={customer.territory?.name || '—'} icon={<Map className="w-5 h-5 text-emerald-600" />} />
-                <InfoCard label="Credit Limit" value={customer.credit_limit ? `৳${Number(customer.credit_limit).toLocaleString()}` : '—'} icon={<CreditCard className="w-5 h-5 text-amber-600" />} />
-                <InfoCard label="Default Discount" value={customer.default_discount_pct ? `${Number(customer.default_discount_pct)}%` : '—'} icon={<Building2 className="w-5 h-5 text-purple-600" />} />
+                <InfoCard label={t.customers.profile.customerGroup} value={customer.customerGroup?.name || '—'} icon={<FolderTree className="w-5 h-5 text-blue-600" />} />
+                <InfoCard label={t.customers.profile.territory} value={customer.territory?.name || '—'} icon={<Map className="w-5 h-5 text-emerald-600" />} />
+                <InfoCard label={t.customers.profile.creditLimit} value={customer.credit_limit ? `৳${Number(customer.credit_limit).toLocaleString()}` : '—'} icon={<CreditCard className="w-5 h-5 text-amber-600" />} />
+                <InfoCard label={t.customers.profile.defaultDiscount} value={customer.default_discount_pct ? `${Number(customer.default_discount_pct)}%` : '—'} icon={<Building2 className="w-5 h-5 text-purple-600" />} />
             </div>
 
             {/* Tabs */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                 <div className="border-b border-gray-100 flex">
                     {([
-                        { key: 'history', label: 'Purchase History', icon: <ShoppingBag className="w-4 h-4" /> },
-                        { key: 'interactions', label: 'Interactions', icon: <MessageSquare className="w-4 h-4" /> },
-                        { key: 'credit', label: 'Credit / Due', icon: <Wallet className="w-4 h-4" /> },
-                        { key: 'tasks', label: 'Tasks', icon: <ClipboardList className="w-4 h-4" /> },
+                        { key: 'history', label: t.customers.profile.tabs.history, icon: <ShoppingBag className="w-4 h-4" /> },
+                        { key: 'interactions', label: t.customers.profile.tabs.interactions, icon: <MessageSquare className="w-4 h-4" /> },
+                        { key: 'credit', label: t.customers.profile.tabs.credit, icon: <Wallet className="w-4 h-4" /> },
+                        { key: 'tasks', label: t.customers.profile.tabs.tasks, icon: <ClipboardList className="w-4 h-4" /> },
                     ] as const).map(({ key, label, icon }) => (
                         <button
                             key={key}
@@ -274,9 +281,9 @@ export default function CustomerProfile() {
                 {activeTab === 'history' && (
                     <div>
                         {historyLoading ? (
-                            <div className="p-8 text-center text-gray-400 font-bold uppercase tracking-widest text-xs">Loading...</div>
+                            <div className="p-8 text-center text-gray-400 font-bold uppercase tracking-widest text-xs">{t.common.loading}</div>
                         ) : !history || history.data?.length === 0 ? (
-                            <div className="p-8 text-center text-gray-400 font-bold uppercase tracking-widest text-xs">No transactions found.</div>
+                            <div className="p-8 text-center text-gray-400 font-bold uppercase tracking-widest text-xs">{t.customers.profile.noTransactions}</div>
                         ) : (
                             <>
                                 <div className="divide-y divide-gray-50">
@@ -304,7 +311,7 @@ export default function CustomerProfile() {
                                             <div className="bg-gray-50 rounded-xl p-4 space-y-2">
                                                 {sale.items?.map((item: any) => (
                                                     <div key={item.id} className="flex justify-between text-sm">
-                                                        <span className="font-medium text-gray-700">{item.quantity}x {item.product?.name || 'Unknown Item'}</span>
+                                                        <span className="font-medium text-gray-700">{item.quantity}x {item.product?.name || t.customers.profile.unknownItem}</span>
                                                         <span className="font-bold">{formatBDT(Number(item.price_at_sale) * item.quantity)}</span>
                                                     </div>
                                                 ))}
@@ -315,11 +322,11 @@ export default function CustomerProfile() {
                                 {history.totalPages > 1 && (
                                     <div className="p-4 border-t border-gray-100 flex items-center justify-between">
                                         <button onClick={() => setHistoryPage((p) => Math.max(1, p - 1))} disabled={history.page === 1} className="flex items-center gap-1 text-sm font-bold text-gray-600 disabled:opacity-40">
-                                            <ChevronLeft className="w-4 h-4" /> Previous
+                                            <ChevronLeft className="w-4 h-4" /> {t.customers.profile.previous}
                                         </button>
-                                        <span className="text-xs text-gray-400">{history.total} total transactions</span>
+                                        <span className="text-xs text-gray-400">{formatMessage(t.customers.profile.totalTransactions, { count: history.total })}</span>
                                         <button onClick={() => setHistoryPage((p) => Math.min(history.totalPages, p + 1))} disabled={history.page === history.totalPages} className="flex items-center gap-1 text-sm font-bold text-gray-600 disabled:opacity-40">
-                                            Next <ChevronRight className="w-4 h-4" />
+                                            {t.customers.profile.next} <ChevronRight className="w-4 h-4" />
                                         </button>
                                     </div>
                                 )}
@@ -336,7 +343,7 @@ export default function CustomerProfile() {
                                 onClick={() => setShowInteractionForm((v) => !v)}
                                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700"
                             >
-                                <Plus className="w-4 h-4" /> Log Interaction
+                                <Plus className="w-4 h-4" /> {t.customers.profile.logInteraction}
                             </button>
                         </div>
 
@@ -356,7 +363,7 @@ export default function CustomerProfile() {
                                     ))}
                                 </div>
                                 <textarea
-                                    placeholder="Summary *"
+                                    placeholder={t.customers.profile.summary}
                                     value={newInteraction.summary}
                                     onChange={(e) => setNewInteraction((n) => ({ ...n, summary: e.target.value }))}
                                     className="w-full border border-gray-200 rounded-lg p-3 text-sm resize-none"
@@ -364,7 +371,7 @@ export default function CustomerProfile() {
                                 />
                                 <input
                                     type="text"
-                                    placeholder="Outcome (optional)"
+                                    placeholder={t.customers.profile.outcome}
                                     value={newInteraction.outcome}
                                     onChange={(e) => setNewInteraction((n) => ({ ...n, outcome: e.target.value }))}
                                     className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
@@ -385,11 +392,11 @@ export default function CustomerProfile() {
                         )}
 
                         {interactionsLoading ? (
-                            <div className="py-8 text-center text-gray-400 text-sm">Loading...</div>
+                            <div className="py-8 text-center text-gray-400 text-sm">{t.common.loading}</div>
                         ) : interactions.length === 0 ? (
                             <div className="py-12 text-center text-gray-400">
                                 <MessageSquare className="w-10 h-10 mx-auto mb-2 opacity-30" />
-                                <p className="text-sm">No interactions logged yet</p>
+                                <p className="text-sm">{t.customers.profile.noInteractions}</p>
                             </div>
                         ) : (
                             <div className="space-y-3">
@@ -415,7 +422,7 @@ export default function CustomerProfile() {
                                             </div>
                                             <div className="flex items-center gap-2 mt-2 text-xs text-gray-400">
                                                 <span>{formatDate(interaction.created_at)}</span>
-                                                {interaction.creator && <span>by {interaction.creator.name || interaction.creator.email}</span>}
+                                                {interaction.creator && <span>{t.customers.profile.by} {interaction.creator.name || interaction.creator.email}</span>}
                                             </div>
                                         </div>
                                     </div>
@@ -429,18 +436,18 @@ export default function CustomerProfile() {
                 {activeTab === 'credit' && (
                     <div className="p-6 space-y-4">
                         {creditLoading ? (
-                            <div className="py-8 text-center text-gray-400 text-sm">Loading...</div>
+                            <div className="py-8 text-center text-gray-400 text-sm">{t.common.loading}</div>
                         ) : (
                             <>
                                 <div className="grid grid-cols-3 gap-4">
                                     <div className={`rounded-xl p-4 border ${Number(creditLedger?.due_balance) > 0 ? 'bg-rose-50 border-rose-200' : 'bg-emerald-50 border-emerald-200'}`}>
-                                        <p className="text-xs font-black uppercase tracking-widest text-gray-500 mb-1">Due Balance</p>
+                                        <p className="text-xs font-black uppercase tracking-widest text-gray-500 mb-1">{t.customers.profile.dueBalance}</p>
                                         <p className={`text-2xl font-black ${Number(creditLedger?.due_balance) > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
                                             {formatBDT(creditLedger?.due_balance ?? 0)}
                                         </p>
                                     </div>
                                     <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-                                        <p className="text-xs font-black uppercase tracking-widest text-gray-500 mb-1">Credit Limit</p>
+                                        <p className="text-xs font-black uppercase tracking-widest text-gray-500 mb-1">{t.customers.profile.creditLimit}</p>
                                         <p className="text-2xl font-black text-gray-700">
                                             {creditLedger?.credit_limit ? formatBDT(creditLedger.credit_limit) : '—'}
                                         </p>
@@ -448,7 +455,7 @@ export default function CustomerProfile() {
                                     <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 flex items-center justify-center">
                                         <div className="text-center">
                                             <div className={`w-3 h-3 rounded-full mx-auto mb-1 ${creditLedger?.credit_enabled ? 'bg-emerald-500' : 'bg-gray-300'}`} />
-                                            <p className="text-xs font-bold text-gray-500">{creditLedger?.credit_enabled ? 'Credit Enabled' : 'Credit Disabled'}</p>
+                                            <p className="text-xs font-bold text-gray-500">{creditLedger?.credit_enabled ? t.customers.profile.creditEnabled : t.customers.profile.creditDisabled}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -460,22 +467,22 @@ export default function CustomerProfile() {
                                                 onClick={() => setShowPaymentForm(true)}
                                                 className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700"
                                             >
-                                                <CheckCircle2 className="w-4 h-4" /> Record Payment
+                                                <CheckCircle2 className="w-4 h-4" /> {t.customers.profile.recordPayment}
                                             </button>
                                         ) : (
                                             <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-3">
-                                                <h3 className="font-bold text-sm text-gray-700">Record Payment</h3>
+                                                <h3 className="font-bold text-sm text-gray-700">{t.customers.profile.recordPayment}</h3>
                                                 <div className="flex gap-3">
                                                     <input
                                                         type="number"
-                                                        placeholder="Amount (৳)"
+                                                        placeholder={t.customers.profile.amountPlaceholder}
                                                         value={paymentAmount}
                                                         onChange={(e) => setPaymentAmount(e.target.value)}
                                                         className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm"
                                                     />
                                                     <input
                                                         type="text"
-                                                        placeholder="Notes (optional)"
+                                                        placeholder={t.customers.profile.notesOptional}
                                                         value={paymentNote}
                                                         onChange={(e) => setPaymentNote(e.target.value)}
                                                         className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm"
@@ -487,10 +494,10 @@ export default function CustomerProfile() {
                                                         disabled={savingPayment || !paymentAmount}
                                                         className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium disabled:opacity-50"
                                                     >
-                                                        Confirm Payment
+                                                        {t.customers.profile.confirmPayment}
                                                     </button>
                                                     <button onClick={() => setShowPaymentForm(false)} className="px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-600">
-                                                        Cancel
+                                                        {t.common.cancel}
                                                     </button>
                                                 </div>
                                             </div>
@@ -504,11 +511,11 @@ export default function CustomerProfile() {
                                         <table className="w-full text-sm">
                                             <thead className="bg-gray-50 text-xs font-bold text-gray-500 uppercase tracking-wider">
                                                 <tr>
-                                                    <th className="text-left px-4 py-3">Date</th>
-                                                    <th className="text-left px-4 py-3">Type</th>
-                                                    <th className="text-right px-4 py-3">Amount</th>
-                                                    <th className="text-right px-4 py-3">Balance After</th>
-                                                    <th className="text-left px-4 py-3">Notes</th>
+                                                    <th className="text-left px-4 py-3">{t.customers.profile.creditColumns.date}</th>
+                                                    <th className="text-left px-4 py-3">{t.customers.profile.creditColumns.type}</th>
+                                                    <th className="text-right px-4 py-3">{t.customers.profile.creditColumns.amount}</th>
+                                                    <th className="text-right px-4 py-3">{t.customers.profile.balanceAfter}</th>
+                                                    <th className="text-left px-4 py-3">{t.customers.profile.creditColumns.notes}</th>
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-gray-100">
@@ -535,7 +542,7 @@ export default function CustomerProfile() {
                                 ) : (
                                     <div className="py-10 text-center text-gray-400">
                                         <Wallet className="w-10 h-10 mx-auto mb-2 opacity-30" />
-                                        <p className="text-sm">No credit transactions yet</p>
+                                        <p className="text-sm">{t.customers.profile.noCreditTransactions}</p>
                                     </div>
                                 )}
                             </>
@@ -551,28 +558,28 @@ export default function CustomerProfile() {
                                 onClick={() => setShowTaskForm((v) => !v)}
                                 className="flex items-center gap-2 px-4 py-2 bg-violet-600 text-white rounded-lg text-sm font-medium hover:bg-violet-700"
                             >
-                                <Plus className="w-4 h-4" /> Add Task
+                                <Plus className="w-4 h-4" /> {t.customers.profile.addTask}
                             </button>
                         </div>
 
                         {showTaskForm && (
                             <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-3">
                                 <div className="flex gap-2 flex-wrap">
-                                    {TASK_TYPES.map((t) => (
+                                    {TASK_TYPES.map((taskType) => (
                                         <button
-                                            key={t}
-                                            onClick={() => setNewTask((n) => ({ ...n, type: t }))}
+                                            key={taskType}
+                                            onClick={() => setNewTask((n) => ({ ...n, type: taskType }))}
                                             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                                                newTask.type === t ? 'bg-violet-600 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-100'
+                                                newTask.type === taskType ? 'bg-violet-600 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-100'
                                             }`}
                                         >
-                                            {taskTypeLabels[t]}
+                                            {t.crmTasks.types[TASK_TYPE_KEYS[taskType]]}
                                         </button>
                                     ))}
                                 </div>
                                 <input
                                     type="text"
-                                    placeholder="Task title *"
+                                    placeholder={t.customers.profile.taskTitle}
                                     value={newTask.title}
                                     onChange={(e) => setNewTask((n) => ({ ...n, title: e.target.value }))}
                                     className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
@@ -586,7 +593,7 @@ export default function CustomerProfile() {
                                     />
                                     <input
                                         type="text"
-                                        placeholder="Notes (optional)"
+                                        placeholder={t.customers.profile.notesOptional}
                                         value={newTask.notes}
                                         onChange={(e) => setNewTask((n) => ({ ...n, notes: e.target.value }))}
                                         className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm"
@@ -598,19 +605,19 @@ export default function CustomerProfile() {
                                         disabled={savingTask || !newTask.title.trim() || !newTask.due_at}
                                         className="flex items-center gap-2 px-4 py-2 bg-violet-600 text-white rounded-lg text-sm font-medium disabled:opacity-50"
                                     >
-                                        <Send className="w-4 h-4" /> Save Task
+                                        <Send className="w-4 h-4" /> {t.customers.profile.saveTask}
                                     </button>
-                                    <button onClick={() => setShowTaskForm(false)} className="px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-600">Cancel</button>
+                                    <button onClick={() => setShowTaskForm(false)} className="px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-600">{t.common.cancel}</button>
                                 </div>
                             </div>
                         )}
 
                         {tasksLoading ? (
-                            <div className="py-8 text-center text-gray-400 text-sm">Loading...</div>
+                            <div className="py-8 text-center text-gray-400 text-sm">{t.common.loading}</div>
                         ) : tasks.length === 0 ? (
                             <div className="py-12 text-center text-gray-400">
                                 <ClipboardList className="w-10 h-10 mx-auto mb-2 opacity-30" />
-                                <p className="text-sm">No tasks yet</p>
+                                <p className="text-sm">{t.customers.profile.noTasks}</p>
                             </div>
                         ) : (
                             <div className="space-y-2">
@@ -621,12 +628,12 @@ export default function CustomerProfile() {
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center gap-2 mb-0.5">
                                                     <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${taskTypeColors[task.type] ?? 'bg-gray-100 text-gray-600'}`}>
-                                                        {taskTypeLabels[task.type] ?? task.type}
+                                                        {t.crmTasks.types[TASK_TYPE_KEYS[task.type]] ?? task.type}
                                                     </span>
                                                     {overdue && <AlertCircle className="w-3.5 h-3.5 text-rose-500" />}
                                                 </div>
                                                 <p className={`text-sm font-medium text-gray-800 ${task.status === 'DONE' ? 'line-through' : ''}`}>{task.title}</p>
-                                                <p className="text-xs text-gray-400 mt-0.5">Due {new Date(task.due_at).toLocaleString()}</p>
+                                                <p className="text-xs text-gray-400 mt-0.5">{t.customers.profile.due} {new Date(task.due_at).toLocaleString()}</p>
                                                 {task.notes && <p className="text-xs text-gray-400">{task.notes}</p>}
                                             </div>
                                             {task.status === 'PENDING' && (

@@ -4,25 +4,11 @@ import { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Download, Printer } from 'lucide-react';
 import { api } from '@/lib/api';
+import { formatBDT, formatDate } from '@/lib/format';
+import { useI18n } from '@/lib/i18n';
 
-function formatBDT(amount: number) {
-    return new Intl.NumberFormat('en-BD', {
-        style: 'currency',
-        currency: 'BDT',
-        minimumFractionDigits: 2,
-    }).format(amount);
-}
-
-function formatDate(dateStr: string) {
-    return new Date(dateStr).toLocaleDateString('en-BD', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-    });
-}
-
-function formatDateTime(dateStr: string) {
-    return new Date(dateStr).toLocaleString('en-BD', {
+function formatDateTime(dateStr: string, locale: string) {
+    return new Date(dateStr).toLocaleString(locale === 'bn' ? 'bn-BD' : 'en-BD', {
         year: 'numeric',
         month: 'short',
         day: 'numeric',
@@ -71,6 +57,7 @@ interface InvoiceData {
 }
 
 export default function PurchaseInvoicePage() {
+    const { t, locale } = useI18n();
     const params = useParams();
     const router = useRouter();
     const invoiceRef = useRef<HTMLDivElement>(null);
@@ -82,14 +69,14 @@ export default function PurchaseInvoicePage() {
         if (!params.id) return;
         api.getPurchaseInvoice(params.id as string)
             .then((d: InvoiceData) => setData(d))
-            .catch(() => setError('Failed to load invoice'))
+            .catch(() => setError(t.purchases.invoice.notFound))
             .finally(() => setLoading(false));
     }, [params.id]);
 
     if (loading) {
         return (
             <div className="flex items-center justify-center h-full">
-                <p className="text-gray-400 text-sm">Loading invoice…</p>
+                <p className="text-gray-400 text-sm">{t.purchases.invoice.loading}</p>
             </div>
         );
     }
@@ -97,7 +84,7 @@ export default function PurchaseInvoicePage() {
     if (error || !data) {
         return (
             <div className="flex items-center justify-center h-full">
-                <p className="text-red-500 text-sm">{error || 'Invoice not found'}</p>
+                <p className="text-red-500 text-sm">{error || t.purchases.invoice.notFound}</p>
             </div>
         );
     }
@@ -134,7 +121,7 @@ export default function PurchaseInvoicePage() {
                         className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
                     >
                         <ArrowLeft className="h-4 w-4" />
-                        Back to Purchases
+                        {t.purchases.invoice.backToPurchases}
                     </button>
                     <div className="flex items-center gap-3">
                         <button
@@ -142,7 +129,7 @@ export default function PurchaseInvoicePage() {
                             className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm"
                         >
                             <Printer className="h-4 w-4" />
-                            Print
+                            {t.purchases.invoice.print}
                         </button>
                         <button
                             onClick={() => window.print()}
@@ -150,7 +137,7 @@ export default function PurchaseInvoicePage() {
                             style={{ backgroundColor: primaryColor }}
                         >
                             <Download className="h-4 w-4" />
-                            Download PDF
+                            {t.purchases.invoice.download}
                         </button>
                     </div>
                 </div>
@@ -176,10 +163,10 @@ export default function PurchaseInvoicePage() {
                             </div>
                             <div className="text-right">
                                 <div className="text-white/70 text-xs uppercase tracking-widest font-semibold mb-1">
-                                    Purchase Order
+                                    {t.purchases.invoice.purchaseReceipt}
                                 </div>
                                 <div className="text-white text-2xl font-black">{purchase.purchase_number}</div>
-                                <div className="text-white/80 text-sm mt-1">{formatDateTime(purchase.created_at)}</div>
+                                <div className="text-white/80 text-sm mt-1">{formatDateTime(purchase.created_at, locale)}</div>
                             </div>
                         </div>
                     </div>
@@ -188,7 +175,7 @@ export default function PurchaseInvoicePage() {
                         {/* Buyer + Supplier */}
                         <div className="grid grid-cols-2 gap-8">
                             <div>
-                                <div className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">Buyer</div>
+                                <div className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">{t.purchases.invoice.buyer}</div>
                                 <div className="text-sm font-bold text-gray-900">{businessName}</div>
                                 {purchase.store && (
                                     <div className="text-sm text-gray-500">{purchase.store.name}</div>
@@ -222,7 +209,7 @@ export default function PurchaseInvoicePage() {
                                         )}
                                     </>
                                 ) : (
-                                    <div className="text-sm text-gray-400 italic">No supplier linked</div>
+                                    <div className="text-sm text-gray-400 italic">{t.purchases.invoice.noSupplier}</div>
                                 )}
                             </div>
                         </div>
@@ -230,15 +217,15 @@ export default function PurchaseInvoicePage() {
                         {/* Meta */}
                         <div className="grid grid-cols-3 gap-4 bg-gray-50 rounded-xl p-4 text-sm">
                             <div>
-                                <div className="text-xs text-gray-400 font-semibold uppercase tracking-wide">Purchase No.</div>
+                                <div className="text-xs text-gray-400 font-semibold uppercase tracking-wide">{t.purchases.invoice.purchaseNo}</div>
                                 <div className="font-bold text-gray-800 mt-0.5">{purchase.purchase_number}</div>
                             </div>
                             <div>
-                                <div className="text-xs text-gray-400 font-semibold uppercase tracking-wide">Date</div>
-                                <div className="font-bold text-gray-800 mt-0.5">{formatDate(purchase.created_at)}</div>
+                                <div className="text-xs text-gray-400 font-semibold uppercase tracking-wide">{t.common.date}</div>
+                                <div className="font-bold text-gray-800 mt-0.5">{formatDate(purchase.created_at, locale)}</div>
                             </div>
                             <div>
-                                <div className="text-xs text-gray-400 font-semibold uppercase tracking-wide">Branch</div>
+                                <div className="text-xs text-gray-400 font-semibold uppercase tracking-wide">{t.common.branch}</div>
                                 <div className="font-bold text-gray-800 mt-0.5">{purchase.store?.name ?? '—'}</div>
                             </div>
                         </div>
@@ -248,21 +235,21 @@ export default function PurchaseInvoicePage() {
                             <table className="w-full text-sm">
                                 <thead>
                                     <tr className="border-b-2 border-gray-200">
-                                        <th className="text-left py-3 text-xs font-bold uppercase tracking-widest text-gray-500">Description</th>
-                                        <th className="text-left py-3 text-xs font-bold uppercase tracking-widest text-gray-500">SKU</th>
-                                        <th className="text-center py-3 text-xs font-bold uppercase tracking-widest text-gray-500">Qty</th>
-                                        <th className="text-right py-3 text-xs font-bold uppercase tracking-widest text-gray-500">Unit Cost</th>
-                                        <th className="text-right py-3 text-xs font-bold uppercase tracking-widest text-gray-500">Line Total</th>
+                                        <th className="text-left py-3 text-xs font-bold uppercase tracking-widest text-gray-500">{t.purchases.invoice.description}</th>
+                                        <th className="text-left py-3 text-xs font-bold uppercase tracking-widest text-gray-500">{t.purchases.invoice.sku}</th>
+                                        <th className="text-center py-3 text-xs font-bold uppercase tracking-widest text-gray-500">{t.purchaseShared.qty}</th>
+                                        <th className="text-right py-3 text-xs font-bold uppercase tracking-widest text-gray-500">{t.purchaseShared.unitCost}</th>
+                                        <th className="text-right py-3 text-xs font-bold uppercase tracking-widest text-gray-500">{t.purchaseShared.lineTotal}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100">
                                     {purchase.items.map((item) => (
                                         <tr key={item.id}>
-                                            <td className="py-3 font-medium text-gray-900">{item.product?.name ?? 'Unknown Product'}</td>
+                                            <td className="py-3 font-medium text-gray-900">{item.product?.name ?? t.purchases.invoice.unknownProduct}</td>
                                             <td className="py-3 text-gray-400 font-mono text-xs">{item.product?.sku ?? '—'}</td>
                                             <td className="py-3 text-center text-gray-700">{item.quantity}</td>
-                                            <td className="py-3 text-right text-gray-700">{formatBDT(parseFloat(item.unit_cost))}</td>
-                                            <td className="py-3 text-right font-semibold text-gray-900">{formatBDT(parseFloat(item.line_total))}</td>
+                                            <td className="py-3 text-right text-gray-700">{formatBDT(parseFloat(item.unit_cost), { locale })}</td>
+                                            <td className="py-3 text-right font-semibold text-gray-900">{formatBDT(parseFloat(item.line_total), { locale })}</td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -273,27 +260,27 @@ export default function PurchaseInvoicePage() {
                         <div className="flex justify-end">
                             <div className="w-72 space-y-2 text-sm">
                                 <div className="flex justify-between text-gray-600">
-                                    <span>Subtotal</span>
-                                    <span>{formatBDT(subtotal)}</span>
+                                    <span>{t.common.subtotal}</span>
+                                    <span>{formatBDT(subtotal, { locale })}</span>
                                 </div>
                                 {hasAdjustments && (
                                     <>
                                         {tax > 0 && (
                                             <div className="flex justify-between text-gray-600">
-                                                <span>Tax</span>
-                                                <span>{formatBDT(tax)}</span>
+                                                <span>{t.common.tax}</span>
+                                                <span>{formatBDT(tax, { locale })}</span>
                                             </div>
                                         )}
                                         {freight > 0 && (
                                             <div className="flex justify-between text-gray-600">
-                                                <span>Freight</span>
-                                                <span>{formatBDT(freight)}</span>
+                                                <span>{t.purchaseShared.freight}</span>
+                                                <span>{formatBDT(freight, { locale })}</span>
                                             </div>
                                         )}
                                         {discount > 0 && (
                                             <div className="flex justify-between text-gray-600">
-                                                <span>Discount</span>
-                                                <span className="text-red-500">−{formatBDT(discount)}</span>
+                                                <span>{t.common.discount}</span>
+                                                <span className="text-red-500">−{formatBDT(discount, { locale })}</span>
                                             </div>
                                         )}
                                     </>
@@ -301,8 +288,8 @@ export default function PurchaseInvoicePage() {
                                 <div
                                     className="flex justify-between font-bold text-base pt-2 border-t-2 border-gray-200"
                                 >
-                                    <span>Total</span>
-                                    <span style={{ color: primaryColor }}>{formatBDT(total)}</span>
+                                    <span>{t.purchases.invoice.total}</span>
+                                    <span style={{ color: primaryColor }}>{formatBDT(total, { locale })}</span>
                                 </div>
                             </div>
                         </div>
@@ -310,13 +297,13 @@ export default function PurchaseInvoicePage() {
                         {/* Notes */}
                         {purchase.notes && (
                             <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-800">
-                                <span className="font-semibold">Note: </span>{purchase.notes}
+                                <span className="font-semibold">{t.purchases.invoice.notePrefix} </span>{purchase.notes}
                             </div>
                         )}
 
                         {/* Footer */}
                         <div className="text-center text-xs text-gray-400 pt-2 border-t border-gray-100">
-                            Purchase Order · {businessName}
+                            {t.purchases.invoice.purchaseReceipt} · {businessName}
                         </div>
                     </div>
                 </div>

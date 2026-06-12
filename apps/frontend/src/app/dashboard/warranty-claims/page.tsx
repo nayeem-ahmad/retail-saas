@@ -7,6 +7,7 @@ import { formatDate } from '../../../lib/format';
 import { createColumnHelper } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table';
 import type { WarrantyClaim } from '@retail-saas/shared-types';
+import { useI18n, formatMessage } from '@/lib/i18n';
 
 const STATUS_STYLES: Record<string, string> = {
     SUBMITTED: 'bg-blue-50 text-blue-700 border-blue-200',
@@ -51,6 +52,7 @@ type LookupResult = {
 const columnHelper = createColumnHelper<WarrantyClaim>();
 
 export default function WarrantyClaimsPage() {
+    const { t, locale } = useI18n();
     const [claims, setClaims] = useState<WarrantyClaim[]>([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -97,7 +99,7 @@ export default function WarrantyClaimsPage() {
             const result = await api.lookupWarrantySerial(serialInput.trim());
             setLookupResult(result);
         } catch (err: any) {
-            setLookupError(err.message ?? 'Serial number not found.');
+            setLookupError(err.message ?? t.shared.errors.serialNotFound);
         } finally {
             setLookupLoading(false);
         }
@@ -116,7 +118,7 @@ export default function WarrantyClaimsPage() {
             setClaims((prev) => [claim, ...prev]);
             closeModal();
         } catch (err: any) {
-            setLookupError(err.message ?? 'Failed to submit claim.');
+            setLookupError(err.message ?? t.shared.errors.submitClaim);
         } finally {
             setSubmitting(false);
         }
@@ -162,7 +164,7 @@ export default function WarrantyClaimsPage() {
     const columns = useMemo(
         () => [
             columnHelper.accessor('claim_number', {
-                header: 'Claim #',
+                header: t.shared.columns.claimNumber,
                 cell: (info) => (
                     <span className="font-mono text-sm font-medium text-gray-900">
                         {info.getValue()}
@@ -170,13 +172,13 @@ export default function WarrantyClaimsPage() {
                 ),
             }),
             columnHelper.accessor('serial_number', {
-                header: 'Serial Number',
+                header: t.shared.columns.serialNumberFull,
                 cell: (info) => (
                     <span className="font-mono text-sm text-gray-700">{info.getValue()}</span>
                 ),
             }),
             columnHelper.accessor('replacement_serial_number', {
-                header: 'Replacement Serial',
+                header: t.shared.columns.replacementSerial,
                 cell: (info) => {
                     const v = info.getValue();
                     return v ? (
@@ -190,24 +192,24 @@ export default function WarrantyClaimsPage() {
             }),
             columnHelper.display({
                 id: 'product',
-                header: 'Product',
+                header: t.shared.columns.product,
                 cell: ({ row }) => (
                     <span className="text-sm text-gray-900">{row.original.product?.name ?? '—'}</span>
                 ),
             }),
             columnHelper.display({
                 id: 'customer',
-                header: 'Customer',
+                header: t.shared.columns.customer,
                 cell: ({ row }) => (
                     <span className="text-sm text-gray-700">{row.original.customer?.name ?? '—'}</span>
                 ),
             }),
             columnHelper.accessor('reason', {
-                header: 'Reason',
+                header: t.shared.columns.reason,
                 cell: (info) => <span className="text-sm text-gray-700">{info.getValue()}</span>,
             }),
             columnHelper.accessor('status', {
-                header: 'Status',
+                header: t.shared.columns.status,
                 cell: (info) => {
                     const s = info.getValue();
                     return (
@@ -221,10 +223,10 @@ export default function WarrantyClaimsPage() {
                 },
             }),
             columnHelper.accessor('created_at', {
-                header: 'Date',
+                header: t.shared.columns.date,
                 cell: (info) => (
                     <span className="text-sm text-gray-500">
-                        {formatDate(info.getValue())}
+                        {formatDate(info.getValue(), locale)}
                     </span>
                 ),
             }),
@@ -240,13 +242,13 @@ export default function WarrantyClaimsPage() {
                             onClick={() => openStatusModal(claim)}
                             className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
                         >
-                            Update status
+                            {t.warrantyClaims.updateStatus}
                         </button>
                     );
                 },
             }),
         ],
-        [],
+        [t, locale],
     );
 
     return (
@@ -255,8 +257,8 @@ export default function WarrantyClaimsPage() {
                 <div className="flex items-center gap-3">
                     <ShieldCheck className="w-6 h-6 text-indigo-600" />
                     <div>
-                        <h1 className="text-xl font-semibold text-gray-900">Warranty Claims</h1>
-                        <p className="text-sm text-gray-500">Manage customer warranty claim submissions</p>
+                        <h1 className="text-xl font-semibold text-gray-900">{t.warrantyClaims.title}</h1>
+                        <p className="text-sm text-gray-500">{t.warrantyClaims.subtitle}</p>
                     </div>
                 </div>
                 <button
@@ -264,22 +266,22 @@ export default function WarrantyClaimsPage() {
                     className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
                 >
                     <Plus className="w-4 h-4" />
-                    New Claim
+                    {t.warrantyClaims.newClaim}
                 </button>
             </div>
 
             {loading ? (
-                <div className="text-center py-16 text-gray-400">Loading claims...</div>
+                <div className="text-center py-16 text-gray-400">{t.warrantyClaims.loadingClaims}</div>
             ) : (
-                <DataTable tableId="warranty-claims" title="Warranty Claims" columns={columns} data={claims} />
+                <DataTable tableId="warranty-claims" title={t.warrantyClaims.title} columns={columns} data={claims} />
             )}
 
-            {/* New Claim Modal */}
+            {/* {t.warrantyClaims.newClaim} Modal */}
             {isModalOpen && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg">
                         <div className="flex items-center justify-between p-5 border-b">
-                            <h2 className="text-lg font-semibold text-gray-900">Submit Warranty Claim</h2>
+                            <h2 className="text-lg font-semibold text-gray-900">{t.warrantyClaims.submitTitle}</h2>
                             <button onClick={closeModal} className="text-gray-400 hover:text-gray-600">
                                 <X className="w-5 h-5" />
                             </button>
@@ -289,7 +291,7 @@ export default function WarrantyClaimsPage() {
                             {/* Serial number lookup */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Serial Number
+                                    {t.warrantyClaims.serialNumber}
                                 </label>
                                 <div className="flex gap-2">
                                     <input
@@ -301,7 +303,7 @@ export default function WarrantyClaimsPage() {
                                             setLookupError('');
                                         }}
                                         onKeyDown={(e) => e.key === 'Enter' && handleLookup()}
-                                        placeholder="Enter serial number"
+                                        placeholder={t.warrantyClaims.enterSerial}
                                         className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                     />
                                     <button
@@ -310,7 +312,7 @@ export default function WarrantyClaimsPage() {
                                         className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium disabled:opacity-50 transition-colors"
                                     >
                                         <Search className="w-4 h-4" />
-                                        {lookupLoading ? 'Looking up...' : 'Look up'}
+                                        {lookupLoading ? t.warrantyClaims.lookingUp : t.warrantyClaims.lookUp}
                                     </button>
                                 </div>
                                 {lookupError && (
@@ -332,31 +334,31 @@ export default function WarrantyClaimsPage() {
                                     </p>
                                     {lookupResult.customer && (
                                         <p className="text-gray-600">
-                                            Customer: {lookupResult.customer.name} ({lookupResult.customer.phone})
+                                            {t.warrantyClaims.customerLabel} {lookupResult.customer.name} ({lookupResult.customer.phone})
                                         </p>
                                     )}
                                     {lookupResult.soldAt && (
                                         <p className="text-gray-600">
-                                            Sold: {formatDate(lookupResult.soldAt)} &nbsp;·&nbsp;
-                                            Warranty: {lookupResult.warrantyDays} days
+                                            {t.warrantyClaims.sold} {formatDate(lookupResult.soldAt, locale)} &nbsp;·&nbsp;
+                                            {formatMessage(t.warrantyClaims.warrantyDays, { days: lookupResult.warrantyDays })}
                                         </p>
                                     )}
                                     {lookupResult.expiresAt && (
                                         <p className="text-gray-600">
-                                            Expires: {formatDate(lookupResult.expiresAt)}
+                                            {t.warrantyClaims.expires} {formatDate(lookupResult.expiresAt, locale)}
                                         </p>
                                     )}
                                     {lookupResult.isClaimed && (
                                         <p className="text-red-600 font-medium">
-                                            A claim has already been submitted for this serial.
+                                            {t.warrantyClaims.alreadyClaimed}
                                         </p>
                                     )}
                                     {lookupResult.isExpired && !lookupResult.isClaimed && (
-                                        <p className="text-red-600 font-medium">Warranty has expired.</p>
+                                        <p className="text-red-600 font-medium">{t.warrantyClaims.warrantyExpired}</p>
                                     )}
                                     {lookupResult.isClaimable && (
                                         <p className="text-emerald-700 font-medium">
-                                            Eligible for warranty claim.
+                                            {t.warrantyClaims.eligible}
                                         </p>
                                     )}
                                 </div>
@@ -367,25 +369,25 @@ export default function WarrantyClaimsPage() {
                                 <>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Reason <span className="text-red-500">*</span>
+                                            {t.warrantyClaims.reasonRequired} <span className="text-red-500">*</span>
                                         </label>
                                         <input
                                             type="text"
                                             value={reason}
                                             onChange={(e) => setReason(e.target.value)}
-                                            placeholder="e.g. Defective screen, not powering on"
+                                            placeholder={t.warrantyClaims.reasonPlaceholder}
                                             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                         />
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Additional Details
+                                            {t.warrantyClaims.additionalDetails}
                                         </label>
                                         <textarea
                                             value={description}
                                             onChange={(e) => setDescription(e.target.value)}
                                             rows={3}
-                                            placeholder="Optional additional information"
+                                            placeholder={t.warrantyClaims.additionalDetailsPlaceholder}
                                             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
                                         />
                                     </div>
@@ -398,7 +400,7 @@ export default function WarrantyClaimsPage() {
                                 onClick={closeModal}
                                 className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
                             >
-                                Cancel
+                                {t.common.cancel}
                             </button>
                             {lookupResult?.isClaimable && (
                                 <button
@@ -406,7 +408,7 @@ export default function WarrantyClaimsPage() {
                                     disabled={submitting || !reason.trim()}
                                     className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
                                 >
-                                    {submitting ? 'Submitting...' : 'Submit Claim'}
+                                    {submitting ? t.warrantyClaims.submitting : t.warrantyClaims.submitClaim}
                                 </button>
                             )}
                         </div>
@@ -419,7 +421,7 @@ export default function WarrantyClaimsPage() {
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
                         <div className="flex items-center justify-between p-5 border-b">
-                            <h2 className="text-lg font-semibold text-gray-900">Update Claim Status</h2>
+                            <h2 className="text-lg font-semibold text-gray-900">{t.warrantyClaims.updateClaimStatus}</h2>
                             <button
                                 onClick={() => setStatusModalClaim(null)}
                                 className="text-gray-400 hover:text-gray-600"
@@ -435,7 +437,7 @@ export default function WarrantyClaimsPage() {
                             </p>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    New Status
+                                    {t.warrantyClaims.newStatus}
                                 </label>
                                 <select
                                     value={newStatus}
@@ -452,29 +454,29 @@ export default function WarrantyClaimsPage() {
                             {newStatus === 'REPLACED' && (
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Replacement Serial Number <span className="text-red-500">*</span>
+                                        Replacement {t.warrantyClaims.serialNumber} <span className="text-red-500">*</span>
                                     </label>
                                     <input
                                         type="text"
                                         value={replacementSerial}
                                         onChange={(e) => setReplacementSerial(e.target.value)}
-                                        placeholder="Serial number of the unit being given out"
+                                        placeholder={t.warrantyClaims.replacementSerialPlaceholder}
                                         className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                     />
                                     <p className="text-xs text-gray-500 mt-1">
-                                        Must be an in-stock unit of the same product.
+                                        {t.warrantyClaims.replacementHint}
                                     </p>
                                 </div>
                             )}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Resolution Notes
+                                    {t.warrantyClaims.resolutionNotes}
                                 </label>
                                 <textarea
                                     value={resolutionNotes}
                                     onChange={(e) => setResolutionNotes(e.target.value)}
                                     rows={3}
-                                    placeholder="Describe the resolution or next steps"
+                                    placeholder={t.warrantyClaims.resolutionPlaceholder}
                                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
                                 />
                             </div>
@@ -495,7 +497,7 @@ export default function WarrantyClaimsPage() {
                                 }
                                 className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
                             >
-                                {statusUpdating ? 'Saving...' : 'Save'}
+                                {statusUpdating ? t.warrantyClaims.saving : t.common.save}
                             </button>
                         </div>
                     </div>

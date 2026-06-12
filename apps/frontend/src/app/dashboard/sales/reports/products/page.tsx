@@ -6,6 +6,7 @@ import { Package } from 'lucide-react';
 import { DataTable } from '@/components/data-table';
 import { api } from '../../../../../lib/api';
 import { formatBDT } from '../../../../../lib/format';
+import { useI18n } from '@/lib/i18n';
 
 interface ProductRow {
     product: {
@@ -39,6 +40,7 @@ function defaultTo() {
 }
 
 export default function SalesByProductPage() {
+    const { t, locale } = useI18n();
     const [rows, setRows] = useState<ProductRow[]>([]);
     const [summary, setSummary] = useState<Summary | null>(null);
     const [groups, setGroups] = useState<any[]>([]);
@@ -97,30 +99,30 @@ export default function SalesByProductPage() {
         () => [
             columnHelper.accessor((row) => row.product.name, {
                 id: 'product',
-                header: 'Product',
+                header: t.salesReports.common.product,
                 size: 240,
             }),
-            columnHelper.accessor((row) => row.product.sku ?? '-', {
+            columnHelper.accessor((row) => row.product.sku ?? t.shared.dash, {
                 id: 'sku',
-                header: 'SKU',
+                header: t.salesReports.common.sku,
                 size: 120,
             }),
-            columnHelper.accessor((row) => row.product.group?.name ?? 'Uncategorized', {
+            columnHelper.accessor((row) => row.product.group?.name ?? t.salesReports.common.uncategorized, {
                 id: 'group',
-                header: 'Group',
+                header: t.salesReports.common.group,
                 size: 160,
             }),
             columnHelper.accessor('unitsSold', {
-                header: 'Units Sold',
+                header: t.salesReports.common.unitsSoldCol,
                 size: 110,
             }),
             columnHelper.accessor('revenue', {
-                header: 'Revenue',
-                cell: (info) => formatBDT(Number(info.getValue())),
+                header: t.salesReports.common.revenue,
+                cell: (info) => formatBDT(Number(info.getValue()), { locale }),
                 size: 130,
             }),
             columnHelper.accessor('revenueShare', {
-                header: '% of Total',
+                header: t.salesReports.common.percentOfTotal,
                 cell: (info) => (
                     <div className="flex items-center gap-2">
                         <div className="flex-1 bg-gray-100 rounded-full h-1.5 min-w-[60px]">
@@ -137,34 +139,34 @@ export default function SalesByProductPage() {
                 size: 180,
             }),
         ],
-        [],
+        [t, locale],
     );
 
     return (
         <div className="overflow-y-auto h-full bg-[#f3f4f6] p-6 font-sans text-gray-900">
             <div className="max-w-[1400px] mx-auto space-y-6">
                 <div>
-                    <h1 className="text-2xl font-black tracking-tight">Sales by Product</h1>
+                    <h1 className="text-2xl font-black tracking-tight">{t.salesReports.products.title}</h1>
                     <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mt-0.5">
-                        Units sold and revenue contribution per product over a date range
+                        {t.salesReports.products.subtitle}
                     </p>
                 </div>
 
                 <div className="grid md:grid-cols-3 gap-4">
                     <div className="bg-white border border-gray-100 rounded-2xl p-5">
-                        <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">Total Revenue</div>
+                        <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">{t.salesReports.common.totalRevenue}</div>
                         <div className="text-2xl font-black text-blue-700 mt-2">
-                            {formatBDT(Number(summary?.totalRevenue ?? 0))}
+                            {formatBDT(Number(summary?.totalRevenue ?? 0), { locale })}
                         </div>
                     </div>
                     <div className="bg-white border border-gray-100 rounded-2xl p-5">
-                        <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">Units Sold</div>
+                        <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">{t.salesReports.common.unitsSold}</div>
                         <div className="text-2xl font-black text-gray-900 mt-2">
                             {summary?.totalUnitsSold ?? 0}
                         </div>
                     </div>
                     <div className="bg-white border border-gray-100 rounded-2xl p-5">
-                        <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">Products Sold</div>
+                        <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">{t.salesReports.common.productsSold}</div>
                         <div className="text-2xl font-black text-gray-900 mt-2">
                             {summary?.productCount ?? 0}
                         </div>
@@ -177,7 +179,7 @@ export default function SalesByProductPage() {
                         onChange={(e) => { setGroupId(e.target.value); setSubgroupId(''); }}
                         className="bg-gray-50 border-none rounded-xl py-3 px-4 text-sm font-medium min-w-[200px]"
                     >
-                        <option value="">All Groups</option>
+                        <option value="">{t.salesReports.common.allGroups}</option>
                         {groups.map((g: any) => (
                             <option key={g.id} value={g.id}>{g.name}</option>
                         ))}
@@ -187,13 +189,13 @@ export default function SalesByProductPage() {
                         onChange={(e) => setSubgroupId(e.target.value)}
                         className="bg-gray-50 border-none rounded-xl py-3 px-4 text-sm font-medium min-w-[200px]"
                     >
-                        <option value="">All Subgroups</option>
+                        <option value="">{t.salesReports.common.allSubgroups}</option>
                         {filteredSubgroups.map((s: any) => (
                             <option key={s.id} value={s.id}>{s.name}</option>
                         ))}
                     </select>
                     <div className="flex flex-col gap-1">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">From</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">{t.salesReports.common.from}</span>
                         <input
                             type="date"
                             value={fromDate}
@@ -202,7 +204,7 @@ export default function SalesByProductPage() {
                         />
                     </div>
                     <div className="flex flex-col gap-1">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">To</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">{t.salesReports.common.to}</span>
                         <input
                             type="date"
                             value={toDate}
@@ -216,11 +218,11 @@ export default function SalesByProductPage() {
                     tableId="sales-by-product"
                     columns={columns}
                     data={rows}
-                    title="Product Performance"
+                    title={t.salesReports.products.productPerformance}
                     isLoading={loading}
-                    emptyMessage="No sales recorded for this filter"
+                    emptyMessage={t.salesReports.common.noSalesForFilter}
                     emptyIcon={<Package className="w-16 h-16 text-gray-200" />}
-                    searchPlaceholder="Search products..."
+                    searchPlaceholder={t.salesReports.products.searchPlaceholder}
                 />
             </div>
         </div>

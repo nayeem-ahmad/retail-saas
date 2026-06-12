@@ -1,4 +1,5 @@
 'use client';
+import { useI18n, formatMessage } from '@/lib/i18n';
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -9,6 +10,8 @@ const API_BASE = ((process.env.NEXT_PUBLIC_API_BASE || process.env.NEXT_PUBLIC_A
     || (process.env.NODE_ENV === 'production' ? 'https://retail-saas-backend.onrender.com' : 'http://localhost:4000')) + '/api/v1';
 
 function ResetPasswordContent() {
+    const { t } = useI18n();
+    const m = t.auth.resetPassword;
     const searchParams = useSearchParams();
     const router = useRouter();
     const token = searchParams.get('token');
@@ -21,18 +24,18 @@ function ResetPasswordContent() {
 
     useEffect(() => {
         if (!token) {
-            setError('Invalid or missing reset token. Please request a new link.');
+            setError(m.missingToken);
         }
     }, [token]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (newPassword !== confirmPassword) {
-            setError('Passwords do not match.');
+            setError(m.mismatch);
             return;
         }
         if (newPassword.length < 8) {
-            setError('Password must be at least 8 characters.');
+            setError(m.tooShort);
             return;
         }
 
@@ -48,7 +51,7 @@ function ResetPasswordContent() {
 
             if (!res.ok) {
                 const body = await res.json().catch(() => null);
-                throw new Error(body?.message || 'Reset failed. The link may have expired.');
+                throw new Error(body?.message || m.defaultError);
             }
 
             setSuccess(true);
@@ -69,9 +72,9 @@ function ResetPasswordContent() {
                             <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mb-4">
                                 <CheckCircle className="text-green-600 w-6 h-6" />
                             </div>
-                            <h1 className="text-2xl font-bold tracking-tight">Password updated</h1>
+                            <h1 className="text-2xl font-bold tracking-tight">{m.successTitle}</h1>
                             <p className="text-gray-500 mt-3 text-sm">
-                                Your password has been changed. Redirecting you to sign in…
+                                {m.successDescription}
                             </p>
                         </div>
                     ) : (
@@ -80,9 +83,9 @@ function ResetPasswordContent() {
                                 <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center mb-4 shadow-lg shadow-blue-200">
                                     <Lock className="text-white w-6 h-6" />
                                 </div>
-                                <h1 className="text-2xl font-bold tracking-tight">Set new password</h1>
+                                <h1 className="text-2xl font-bold tracking-tight">{m.title}</h1>
                                 <p className="text-gray-500 mt-2 text-sm text-center">
-                                    Choose a strong password for your account.
+                                    {m.description}
                                 </p>
                             </div>
 
@@ -99,13 +102,13 @@ function ResetPasswordContent() {
                                         href="/forgot-password"
                                         className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700"
                                     >
-                                        Request a new reset link
+                                        {m.requestNewLink}
                                     </Link>
                                 </div>
                             ) : (
                                 <form onSubmit={handleSubmit} className="space-y-5">
                                     <div className="space-y-2">
-                                        <label className="text-sm font-medium text-gray-700 ml-1">New password</label>
+                                        <label className="text-sm font-medium text-gray-700 ml-1">{m.newPasswordLabel}</label>
                                         <div className="relative">
                                             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                                             <input
@@ -115,13 +118,13 @@ function ResetPasswordContent() {
                                                 value={newPassword}
                                                 onChange={(e) => setNewPassword(e.target.value)}
                                                 className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3 pl-10 pr-4 outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
-                                                placeholder="Min. 8 characters"
+                                                placeholder={m.newPasswordPlaceholder}
                                             />
                                         </div>
                                     </div>
 
                                     <div className="space-y-2">
-                                        <label className="text-sm font-medium text-gray-700 ml-1">Confirm password</label>
+                                        <label className="text-sm font-medium text-gray-700 ml-1">{m.confirmPasswordLabel}</label>
                                         <div className="relative">
                                             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                                             <input
@@ -130,7 +133,7 @@ function ResetPasswordContent() {
                                                 value={confirmPassword}
                                                 onChange={(e) => setConfirmPassword(e.target.value)}
                                                 className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3 pl-10 pr-4 outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
-                                                placeholder="Repeat your password"
+                                                placeholder={m.confirmPasswordPlaceholder}
                                             />
                                         </div>
                                     </div>
@@ -143,7 +146,7 @@ function ResetPasswordContent() {
                                         {isLoading ? (
                                             <Loader2 className="w-5 h-5 animate-spin" />
                                         ) : (
-                                            <span>Update password</span>
+                                            <span>{m.submit}</span>
                                         )}
                                     </button>
                                 </form>
@@ -155,7 +158,7 @@ function ResetPasswordContent() {
                                     className="flex items-center justify-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-700 transition-colors"
                                 >
                                     <ArrowLeft className="w-4 h-4" />
-                                    Back to sign in
+                                    {m.backToSignIn}
                                 </Link>
                             </div>
                         </>

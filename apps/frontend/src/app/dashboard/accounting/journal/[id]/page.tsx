@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { ArrowLeft, BookText } from 'lucide-react';
 import { api } from '../../../../../lib/api';
 import { formatBDT, formatDate } from '../../../../../lib/format';
+import { useI18n, formatMessage } from '@/lib/i18n';
 
 type VoucherDetail = {
     id: string;
@@ -30,6 +31,7 @@ type VoucherDetail = {
 };
 
 export default function VoucherDetailPage() {
+    const { t, locale } = useI18n();
     const params = useParams<{ id: string }>();
     const [voucher, setVoucher] = useState<VoucherDetail | null>(null);
     const [loading, setLoading] = useState(true);
@@ -86,7 +88,7 @@ export default function VoucherDetailPage() {
                             <BookText className="h-6 w-6" />
                         </div>
                         <div>
-                            <p className="text-xs font-black uppercase tracking-[0.24em] text-gray-400">Story 30.6</p>
+                            <p className="text-xs font-black uppercase tracking-[0.24em] text-gray-400">{t.journal.detail.story}</p>
                             <h1 className="text-2xl font-black tracking-tight">Voucher Detail</h1>
                             <p className="mt-2 max-w-3xl text-sm text-gray-500">
                                 Inspect the full debit and credit composition of a single posted voucher.
@@ -95,33 +97,33 @@ export default function VoucherDetailPage() {
                     </div>
                 </section>
 
-                {loading ? <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm text-sm font-bold text-gray-500">Loading voucher detail...</div> : null}
+                {loading ? <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm text-sm font-bold text-gray-500">{t.journal.detail.loading}</div> : null}
                 {error ? <div className="rounded-3xl border border-red-200 bg-red-50 p-6 shadow-sm text-sm font-bold text-red-600">{error}</div> : null}
 
                 {voucher ? (
                     <>
                         <section className="grid gap-4 md:grid-cols-4">
-                            <DetailStat label="Voucher #" value={voucher.voucher_number} />
-                            <DetailStat label="Type" value={voucher.voucher_type.replaceAll('_', ' ')} />
-                            <DetailStat label="Date" value={formatDate(voucher.date)} />
-                            <DetailStat label="Reference" value={voucher.reference_number || 'Not provided'} />
+                            <DetailStat label={t.journal.columns.voucherNumber} value={voucher.voucher_number} />
+                            <DetailStat label={t.accountingShared.type} value={voucher.voucher_type.replaceAll('_', ' ')} />
+                            <DetailStat label={t.accountingShared.date} value={formatDate(voucher.date, locale)} />
+                            <DetailStat label={t.accountingShared.reference} value={voucher.reference_number || t.accountingShared.notProvided} />
                         </section>
 
                         <section className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm space-y-4">
                             <div>
-                                <p className="text-xs font-black uppercase tracking-[0.24em] text-gray-400">Narration</p>
-                                <p className="mt-2 text-sm text-gray-700">{voucher.description || 'No narration captured for this voucher.'}</p>
+                                <p className="text-xs font-black uppercase tracking-[0.24em] text-gray-400">{t.accountingShared.narration}</p>
+                                <p className="mt-2 text-sm text-gray-700">{voucher.description || '{t.accountingShared.noNarration} captured for this voucher.'}</p>
                             </div>
 
                             <div className="overflow-hidden rounded-2xl border border-gray-200">
                                 <table className="min-w-full divide-y divide-gray-200">
                                     <thead className="bg-gray-50">
                                         <tr>
-                                            <th className="px-4 py-3 text-left text-[11px] font-black uppercase tracking-[0.24em] text-gray-400">Account</th>
-                                            <th className="px-4 py-3 text-left text-[11px] font-black uppercase tracking-[0.24em] text-gray-400">Group</th>
-                                            <th className="px-4 py-3 text-right text-[11px] font-black uppercase tracking-[0.24em] text-gray-400">Debit</th>
-                                            <th className="px-4 py-3 text-right text-[11px] font-black uppercase tracking-[0.24em] text-gray-400">Credit</th>
-                                            <th className="px-4 py-3 text-left text-[11px] font-black uppercase tracking-[0.24em] text-gray-400">Comment</th>
+                                            <th className="px-4 py-3 text-left text-[11px] font-black uppercase tracking-[0.24em] text-gray-400">{t.accountingShared.account}</th>
+                                            <th className="px-4 py-3 text-left text-[11px] font-black uppercase tracking-[0.24em] text-gray-400">{t.accountingShared.group}</th>
+                                            <th className="px-4 py-3 text-right text-[11px] font-black uppercase tracking-[0.24em] text-gray-400">{t.accountingShared.debit}</th>
+                                            <th className="px-4 py-3 text-right text-[11px] font-black uppercase tracking-[0.24em] text-gray-400">{t.accountingShared.credit}</th>
+                                            <th className="px-4 py-3 text-left text-[11px] font-black uppercase tracking-[0.24em] text-gray-400">{t.accountingShared.comment}</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-100 bg-white">
@@ -129,18 +131,18 @@ export default function VoucherDetailPage() {
                                             <tr key={row.id}>
                                                 <td className="px-4 py-3 text-sm font-black text-gray-900">{row.account.name}</td>
                                                 <td className="px-4 py-3 text-sm text-gray-500">{row.account.group?.name || 'Ungrouped'}</td>
-                                                <td className="px-4 py-3 text-right text-sm font-black text-amber-700">{formatBDT(Number(row.debit_amount || 0))}</td>
-                                                <td className="px-4 py-3 text-right text-sm font-black text-sky-700">{formatBDT(Number(row.credit_amount || 0))}</td>
+                                                <td className="px-4 py-3 text-right text-sm font-black text-amber-700">{formatBDT(Number(row.debit_amount || 0), { locale })}</td>
+                                                <td className="px-4 py-3 text-right text-sm font-black text-sky-700">{formatBDT(Number(row.credit_amount || 0), { locale })}</td>
                                                 <td className="px-4 py-3 text-sm text-gray-500">{row.comment || '-'}</td>
                                             </tr>
                                         ))}
                                     </tbody>
                                     <tfoot className="bg-gray-50">
                                         <tr>
-                                            <td colSpan={2} className="px-4 py-3 text-sm font-black uppercase tracking-[0.24em] text-gray-500">Totals</td>
-                                            <td className="px-4 py-3 text-right text-sm font-black text-amber-700">{formatBDT(debitTotal)}</td>
-                                            <td className="px-4 py-3 text-right text-sm font-black text-sky-700">{formatBDT(creditTotal)}</td>
-                                            <td className="px-4 py-3 text-right text-sm font-black text-gray-700">Balanced</td>
+                                            <td colSpan={2} className="px-4 py-3 text-sm font-black uppercase tracking-[0.24em] text-gray-500">{t.accountingShared.totals}</td>
+                                            <td className="px-4 py-3 text-right text-sm font-black text-amber-700">{formatBDT(debitTotal, { locale })}</td>
+                                            <td className="px-4 py-3 text-right text-sm font-black text-sky-700">{formatBDT(creditTotal, { locale })}</td>
+                                            <td className="px-4 py-3 text-right text-sm font-black text-gray-700">{t.accountingShared.balanced}</td>
                                         </tr>
                                     </tfoot>
                                 </table>

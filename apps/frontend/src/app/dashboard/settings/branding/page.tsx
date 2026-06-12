@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { CheckCircle, XCircle, Loader2, Palette, Image, Globe, Building2 } from 'lucide-react';
 import { fetchWithAuth } from '@/lib/api';
+import { useI18n } from '@/lib/i18n';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -56,6 +57,8 @@ function Toast({ toast, onDismiss }: { toast: ToastState; onDismiss: () => void 
 const DEFAULT_COLOR = '#2563eb';
 
 export default function BrandingSettingsPage() {
+    const { t } = useI18n();
+    const m = t.settingsExtras.branding;
     const [form, setForm] = useState<BrandingForm>({
         brand_business_name: '',
         brand_primary_color: DEFAULT_COLOR,
@@ -120,14 +123,14 @@ export default function BrandingSettingsPage() {
                 body: JSON.stringify(payload),
                 headers: { 'Content-Type': 'application/json' },
             });
-            setToast({ type: 'success', message: 'Branding settings saved successfully.' });
+            setToast({ type: 'success', message: m.saved });
 
             // Apply primary color change immediately
             if (payload.brand_primary_color) {
                 document.documentElement.style.setProperty('--color-primary', payload.brand_primary_color);
             }
         } catch (err: any) {
-            setToast({ type: 'error', message: err?.message || 'Failed to save branding settings.' });
+            setToast({ type: 'error', message: err?.message || m.saveFailed });
         } finally {
             setSaving(false);
         }
@@ -143,18 +146,16 @@ export default function BrandingSettingsPage() {
                 <div>
                     <h1 className="text-2xl font-black text-gray-900 tracking-tight flex items-center gap-2">
                         <Palette className="w-6 h-6 text-blue-600" />
-                        Branding
+                        {m.title}
                     </h1>
-                    <p className="mt-1 text-sm text-gray-500">
-                        Customize your dashboard with your logo, colors, and business name.
-                    </p>
+                    <p className="mt-1 text-sm text-gray-500">{m.description}</p>
                 </div>
 
                 <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
                     {loading ? (
                         <div className="p-8 flex items-center gap-2 text-gray-400 text-sm">
                             <Loader2 className="w-4 h-4 animate-spin" />
-                            Loading branding settings…
+                            {m.loading}
                         </div>
                     ) : (
                         <form onSubmit={handleSubmit} className="p-6 space-y-6">
@@ -162,18 +163,18 @@ export default function BrandingSettingsPage() {
                             <div>
                                 <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-1.5">
                                     <Building2 className="w-4 h-4 text-gray-400" />
-                                    Business Name Override
+                                    {m.businessName.label}
                                 </label>
                                 <input
                                     type="text"
                                     value={form.brand_business_name}
                                     onChange={(e) => setForm((p) => ({ ...p, brand_business_name: e.target.value }))}
-                                    placeholder="Your Business Name"
+                                    placeholder={m.businessName.placeholder}
                                     maxLength={100}
                                     className={inputCls}
                                 />
                                 <p className="mt-1.5 text-xs text-gray-400">
-                                    Override the display name shown in the sidebar. Leave blank to use the default tenant name.
+                                    {m.businessName.hint}
                                 </p>
                             </div>
 
@@ -181,7 +182,7 @@ export default function BrandingSettingsPage() {
                             <div>
                                 <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-1.5">
                                     <Palette className="w-4 h-4 text-gray-400" />
-                                    Primary Color
+                                    {m.primaryColor.label}
                                 </label>
                                 <div className="flex items-center gap-3">
                                     <input
@@ -189,13 +190,13 @@ export default function BrandingSettingsPage() {
                                         value={/^#[0-9a-fA-F]{6}$/.test(form.brand_primary_color) ? form.brand_primary_color : DEFAULT_COLOR}
                                         onChange={(e) => handleColorPickerChange(e.target.value)}
                                         className="w-12 h-10 rounded-xl border border-gray-200 cursor-pointer p-1 bg-white"
-                                        title="Pick a color"
+                                        title={m.primaryColor.pickTitle}
                                     />
                                     <input
                                         type="text"
                                         value={form.brand_primary_color}
                                         onChange={(e) => handleHexInputChange(e.target.value)}
-                                        placeholder="#2563eb"
+                                        placeholder={m.primaryColor.placeholder}
                                         maxLength={7}
                                         className="w-36 rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition font-mono"
                                     />
@@ -206,11 +207,11 @@ export default function BrandingSettingsPage() {
                                                 ? form.brand_primary_color
                                                 : DEFAULT_COLOR,
                                         }}
-                                        title="Color preview"
+                                        title={m.primaryColor.previewTitle}
                                     />
                                 </div>
                                 <p className="mt-1.5 text-xs text-gray-400">
-                                    Used for buttons, active states, and accents. Must be a valid hex color (e.g. #2563eb).
+                                    {m.primaryColor.hint}
                                 </p>
                             </div>
 
@@ -218,13 +219,13 @@ export default function BrandingSettingsPage() {
                             <div>
                                 <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-1.5">
                                     <Image className="w-4 h-4 text-gray-400" />
-                                    Logo URL
+                                    {m.logo.label}
                                 </label>
                                 <input
                                     type="url"
                                     value={form.brand_logo_url}
                                     onChange={(e) => setForm((p) => ({ ...p, brand_logo_url: e.target.value }))}
-                                    placeholder="https://example.com/logo.png"
+                                    placeholder={m.logo.placeholder}
                                     maxLength={500}
                                     className={inputCls}
                                 />
@@ -233,7 +234,7 @@ export default function BrandingSettingsPage() {
                                         {/* eslint-disable-next-line @next/next/no-img-element */}
                                         <img
                                             src={form.brand_logo_url}
-                                            alt="Logo preview"
+                                            alt={m.logo.previewAlt}
                                             className="h-12 max-w-[200px] object-contain"
                                             onError={(e) => {
                                                 (e.target as HTMLImageElement).style.display = 'none';
@@ -242,7 +243,7 @@ export default function BrandingSettingsPage() {
                                     </div>
                                 )}
                                 <p className="mt-1.5 text-xs text-gray-400">
-                                    Absolute URL to your logo image. Shown in the sidebar header.
+                                    {m.logo.hint}
                                 </p>
                             </div>
 
@@ -250,13 +251,13 @@ export default function BrandingSettingsPage() {
                             <div>
                                 <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-1.5">
                                     <Globe className="w-4 h-4 text-gray-400" />
-                                    Favicon URL
+                                    {m.favicon.label}
                                 </label>
                                 <input
                                     type="url"
                                     value={form.brand_favicon_url}
                                     onChange={(e) => setForm((p) => ({ ...p, brand_favicon_url: e.target.value }))}
-                                    placeholder="https://example.com/favicon.ico"
+                                    placeholder={m.favicon.placeholder}
                                     maxLength={500}
                                     className={inputCls}
                                 />
@@ -265,17 +266,17 @@ export default function BrandingSettingsPage() {
                                         {/* eslint-disable-next-line @next/next/no-img-element */}
                                         <img
                                             src={form.brand_favicon_url}
-                                            alt="Favicon preview"
+                                            alt={m.favicon.previewAlt}
                                             className="w-6 h-6 object-contain"
                                             onError={(e) => {
                                                 (e.target as HTMLImageElement).style.display = 'none';
                                             }}
                                         />
-                                        <span className="text-xs text-gray-500">Favicon preview</span>
+                                        <span className="text-xs text-gray-500">{m.favicon.previewLabel}</span>
                                     </div>
                                 )}
                                 <p className="mt-1.5 text-xs text-gray-400">
-                                    Absolute URL to your favicon. Shown in the browser tab.
+                                    {m.favicon.hint}
                                 </p>
                             </div>
 
@@ -287,7 +288,7 @@ export default function BrandingSettingsPage() {
                                     className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors shadow-sm"
                                 >
                                     {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-                                    {saving ? 'Saving…' : 'Save Branding'}
+                                    {saving ? m.saving : m.saveButton}
                                 </button>
                             </div>
                         </form>

@@ -9,6 +9,7 @@ import { DataTable } from '@/components/data-table';
 import IssueReturnModal from './IssueReturnModal';
 import { PostingBadge } from '@/components/PostingBadge';
 import { formatBDT, formatDate } from '../../../lib/format';
+import { useI18n, formatMessage } from '@/lib/i18n';
 
 interface SalesReturn {
     id: string;
@@ -32,6 +33,7 @@ const statusColors: Record<string, string> = {
 const columnHelper = createColumnHelper<SalesReturn>();
 
 export default function ReturnsPage() {
+    const { t, locale } = useI18n();
     const [returns, setReturns] = useState<SalesReturn[]>([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -52,7 +54,7 @@ export default function ReturnsPage() {
     };
 
     const handleDelete = async (id: string) => {
-        if (!window.confirm('Are you sure you want to delete this return?')) return;
+        if (!window.confirm(t.shared.confirm.deleteReturn)) return;
         try {
             await api.deleteReturn(id);
             setReturns((prev) => prev.filter((r) => r.id !== id));
@@ -67,7 +69,7 @@ export default function ReturnsPage() {
         printWindow.document.write(`
             <html>
             <head>
-                <title>Return ${ret.return_number}</title>
+                <title>${ret.return_number}</title>
                 <style>
                     body { font-family: Arial, sans-serif; padding: 20px; color: #111; }
                     h1 { font-size: 24px; margin-bottom: 4px; }
@@ -81,16 +83,19 @@ export default function ReturnsPage() {
             </head>
             <body>
                 <h1>${ret.return_number}</h1>
-                <div class="subtitle">Date: ${new Date(ret.created_at).toLocaleString()} | Original Receipt: ${ret.sale?.serial_number || '-'}</div>
+                <div class="subtitle">${formatMessage(t.shared.print.originalReceipt, {
+                    date: new Date(ret.created_at).toLocaleString(),
+                    receipt: ret.sale?.serial_number || t.shared.dash,
+                })}</div>
                 <table>
-                    <thead><tr><th>Product</th><th>Qty</th><th>Refund</th></tr></thead>
+                    <thead><tr><th>${t.shared.print.product}</th><th>${t.shared.print.qty}</th><th>${t.shared.print.refund}</th></tr></thead>
                     <tbody>
-                        ${ret.items.map((item: any) => `<tr><td>${item.product?.name || 'Item'}</td><td>${item.quantity}</td><td>${formatBDT(Number(item.refund_amount || item.price_at_sale * item.quantity))}</td></tr>`).join('')}
-                        <tr class="total-row"><td colspan="2">Total Refund</td><td>${formatBDT(Number(ret.total_refund))}</td></tr>
+                        ${ret.items.map((item: any) => `<tr><td>${item.product?.name || t.shared.item}</td><td>${item.quantity}</td><td>${formatBDT(Number(item.refund_amount || item.price_at_sale * item.quantity), { locale })}</td></tr>`).join('')}
+                        <tr class="total-row"><td colspan="2">${t.shared.print.totalRefund}</td><td>${formatBDT(Number(ret.total_refund), { locale })}</td></tr>
                     </tbody>
                 </table>
-                ${ret.reason ? `<p><strong>Reason:</strong> ${ret.reason}</p>` : ''}
-                <div class="footer">Return processed</div>
+                ${ret.reason ? `<p><strong>${t.shared.columns.reason}:</strong> ${ret.reason}</p>` : ''}
+                <div class="footer">${t.shared.print.returnProcessed}</div>
             </body>
             </html>
         `);
@@ -101,7 +106,7 @@ export default function ReturnsPage() {
     const columns: ColumnDef<SalesReturn, any>[] = useMemo(
         () => [
             columnHelper.accessor('return_number', {
-                header: 'Return #',
+                header: t.returns.columns.returnNumber,
                 cell: (info) => (
                     <span className="text-sm font-black text-gray-900">{info.getValue()}</span>
                 ),
@@ -109,17 +114,17 @@ export default function ReturnsPage() {
             }),
             columnHelper.accessor((row) => row.sale?.serial_number ?? '', {
                 id: 'receipt',
-                header: 'Original Receipt',
+                header: t.returns.columns.originalReceipt,
                 cell: (info) => (
-                    <span className="text-sm font-mono text-gray-500">{info.getValue() || '-'}</span>
+                    <span className="text-sm font-mono text-gray-500">{info.getValue() || t.shared.dash}</span>
                 ),
                 size: 150,
             }),
             columnHelper.accessor('total_refund', {
-                header: 'Refund Amount',
+                header: t.returns.columns.refundAmount,
                 cell: (info) => (
                     <span className="text-sm font-black text-rose-600">
-                        {formatBDT(parseFloat(info.getValue()))}
+                        {formatBDT(parseFloat(info.getValue()), { locale })}
                     </span>
                 ),
                 sortingFn: (a, b) =>
@@ -128,19 +133,21 @@ export default function ReturnsPage() {
             }),
             columnHelper.accessor((row) => row.items?.length ?? 0, {
                 id: 'item_count',
-                header: 'Items',
+                header: t.returns.columns.items,
                 cell: (info) => (
-                    <span className="text-sm font-bold text-gray-700">{info.getValue()} returned</span>
+                    <span className="text-sm font-bold text-gray-700">
+                        {formatMessage(t.shared.itemsReturned, { count: info.getValue() })}
+                    </span>
                 ),
                 size: 90,
             }),
             columnHelper.accessor('created_at', {
-                header: 'Date',
+                header: t.returns.columns.date,
                 cell: (info) => {
                     const d = new Date(info.getValue());
                     return (
                         <div>
-                            <span className="text-sm text-gray-600">{formatDate(info.getValue())}</span>
+                            <span className="text-sm text-gray-600">{formatDate(info.getValue(), locale)}</span>
                             <span className="text-xs text-gray-400 block">{d.toLocaleTimeString()}</span>
                         </div>
                     );
@@ -150,7 +157,7 @@ export default function ReturnsPage() {
             }),
             columnHelper.accessor((row) => row.status ?? 'COMPLETED', {
                 id: 'status',
-                header: 'Status',
+                header: t.returns.columns.status,
                 cell: (info) => {
                     const status = info.getValue();
                     return (
@@ -159,7 +166,7 @@ export default function ReturnsPage() {
                                 statusColors[status] ?? 'bg-gray-50 text-gray-700 border-gray-200'
                             }`}
                         >
-                            {status}
+                            {t.shared.statuses.return[status as keyof typeof t.shared.statuses.return] ?? status}
                         </span>
                     );
                 },
@@ -167,7 +174,7 @@ export default function ReturnsPage() {
             }),
             columnHelper.display({
                 id: 'posting',
-                header: 'Voucher',
+                header: t.returns.columns.voucher,
                 cell: ({ row }) => (
                     <PostingBadge
                         status={row.original.posting_status}
@@ -178,7 +185,7 @@ export default function ReturnsPage() {
             }),
             columnHelper.display({
                 id: 'actions',
-                header: 'Actions',
+                header: t.returns.columns.actions,
                 cell: (info) => {
                     const row = info.row.original;
                     return (
@@ -186,28 +193,28 @@ export default function ReturnsPage() {
                             <Link
                                 href={`/dashboard/returns/${row.id}`}
                                 className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors"
-                                title="View"
+                                title={t.common.view}
                             >
                                 <Eye className="w-4 h-4" />
                             </Link>
                             <Link
                                 href={`/dashboard/returns/${row.id}?edit=true`}
                                 className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
-                                title="Edit"
+                                title={t.common.edit}
                             >
                                 <Edit2 className="w-4 h-4" />
                             </Link>
                             <button
                                 onClick={() => handlePrint(row)}
                                 className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
-                                title="Print"
+                                title={t.common.print}
                             >
                                 <Printer className="w-4 h-4" />
                             </button>
                             <button
                                 onClick={() => handleDelete(row.id)}
                                 className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 transition-colors"
-                                title="Delete"
+                                title={t.common.delete}
                             >
                                 <Trash2 className="w-4 h-4" />
                             </button>
@@ -220,26 +227,25 @@ export default function ReturnsPage() {
                 size: 160,
             }),
         ],
-        [],
+        [t, locale],
     );
 
     const filterPresets = useMemo(
         () => [
-            { label: 'Completed', filters: [{ id: 'status', value: 'COMPLETED' }] },
-            { label: 'Pending', filters: [{ id: 'status', value: 'PENDING' }] },
+            { label: t.returns.filterPresets.completed, filters: [{ id: 'status', value: 'COMPLETED' }] },
+            { label: t.returns.filterPresets.pending, filters: [{ id: 'status', value: 'PENDING' }] },
         ],
-        [],
+        [t],
     );
 
     return (
         <div className="overflow-y-auto h-full bg-[#f3f4f6] p-6 font-sans text-gray-900">
             <div className="max-w-[1400px] mx-auto space-y-6">
-                {/* Header */}
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-black tracking-tight">Sales Returns</h1>
+                        <h1 className="text-2xl font-black tracking-tight">{t.returns.title}</h1>
                         <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mt-0.5">
-                            Process refunds and re-increment stock
+                            {t.returns.subtitle}
                         </p>
                     </div>
                     <button
@@ -247,22 +253,21 @@ export default function ReturnsPage() {
                         className="bg-rose-600 hover:bg-rose-700 text-white px-4 py-2.5 rounded-xl font-bold text-sm flex items-center shadow-lg shadow-rose-200 transition-all hover:-translate-y-0.5 active:translate-y-0"
                     >
                         <Plus className="w-4 h-4 mr-2" />
-                        Process Return
+                        {t.returns.processReturn}
                     </button>
                 </div>
 
                 <IssueReturnModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSuccess={loadReturns} />
 
-                {/* DataTable */}
                 <DataTable<SalesReturn>
                     tableId="sales-returns"
                     columns={columns}
                     data={returns}
-                    title="Sales Returns"
+                    title={t.returns.dataTable.title}
                     isLoading={loading}
-                    emptyMessage="No returns found"
+                    emptyMessage={t.returns.dataTable.emptyMessage}
                     emptyIcon={<RotateCcw className="w-16 h-16 text-gray-200" />}
-                    searchPlaceholder="Search by return #, receipt, amount..."
+                    searchPlaceholder={t.returns.dataTable.searchPlaceholder}
                     filterPresets={filterPresets}
                     enableRowSelection
                 />

@@ -5,6 +5,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, Pencil, Printer, Receipt, Save, Trash2, Undo2, X } from 'lucide-react';
 import { api } from '../../../../lib/api';
 import { formatBDT } from '../../../../lib/format';
+import { useI18n, formatMessage } from '@/lib/i18n';
 
 interface EditItem {
     purchaseItemId: string;
@@ -16,6 +17,7 @@ interface EditItem {
 }
 
 function PurchaseReturnDetailPageContent() {
+    const { t, locale } = useI18n();
     const params = useParams();
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -141,7 +143,7 @@ function PurchaseReturnDetailPageContent() {
             return;
         }
 
-        if (!window.confirm('Are you sure you want to delete this purchase return?')) {
+        if (!window.confirm(t.purchaseReturns.deleteConfirm)) {
             return;
         }
 
@@ -151,7 +153,7 @@ function PurchaseReturnDetailPageContent() {
             router.push('/dashboard/purchase-returns');
         } catch (error) {
             console.error('Failed to delete purchase return', error);
-            window.alert('Failed to delete purchase return. Please try again.');
+            window.alert(t.purchaseReturns.deleteFailed);
         } finally {
             setDeleting(false);
         }
@@ -173,8 +175,8 @@ function PurchaseReturnDetailPageContent() {
                     <tr>
                         <td>${item.product?.name || 'Unknown item'}</td>
                         <td class="text-center">${item.quantity}</td>
-                        <td class="text-right">${formatBDT(Number(item.unit_cost || 0))}</td>
-                        <td class="text-right">${formatBDT(Number(item.line_total || 0))}</td>
+                        <td class="text-right">${formatBDT(Number(item.unit_cost || 0), { locale })}</td>
+                        <td class="text-right">${formatBDT(Number(item.line_total || 0), { locale })}</td>
                     </tr>
                 `,
             )
@@ -219,24 +221,24 @@ function PurchaseReturnDetailPageContent() {
                 <table>
                     <thead>
                         <tr>
-                            <th>Product</th>
-                            <th class="text-center">Qty</th>
-                            <th class="text-right">Unit Cost</th>
-                            <th class="text-right">Line Total</th>
+                            <th>{t.common.product}</th>
+                            <th class="text-center">{t.purchaseShared.qty}</th>
+                            <th class="text-right">{t.purchaseShared.unitCost}</th>
+                            <th class="text-right">{t.purchaseShared.lineTotal}</th>
                         </tr>
                     </thead>
                     <tbody>
                         ${itemRows}
                         <tr class="total-row">
                             <td colspan="3">Total</td>
-                            <td class="text-right">${formatBDT(Number(purchaseReturn.total_amount || 0))}</td>
+                            <td class="text-right">${formatBDT(Number(purchaseReturn.total_amount || 0), { locale })}</td>
                         </tr>
                     </tbody>
                 </table>
                 <div class="note-section">
                     <strong>Notes:</strong> ${purchaseReturn.notes || 'No notes added for this return.'}
                 </div>
-                <div class="footer">Purchase return documentation</div>
+                <div class="footer">{t.purchaseReturns.detail.printFooter}</div>
             </body>
             </html>
         `);
@@ -247,7 +249,7 @@ function PurchaseReturnDetailPageContent() {
     if (loading) {
         return (
             <div className="flex items-center justify-center h-full bg-[#f3f4f6]">
-                <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Loading purchase return...</p>
+                <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">{t.purchaseReturns.detail.loading}</p>
             </div>
         );
     }
@@ -255,7 +257,7 @@ function PurchaseReturnDetailPageContent() {
     if (!purchaseReturn) {
         return (
             <div className="flex items-center justify-center h-full bg-[#f3f4f6]">
-                <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Purchase return not found</p>
+                <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">{t.purchaseReturns.detail.notFound}</p>
             </div>
         );
     }
@@ -285,7 +287,7 @@ function PurchaseReturnDetailPageContent() {
                                 className="text-xs font-bold uppercase tracking-widest text-amber-600 hover:text-amber-800 transition-colors flex items-center space-x-1"
                             >
                                 <X className="w-3.5 h-3.5" />
-                                <span>Cancel</span>
+                                <span>{t.common.cancel}</span>
                             </button>
                         </div>
                     </div>
@@ -314,7 +316,7 @@ function PurchaseReturnDetailPageContent() {
                                     className="bg-white hover:bg-amber-50 text-gray-700 hover:text-amber-700 border border-gray-200 hover:border-amber-300 px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest shadow-sm flex items-center space-x-2 transition-all hover:-translate-y-0.5"
                                 >
                                     <Pencil className="w-4 h-4" />
-                                    <span>Edit</span>
+                                    <span>{t.common.edit}</span>
                                 </button>
                                 <button
                                     onClick={handlePrint}
@@ -352,10 +354,10 @@ function PurchaseReturnDetailPageContent() {
                         </div>
                         <div className="bg-white p-4 rounded-2xl shadow-sm">
                             <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1">New Total</span>
-                            <span className="text-xl font-black text-emerald-600">{formatBDT(editTotal)}</span>
+                            <span className="text-xl font-black text-emerald-600">{formatBDT(editTotal, { locale })}</span>
                             {editTotal !== Number(purchaseReturn.total_amount || 0) && (
                                 <span className="block text-xs font-bold mt-1 text-gray-400">
-                                    Was: {formatBDT(Number(purchaseReturn.total_amount || 0))}
+                                    Was: {formatBDT(Number(purchaseReturn.total_amount || 0), { locale })}
                                 </span>
                             )}
                         </div>
@@ -381,8 +383,8 @@ function PurchaseReturnDetailPageContent() {
                             <span className="text-xl font-black text-gray-900">{purchaseReturn.items?.length || 0}</span>
                         </div>
                         <div className="bg-white p-4 rounded-2xl shadow-sm">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1">Total</span>
-                            <span className="text-xl font-black text-emerald-600">{formatBDT(Number(purchaseReturn.total_amount || 0))}</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1">{t.purchases.invoice.total}</span>
+                            <span className="text-xl font-black text-emerald-600">{formatBDT(Number(purchaseReturn.total_amount || 0), { locale })}</span>
                         </div>
                     </div>
                 )}
@@ -405,11 +407,11 @@ function PurchaseReturnDetailPageContent() {
                                 <table className="w-full">
                                     <thead>
                                         <tr className="border-b border-gray-100">
-                                            <th className="text-left pb-2 text-[10px] font-black uppercase tracking-widest text-gray-400">Product</th>
-                                            <th className="text-center pb-2 text-[10px] font-black uppercase tracking-widest text-gray-400 w-24">Qty</th>
-                                            <th className="text-center pb-2 text-[10px] font-black uppercase tracking-widest text-gray-400 w-20">Max</th>
-                                            <th className="text-right pb-2 text-[10px] font-black uppercase tracking-widest text-gray-400 w-28">Unit Cost</th>
-                                            <th className="text-right pb-2 text-[10px] font-black uppercase tracking-widest text-gray-400 w-28">Line Total</th>
+                                            <th className="text-left pb-2 text-[10px] font-black uppercase tracking-widest text-gray-400">{t.common.product}</th>
+                                            <th className="text-center pb-2 text-[10px] font-black uppercase tracking-widest text-gray-400 w-24">{t.purchaseShared.qty}</th>
+                                            <th className="text-center pb-2 text-[10px] font-black uppercase tracking-widest text-gray-400 w-20">{t.purchaseReturns.modal.returnQty}</th>
+                                            <th className="text-right pb-2 text-[10px] font-black uppercase tracking-widest text-gray-400 w-28">{t.purchaseShared.unitCost}</th>
+                                            <th className="text-right pb-2 text-[10px] font-black uppercase tracking-widest text-gray-400 w-28">{t.purchaseShared.lineTotal}</th>
                                             <th className="w-10"></th>
                                         </tr>
                                     </thead>
@@ -430,8 +432,8 @@ function PurchaseReturnDetailPageContent() {
                                                     />
                                                 </td>
                                                 <td className="py-3 text-center text-xs font-bold text-gray-400 uppercase tracking-widest">{item.maxQuantity}</td>
-                                                <td className="py-3 text-right text-sm font-bold text-gray-700">{formatBDT(item.unitCost)}</td>
-                                                <td className="py-3 text-right text-sm font-black text-emerald-600">{formatBDT(item.quantity * item.unitCost)}</td>
+                                                <td className="py-3 text-right text-sm font-bold text-gray-700">{formatBDT(item.unitCost, { locale })}</td>
+                                                <td className="py-3 text-right text-sm font-black text-emerald-600">{formatBDT(item.quantity * item.unitCost, { locale })}</td>
                                                 <td className="py-3 text-center">
                                                     <button
                                                         onClick={() => removeItem(index)}
@@ -446,7 +448,7 @@ function PurchaseReturnDetailPageContent() {
                                     <tfoot>
                                         <tr className="border-t-2 border-gray-200">
                                             <td colSpan={4} className="pt-3 text-right text-sm font-black uppercase tracking-widest">Total</td>
-                                            <td className="pt-3 text-right text-xl font-black text-emerald-600">{formatBDT(editTotal)}</td>
+                                            <td className="pt-3 text-right text-xl font-black text-emerald-600">{formatBDT(editTotal, { locale })}</td>
                                             <td></td>
                                         </tr>
                                     </tfoot>
@@ -458,10 +460,10 @@ function PurchaseReturnDetailPageContent() {
                             <table className="w-full">
                                 <thead>
                                     <tr className="border-b border-gray-100 bg-gray-50/80">
-                                        <th className="text-left p-3 text-[10px] font-black uppercase tracking-widest text-gray-400">Product</th>
-                                        <th className="text-center p-3 text-[10px] font-black uppercase tracking-widest text-gray-400 w-28">Qty</th>
-                                        <th className="text-right p-3 text-[10px] font-black uppercase tracking-widest text-gray-400 w-32">Unit Cost</th>
-                                        <th className="text-right p-3 text-[10px] font-black uppercase tracking-widest text-gray-400 w-32">Line Total</th>
+                                        <th className="text-left p-3 text-[10px] font-black uppercase tracking-widest text-gray-400">{t.common.product}</th>
+                                        <th className="text-center p-3 text-[10px] font-black uppercase tracking-widest text-gray-400 w-28">{t.purchaseShared.qty}</th>
+                                        <th className="text-right p-3 text-[10px] font-black uppercase tracking-widest text-gray-400 w-32">{t.purchaseShared.unitCost}</th>
+                                        <th className="text-right p-3 text-[10px] font-black uppercase tracking-widest text-gray-400 w-32">{t.purchaseShared.lineTotal}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-50">
@@ -471,8 +473,8 @@ function PurchaseReturnDetailPageContent() {
                                                 <span className="text-sm font-bold text-gray-900">{item.product?.name || 'Unknown item'}</span>
                                             </td>
                                             <td className="p-3 text-center text-sm font-bold text-gray-700">{item.quantity}</td>
-                                            <td className="p-3 text-right text-sm font-bold text-gray-700">{formatBDT(Number(item.unit_cost || 0))}</td>
-                                            <td className="p-3 text-right text-sm font-black text-emerald-600">{formatBDT(Number(item.line_total || 0))}</td>
+                                            <td className="p-3 text-right text-sm font-bold text-gray-700">{formatBDT(Number(item.unit_cost || 0), { locale })}</td>
+                                            <td className="p-3 text-right text-sm font-black text-emerald-600">{formatBDT(Number(item.line_total || 0), { locale })}</td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -485,7 +487,7 @@ function PurchaseReturnDetailPageContent() {
                     <div className="bg-white p-5 rounded-3xl shadow-sm">
                         <div className="flex items-center space-x-2 mb-3">
                             <Receipt className="w-4 h-4 text-gray-400" />
-                            <h3 className="text-sm font-black tracking-tight">Reference</h3>
+                            <h3 className="text-sm font-black tracking-tight">{t.purchaseReturns.detail.reference}</h3>
                         </div>
                         {isEditMode ? (
                             <input
@@ -502,7 +504,7 @@ function PurchaseReturnDetailPageContent() {
                     <div className="bg-white p-5 rounded-3xl shadow-sm">
                         <div className="flex items-center space-x-2 mb-3">
                             <Receipt className="w-4 h-4 text-gray-400" />
-                            <h3 className="text-sm font-black tracking-tight">Notes</h3>
+                            <h3 className="text-sm font-black tracking-tight">{t.common.notes}</h3>
                         </div>
                         {isEditMode ? (
                             <textarea

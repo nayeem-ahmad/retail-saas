@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Bell, Check, CheckCheck, Package, CreditCard, Info, X } from 'lucide-react';
 import { api } from '@/lib/api';
+import { useI18n, formatMessage } from '@/lib/i18n';
 
 interface Notification {
     id: string;
@@ -21,19 +22,21 @@ function NotificationIcon({ type }: { type: string }) {
     return <Info className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />;
 }
 
-function timeAgo(dateStr: string): string {
-    const diff = Date.now() - new Date(dateStr).getTime();
-    const mins = Math.floor(diff / 60000);
-    if (mins < 1) return 'just now';
-    if (mins < 60) return `${mins}m ago`;
-    const hours = Math.floor(mins / 60);
-    if (hours < 24) return `${hours}h ago`;
-    const days = Math.floor(hours / 24);
-    return `${days}d ago`;
-}
-
 export default function NotificationBell() {
+    const { t } = useI18n();
+    const m = t.components.notificationBell;
     const router = useRouter();
+
+    const timeAgo = (dateStr: string): string => {
+        const diff = Date.now() - new Date(dateStr).getTime();
+        const mins = Math.floor(diff / 60000);
+        if (mins < 1) return m.timeAgo.justNow;
+        if (mins < 60) return formatMessage(m.timeAgo.minutes, { count: mins });
+        const hours = Math.floor(mins / 60);
+        if (hours < 24) return formatMessage(m.timeAgo.hours, { count: hours });
+        const days = Math.floor(hours / 24);
+        return formatMessage(m.timeAgo.days, { count: days });
+    };
     const [open, setOpen] = useState(false);
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [unreadCount, setUnreadCount] = useState(0);
@@ -123,7 +126,7 @@ export default function NotificationBell() {
             <button
                 onClick={handleOpen}
                 className="relative p-2 text-gray-400 hover:text-gray-600 cursor-pointer transition-colors rounded-lg hover:bg-gray-100"
-                aria-label="Notifications"
+                aria-label={m.ariaLabel}
             >
                 <Bell className="w-5 h-5" />
                 {unreadCount > 0 && (
@@ -138,7 +141,7 @@ export default function NotificationBell() {
                     {/* Header */}
                     <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
                         <div className="flex items-center gap-2">
-                            <h3 className="text-sm font-bold text-gray-900">Notifications</h3>
+                            <h3 className="text-sm font-bold text-gray-900">{m.title}</h3>
                             {unread.length > 0 && (
                                 <span className="text-[10px] font-black bg-red-100 text-red-600 rounded-full px-1.5 py-0.5">
                                     {unread.length}
@@ -150,10 +153,10 @@ export default function NotificationBell() {
                                 <button
                                     onClick={handleMarkAllRead}
                                     className="flex items-center gap-1 text-[11px] font-semibold text-blue-600 hover:text-blue-700 px-2 py-1 rounded-lg hover:bg-blue-50 transition-colors"
-                                    title="Mark all as read"
+                                    title={m.markAllReadTitle}
                                 >
                                     <CheckCheck className="w-3.5 h-3.5" />
-                                    All read
+                                    {m.markAllRead}
                                 </button>
                             )}
                             <button
@@ -168,11 +171,11 @@ export default function NotificationBell() {
                     {/* List */}
                     <div className="max-h-96 overflow-y-auto">
                         {loading ? (
-                            <div className="py-10 text-center text-sm text-gray-400">Loading…</div>
+                            <div className="py-10 text-center text-sm text-gray-400">{m.loading}</div>
                         ) : notifications.length === 0 ? (
                             <div className="py-10 text-center">
                                 <Bell className="w-8 h-8 text-gray-200 mx-auto mb-2" />
-                                <p className="text-sm text-gray-400 font-medium">No notifications yet</p>
+                                <p className="text-sm text-gray-400 font-medium">{m.empty}</p>
                             </div>
                         ) : (
                             notifications.map((n) => (
@@ -197,7 +200,7 @@ export default function NotificationBell() {
                                         <button
                                             onClick={(e) => handleMarkRead(n, e)}
                                             className="flex-shrink-0 p-1 text-gray-300 hover:text-blue-500 rounded transition-colors"
-                                            title="Mark as read"
+                                            title={m.markReadTitle}
                                         >
                                             <Check className="w-3.5 h-3.5" />
                                         </button>

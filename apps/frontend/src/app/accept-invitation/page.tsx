@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowRight, CheckCircle2, Loader2, Mail, UserPlus, XCircle } from 'lucide-react';
 import { api } from '@/lib/api';
 import { syncLocalePreferenceFromSession } from '@/lib/localization/preference';
+import { useI18n, formatMessage } from '@/lib/i18n';
 
 type PageStatus = 'loading' | 'ready' | 'accepting' | 'success' | 'error';
 
@@ -17,19 +18,21 @@ interface InvitationInfo {
 }
 
 function AcceptInvitationContent() {
+    const { t } = useI18n();
+    const m = t.auth.acceptInvitation;
     const searchParams = useSearchParams();
     const router = useRouter();
     const token = searchParams.get('token');
     const [status, setStatus] = useState<PageStatus>('loading');
     const [info, setInfo] = useState<InvitationInfo | null>(null);
-    const [errorMessage, setErrorMessage] = useState('Invalid or expired invitation');
+    const [errorMessage, setErrorMessage] = useState(m.defaultError);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [currentEmail, setCurrentEmail] = useState<string | null>(null);
 
     useEffect(() => {
         if (!token) {
             setStatus('error');
-            setErrorMessage('Invitation link is missing a token.');
+            setErrorMessage(m.missingToken);
             return;
         }
 
@@ -78,7 +81,7 @@ function AcceptInvitationContent() {
             setStatus('success');
             setTimeout(() => router.push('/dashboard'), 1500);
         } catch (error: any) {
-            setErrorMessage(error?.message || 'Failed to accept invitation');
+            setErrorMessage(error?.message || m.acceptFailed);
             setStatus('error');
         }
     };
@@ -88,13 +91,13 @@ function AcceptInvitationContent() {
             <div className="w-full max-w-md">
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 md:p-10">
                     <div className="text-center mb-8">
-                        <span className="text-xl font-black tracking-tight text-blue-600">RetailSaaS</span>
+                        <span className="text-xl font-black tracking-tight text-blue-600">{m.brand}</span>
                     </div>
 
                     {status === 'loading' && (
                         <div className="flex flex-col items-center gap-5 py-6">
                             <Loader2 className="w-12 h-12 text-blue-500 animate-spin" />
-                            <p className="font-semibold text-gray-800">Loading invitation…</p>
+                            <p className="font-semibold text-gray-800">{m.loading}</p>
                         </div>
                     )}
 
@@ -104,9 +107,9 @@ function AcceptInvitationContent() {
                                 <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
                                     <UserPlus className="w-8 h-8 text-blue-600" />
                                 </div>
-                                <h1 className="text-2xl font-bold tracking-tight text-gray-900">You&apos;re invited!</h1>
+                                <h1 className="text-2xl font-bold tracking-tight text-gray-900">{m.title}</h1>
                                 <p className="text-gray-500 mt-2 text-sm leading-relaxed">
-                                    Join <strong>{info.tenantName}</strong> as a <strong>{info.role}</strong>.
+                                    {formatMessage(m.joinDescription, { tenant: info.tenantName, role: info.role })}
                                 </p>
                             </div>
 
@@ -116,32 +119,32 @@ function AcceptInvitationContent() {
                                     <span>{info.email}</span>
                                 </div>
                                 <p className="text-xs text-gray-500">
-                                    Expires {new Date(info.expiresAt).toLocaleDateString()}
+                                    {formatMessage(m.expires, { date: new Date(info.expiresAt).toLocaleDateString() })}
                                 </p>
                             </div>
 
                             {!isLoggedIn ? (
                                 <div className="space-y-3">
                                     <p className="text-sm text-gray-600 text-center">
-                                        Sign in or create an account with <strong>{info.email}</strong> to accept this invitation.
+                                        {formatMessage(m.signInPrompt, { email: info.email })}
                                     </p>
                                     <Link
                                         href={`/login?redirect=${encodeURIComponent(redirectTarget)}`}
                                         className="w-full inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-xl transition-all"
                                     >
-                                        Sign in to accept
+                                        {m.signInToAccept}
                                         <ArrowRight className="w-4 h-4" />
                                     </Link>
                                     <Link
                                         href={`/signup?redirect=${encodeURIComponent(redirectTarget)}`}
                                         className="w-full inline-flex items-center justify-center gap-2 border border-gray-200 hover:border-blue-300 text-gray-700 font-semibold py-3 px-6 rounded-xl transition-all"
                                     >
-                                        Create account
+                                        {m.createAccount}
                                     </Link>
                                 </div>
                             ) : currentEmail && currentEmail !== info.email ? (
                                 <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                                    You are signed in as <strong>{currentEmail}</strong>, but this invitation was sent to <strong>{info.email}</strong>. Please sign in with the invited email address.
+                                    {formatMessage(m.emailMismatch, { currentEmail: currentEmail!, invitedEmail: info.email })}
                                 </div>
                             ) : (
                                 <button
@@ -149,7 +152,7 @@ function AcceptInvitationContent() {
                                     onClick={handleAccept}
                                     className="w-full inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-xl transition-all"
                                 >
-                                    Accept invitation
+                                    {m.accept}
                                     <ArrowRight className="w-4 h-4" />
                                 </button>
                             )}
@@ -159,7 +162,7 @@ function AcceptInvitationContent() {
                     {status === 'accepting' && (
                         <div className="flex flex-col items-center gap-5 py-6">
                             <Loader2 className="w-12 h-12 text-blue-500 animate-spin" />
-                            <p className="font-semibold text-gray-800">Joining workspace…</p>
+                            <p className="font-semibold text-gray-800">{m.accepting}</p>
                         </div>
                     )}
 
@@ -169,8 +172,8 @@ function AcceptInvitationContent() {
                                 <CheckCircle2 className="w-9 h-9 text-green-500" />
                             </div>
                             <div>
-                                <h1 className="text-2xl font-bold tracking-tight text-gray-900">Welcome aboard!</h1>
-                                <p className="text-gray-500 mt-2 text-sm">Redirecting to your dashboard…</p>
+                                <h1 className="text-2xl font-bold tracking-tight text-gray-900">{m.successTitle}</h1>
+                                <p className="text-gray-500 mt-2 text-sm">{m.successDescription}</p>
                             </div>
                         </div>
                     )}
@@ -181,11 +184,11 @@ function AcceptInvitationContent() {
                                 <XCircle className="w-9 h-9 text-red-500" />
                             </div>
                             <div>
-                                <h1 className="text-2xl font-bold tracking-tight text-gray-900">Invitation unavailable</h1>
+                                <h1 className="text-2xl font-bold tracking-tight text-gray-900">{m.errorTitle}</h1>
                                 <p className="text-gray-500 mt-2 text-sm">{errorMessage}</p>
                             </div>
                             <Link href="/login" className="text-sm font-semibold text-blue-600 hover:text-blue-700">
-                                Go to sign in
+                                {m.goToSignIn}
                             </Link>
                         </div>
                     )}

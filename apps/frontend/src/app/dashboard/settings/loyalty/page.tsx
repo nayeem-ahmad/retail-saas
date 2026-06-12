@@ -1,4 +1,5 @@
 'use client';
+import { useI18n, formatMessage } from '@/lib/i18n';
 
 import { useEffect, useState, useCallback } from 'react';
 import { Gift, Loader2, CheckCircle, XCircle, ArrowLeft } from 'lucide-react';
@@ -42,6 +43,8 @@ function Toast({ toast, onDismiss }: { toast: ToastState; onDismiss: () => void 
 }
 
 export default function LoyaltySettingsPage() {
+    const { t } = useI18n();
+    const m = t.settingsExtras.loyalty;
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [toast, setToast] = useState<ToastState>(null);
@@ -59,11 +62,11 @@ export default function LoyaltySettingsPage() {
             setRedeemRate(data.loyalty_redeem_rate != null ? String(data.loyalty_redeem_rate) : '');
             setMinRedeem(data.loyalty_min_redeem != null ? String(data.loyalty_min_redeem) : '');
         } catch (err: any) {
-            setToast({ type: 'error', message: err?.message || 'Failed to load loyalty settings.' });
+            setToast({ type: 'error', message: err?.message || m.loadFailed });
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [m.loadFailed]);
 
     useEffect(() => {
         loadSettings();
@@ -83,9 +86,9 @@ export default function LoyaltySettingsPage() {
                     ...(minRedeem !== '' ? { loyalty_min_redeem: parseInt(minRedeem, 10) } : {}),
                 }),
             });
-            setToast({ type: 'success', message: 'Loyalty settings saved.' });
+            setToast({ type: 'success', message: m.saved });
         } catch (err: any) {
-            setToast({ type: 'error', message: err?.message || 'Failed to save settings.' });
+            setToast({ type: 'error', message: err?.message || m.saveFailed });
         } finally {
             setSaving(false);
         }
@@ -108,7 +111,7 @@ export default function LoyaltySettingsPage() {
                         className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 transition-colors"
                     >
                         <ArrowLeft className="w-4 h-4" />
-                        Settings
+                        {m.backToSettings}
                     </Link>
                 </div>
 
@@ -117,15 +120,15 @@ export default function LoyaltySettingsPage() {
                         <Gift className="w-5 h-5 text-purple-600" />
                     </div>
                     <div>
-                        <h1 className="text-2xl font-black text-gray-900 tracking-tight">Loyalty Program</h1>
-                        <p className="text-sm text-gray-500">Configure points earn & redeem rates for your customers.</p>
+                        <h1 className="text-2xl font-black text-gray-900 tracking-tight">{m.title}</h1>
+                        <p className="text-sm text-gray-500">{m.description}</p>
                     </div>
                 </div>
 
                 {loading ? (
                     <div className="flex items-center gap-2 text-gray-400 text-sm">
                         <Loader2 className="w-4 h-4 animate-spin" />
-                        Loading settings…
+                        {m.loading}
                     </div>
                 ) : (
                     <form onSubmit={handleSave} className="space-y-6">
@@ -133,8 +136,8 @@ export default function LoyaltySettingsPage() {
                         <div className="bg-white rounded-2xl border border-gray-200 p-5 space-y-4">
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <p className="text-sm font-bold text-gray-800">Enable Loyalty Program</p>
-                                    <p className="text-xs text-gray-500 mt-0.5">Allow customers to earn and redeem points.</p>
+                                    <p className="text-sm font-bold text-gray-800">{m.enableLabel}</p>
+                                    <p className="text-xs text-gray-500 mt-0.5">{m.enableHint}</p>
                                 </div>
                                 <button
                                     type="button"
@@ -154,7 +157,7 @@ export default function LoyaltySettingsPage() {
 
                         {/* Rate configuration */}
                         <div className="bg-white rounded-2xl border border-gray-200 p-5 space-y-5">
-                            <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide">Rate Configuration</h2>
+                            <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide">{m.rateConfigTitle}</h2>
 
                             <div className="space-y-4">
                                 <div>
@@ -168,13 +171,13 @@ export default function LoyaltySettingsPage() {
                                             min="0"
                                             value={earnRate}
                                             onChange={(e) => setEarnRate(e.target.value)}
-                                            placeholder="e.g. 1.0"
+                                            placeholder={m.earnRate.placeholder}
                                             className="w-32 rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition"
                                         />
-                                        <span className="text-sm text-gray-500">points per ৳1 spent</span>
+                                        <span className="text-sm text-gray-500">{m.earnRate.suffix}</span>
                                     </div>
                                     <p className="mt-1 text-xs text-gray-400">
-                                        e.g. 1.0 means a ৳100 sale earns 100 points
+                                        {m.earnRate.hint}
                                     </p>
                                 </div>
 
@@ -183,7 +186,7 @@ export default function LoyaltySettingsPage() {
                                         Redemption Rate
                                     </label>
                                     <div className="flex items-center gap-2">
-                                        <span className="text-sm text-gray-500">1 point =</span>
+                                        <span className="text-sm text-gray-500">{m.redeemRate.prefix}</span>
                                         <span className="text-sm text-gray-500">৳</span>
                                         <input
                                             type="number"
@@ -191,12 +194,12 @@ export default function LoyaltySettingsPage() {
                                             min="0"
                                             value={redeemRate}
                                             onChange={(e) => setRedeemRate(e.target.value)}
-                                            placeholder="e.g. 0.01"
+                                            placeholder={m.redeemRate.placeholder}
                                             className="w-32 rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition"
                                         />
                                     </div>
                                     <p className="mt-1 text-xs text-gray-400">
-                                        e.g. 0.01 means 100 points = ৳1.00 discount
+                                        {m.redeemRate.hint}
                                     </p>
                                 </div>
 
@@ -211,13 +214,13 @@ export default function LoyaltySettingsPage() {
                                             min="0"
                                             value={minRedeem}
                                             onChange={(e) => setMinRedeem(e.target.value)}
-                                            placeholder="e.g. 100"
+                                            placeholder={m.minRedeem.placeholder}
                                             className="w-32 rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition"
                                         />
-                                        <span className="text-sm text-gray-500">points</span>
+                                        <span className="text-sm text-gray-500">{m.minRedeem.suffix}</span>
                                     </div>
                                     <p className="mt-1 text-xs text-gray-400">
-                                        Customers must have at least this many points to redeem
+                                        {m.minRedeem.hint}
                                     </p>
                                 </div>
                             </div>
@@ -226,15 +229,13 @@ export default function LoyaltySettingsPage() {
                         {/* Example calculation */}
                         {earnRateNum > 0 && (
                             <div className="bg-purple-50 rounded-2xl border border-purple-100 p-5">
-                                <h3 className="text-sm font-bold text-purple-800 mb-2">Example Calculation</h3>
+                                <h3 className="text-sm font-bold text-purple-800 mb-2">{m.example.title}</h3>
                                 <p className="text-sm text-purple-700">
-                                    A ৳{exampleSaleAmount} sale earns{' '}
-                                    <span className="font-bold">{examplePointsEarned} points</span>.
+                                    {formatMessage(m.example.saleEarned, { amount: exampleSaleAmount, points: examplePointsEarned })}
                                 </p>
                                 {redeemRateNum > 0 && (
                                     <p className="text-sm text-purple-700 mt-1">
-                                        {examplePointsEarned} points ={' '}
-                                        <span className="font-bold">৳{exampleDiscount.toFixed(2)} discount</span>.
+                                        {formatMessage(m.example.redeemDiscount, { points: examplePointsEarned, discount: exampleDiscount.toFixed(2) })}
                                     </p>
                                 )}
                             </div>
@@ -247,7 +248,7 @@ export default function LoyaltySettingsPage() {
                                 className="inline-flex items-center gap-2 rounded-xl bg-purple-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-purple-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors shadow-sm"
                             >
                                 {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-                                {saving ? 'Saving…' : 'Save Settings'}
+                                {saving ? m.saving : m.saveButton}
                             </button>
                         </div>
                     </form>

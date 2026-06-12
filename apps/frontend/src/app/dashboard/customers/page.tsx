@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Users, Plus, Eye, RefreshCw, Crown, AlertTriangle, UserCheck } from 'lucide-react';
 import { api } from '../../../lib/api';
 import { formatBDT, formatDate } from '../../../lib/format';
+import { useI18n, formatMessage } from '@/lib/i18n';
 import AddCustomerModal from './AddCustomerModal';
 import Link from 'next/link';
 import { createColumnHelper, type ColumnDef } from '@tanstack/react-table';
@@ -42,15 +43,10 @@ const segmentColors: Record<string, string> = {
     LOYAL: 'bg-amber-50 text-amber-700 border-amber-200',
 };
 
-const segmentCardStyle: Record<string, { bg: string; text: string; bar: string; icon: React.ReactNode }> = {
-    VIP: { bg: 'bg-emerald-50 border-emerald-200', text: 'text-emerald-700', bar: 'bg-emerald-500', icon: <Crown className="w-5 h-5 text-emerald-500" /> },
-    'At-Risk': { bg: 'bg-rose-50 border-rose-200', text: 'text-rose-700', bar: 'bg-rose-500', icon: <AlertTriangle className="w-5 h-5 text-rose-500" /> },
-    Regular: { bg: 'bg-gray-50 border-gray-200', text: 'text-gray-700', bar: 'bg-gray-400', icon: <UserCheck className="w-5 h-5 text-gray-400" /> },
-};
-
 const columnHelper = createColumnHelper<Customer>();
 
 export default function CustomersPage() {
+    const { t } = useI18n();
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -58,6 +54,12 @@ export default function CustomersPage() {
     const [runningSegmentation, setRunningSegmentation] = useState(false);
     const [evaluating, setEvaluating] = useState(false);
     const [evalMessage, setEvalMessage] = useState('');
+
+    const segmentCardStyle: Record<string, { bg: string; text: string; bar: string; icon: React.ReactNode }> = useMemo(() => ({
+        VIP: { bg: 'bg-emerald-50 border-emerald-200', text: 'text-emerald-700', bar: 'bg-emerald-500', icon: <Crown className="w-5 h-5 text-emerald-500" /> },
+        'At-Risk': { bg: 'bg-rose-50 border-rose-200', text: 'text-rose-700', bar: 'bg-rose-500', icon: <AlertTriangle className="w-5 h-5 text-rose-500" /> },
+        Regular: { bg: 'bg-gray-50 border-gray-200', text: 'text-gray-700', bar: 'bg-gray-400', icon: <UserCheck className="w-5 h-5 text-gray-400" /> },
+    }), []);
 
     useEffect(() => {
         loadCustomers();
@@ -67,7 +69,6 @@ export default function CustomersPage() {
     const loadCustomers = async () => {
         try {
             const data = await api.getCustomers();
-            // API now returns paginated result; support both array and { items } shapes
             setCustomers(Array.isArray(data) ? data : (data?.items ?? data));
         } catch (error) {
             console.error('Failed to load customers', error);
@@ -107,10 +108,10 @@ export default function CustomersPage() {
         setEvalMessage('');
         try {
             const result = await api.evaluateCustomerSegments();
-            setEvalMessage(`Segmentation complete — ${result.updated} customer(s) updated.`);
+            setEvalMessage(formatMessage(t.customers.segmentationComplete, { count: String(result.updated) }));
             await loadCustomers();
         } catch (error: any) {
-            setEvalMessage(error.message || 'Failed to evaluate segments.');
+            setEvalMessage(error.message || t.customers.evaluateFailed);
         } finally {
             setEvaluating(false);
         }
@@ -119,14 +120,14 @@ export default function CustomersPage() {
     const columns: ColumnDef<Customer, any>[] = useMemo(
         () => [
             columnHelper.accessor('customer_code', {
-                header: 'Code',
+                header: t.customers.columns.code,
                 cell: (info) => (
                     <span className="text-sm font-mono text-gray-500">{info.getValue() || '-'}</span>
                 ),
                 size: 120,
             }),
             columnHelper.accessor('name', {
-                header: 'Customer',
+                header: t.customers.columns.customer,
                 cell: (info) => {
                     const customer = info.row.original;
                     return (
@@ -139,7 +140,7 @@ export default function CustomersPage() {
                 size: 190,
             }),
             columnHelper.accessor('customer_type', {
-                header: 'Type',
+                header: t.customers.columns.type,
                 cell: (info) => {
                     const type = info.getValue() || 'INDIVIDUAL';
                     const classes =
@@ -157,7 +158,7 @@ export default function CustomersPage() {
             }),
             columnHelper.accessor((row) => row.customerGroup?.name ?? '', {
                 id: 'group',
-                header: 'Group',
+                header: t.customers.columns.group,
                 cell: (info) => (
                     <span className="text-sm font-medium text-gray-700">{info.getValue() || '-'}</span>
                 ),
@@ -165,14 +166,14 @@ export default function CustomersPage() {
             }),
             columnHelper.accessor((row) => row.territory?.name ?? '', {
                 id: 'territory',
-                header: 'Territory',
+                header: t.customers.columns.territory,
                 cell: (info) => (
                     <span className="text-sm font-medium text-gray-700">{info.getValue() || '-'}</span>
                 ),
                 size: 150,
             }),
             columnHelper.accessor('total_spent', {
-                header: 'Total Spent',
+                header: t.customers.columns.totalSpent,
                 cell: (info) => (
                     <span className="text-sm font-black text-blue-600">
                         {formatBDT(Number(info.getValue() || 0))}
@@ -182,13 +183,13 @@ export default function CustomersPage() {
                 size: 120,
             }),
             columnHelper.accessor('loyalty_points', {
-                header: 'Points',
+                header: t.customers.columns.points,
                 cell: (info) => {
                     const pts = info.getValue();
                     if (pts == null) return <span className="text-sm text-gray-400">—</span>;
                     return (
                         <span className="inline-flex items-center gap-1 rounded-full bg-purple-50 border border-purple-200 px-2.5 py-0.5 text-xs font-bold text-purple-700">
-                            {Number(pts).toLocaleString()} pts
+                            {Number(pts).toLocaleString()} {t.customers.columns.pointsSuffix}
                         </span>
                     );
                 },
@@ -196,7 +197,7 @@ export default function CustomersPage() {
                 size: 110,
             }),
             columnHelper.accessor('segment_category', {
-                header: 'Segment',
+                header: t.customers.columns.segment,
                 cell: (info) => {
                     const segment = info.getValue() || 'GENERAL';
                     return (
@@ -208,7 +209,7 @@ export default function CustomersPage() {
                 size: 130,
             }),
             columnHelper.accessor('created_at', {
-                header: 'Registered',
+                header: t.customers.columns.registered,
                 cell: (info) => (
                     <span className="text-sm text-gray-600">
                         {formatDate(info.getValue())}
@@ -219,13 +220,13 @@ export default function CustomersPage() {
             }),
             columnHelper.display({
                 id: 'actions',
-                header: 'Actions',
+                header: t.common.actions,
                 cell: (info) => (
                     <div className="flex items-center justify-end space-x-1">
                         <Link
                             href={`/dashboard/customers/${info.row.original.id}`}
                             className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors"
-                            title="View"
+                            title={t.common.view}
                         >
                             <Eye className="w-4 h-4" />
                         </Link>
@@ -237,16 +238,16 @@ export default function CustomersPage() {
                 size: 90,
             }),
         ],
-        [],
+        [t],
     );
 
     const filterPresets = useMemo(
         () => [
-            { label: 'VIP', filters: [{ id: 'segment_category', value: 'VIP' }] },
-            { label: 'At-Risk', filters: [{ id: 'segment_category', value: 'At-Risk' }] },
-            { label: 'Organizations', filters: [{ id: 'customer_type', value: 'ORGANIZATION' }] },
+            { label: t.customers.filters.vip, filters: [{ id: 'segment_category', value: 'VIP' }] },
+            { label: t.customers.filters.atRisk, filters: [{ id: 'segment_category', value: 'At-Risk' }] },
+            { label: t.customers.filters.organizations, filters: [{ id: 'customer_type', value: 'ORGANIZATION' }] },
         ],
-        [],
+        [t],
     );
 
     return (
@@ -254,9 +255,9 @@ export default function CustomersPage() {
             <div className="max-w-[1400px] mx-auto space-y-6">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-black tracking-tight">Customers</h1>
+                        <h1 className="text-2xl font-black tracking-tight">{t.customers.title}</h1>
                         <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mt-0.5">
-                            Track profiles, segmentation, and purchase value
+                            {t.customers.subtitle}
                         </p>
                     </div>
                     <div className="flex items-center space-x-3">
@@ -264,26 +265,25 @@ export default function CustomersPage() {
                             onClick={handleRunSegmentation}
                             disabled={runningSegmentation}
                             className="flex items-center px-4 py-2.5 rounded-xl font-bold text-sm border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 transition-all disabled:opacity-50"
-                            title="Re-evaluate customer segments now"
+                            title={t.customers.runSegmentationTitle}
                         >
                             <RefreshCw className={`w-4 h-4 mr-2 ${runningSegmentation ? 'animate-spin' : ''}`} />
-                            {runningSegmentation ? 'Running...' : 'Run Segmentation'}
+                            {runningSegmentation ? t.customers.running : t.customers.runSegmentation}
                         </button>
                         <button
                             onClick={() => setIsModalOpen(true)}
                             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl font-bold text-sm flex items-center shadow-lg shadow-blue-200 transition-all hover:-translate-y-0.5 active:translate-y-0"
                         >
                             <Plus className="w-4 h-4 mr-2" />
-                            New Customer
+                            {t.customers.newCustomer}
                         </button>
                     </div>
                 </div>
 
-                {/* Segment Stats */}
                 {segmentStats && segmentStats.total > 0 && (
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
-                            <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Total Customers</p>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">{t.customers.totalCustomers}</p>
                             <p className="text-3xl font-black text-gray-900">{segmentStats.total}</p>
                         </div>
                         {segmentStats.breakdown.map((seg) => {
@@ -298,7 +298,9 @@ export default function CustomersPage() {
                                     <div className="mt-3 bg-white/60 rounded-full h-1.5 overflow-hidden">
                                         <div className={`h-full rounded-full ${style.bar}`} style={{ width: `${seg.percentage}%` }} />
                                     </div>
-                                    <p className={`text-xs font-bold mt-1 ${style.text} opacity-70`}>{seg.percentage}% of total</p>
+                                    <p className={`text-xs font-bold mt-1 ${style.text} opacity-70`}>
+                                        {formatMessage(t.customers.percentOfTotal, { percent: String(seg.percentage) })}
+                                    </p>
                                 </div>
                             );
                         })}
@@ -314,11 +316,11 @@ export default function CustomersPage() {
                     tableId="customers"
                     columns={columns}
                     data={customers}
-                    title="Customers"
+                    title={t.customers.title}
                     isLoading={loading}
-                    emptyMessage="No customers found"
+                    emptyMessage={t.customers.emptyMessage}
                     emptyIcon={<Users className="w-16 h-16 text-gray-200" />}
-                    searchPlaceholder="Search by code, customer, group, territory, or segment..."
+                    searchPlaceholder={t.customers.searchPlaceholder}
                     filterPresets={filterPresets}
                     enableRowSelection
                 />

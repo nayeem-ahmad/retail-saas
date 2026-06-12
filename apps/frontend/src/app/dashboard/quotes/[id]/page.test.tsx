@@ -1,3 +1,21 @@
+jest.mock('@/lib/i18n', () => {
+  const { enMessages } = require('@/lib/localization/messages/en');
+
+  return {
+    useI18n: () => ({
+      t: enMessages,
+      locale: 'en',
+    }),
+    formatMessage: (template, values = {}) =>
+      Object.entries(values).reduce(
+        (result, [key, value]) => result.replaceAll(`{${key}}`, String(value)),
+        template,
+      ),
+  };
+}, { virtual: true });
+
+const { enMessages } = require('@/lib/localization/messages/en');
+
 import React from 'react';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import QuoteDetailsPage from './page';
@@ -129,7 +147,7 @@ describe('QuoteDetailsPage', () => {
     it('shows "Mark as Sent" button for DRAFT status', async () => {
         render(<QuoteDetailsPage />);
         await waitFor(() => {
-            expect(screen.getByRole('button', { name: /mark as sent/i })).toBeInTheDocument();
+            expect(screen.getByRole('button', { name: enMessages.quotes.detail.markSent })).toBeInTheDocument();
         });
     });
 
@@ -138,8 +156,8 @@ describe('QuoteDetailsPage', () => {
         api.getQuotation.mockResolvedValue({ ...mockQuote, status: 'SENT' });
         render(<QuoteDetailsPage />);
         await waitFor(() => {
-            expect(screen.getByRole('button', { name: /mark accepted/i })).toBeInTheDocument();
-            expect(screen.getByRole('button', { name: /mark rejected/i })).toBeInTheDocument();
+            expect(screen.getByRole('button', { name: enMessages.quotes.detail.accept })).toBeInTheDocument();
+            expect(screen.getByRole('button', { name: enMessages.quotes.detail.reject })).toBeInTheDocument();
         });
     });
 
@@ -156,8 +174,8 @@ describe('QuoteDetailsPage', () => {
     it('calls updateQuotationStatus when "Mark as Sent" is clicked', async () => {
         const api = getApi();
         render(<QuoteDetailsPage />);
-        await waitFor(() => screen.getByRole('button', { name: /mark as sent/i }));
-        fireEvent.click(screen.getByRole('button', { name: /mark as sent/i }));
+        await waitFor(() => screen.getByRole('button', { name: enMessages.quotes.detail.markSent }));
+        fireEvent.click(screen.getByRole('button', { name: enMessages.quotes.detail.markSent }));
         await waitFor(() => {
             expect(api.updateQuotationStatus).toHaveBeenCalledWith('quote-1', 'SENT');
         });

@@ -51,6 +51,7 @@ import {
     useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { formatMessage, useI18n } from '@/lib/i18n';
 import { useTablePreferences } from './useTablePreferences';
 import { exportToCSV, exportToExcel, exportToPDF, printTable } from './export-utils';
 
@@ -149,14 +150,17 @@ export default function DataTable<T>({
     data,
     title,
     isLoading = false,
-    emptyMessage = 'No data found',
+    emptyMessage,
     emptyIcon,
     enableRowSelection = false,
     onRowSelectionChange,
     toolbarActions,
-    searchPlaceholder = 'Search...',
+    searchPlaceholder,
     filterPresets,
 }: DataTableProps<T>) {
+    const { t } = useI18n();
+    const resolvedEmptyMessage = emptyMessage ?? t.common.noData;
+    const resolvedSearchPlaceholder = searchPlaceholder ?? t.common.dataTable.searchPlaceholder;
     const prefs = useTablePreferences();
     const savedPrefs = prefs.getPreferences(tableId);
 
@@ -324,7 +328,7 @@ export default function DataTable<T>({
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
                         <input
                             type="text"
-                            placeholder={searchPlaceholder}
+                            placeholder={resolvedSearchPlaceholder}
                             className="w-full bg-gray-50 border border-gray-200 rounded-xl py-2 pl-10 pr-4 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-300 transition-all font-medium"
                             value={globalFilter}
                             onChange={(e) => setGlobalFilter(e.target.value)}
@@ -351,7 +355,7 @@ export default function DataTable<T>({
                             }`}
                         >
                             <SlidersHorizontal className="w-3.5 h-3.5" />
-                            <span>Filters</span>
+                            <span>{t.common.dataTable.filters}</span>
                             {columnFilters.length > 0 && (
                                 <span className="bg-blue-600 text-white rounded-full w-4 h-4 flex items-center justify-center text-[9px]">
                                     {columnFilters.length}
@@ -366,7 +370,7 @@ export default function DataTable<T>({
                                 className="flex items-center space-x-1.5 px-3 py-2 rounded-xl text-xs font-bold uppercase tracking-widest bg-white text-gray-500 border border-gray-200 hover:bg-gray-50 transition-all"
                             >
                                 <Columns3 className="w-3.5 h-3.5" />
-                                <span>Columns</span>
+                                <span>{t.common.dataTable.columns}</span>
                             </button>
                             {showColumnSelector && (
                                 <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50 max-h-72 overflow-y-auto">
@@ -408,7 +412,7 @@ export default function DataTable<T>({
                                 className="flex items-center space-x-1.5 px-3 py-2 rounded-xl text-xs font-bold uppercase tracking-widest bg-white text-gray-500 border border-gray-200 hover:bg-gray-50 transition-all"
                             >
                                 <Download className="w-3.5 h-3.5" />
-                                <span>Export</span>
+                                <span>{t.common.dataTable.export}</span>
                             </button>
                             {showExportMenu && (
                                 <div className="absolute right-0 top-full mt-2 w-44 bg-white rounded-xl shadow-lg border border-gray-200 py-1 z-50">
@@ -417,21 +421,21 @@ export default function DataTable<T>({
                                         className="flex items-center w-full px-3 py-2 hover:bg-gray-50 text-sm text-gray-700 font-medium"
                                     >
                                         <FileDown className="w-4 h-4 mr-2 text-green-600" />
-                                        Export CSV
+                                        {t.common.dataTable.exportCsv}
                                     </button>
                                     <button
                                         onClick={() => { exportToExcel(table, title); setShowExportMenu(false); }}
                                         className="flex items-center w-full px-3 py-2 hover:bg-gray-50 text-sm text-gray-700 font-medium"
                                     >
                                         <FileSpreadsheet className="w-4 h-4 mr-2 text-emerald-600" />
-                                        Export Excel
+                                        {t.common.dataTable.exportExcel}
                                     </button>
                                     <button
                                         onClick={() => { exportToPDF(table, title); setShowExportMenu(false); }}
                                         className="flex items-center w-full px-3 py-2 hover:bg-gray-50 text-sm text-gray-700 font-medium"
                                     >
                                         <FileText className="w-4 h-4 mr-2 text-red-600" />
-                                        Export PDF
+                                        {t.common.dataTable.exportPdf}
                                     </button>
                                 </div>
                             )}
@@ -443,7 +447,7 @@ export default function DataTable<T>({
                             className="flex items-center space-x-1.5 px-3 py-2 rounded-xl text-xs font-bold uppercase tracking-widest bg-white text-gray-500 border border-gray-200 hover:bg-gray-50 transition-all"
                         >
                             <Printer className="w-3.5 h-3.5" />
-                            <span>Print</span>
+                            <span>{t.common.dataTable.print}</span>
                         </button>
 
                         {/* Custom toolbar actions */}
@@ -454,7 +458,7 @@ export default function DataTable<T>({
                 {/* Filter Presets */}
                 {filterPresets && filterPresets.length > 0 && (
                     <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Quick:</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">{t.common.dataTable.quick}</span>
                         {filterPresets.map((preset) => (
                             <button
                                 key={preset.label}
@@ -473,7 +477,7 @@ export default function DataTable<T>({
                                 onClick={() => { setColumnFilters([]); setActivePreset(null); }}
                                 className="px-2.5 py-1 rounded-lg text-xs font-bold text-red-500 bg-red-50 border border-red-200 hover:bg-red-100 transition-all"
                             >
-                                Clear All
+                                {t.common.dataTable.clearAll}
                             </button>
                         )}
                     </div>
@@ -492,7 +496,9 @@ export default function DataTable<T>({
                                     </label>
                                     <input
                                         type="text"
-                                        placeholder={`Filter ${typeof column.columnDef.header === 'string' ? column.columnDef.header : column.id}...`}
+                                        placeholder={formatMessage(t.common.dataTable.filterPlaceholder, {
+                                            column: typeof column.columnDef.header === 'string' ? column.columnDef.header : column.id,
+                                        })}
                                         value={(column.getFilterValue() as string) ?? ''}
                                         onChange={(e) => column.setFilterValue(e.target.value || undefined)}
                                         className="w-full bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-2 focus:ring-blue-500/20 focus:border-blue-300 transition-all"
@@ -508,13 +514,13 @@ export default function DataTable<T>({
             <div className="overflow-x-auto">
                 {isLoading ? (
                     <div className="p-12 text-center text-gray-400 font-bold uppercase tracking-widest text-xs">
-                        Loading...
+                        {t.common.dataTable.loading}
                     </div>
                 ) : totalRows === 0 ? (
                     <div className="p-12 text-center">
                         {emptyIcon && <div className="mb-4 flex justify-center">{emptyIcon}</div>}
                         <p className="text-xs font-black uppercase tracking-widest text-gray-300">
-                            {emptyMessage}
+                            {resolvedEmptyMessage}
                         </p>
                     </div>
                 ) : (
@@ -591,14 +597,12 @@ export default function DataTable<T>({
                     {/* Row info */}
                     <div className="flex items-center gap-4">
                         <span className="text-xs text-gray-500 font-medium">
-                            Showing <span className="font-bold text-gray-700">{startRow}</span>–
-                            <span className="font-bold text-gray-700">{endRow}</span> of{' '}
-                            <span className="font-bold text-gray-700">{totalRows}</span>
+                            {formatMessage(t.common.showingRange, { start: startRow, end: endRow, total: totalRows })}
                         </span>
 
                         {/* Page size selector */}
                         <div className="flex items-center gap-1.5">
-                            <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Rows:</span>
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">{t.common.dataTable.rows}</span>
                             <select
                                 value={pageSize}
                                 onChange={(e) => handlePageSizeChange(Number(e.target.value))}

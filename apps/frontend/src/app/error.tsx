@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import Link from 'next/link';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { useI18n, formatMessage } from '@/lib/i18n';
 
 export default function Error({
     error,
@@ -11,6 +12,9 @@ export default function Error({
     error: Error & { digest?: string };
     reset: () => void;
 }) {
+    const { t } = useI18n();
+    const m = t.marketing.error;
+
     useEffect(() => {
         console.error(error);
     }, [error]);
@@ -23,13 +27,11 @@ export default function Error({
                 </div>
 
                 <div className="space-y-2">
-                    <p className="text-xs font-black uppercase tracking-[0.24em] text-red-500">Something went wrong</p>
-                    <h1 className="text-4xl font-black tracking-tight text-gray-950">Unexpected error</h1>
-                    <p className="text-gray-500 text-base leading-relaxed">
-                        An error occurred while rendering this page. You can try again or return to the dashboard.
-                    </p>
+                    <p className="text-xs font-black uppercase tracking-[0.24em] text-red-500">{m.badge}</p>
+                    <h1 className="text-4xl font-black tracking-tight text-gray-950">{m.title}</h1>
+                    <p className="text-gray-500 text-base leading-relaxed">{m.description}</p>
                     {error.digest && (
-                        <p className="text-xs font-mono text-gray-400 mt-2">Error ID: {error.digest}</p>
+                        <p className="text-xs font-mono text-gray-400 mt-2">{formatMessage(m.errorId, { id: error.digest })}</p>
                     )}
                     {error.message && !error.digest && (
                         <p className="text-xs font-mono text-gray-400 mt-2 max-w-sm break-all">{error.message}</p>
@@ -42,13 +44,13 @@ export default function Error({
                         className="inline-flex items-center gap-2 rounded-2xl bg-gray-900 px-6 py-3 text-sm font-black text-white shadow-lg transition hover:-translate-y-0.5 hover:shadow-xl"
                     >
                         <RefreshCw className="w-4 h-4" />
-                        Try Again
+                        {m.tryAgain}
                     </button>
                     <Link
                         href="/dashboard"
                         className="inline-flex items-center rounded-2xl border border-gray-200 bg-white px-6 py-3 text-sm font-bold text-gray-700 transition hover:bg-gray-50"
                     >
-                        Back to Dashboard
+                        {m.backToDashboard}
                     </Link>
                 </div>
             </div>

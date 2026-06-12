@@ -5,6 +5,7 @@ import { ArrowLeft, Package, DollarSign, Printer, Save, Pencil, X, Trash2, Searc
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { api } from '../../../../lib/api';
 import { formatBDT, formatDate } from '../../../../lib/format';
+import { useI18n, formatMessage } from '@/lib/i18n';
 
 interface EditItem {
     productId: string;
@@ -33,6 +34,7 @@ function formatDateForInput(value?: string | Date | null) {
 }
 
 function OrderDetailsPageContent() {
+    const { t, locale } = useI18n();
     const { id } = useParams();
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -72,7 +74,7 @@ function OrderDetailsPageContent() {
             setEditItems(
                 (order.items || []).map((item: any) => ({
                     productId: item.product_id,
-                    productName: item.product?.name || 'Unknown',
+                    productName: item.product?.name || t.shared.unknown,
                     sku: item.product?.sku || '',
                     quantity: item.quantity,
                     priceAtOrder: parseFloat(item.price_at_order),
@@ -98,7 +100,7 @@ function OrderDetailsPageContent() {
             await api.updateOrderStatus(id as string, newStatus);
             await loadOrder();
         } catch (error: any) {
-            alert('Failed to update status: ' + (error.message || 'Error occurred. Please check stock levels if assigning to Delivered status.'));
+            alert(formatMessage(t.shared.errors.updateStatus, { message: error.message || t.shared.errors.updateStatusStock }));
         } finally {
             setStatusUpdating(false);
         }
@@ -113,7 +115,7 @@ function OrderDetailsPageContent() {
             await loadOrder();
             setDepositAmount('');
         } catch (err: any) {
-            alert('Failed to add deposit: ' + err.message);
+            alert(formatMessage(t.shared.errors.addDeposit, { message: err.message }));
         }
     };
 
@@ -156,7 +158,7 @@ function OrderDetailsPageContent() {
 
     const handleSave = async () => {
         if (editItems.length === 0) {
-            alert('At least one item is required.');
+            alert(t.shared.form.atLeastOneItemRequired);
             return;
         }
         setSaving(true);
@@ -174,7 +176,7 @@ function OrderDetailsPageContent() {
             await loadOrder();
             router.push(`/dashboard/orders/${id}`);
         } catch (error: any) {
-            alert('Failed to save: ' + (error.message || 'Error'));
+            alert(formatMessage(t.shared.errors.saveOrder, { message: error.message || t.common.error }));
         } finally {
             setSaving(false);
         }
@@ -203,7 +205,7 @@ function OrderDetailsPageContent() {
             </head>
             <body>
                 ${printContent.innerHTML}
-                <div class="footer">Sales Order</div>
+                <div class="footer">{t.shared.print.salesOrder}</div>
             </body>
             </html>
         `);
@@ -214,7 +216,7 @@ function OrderDetailsPageContent() {
     if (loading) {
         return (
             <div className="flex items-center justify-center h-full bg-[#f3f4f6]">
-                <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Loading order...</p>
+                <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">{t.shared.loading.order}</p>
             </div>
         );
     }
@@ -222,7 +224,7 @@ function OrderDetailsPageContent() {
     if (!order) {
         return (
             <div className="flex items-center justify-center h-full bg-[#f3f4f6]">
-                <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Order not found</p>
+                <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">{t.shared.notFound.order}</p>
             </div>
         );
     }
@@ -240,7 +242,7 @@ function OrderDetailsPageContent() {
                     <div className="bg-amber-50 border border-amber-200 rounded-2xl px-5 py-3 flex items-center justify-between">
                         <div className="flex items-center space-x-3">
                             <Pencil className="w-4 h-4 text-amber-600" />
-                            <span className="text-sm font-bold text-amber-800">Edit Mode — Modify order details and items</span>
+                            <span className="text-sm font-bold text-amber-800">{t.shared.editMode.order}</span>
                         </div>
                         <div className="flex items-center space-x-3">
                             <button
@@ -249,14 +251,14 @@ function OrderDetailsPageContent() {
                                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-lg font-bold text-xs uppercase tracking-widest shadow-sm flex items-center space-x-1.5 transition-all disabled:opacity-50"
                             >
                                 <Save className="w-3.5 h-3.5" />
-                                <span>{saving ? 'Saving...' : 'Save Changes'}</span>
+                                <span>{saving ? t.orders.detail.saving : t.orders.detail.saveChanges}</span>
                             </button>
                             <button
                                 onClick={() => router.push(`/dashboard/orders/${id}`)}
                                 className="text-xs font-bold uppercase tracking-widest text-amber-600 hover:text-amber-800 transition-colors flex items-center space-x-1"
                             >
                                 <X className="w-3.5 h-3.5" />
-                                <span>Cancel</span>
+                                <span>{t.common.cancel}</span>
                             </button>
                         </div>
                     </div>
@@ -272,7 +274,7 @@ function OrderDetailsPageContent() {
                             <h1 className="text-2xl font-black tracking-tight">{order.order_number}</h1>
                             <div className="flex items-center space-x-3 mt-1">
                                 <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-gray-100 text-gray-800">
-                                    {order.status}
+                                    {t.shared.statuses.order[order.status as keyof typeof t.shared.statuses.order] ?? order.status}
                                 </span>
                                 <span className="text-xs font-bold text-gray-400">
                                     {new Date(order.created_at).toLocaleString()}
@@ -289,7 +291,7 @@ function OrderDetailsPageContent() {
                                         className="bg-white hover:bg-amber-50 text-gray-700 hover:text-amber-700 border border-gray-200 hover:border-amber-300 px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest shadow-sm flex items-center space-x-2 transition-all hover:-translate-y-0.5"
                                     >
                                         <Pencil className="w-4 h-4" />
-                                        <span>Edit</span>
+                                        <span>{t.common.edit}</span>
                                     </button>
                                 )}
                                 <button
@@ -297,24 +299,24 @@ function OrderDetailsPageContent() {
                                     className="bg-gray-900 hover:bg-blue-600 text-white px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest shadow-md flex items-center space-x-2 transition-all hover:-translate-y-0.5"
                                 >
                                     <Printer className="w-4 h-4" />
-                                    <span>Print</span>
+                                    <span>{t.common.print}</span>
                                 </button>
                             </>
                         )}
                         {!isEditMode && order.status === 'DRAFT' && (
                             <button onClick={() => handleUpdateStatus('CONFIRMED')} disabled={statusUpdating} className="bg-blue-600 text-white px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest shadow-md hover:bg-blue-700 transition-all">
-                                Confirm Order
+                                {t.orders.detail.confirmOrder}
                             </button>
                         )}
                         {!isEditMode && order.status === 'CONFIRMED' && (
                             <button onClick={() => handleUpdateStatus('PROCESSING')} disabled={statusUpdating} className="bg-amber-500 text-white px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest shadow-md hover:bg-amber-600 transition-all">
-                                Start Processing
+                                {t.orders.detail.startProcessing}
                             </button>
                         )}
                         {!isEditMode && order.status === 'PROCESSING' && (
                             <button onClick={() => handleUpdateStatus('DELIVERED')} disabled={statusUpdating} className="bg-emerald-600 text-white px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest shadow-md flex items-center space-x-2 hover:bg-emerald-700 transition-all">
                                 <PackageCheck className="w-4 h-4" />
-                                <span>Mark Delivered</span>
+                                <span>{t.orders.detail.markDelivered}</span>
                             </button>
                         )}
                     </div>
@@ -323,25 +325,25 @@ function OrderDetailsPageContent() {
                 {/* Summary cards */}
                 <div className="grid grid-cols-4 gap-4">
                     <div className="bg-white p-4 rounded-2xl shadow-sm">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1">Status</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1">{t.common.status}</span>
                         <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-gray-100 text-gray-800">
-                            {order.status}
+                            {t.shared.statuses.order[order.status as keyof typeof t.shared.statuses.order] ?? order.status}
                         </span>
                     </div>
                     <div className="bg-white p-4 rounded-2xl shadow-sm">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1">Total Amount</span>
-                        <span className="text-xl font-black text-blue-600">{formatBDT(totalAmount)}</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1">{t.orders.detail.totalAmount}</span>
+                        <span className="text-xl font-black text-blue-600">{formatBDT(totalAmount, { locale })}</span>
                     </div>
                     <div className="bg-white p-4 rounded-2xl shadow-sm">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1">Payment</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1">{t.shared.columns.payment}</span>
                         <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-gray-100 text-gray-800">
-                            {order.payment_status}
+                            {t.shared.statuses.payment[order.payment_status as keyof typeof t.shared.statuses.payment] ?? order.payment_status}
                         </span>
                     </div>
                     <div className="bg-white p-4 rounded-2xl shadow-sm">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1">Amount Due</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1">{t.orders.detail.amountDue}</span>
                         <span className={`text-xl font-black ${amountDue > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
-                            {amountDue > 0 ? formatBDT(amountDue) : formatBDT(0)}
+                            {amountDue > 0 ? formatBDT(amountDue, { locale }) : formatBDT(0, { locale })}
                         </span>
                     </div>
                 </div>
@@ -350,41 +352,45 @@ function OrderDetailsPageContent() {
                 <div ref={printRef} className="hidden">
                     <h1>{order.order_number}</h1>
                     <div className="subtitle">
-                        Date: {new Date(order.created_at).toLocaleString()} | Status: {order.status} | Payment: {order.payment_status}
-                        {order.customer && ` | Customer: ${order.customer.name}`}
+                        {formatMessage(t.shared.print.datePayment, {
+                            date: new Date(order.created_at).toLocaleString(),
+                            status: t.shared.statuses.order[order.status as keyof typeof t.shared.statuses.order] ?? order.status,
+                            payment: t.shared.statuses.payment[order.payment_status as keyof typeof t.shared.statuses.payment] ?? order.payment_status,
+                        })}
+                        {order.customer && ` | ${t.shared.print.customer} ${order.customer.name}`}
                     </div>
                     <table>
                         <thead>
                             <tr>
-                                <th>Product</th>
-                                <th>Qty</th>
-                                <th>Unit Price</th>
-                                <th>Total</th>
+                                <th>{t.shared.columns.product}</th>
+                                <th>{t.shared.columns.qty}</th>
+                                <th>{t.shared.columns.unitPrice}</th>
+                                <th>{t.common.total}</th>
                             </tr>
                         </thead>
                         <tbody>
                             {order.items?.map((item: any) => (
                                 <tr key={item.id}>
-                                    <td>{item.product?.name || 'Item'}</td>
+                                    <td>{item.product?.name || t.shared.item}</td>
                                     <td>{item.quantity}</td>
-                                    <td>{formatBDT(Number(item.price_at_order))}</td>
-                                    <td>{formatBDT(Number(item.price_at_order) * item.quantity)}</td>
+                                    <td>{formatBDT(Number(item.price_at_order), { locale })}</td>
+                                    <td>{formatBDT(Number(item.price_at_order) * item.quantity, { locale })}</td>
                                 </tr>
                             ))}
                             <tr className="total-row">
-                                <td colSpan={3}>Total</td>
-                                <td>{formatBDT(totalAmount)}</td>
+                                <td colSpan={3}>{t.common.total}</td>
+                                <td>{formatBDT(totalAmount, { locale })}</td>
                             </tr>
                         </tbody>
                     </table>
                     {amountPaid > 0 && (
                         <div className="section">
-                            <strong>Amount Paid:</strong> {formatBDT(amountPaid)} | <strong>Amount Due:</strong> {amountDue > 0 ? formatBDT(amountDue) : formatBDT(0)}
+                            <strong>{t.orders.detail.amountPaid}:</strong> {formatBDT(amountPaid, { locale })} | <strong>{t.orders.detail.amountDue}:</strong> {amountDue > 0 ? formatBDT(amountDue, { locale }) : formatBDT(0, { locale })}
                         </div>
                     )}
                     {order.delivery_date && (
                         <div className="section">
-                            <strong>Delivery Date:</strong> {formatDate(order.delivery_date)}
+                            <strong>{t.shared.form.deliveryDate}:</strong> {formatDate(order.delivery_date, locale)}
                         </div>
                     )}
                 </div>
@@ -392,23 +398,23 @@ function OrderDetailsPageContent() {
                 {/* Edit mode: Customer & Delivery Date */}
                 {isEditMode && (
                     <div className="bg-white rounded-3xl shadow-sm p-6">
-                        <h2 className="text-lg font-black tracking-tight mb-4">Order Details</h2>
+                        <h2 className="text-lg font-black tracking-tight mb-4">{t.orders.detail.orderDetails}</h2>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block mb-2">Customer</label>
+                                <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block mb-2">{t.common.customer}</label>
                                 <select
                                     value={editCustomerId}
                                     onChange={(e) => setEditCustomerId(e.target.value)}
                                     className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-bold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-300"
                                 >
-                                    <option value="">Walk-in Customer</option>
+                                    <option value="">{t.shared.walkInCustomer}</option>
                                     {customers.map((c: any) => (
                                         <option key={c.id} value={c.id}>{c.name}</option>
                                     ))}
                                 </select>
                             </div>
                             <div>
-                                <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block mb-2">Delivery Date</label>
+                                <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block mb-2">{t.shared.form.deliveryDate}</label>
                                 <input
                                     type="date"
                                     value={editDeliveryDate}
@@ -420,13 +426,13 @@ function OrderDetailsPageContent() {
                     </div>
                 )}
 
-                {/* Order Items Section */}
+                {/* {t.orders.detail.orderItems} Section */}
                 <div className="bg-white rounded-3xl shadow-sm overflow-hidden">
                     <div className="p-6 border-b border-gray-100 flex items-center space-x-3">
                         <div className="p-2 bg-blue-50 rounded-xl text-blue-600">
                             <Package className="w-5 h-5" />
                         </div>
-                        <h2 className="text-lg font-black tracking-tight">Order Items</h2>
+                        <h2 className="text-lg font-black tracking-tight">{t.orders.detail.orderItems}</h2>
                     </div>
 
                     {isEditMode ? (
@@ -437,7 +443,7 @@ function OrderDetailsPageContent() {
                                     <Search className="w-4 h-4 text-gray-400" />
                                     <input
                                         type="text"
-                                        placeholder="Search products to add..."
+                                        placeholder={t.shared.form.searchProductsAdd}
                                         value={productSearch}
                                         onChange={(e) => {
                                             setProductSearch(e.target.value);
@@ -459,7 +465,7 @@ function OrderDetailsPageContent() {
                                                     <span className="text-sm font-bold">{p.name}</span>
                                                     <span className="text-xs text-gray-400 ml-2">{p.sku}</span>
                                                 </div>
-                                                <span className="text-sm font-bold text-blue-600">{formatBDT(parseFloat(p.price))}</span>
+                                                <span className="text-sm font-bold text-blue-600">{formatBDT(parseFloat(p.price), { locale })}</span>
                                             </button>
                                         ))}
                                     </div>
@@ -469,16 +475,16 @@ function OrderDetailsPageContent() {
                             {editItems.length === 0 ? (
                                 <div className="text-center py-8 text-gray-300">
                                     <Package className="w-8 h-8 mx-auto mb-2" />
-                                    <p className="text-xs font-bold uppercase tracking-widest">No items — search to add products</p>
+                                    <p className="text-xs font-bold uppercase tracking-widest">{t.shared.empty.noItemsSearchAdd}</p>
                                 </div>
                             ) : (
                                 <table className="w-full">
                                     <thead>
                                         <tr className="border-b border-gray-100">
-                                            <th className="text-left pb-2 text-[10px] font-black uppercase tracking-widest text-gray-400">Product</th>
-                                            <th className="text-center pb-2 text-[10px] font-black uppercase tracking-widest text-gray-400 w-24">Qty</th>
-                                            <th className="text-right pb-2 text-[10px] font-black uppercase tracking-widest text-gray-400 w-32">Price</th>
-                                            <th className="text-right pb-2 text-[10px] font-black uppercase tracking-widest text-gray-400 w-28">Subtotal</th>
+                                            <th className="text-left pb-2 text-[10px] font-black uppercase tracking-widest text-gray-400">{t.shared.columns.product}</th>
+                                            <th className="text-center pb-2 text-[10px] font-black uppercase tracking-widest text-gray-400 w-24">{t.shared.columns.qty}</th>
+                                            <th className="text-right pb-2 text-[10px] font-black uppercase tracking-widest text-gray-400 w-32">{t.shared.columns.price}</th>
+                                            <th className="text-right pb-2 text-[10px] font-black uppercase tracking-widest text-gray-400 w-28">{t.shared.columns.subtotal}</th>
                                             <th className="w-10"></th>
                                         </tr>
                                     </thead>
@@ -509,7 +515,7 @@ function OrderDetailsPageContent() {
                                                     />
                                                 </td>
                                                 <td className="py-3 text-right text-sm font-black text-blue-600">
-                                                    {formatBDT(item.quantity * item.priceAtOrder)}
+                                                    {formatBDT(item.quantity * item.priceAtOrder, { locale })}
                                                 </td>
                                                 <td className="py-3 text-center">
                                                     <button onClick={() => removeItem(idx)} className="p-1 text-gray-300 hover:text-red-500 transition-colors">
@@ -521,8 +527,8 @@ function OrderDetailsPageContent() {
                                     </tbody>
                                     <tfoot>
                                         <tr className="border-t-2 border-gray-200">
-                                            <td colSpan={3} className="pt-3 text-right text-sm font-black uppercase tracking-widest">Total</td>
-                                            <td className="pt-3 text-right text-xl font-black text-blue-600">{formatBDT(editTotal)}</td>
+                                            <td colSpan={3} className="pt-3 text-right text-sm font-black uppercase tracking-widest">{t.common.total}</td>
+                                            <td className="pt-3 text-right text-xl font-black text-blue-600">{formatBDT(editTotal, { locale })}</td>
                                             <td></td>
                                         </tr>
                                     </tfoot>
@@ -533,10 +539,10 @@ function OrderDetailsPageContent() {
                         <table className="w-full">
                             <thead>
                                 <tr className="border-b border-gray-100">
-                                    <th className="text-left p-4 text-[10px] font-black uppercase tracking-widest text-gray-400">Product</th>
-                                    <th className="text-center p-4 text-[10px] font-black uppercase tracking-widest text-gray-400">Qty</th>
-                                    <th className="text-right p-4 text-[10px] font-black uppercase tracking-widest text-gray-400">Unit Price</th>
-                                    <th className="text-right p-4 text-[10px] font-black uppercase tracking-widest text-gray-400">Total</th>
+                                    <th className="text-left p-4 text-[10px] font-black uppercase tracking-widest text-gray-400">{t.shared.columns.product}</th>
+                                    <th className="text-center p-4 text-[10px] font-black uppercase tracking-widest text-gray-400">{t.shared.columns.qty}</th>
+                                    <th className="text-right p-4 text-[10px] font-black uppercase tracking-widest text-gray-400">{t.shared.columns.unitPrice}</th>
+                                    <th className="text-right p-4 text-[10px] font-black uppercase tracking-widest text-gray-400">{t.common.total}</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-50">
@@ -547,19 +553,19 @@ function OrderDetailsPageContent() {
                                                 <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center">
                                                     <Package className="w-4 h-4 text-gray-200" />
                                                 </div>
-                                                <span className="text-sm font-black text-gray-900">{item.product?.name || 'Item'}</span>
+                                                <span className="text-sm font-black text-gray-900">{item.product?.name || t.shared.item}</span>
                                             </div>
                                         </td>
                                         <td className="p-4 text-center text-sm font-black">{item.quantity}</td>
-                                        <td className="p-4 text-right text-sm font-bold text-gray-500">{formatBDT(Number(item.price_at_order))}</td>
-                                        <td className="p-4 text-right text-sm font-black text-blue-600">{formatBDT(Number(item.price_at_order) * item.quantity)}</td>
+                                        <td className="p-4 text-right text-sm font-bold text-gray-500">{formatBDT(Number(item.price_at_order), { locale })}</td>
+                                        <td className="p-4 text-right text-sm font-black text-blue-600">{formatBDT(Number(item.price_at_order) * item.quantity, { locale })}</td>
                                     </tr>
                                 ))}
                             </tbody>
                             <tfoot>
                                 <tr className="border-t-2 border-gray-200">
-                                    <td colSpan={3} className="p-4 text-right text-sm font-black uppercase tracking-widest">Total</td>
-                                    <td className="p-4 text-right text-xl font-black text-blue-600">{formatBDT(totalAmount)}</td>
+                                    <td colSpan={3} className="p-4 text-right text-sm font-black uppercase tracking-widest">{t.common.total}</td>
+                                    <td className="p-4 text-right text-xl font-black text-blue-600">{formatBDT(totalAmount, { locale })}</td>
                                 </tr>
                             </tfoot>
                         </table>
@@ -569,7 +575,7 @@ function OrderDetailsPageContent() {
                 {/* Customer (view mode) */}
                 {!isEditMode && (
                     <div className="bg-white rounded-3xl shadow-sm p-6">
-                        <h2 className="font-black tracking-tight mb-4">Customer Details</h2>
+                        <h2 className="font-black tracking-tight mb-4">{t.orders.detail.customerDetails}</h2>
                         {order.customer ? (
                             <div className="bg-blue-50 border border-blue-100 rounded-xl p-4">
                                 <p className="font-black text-lg text-blue-900">{order.customer.name}</p>
@@ -578,12 +584,12 @@ function OrderDetailsPageContent() {
                                 )}
                             </div>
                         ) : (
-                            <p className="text-sm font-medium text-gray-400">Walk-in Customer</p>
+                            <p className="text-sm font-medium text-gray-400">{t.shared.walkInCustomer}</p>
                         )}
                         {order.delivery_date && (
                             <div className="mt-4 pt-4 border-t border-gray-100">
-                                <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Delivery Date</span>
-                                <p className="text-sm font-black mt-1">{formatDate(order.delivery_date)}</p>
+                                <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">{t.shared.form.deliveryDate}</span>
+                                <p className="text-sm font-black mt-1">{formatDate(order.delivery_date, locale)}</p>
                             </div>
                         )}
                     </div>
@@ -594,42 +600,44 @@ function OrderDetailsPageContent() {
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <div className="bg-white rounded-3xl shadow-sm overflow-hidden">
                             <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gray-900 text-white rounded-t-3xl">
-                                <h2 className="font-bold tracking-tight">Payment Tracker</h2>
-                                <span className="bg-white/20 px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest">{order.payment_status}</span>
+                                <h2 className="font-bold tracking-tight">{t.orders.detail.paymentTracker}</h2>
+                                <span className="bg-white/20 px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-widest">
+                                    {t.shared.statuses.payment[order.payment_status as keyof typeof t.shared.statuses.payment] ?? order.payment_status}
+                                </span>
                             </div>
                             <div className="p-6 space-y-4">
                                 <div className="flex justify-between items-center">
-                                    <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">Total Amount</span>
-                                    <span className="font-black">{formatBDT(totalAmount)}</span>
+                                    <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">{t.orders.detail.totalAmount}</span>
+                                    <span className="font-black">{formatBDT(totalAmount, { locale })}</span>
                                 </div>
                                 <div className="flex justify-between items-center text-emerald-600">
-                                    <span className="text-xs font-bold uppercase tracking-widest">Amount Paid</span>
-                                    <span className="font-black">{formatBDT(amountPaid)}</span>
+                                    <span className="text-xs font-bold uppercase tracking-widest">{t.orders.detail.amountPaid}</span>
+                                    <span className="font-black">{formatBDT(amountPaid, { locale })}</span>
                                 </div>
                                 <div className="pt-4 border-t border-gray-100 flex justify-between items-center text-rose-600">
-                                    <span className="text-xs font-bold uppercase tracking-widest">Amount Due</span>
-                                    <span className="font-black text-xl">{amountDue > 0 ? formatBDT(amountDue) : formatBDT(0)}</span>
+                                    <span className="text-xs font-bold uppercase tracking-widest">{t.orders.detail.amountDue}</span>
+                                    <span className="font-black text-xl">{amountDue > 0 ? formatBDT(amountDue, { locale }) : formatBDT(0, { locale })}</span>
                                 </div>
                                 {amountDue > 0 && order.status !== 'CANCELLED' && (
                                     <button onClick={() => setDepositModalOpen(true)} className="w-full mt-4 bg-gray-100 hover:bg-gray-200 text-gray-900 font-bold text-sm py-3 rounded-xl transition-colors">
-                                        Record Payment Deposit
+                                        {t.orders.detail.recordPaymentDeposit}
                                     </button>
                                 )}
                             </div>
                         </div>
 
-                        {/* Deposit History */}
+                        {/* {t.orders.detail.depositHistory} */}
                         {order.deposits?.length > 0 && (
                             <div className="bg-white rounded-3xl shadow-sm p-6">
-                                <h2 className="font-bold tracking-tight mb-4 text-sm uppercase tracking-widest text-gray-400">Deposit History</h2>
+                                <h2 className="font-bold tracking-tight mb-4 text-sm uppercase tracking-widest text-gray-400">{t.orders.detail.depositHistory}</h2>
                                 <div className="space-y-3">
                                     {order.deposits.map((dep: any) => (
                                         <div key={dep.id} className="flex justify-between items-center p-3 border border-emerald-100 bg-emerald-50 rounded-xl">
                                             <div>
                                                 <p className="text-xs font-black uppercase text-emerald-700">{dep.payment_method}</p>
-                                                <p className="text-[10px] font-bold text-emerald-600/60 mt-0.5">{formatDate(dep.created_at)}</p>
+                                                <p className="text-[10px] font-bold text-emerald-600/60 mt-0.5">{formatDate(dep.created_at, locale)}</p>
                                             </div>
-                                            <span className="font-black text-emerald-700">{formatBDT(Number(dep.amount))}</span>
+                                            <span className="font-black text-emerald-700">{formatBDT(Number(dep.amount), { locale })}</span>
                                         </div>
                                     ))}
                                 </div>
@@ -645,7 +653,7 @@ function OrderDetailsPageContent() {
                             onClick={() => router.push(`/dashboard/orders/${id}`)}
                             className="px-6 py-3 bg-white border border-gray-200 text-gray-700 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-gray-50 transition-all"
                         >
-                            Cancel
+                            {t.common.cancel}
                         </button>
                         <button
                             onClick={handleSave}
@@ -653,7 +661,7 @@ function OrderDetailsPageContent() {
                             className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-md flex items-center space-x-2 transition-all hover:-translate-y-0.5 disabled:opacity-50"
                         >
                             <Save className="w-4 h-4" />
-                            <span>{saving ? 'Saving...' : 'Save Changes'}</span>
+                            <span>{saving ? t.orders.detail.saving : t.orders.detail.saveChanges}</span>
                         </button>
                     </div>
                 )}
@@ -663,9 +671,9 @@ function OrderDetailsPageContent() {
             {depositModalOpen && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                     <div className="bg-white w-full max-w-sm rounded-3xl p-6 relative">
-                        <h3 className="font-black text-lg mb-1">Add Deposit</h3>
-                        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-6">Due: {formatBDT(amountDue)}</p>
-                        <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block mb-2">Amount to Pay (Cash/Card)</label>
+                        <h3 className="font-black text-lg mb-1">{t.orders.detail.addDeposit}</h3>
+                        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-6">{formatMessage(t.orders.detail.dueAmount, { amount: formatBDT(amountDue, { locale }) })}</p>
+                        <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block mb-2">{t.orders.detail.amountToPay}</label>
                         <div className="relative mb-6">
                             <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                             <input
@@ -674,12 +682,12 @@ function OrderDetailsPageContent() {
                                 value={depositAmount}
                                 onChange={(e) => setDepositAmount(e.target.value)}
                                 className="w-full bg-gray-50 border border-gray-200 rounded-xl py-4 pl-10 pr-4 font-black text-2xl focus:ring-2 focus:ring-emerald-500/20"
-                                placeholder="0.00"
+                                placeholder={t.shared.form.amountPlaceholder}
                             />
                         </div>
                         <div className="flex space-x-3">
-                            <button onClick={() => setDepositModalOpen(false)} className="flex-1 bg-gray-100 hover:bg-gray-200 font-bold text-gray-600 rounded-xl py-3 transition-colors">Cancel</button>
-                            <button onClick={handleAddDeposit} className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl py-3 shadow-lg shadow-emerald-200 transition-colors">Confirm</button>
+                            <button onClick={() => setDepositModalOpen(false)} className="flex-1 bg-gray-100 hover:bg-gray-200 font-bold text-gray-600 rounded-xl py-3 transition-colors">{t.common.cancel}</button>
+                            <button onClick={handleAddDeposit} className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl py-3 shadow-lg shadow-emerald-200 transition-colors">{t.orders.detail.confirm}</button>
                         </div>
                     </div>
                 </div>

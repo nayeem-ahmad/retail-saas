@@ -6,6 +6,7 @@ import { api } from '../../../lib/api';
 import { formatBDT } from '../../../lib/format';
 import { isCompoundUnit, CompoundUnitType, formatCompoundQty } from '../../../lib/compound-units';
 import CompoundUnitInput from '../../../components/CompoundUnitInput';
+import { useI18n, formatMessage } from '@/lib/i18n';
 
 interface PurchaseProductOption {
     id: string;
@@ -52,6 +53,7 @@ export default function CreatePurchaseModal({
     onSuccess,
     initialProduct,
 }: CreatePurchaseModalProps) {
+    const { t, locale } = useI18n();
     const [products, setProducts] = useState<PurchaseProductOption[]>([]);
     const [suppliers, setSuppliers] = useState<SupplierOption[]>([]);
     const [items, setItems] = useState<PurchaseItemDraft[]>([]);
@@ -180,12 +182,12 @@ export default function CreatePurchaseModal({
 
     const handleSubmit = async () => {
         if (items.length === 0) {
-            setError('Add at least one purchased product.');
+            setError(t.purchaseShared.addOnePurchasedProduct);
             return;
         }
 
         if (createInlineSupplier && !supplierForm.name.trim()) {
-            setError('Supplier name is required when creating a supplier inline.');
+            setError(t.purchaseShared.supplierNameRequiredInline);
             return;
         }
 
@@ -218,7 +220,7 @@ export default function CreatePurchaseModal({
             onSuccess();
             onClose();
         } catch (submitError: any) {
-            setError(submitError.message || 'Failed to record purchase');
+            setError(submitError.message || t.purchaseShared.failedRecordPurchase);
         } finally {
             setLoading(false);
         }
@@ -229,9 +231,9 @@ export default function CreatePurchaseModal({
             <div className="bg-white w-full max-w-4xl rounded-3xl shadow-2xl flex flex-col max-h-[90vh]">
                 <div className="p-6 border-b border-gray-100 flex items-center justify-between">
                     <div>
-                        <h2 className="text-xl font-black tracking-tight">Record Purchase</h2>
+                        <h2 className="text-xl font-black tracking-tight">{t.purchases.modal.title}</h2>
                         <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-0.5">
-                            Receive stock, capture supplier, and update inventory
+                            {t.purchases.modal.subtitle}
                         </p>
                     </div>
                     <button onClick={onClose} className="p-2 hover:bg-gray-50 rounded-xl text-gray-400">
@@ -257,7 +259,7 @@ export default function CreatePurchaseModal({
                                         <Search className="w-4 h-4 text-gray-400" />
                                         <input
                                             type="text"
-                                            placeholder="Search products by name or SKU..."
+                                            placeholder={t.purchaseShared.searchProducts}
                                             value={productSearch}
                                             onChange={(event) => {
                                                 setProductSearch(event.target.value);
@@ -282,7 +284,7 @@ export default function CreatePurchaseModal({
                                                             <span className="text-xs text-gray-400 ml-2">{product.sku}</span>
                                                         </div>
                                                         <span className="text-sm font-bold text-emerald-600">
-                                                            {formatBDT(Number(product.price || 0))}
+                                                            {formatBDT(Number(product.price || 0), { locale })}
                                                         </span>
                                                     </button>
                                                 ))}
@@ -353,7 +355,7 @@ export default function CreatePurchaseModal({
                                                     />
                                                 </td>
                                                 <td className="py-3 text-right text-sm font-black text-emerald-600">
-                                                    {formatBDT(item.quantity * item.unitCost)}
+                                                    {formatBDT(item.quantity * item.unitCost, { locale })}
                                                 </td>
                                                 <td className="py-3 text-center">
                                                     <button
@@ -374,9 +376,9 @@ export default function CreatePurchaseModal({
                             <div className="rounded-2xl border border-gray-100 bg-gray-50/70 p-4 space-y-4">
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <h3 className="text-sm font-black tracking-tight">Supplier</h3>
+                                        <h3 className="text-sm font-black tracking-tight">{t.common.supplier}</h3>
                                         <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-0.5">
-                                            Link existing or create inline
+                                            {t.purchaseShared.linkOrCreateSupplier}
                                         </p>
                                     </div>
                                     <button
@@ -384,7 +386,7 @@ export default function CreatePurchaseModal({
                                         onClick={() => setCreateInlineSupplier((value) => !value)}
                                         className="text-xs font-black uppercase tracking-widest text-emerald-600 hover:text-emerald-700"
                                     >
-                                        {createInlineSupplier ? 'Use Existing' : 'New Supplier'}
+                                        {createInlineSupplier ? t.purchaseShared.useExisting : t.purchaseShared.newSupplier}
                                     </button>
                                 </div>
 
@@ -394,7 +396,7 @@ export default function CreatePurchaseModal({
                                         onChange={(event) => setSupplierId(event.target.value)}
                                         className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-bold focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-300"
                                     >
-                                        <option value="">No supplier selected</option>
+                                        <option value="">{t.purchaseShared.noSupplier}</option>
                                         {suppliers.map((supplier) => (
                                             <option key={supplier.id} value={supplier.id}>
                                                 {supplier.name}
@@ -405,7 +407,7 @@ export default function CreatePurchaseModal({
                                     <div className="space-y-3">
                                         <input
                                             type="text"
-                                            placeholder="Supplier name"
+                                            placeholder={t.purchaseShared.supplierNamePlaceholder}
                                             value={supplierForm.name}
                                             onChange={(event) =>
                                                 setSupplierForm({ ...supplierForm, name: event.target.value })
@@ -414,7 +416,7 @@ export default function CreatePurchaseModal({
                                         />
                                         <input
                                             type="text"
-                                            placeholder="Phone"
+                                            placeholder={t.common.phone}
                                             value={supplierForm.phone}
                                             onChange={(event) =>
                                                 setSupplierForm({ ...supplierForm, phone: event.target.value })
@@ -423,7 +425,7 @@ export default function CreatePurchaseModal({
                                         />
                                         <input
                                             type="email"
-                                            placeholder="Email"
+                                            placeholder={t.common.email}
                                             value={supplierForm.email}
                                             onChange={(event) =>
                                                 setSupplierForm({ ...supplierForm, email: event.target.value })
@@ -431,7 +433,7 @@ export default function CreatePurchaseModal({
                                             className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-bold focus:ring-2 focus:ring-emerald-500/20"
                                         />
                                         <textarea
-                                            placeholder="Address"
+                                            placeholder={t.common.address}
                                             value={supplierForm.address}
                                             onChange={(event) =>
                                                 setSupplierForm({ ...supplierForm, address: event.target.value })
@@ -444,7 +446,7 @@ export default function CreatePurchaseModal({
                             </div>
 
                             <div className="rounded-2xl border border-gray-100 bg-gray-50/70 p-4 space-y-3">
-                                <h3 className="text-sm font-black tracking-tight">Cost Adjustments</h3>
+                                <h3 className="text-sm font-black tracking-tight">{t.purchaseShared.costAdjustments}</h3>
                                 <div className="grid grid-cols-3 gap-3">
                                     <div>
                                         <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1">
@@ -487,7 +489,7 @@ export default function CreatePurchaseModal({
                                     </div>
                                 </div>
                                 <textarea
-                                    placeholder="Purchase notes"
+                                    placeholder={t.purchaseShared.purchaseNotes}
                                     value={notes}
                                     onChange={(event) => setNotes(event.target.value)}
                                     rows={3}
@@ -497,26 +499,26 @@ export default function CreatePurchaseModal({
 
                             <div className="rounded-2xl bg-emerald-950 text-white p-5 space-y-3">
                                 <div className="flex items-center justify-between text-sm font-bold text-emerald-100">
-                                    <span>Subtotal</span>
-                                    <span>{formatBDT(subtotal)}</span>
+                                    <span>{t.common.subtotal}</span>
+                                    <span>{formatBDT(subtotal, { locale })}</span>
                                 </div>
                                 <div className="flex items-center justify-between text-sm font-bold text-emerald-100">
-                                    <span>Tax</span>
-                                    <span>{formatBDT(tax)}</span>
+                                    <span>{t.common.tax}</span>
+                                    <span>{formatBDT(tax, { locale })}</span>
                                 </div>
                                 <div className="flex items-center justify-between text-sm font-bold text-emerald-100">
-                                    <span>Freight</span>
-                                    <span>{formatBDT(freight)}</span>
+                                    <span>{t.purchaseShared.freight}</span>
+                                    <span>{formatBDT(freight, { locale })}</span>
                                 </div>
                                 <div className="flex items-center justify-between text-sm font-bold text-emerald-100">
-                                    <span>Discount</span>
-                                    <span>-{formatBDT(discount)}</span>
+                                    <span>{t.common.discount}</span>
+                                    <span>-{formatBDT(discount, { locale })}</span>
                                 </div>
                                 <div className="border-t border-emerald-800 pt-3 flex items-center justify-between">
                                     <span className="text-xs font-black uppercase tracking-widest text-emerald-200">
                                         Purchase Total
                                     </span>
-                                    <span className="text-2xl font-black">{formatBDT(total)}</span>
+                                    <span className="text-2xl font-black">{formatBDT(total, { locale })}</span>
                                 </div>
                             </div>
                         </div>
@@ -535,7 +537,7 @@ export default function CreatePurchaseModal({
                         disabled={loading || items.length === 0 || total < 0}
                         className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-md transition-all hover:-translate-y-0.5 disabled:opacity-50"
                     >
-                        {loading ? 'Saving...' : 'Post Purchase'}
+                        {loading ? t.purchases.modal.saving : t.purchases.modal.postPurchase}
                     </button>
                 </div>
             </div>

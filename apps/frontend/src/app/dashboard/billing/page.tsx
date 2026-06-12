@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowUpRight, BadgeCheck, CreditCard, Loader2, RotateCcw } from 'lucide-react';
 import { api } from '../../../lib/api';
 import { formatBDT, formatDate } from '../../../lib/format';
-import { formatMessage, useI18n } from '../../../lib/i18n';
+import { formatMessage, useI18n } from '@/lib/i18n';
 import { redirectTo } from '../../../lib/browser';
 
 type PlanCode = 'FREE' | 'BASIC' | 'STANDARD' | 'PREMIUM';

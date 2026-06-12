@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import { AlertCircle, CheckCircle, Minus, Package, Plus, ShoppingCart, User, X } from 'lucide-react';
 import Link from 'next/link';
 import { formatBDT } from '@/lib/format';
+import { useI18n, formatMessage } from '@/lib/i18n';
 
 interface CustomerSession {
     access_token: string;
@@ -74,6 +75,11 @@ function formatOptionalPrice(value: string | number | null | undefined) {
 }
 
 export default function StorefrontPage() {
+    const { t } = useI18n();
+    const m = t.storefront.public;
+    const home = m.home;
+    const footer = m.footer;
+    const p = m.placeholders;
     const params = useParams();
     const slug = params?.slug as string;
 
@@ -234,7 +240,7 @@ export default function StorefrontPage() {
             const json = await response.json();
 
             if (!response.ok) {
-                throw new Error(json.message || 'Failed to place order');
+                throw new Error(json.message || m.orderFailed);
             }
 
             setOrderSuccess(json.data?.id || json.id || 'SUCCESS');
@@ -260,7 +266,7 @@ export default function StorefrontPage() {
                     .catch(() => {});
             }
         } catch (err: any) {
-            setOrderError(err.message || 'An error occurred during checkout');
+            setOrderError(err.message || m.checkoutError);
         } finally {
             setSubmitting(false);
         }
@@ -271,7 +277,7 @@ export default function StorefrontPage() {
             <div className="min-h-screen flex items-center justify-center bg-gray-50">
                 <div className="flex flex-col items-center space-y-4">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
-                    <p className="text-gray-500 font-medium">Loading store...</p>
+                    <p className="text-gray-500 font-medium">{m.loading}</p>
                 </div>
             </div>
         );
@@ -284,15 +290,15 @@ export default function StorefrontPage() {
                     <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto">
                         <AlertCircle className="w-8 h-8 text-gray-400" />
                     </div>
-                    <h1 className="text-2xl font-bold text-gray-800">Store Not Found</h1>
-                    <p className="text-gray-500">This store doesn&apos;t exist or is currently unavailable.</p>
+                    <h1 className="text-2xl font-bold text-gray-800">{m.notFound.title}</h1>
+                    <p className="text-gray-500">{m.notFound.description}</p>
                 </div>
             </div>
         );
     }
 
     const heroImage = data.tenant.storefront_hero_image || DEFAULT_HERO_IMAGE;
-    const heroHeadline = data.tenant.storefront_hero_headline || 'New Season Arrivals';
+    const heroHeadline = data.tenant.storefront_hero_headline || m.defaultHeadline;
 
     return (
         <div className="min-h-screen bg-white text-gray-900 selection:bg-black selection:text-white">
@@ -310,9 +316,9 @@ export default function StorefrontPage() {
                         </Link>
 
                         <nav className="hidden md:flex items-center gap-8 text-sm font-medium">
-                            <a href="#top" className="text-gray-900 hover:text-gray-600 transition-colors">Home</a>
-                            <Link href={`/store/${slug}/shop`} className="text-gray-500 hover:text-gray-900 transition-colors">Shop</Link>
-                            <a href="#contact" className="text-gray-500 hover:text-gray-900 transition-colors">Contact</a>
+                            <a href="#top" className="text-gray-900 hover:text-gray-600 transition-colors">{m.nav.home}</a>
+                            <Link href={`/store/${slug}/shop`} className="text-gray-500 hover:text-gray-900 transition-colors">{m.nav.shop}</Link>
+                            <a href="#contact" className="text-gray-500 hover:text-gray-900 transition-colors">{m.nav.contact}</a>
                         </nav>
 
                         <div className="flex items-center gap-2">
@@ -337,7 +343,7 @@ export default function StorefrontPage() {
                                                 onClick={handleSignOut}
                                                 className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
                                             >
-                                                Sign out
+                                                {m.signOut}
                                             </button>
                                         </div>
                                     )}
@@ -348,7 +354,7 @@ export default function StorefrontPage() {
                                     className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-100 rounded-full transition-colors"
                                 >
                                     <User className="w-4 h-4" />
-                                    <span className="hidden sm:block">Sign In</span>
+                                    <span className="hidden sm:block">{m.signIn}</span>
                                 </Link>
                             )}
 
@@ -374,16 +380,16 @@ export default function StorefrontPage() {
                     <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-start space-x-3">
                         <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
                         <div>
-                            <p className="font-semibold text-green-800">Order placed successfully!</p>
+                            <p className="font-semibold text-green-800">{m.orderSuccess}</p>
                             <p className="text-green-700 text-sm mt-0.5">
-                                Order ID: <span className="font-mono font-bold">{orderSuccess}</span>
+                                {m.orderIdLabel} <span className="font-mono font-bold">{orderSuccess}</span>
                             </p>
                             <button
                                 type="button"
                                 onClick={() => setOrderSuccess(null)}
                                 className="text-xs text-green-600 underline mt-1 font-medium hover:text-green-800"
                             >
-                                Dismiss
+                                {m.dismiss}
                             </button>
                         </div>
                     </div>
@@ -399,19 +405,19 @@ export default function StorefrontPage() {
 
                     <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 lg:py-32 w-full">
                         <div className="max-w-3xl">
-                            <p className="text-white/80 uppercase tracking-[0.35em] text-xs sm:text-sm mb-5">Seasonal collection</p>
+                            <p className="text-white/80 uppercase tracking-[0.35em] text-xs sm:text-sm mb-5">{home.seasonalCollection}</p>
                             <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black text-white tracking-tight leading-[0.95]">
                                 {heroHeadline}
                             </h1>
                             <p className="mt-6 max-w-2xl text-base sm:text-lg lg:text-xl text-white/80 leading-8">
-                                Discover the latest arrivals, curated categories, and featured products for your store.
+                                {home.heroDescription}
                             </p>
                             <div className="mt-10 flex flex-col sm:flex-row gap-4">
                                 <Link href={`/store/${slug}/shop`} className="inline-flex items-center justify-center rounded-full bg-white px-8 py-4 text-base font-bold text-gray-900 transition-transform hover:scale-[1.02]">
-                                    Shop Now
+                                    {home.shopNow}
                                 </Link>
                                 <a href="#categories" className="inline-flex items-center justify-center rounded-full border border-white/25 px-8 py-4 text-base font-semibold text-white/90 hover:bg-white/10 transition-colors">
-                                    Browse Categories
+                                    {home.browseCategories}
                                 </a>
                             </div>
                         </div>
@@ -421,14 +427,14 @@ export default function StorefrontPage() {
                 <section id="categories" className="py-20 bg-white">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         <div className="mb-10">
-                            <h2 className="text-3xl font-bold tracking-tight">Shop by Category</h2>
-                            <p className="text-gray-500 mt-2">Featured categories from your catalog.</p>
+                            <h2 className="text-3xl font-bold tracking-tight">{home.shopByCategory}</h2>
+                            <p className="text-gray-500 mt-2">{home.categoriesSubtitle}</p>
                         </div>
 
                         {data.categories.length === 0 ? (
                             <div className="text-center py-16 text-gray-400 border border-dashed border-gray-200 rounded-2xl">
                                 <Package className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                                <p className="text-lg font-medium">No featured categories yet.</p>
+                                <p className="text-lg font-medium">{home.noCategories}</p>
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -447,7 +453,7 @@ export default function StorefrontPage() {
                                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                                         <div className="absolute bottom-6 left-6 right-6">
                                             <h3 className="text-2xl font-bold text-white mb-1">{category.name}</h3>
-                                            <p className="text-gray-300 font-medium">{category.count} products</p>
+                                            <p className="text-gray-300 font-medium">{formatMessage(home.productCount, { count: category.count })}</p>
                                         </div>
                                     </Link>
                                 ))}
@@ -459,14 +465,14 @@ export default function StorefrontPage() {
                 <section className="py-20 bg-gray-50 border-y border-gray-100">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                         <div className="mb-10">
-                            <h2 className="text-3xl font-bold tracking-tight">Trending Now</h2>
-                            <p className="text-gray-500 mt-2">Featured products from the store.</p>
+                            <h2 className="text-3xl font-bold tracking-tight">{m.trending}</h2>
+                            <p className="text-gray-500 mt-2">{home.trendingSubtitle}</p>
                         </div>
 
                         {data.trending_products.length === 0 ? (
                             <div className="text-center py-16 text-gray-400 border border-dashed border-gray-200 rounded-2xl bg-white">
                                 <Package className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                                <p className="text-lg font-medium">No trending products available yet.</p>
+                                <p className="text-lg font-medium">{home.noTrending}</p>
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -480,7 +486,7 @@ export default function StorefrontPage() {
                                             <div className="relative aspect-[4/5] bg-gray-100 overflow-hidden">
                                                 {onSale && (
                                                     <div className="absolute top-4 left-4 z-10 bg-black text-white text-xs font-bold px-3 py-1.5 rounded-full tracking-wide shadow-sm">
-                                                        Sale
+                                                        {m.sale}
                                                     </div>
                                                 )}
 
@@ -503,13 +509,13 @@ export default function StorefrontPage() {
                                                         disabled={product.stock_quantity <= 0}
                                                         className="w-full bg-black/90 backdrop-blur text-white font-semibold py-3 rounded-xl hover:bg-black transition-colors disabled:bg-gray-400"
                                                     >
-                                                        {product.stock_quantity > 0 ? 'Add to Cart' : 'Out of Stock'}
+                                                        {product.stock_quantity > 0 ? m.addToCart : m.outOfStock}
                                                     </button>
                                                 </div>
                                             </div>
 
                                             <div className="p-5 flex flex-col flex-1">
-                                                <div className="text-sm text-gray-500 mb-1.5 font-medium">{product.group_name || 'Category'}</div>
+                                                <div className="text-sm text-gray-500 mb-1.5 font-medium">{product.group_name || m.categoryFallback}</div>
                                                 <h3 className="font-bold text-gray-900 leading-snug mb-3 line-clamp-2">{product.name}</h3>
                                                 <div className="flex items-center gap-2 mt-auto pt-2 border-t border-gray-50">
                                                     <span className="font-black text-lg">{formatBDT(price)}</span>
@@ -536,16 +542,16 @@ export default function StorefrontPage() {
                                 {data.tenant.name}
                             </Link>
                             <p className="text-gray-400 max-w-md leading-relaxed">
-                                Curating the best products for your lifestyle. Quality, style, and excellent customer service guaranteed.
+                                {footer.tagline}
                             </p>
                         </div>
 
                         <div>
-                            <h4 className="font-bold text-lg mb-6">Shop</h4>
+                            <h4 className="font-bold text-lg mb-6">{footer.shop}</h4>
                             <ul className="space-y-4 text-gray-400">
                                 <li>
                                     <Link href={`/store/${slug}/shop`} className="hover:text-white transition-colors">
-                                        All Products
+                                        {m.allProducts}
                                     </Link>
                                 </li>
                                 {data.categories.slice(0, 4).map((category) => (
@@ -559,19 +565,19 @@ export default function StorefrontPage() {
                         </div>
 
                         <div>
-                            <h4 className="font-bold text-lg mb-6">Customer Service</h4>
+                            <h4 className="font-bold text-lg mb-6">{footer.customerService}</h4>
                             <ul className="space-y-4 text-gray-400">
-                                <li><a href="#contact" className="hover:text-white transition-colors">Contact Us</a></li>
-                                <li><a href="#contact" className="hover:text-white transition-colors">Shipping Info</a></li>
-                                <li><a href="#contact" className="hover:text-white transition-colors">Returns</a></li>
-                                <li><a href="#contact" className="hover:text-white transition-colors">FAQ</a></li>
+                                <li><a href="#contact" className="hover:text-white transition-colors">{footer.contactUs}</a></li>
+                                <li><a href="#contact" className="hover:text-white transition-colors">{footer.shippingInfo}</a></li>
+                                <li><a href="#contact" className="hover:text-white transition-colors">{footer.returns}</a></li>
+                                <li><a href="#contact" className="hover:text-white transition-colors">{footer.faq}</a></li>
                             </ul>
                         </div>
                     </div>
 
                     <div className="pt-8 border-t border-gray-800 text-center md:text-left flex flex-col md:flex-row justify-between items-center text-gray-400 text-sm">
-                        <p>© {new Date().getFullYear()} {data.tenant.name}. All rights reserved.</p>
-                        <p className="mt-4 md:mt-0">Powered by <span className="font-semibold text-white">StoreCraft</span></p>
+                        <p>{formatMessage(footer.allRightsReserved, { year: new Date().getFullYear(), name: data.tenant.name })}</p>
+                        <p className="mt-4 md:mt-0">{formatMessage(footer.poweredBy, { brand: 'StoreCraft' })}</p>
                     </div>
                 </div>
             </footer>
@@ -580,7 +586,7 @@ export default function StorefrontPage() {
                 <div className="fixed inset-0 z-50 flex justify-end">
                     <button
                         type="button"
-                        aria-label="Close cart overlay"
+                        aria-label={m.closeCartOverlayAria}
                         className="absolute inset-0 bg-black/40 backdrop-blur-sm"
                         onClick={() => setCartOpen(false)}
                     />
@@ -588,7 +594,7 @@ export default function StorefrontPage() {
                         <div className="flex items-center justify-between p-6 border-b border-gray-100">
                             <h2 className="text-xl font-bold flex items-center space-x-2">
                                 <ShoppingCart className="w-5 h-5" />
-                                <span>Your Cart ({cartCount})</span>
+                                <span>{formatMessage(m.yourCart, { count: cartCount })}</span>
                             </h2>
                             <button type="button" onClick={() => setCartOpen(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
                                 <X className="w-5 h-5 text-gray-500" />
@@ -599,13 +605,13 @@ export default function StorefrontPage() {
                             {cart.length === 0 ? (
                                 <div className="h-full flex flex-col items-center justify-center text-gray-400 space-y-4">
                                     <ShoppingCart className="w-16 h-16 opacity-20" />
-                                    <p className="text-lg">Your cart is empty</p>
+                                    <p className="text-lg">{m.emptyCart}</p>
                                     <button
                                         type="button"
                                         onClick={() => setCartOpen(false)}
                                         className="mt-4 border border-gray-300 text-gray-600 hover:bg-gray-50 px-6 py-2 rounded-full font-medium transition-colors"
                                     >
-                                        Continue Shopping
+                                        {m.continueShopping}
                                     </button>
                                 </div>
                             ) : (
@@ -655,10 +661,10 @@ export default function StorefrontPage() {
                         {cart.length > 0 && (
                             <div className="p-6 bg-gray-50 border-t border-gray-100 space-y-4">
                                 <div className="flex justify-between items-center text-lg font-bold">
-                                    <span>Subtotal</span>
+                                    <span>{m.subtotal}</span>
                                     <span>{formatBDT(cartTotal)}</span>
                                 </div>
-                                <p className="text-sm text-gray-500 text-center">Shipping and taxes calculated at checkout.</p>
+                                <p className="text-sm text-gray-500 text-center">{m.shippingNote}</p>
                                 <button
                                     type="button"
                                     onClick={() => {
@@ -667,7 +673,7 @@ export default function StorefrontPage() {
                                     }}
                                     className="w-full bg-black hover:bg-gray-800 text-white font-bold py-4 rounded-xl transition-colors shadow-lg shadow-black/10"
                                 >
-                                    Proceed to Checkout
+                                    {m.proceedToCheckout}
                                 </button>
                             </div>
                         )}
@@ -679,13 +685,13 @@ export default function StorefrontPage() {
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <button
                         type="button"
-                        aria-label="Close checkout overlay"
+                        aria-label={m.closeCheckoutOverlayAria}
                         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
                         onClick={() => setCheckoutOpen(false)}
                     />
                     <div className="relative bg-white rounded-2xl w-full max-w-lg z-10 overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
                         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-                            <h2 className="text-xl font-bold tracking-tight">Checkout</h2>
+                            <h2 className="text-xl font-bold tracking-tight">{m.checkout}</h2>
                             <button type="button" onClick={() => setCheckoutOpen(false)} className="p-1 hover:bg-gray-100 rounded-full transition-colors">
                                 <X className="w-5 h-5 text-gray-500" />
                             </button>
@@ -694,7 +700,7 @@ export default function StorefrontPage() {
                         <div className="overflow-y-auto flex-1">
                             <form id="checkout-form" onSubmit={handleCheckout} className="p-6 space-y-5">
                                 <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                                    <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Order Summary</h3>
+                                    <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">{m.orderSummary}</h3>
                                     <div className="space-y-2">
                                         {cart.map((item) => (
                                             <div key={item.product.id} className="flex justify-between text-sm text-gray-700 gap-4">
@@ -710,12 +716,12 @@ export default function StorefrontPage() {
                                     <div className="border-t border-gray-200 mt-3 pt-3 space-y-1">
                                         {pointsDiscount > 0 && (
                                             <div className="flex justify-between text-sm text-green-700">
-                                                <span>Points discount</span>
+                                                <span>{m.pointsDiscount}</span>
                                                 <span>-{formatBDT(pointsDiscount)}</span>
                                             </div>
                                         )}
                                         <div className="flex justify-between text-base font-bold text-gray-900">
-                                            <span>Total</span>
+                                            <span>{m.total}</span>
                                             <span className="text-blue-600">{formatBDT(finalTotal)}</span>
                                         </div>
                                     </div>
@@ -732,10 +738,10 @@ export default function StorefrontPage() {
                                             />
                                             <div className="text-sm">
                                                 <p className="font-semibold text-amber-800">
-                                                    Use {loyaltyPoints} loyalty points
+                                                    {formatMessage(m.useLoyaltyPoints, { points: loyaltyPoints })}
                                                 </p>
                                                 <p className="text-amber-700 mt-0.5">
-                                                    Worth {formatBDT(Math.min(loyaltyPoints * redeemRate, cartTotal))} off this order
+                                                    {formatMessage(m.pointsWorth, { amount: formatBDT(Math.min(loyaltyPoints * redeemRate, cartTotal)) })}
                                                 </p>
                                             </div>
                                         </label>
@@ -744,55 +750,55 @@ export default function StorefrontPage() {
 
                                 {session && data?.tenant.loyalty_enabled && data.tenant.loyalty_earn_rate && !loyaltyEligible && (
                                     <p className="text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
-                                        🏆 You&apos;ll earn ~{Math.floor(finalTotal * data.tenant.loyalty_earn_rate)} points on this order
+                                        🏆 {formatMessage(m.earnPoints, { points: Math.floor(finalTotal * data.tenant.loyalty_earn_rate) })}
                                     </p>
                                 )}
 
                                 <div className="space-y-4">
-                                    <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mt-6 mb-2">Customer Details</h3>
+                                    <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mt-6 mb-2">{m.customerDetails}</h3>
 
                                     <div>
-                                        <label htmlFor="customer-name" className="block text-sm font-semibold text-gray-700 mb-1.5">Full Name <span className="text-red-500">*</span></label>
+                                        <label htmlFor="customer-name" className="block text-sm font-semibold text-gray-700 mb-1.5">{m.fullName} <span className="text-red-500">*</span></label>
                                         <input
                                             id="customer-name"
                                             type="text"
                                             required
                                             value={customerName}
                                             onChange={(event) => setCustomerName(event.target.value)}
-                                            placeholder="Jane Doe"
+                                            placeholder={p.name}
                                             className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all"
                                         />
                                     </div>
                                     <div>
-                                        <label htmlFor="customer-email" className="block text-sm font-semibold text-gray-700 mb-1.5">Email <span className="text-red-500">*</span></label>
+                                        <label htmlFor="customer-email" className="block text-sm font-semibold text-gray-700 mb-1.5">{m.email} <span className="text-red-500">*</span></label>
                                         <input
                                             id="customer-email"
                                             type="email"
                                             required
                                             value={customerEmail}
                                             onChange={(event) => setCustomerEmail(event.target.value)}
-                                            placeholder="jane@example.com"
+                                            placeholder={p.email}
                                             className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all"
                                         />
                                     </div>
                                     <div>
-                                        <label htmlFor="customer-phone" className="block text-sm font-semibold text-gray-700 mb-1.5">Phone (optional)</label>
+                                        <label htmlFor="customer-phone" className="block text-sm font-semibold text-gray-700 mb-1.5">{m.phoneOptional}</label>
                                         <input
                                             id="customer-phone"
                                             type="tel"
                                             value={customerPhone}
                                             onChange={(event) => setCustomerPhone(event.target.value)}
-                                            placeholder="+880 1..."
+                                            placeholder={p.phone}
                                             className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all"
                                         />
                                     </div>
                                     <div>
-                                        <label htmlFor="delivery-notes" className="block text-sm font-semibold text-gray-700 mb-1.5">Delivery Notes (optional)</label>
+                                        <label htmlFor="delivery-notes" className="block text-sm font-semibold text-gray-700 mb-1.5">{m.deliveryNotesOptional}</label>
                                         <textarea
                                             id="delivery-notes"
                                             value={notes}
                                             onChange={(event) => setNotes(event.target.value)}
-                                            placeholder="Special instructions for delivery..."
+                                            placeholder={p.deliveryNotes}
                                             rows={2}
                                             className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all resize-none"
                                         />
@@ -815,7 +821,7 @@ export default function StorefrontPage() {
                                 disabled={submitting}
                                 className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl transition-colors disabled:opacity-60 shadow-lg shadow-blue-600/20 text-lg"
                             >
-                                {submitting ? 'Processing...' : `Pay ${formatBDT(finalTotal)}`}
+                                {submitting ? m.processing : formatMessage(m.payAmount, { amount: formatBDT(finalTotal) })}
                             </button>
                         </div>
                     </div>

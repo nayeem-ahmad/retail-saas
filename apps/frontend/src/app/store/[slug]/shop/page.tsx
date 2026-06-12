@@ -5,6 +5,7 @@ import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigat
 import Link from 'next/link';
 import { AlertCircle, CheckCircle, Minus, Package, Plus, Search, ShoppingCart, User, X } from 'lucide-react';
 import { formatBDT } from '@/lib/format';
+import { useI18n, formatMessage } from '@/lib/i18n';
 
 interface CustomerSession {
     access_token: string;
@@ -61,6 +62,11 @@ function formatOptionalPrice(value: string | number | null | undefined) {
 }
 
 export default function StorefrontShopPage() {
+    const { t } = useI18n();
+    const m = t.storefront.public;
+    const shop = m.shop;
+    const footer = m.footer;
+    const p = m.placeholders;
     const params = useParams();
     const pathname = usePathname();
     const router = useRouter();
@@ -331,7 +337,7 @@ export default function StorefrontShopPage() {
             const json = await response.json();
 
             if (!response.ok) {
-                throw new Error(json.message || 'Failed to place order');
+                throw new Error(json.message || m.orderFailed);
             }
 
             setOrderSuccess(json.data?.id || json.id || 'SUCCESS');
@@ -356,7 +362,7 @@ export default function StorefrontShopPage() {
                     .catch(() => {});
             }
         } catch (err: any) {
-            setOrderError(err.message || 'An error occurred during checkout');
+            setOrderError(err.message || m.checkoutError);
         } finally {
             setSubmitting(false);
         }
@@ -367,7 +373,7 @@ export default function StorefrontShopPage() {
             <div className="min-h-screen flex items-center justify-center bg-gray-50">
                 <div className="flex flex-col items-center space-y-4">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
-                    <p className="text-gray-500 font-medium">Loading store...</p>
+                    <p className="text-gray-500 font-medium">{m.loading}</p>
                 </div>
             </div>
         );
@@ -380,8 +386,8 @@ export default function StorefrontShopPage() {
                     <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto">
                         <AlertCircle className="w-8 h-8 text-gray-400" />
                     </div>
-                    <h1 className="text-2xl font-bold text-gray-800">Store Not Found</h1>
-                    <p className="text-gray-500">This store doesn&apos;t exist or is currently unavailable.</p>
+                    <h1 className="text-2xl font-bold text-gray-800">{m.notFound.title}</h1>
+                    <p className="text-gray-500">{m.notFound.description}</p>
                 </div>
             </div>
         );
@@ -403,9 +409,9 @@ export default function StorefrontShopPage() {
                         </Link>
 
                         <nav className="hidden md:flex items-center gap-8 text-sm font-medium">
-                            <Link href={`/store/${slug}`} className="text-gray-500 hover:text-gray-900 transition-colors">Home</Link>
-                            <Link href={`/store/${slug}/shop`} className="text-gray-900 hover:text-gray-600 transition-colors">Shop</Link>
-                            <a href="#contact" className="text-gray-500 hover:text-gray-900 transition-colors">Contact</a>
+                            <Link href={`/store/${slug}`} className="text-gray-500 hover:text-gray-900 transition-colors">{m.nav.home}</Link>
+                            <Link href={`/store/${slug}/shop`} className="text-gray-900 hover:text-gray-600 transition-colors">{m.nav.shop}</Link>
+                            <a href="#contact" className="text-gray-500 hover:text-gray-900 transition-colors">{m.nav.contact}</a>
                         </nav>
 
                         <div className="flex items-center gap-2">
@@ -430,7 +436,7 @@ export default function StorefrontShopPage() {
                                                 onClick={handleSignOut}
                                                 className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
                                             >
-                                                Sign out
+                                                {m.signOut}
                                             </button>
                                         </div>
                                     )}
@@ -441,7 +447,7 @@ export default function StorefrontShopPage() {
                                     className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-100 rounded-full transition-colors"
                                 >
                                     <User className="w-4 h-4" />
-                                    <span className="hidden sm:block">Sign In</span>
+                                    <span className="hidden sm:block">{m.signIn}</span>
                                 </Link>
                             )}
 
@@ -467,16 +473,16 @@ export default function StorefrontShopPage() {
                     <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-start space-x-3">
                         <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
                         <div>
-                            <p className="font-semibold text-green-800">Order placed successfully!</p>
+                            <p className="font-semibold text-green-800">{m.orderSuccess}</p>
                             <p className="text-green-700 text-sm mt-0.5">
-                                Order ID: <span className="font-mono font-bold">{orderSuccess}</span>
+                                {m.orderIdLabel} <span className="font-mono font-bold">{orderSuccess}</span>
                             </p>
                             <button
                                 type="button"
                                 onClick={() => setOrderSuccess(null)}
                                 className="text-xs text-green-600 underline mt-1 font-medium hover:text-green-800"
                             >
-                                Dismiss
+                                {m.dismiss}
                             </button>
                         </div>
                     </div>
@@ -486,20 +492,20 @@ export default function StorefrontShopPage() {
             <main className="py-14 sm:py-16">
                 <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="mb-8">
-                        <h1 className="text-4xl sm:text-5xl font-black tracking-tight">Shop</h1>
+                        <h1 className="text-4xl sm:text-5xl font-black tracking-tight">{shop.title}</h1>
                         <p className="text-gray-500 mt-2">
-                            {activeCategoryFilter === 'ALL' ? 'Browse the full storefront catalog.' : `Browsing ${activeCategoryFilter}`}
+                            {activeCategoryFilter === 'ALL' ? shop.browseAll : formatMessage(shop.browsingCategory, { category: activeCategoryFilter })}
                         </p>
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-8 items-start">
                         <aside className="bg-gray-50 border border-gray-200 rounded-2xl p-6 lg:sticky lg:top-28 space-y-7">
                             <div>
-                                <h2 className="text-xl font-bold">Filters</h2>
+                                <h2 className="text-xl font-bold">{shop.filters}</h2>
                             </div>
 
                             <div className="space-y-3">
-                                <h3 className="text-sm font-bold uppercase tracking-wide text-gray-500">Categories</h3>
+                                <h3 className="text-sm font-bold uppercase tracking-wide text-gray-500">{m.categories}</h3>
                                 <div className="space-y-2.5">
                                     {availableCategories.map((category) => {
                                         const isActive = activeCategoryFilter === category;
@@ -520,7 +526,7 @@ export default function StorefrontShopPage() {
                                             >
                                                 <span className={`inline-flex w-4 h-4 rounded-full border ${isActive ? 'border-blue-600 bg-blue-600' : 'border-gray-300 bg-white'}`} />
                                                 <span className={`text-sm ${isActive ? 'text-gray-900 font-semibold' : 'text-gray-500'}`}>
-                                                    {category === 'ALL' ? 'All' : category}
+                                                    {category === 'ALL' ? shop.all : category}
                                                 </span>
                                             </button>
                                         );
@@ -529,7 +535,7 @@ export default function StorefrontShopPage() {
                             </div>
 
                             <div className="space-y-3">
-                                <h3 className="text-sm font-bold uppercase tracking-wide text-gray-500">Price Range</h3>
+                                <h3 className="text-sm font-bold uppercase tracking-wide text-gray-500">{shop.priceRange}</h3>
                                 <input
                                     type="range"
                                     min={0}
@@ -554,7 +560,9 @@ export default function StorefrontShopPage() {
                         <div>
                             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
                                 <p className="text-sm text-gray-500">
-                                    Showing {visibleProducts.length} product{visibleProducts.length === 1 ? '' : 's'}
+                                    {visibleProducts.length === 1
+                                        ? formatMessage(shop.showingProducts, { count: visibleProducts.length })
+                                        : formatMessage(shop.showingProductsPlural, { count: visibleProducts.length })}
                                 </p>
 
                                 <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
@@ -563,7 +571,7 @@ export default function StorefrontShopPage() {
                                         <input
                                             id="shop-search"
                                             type="search"
-                                            placeholder="Search products"
+                                            placeholder={shop.searchPlaceholder}
                                             value={searchQuery}
                                             onChange={(event) => updateQueryParams({ q: event.target.value.trim() ? event.target.value : null })}
                                             className="h-11 w-full sm:w-64 rounded-xl border border-gray-200 bg-white pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
@@ -575,10 +583,10 @@ export default function StorefrontShopPage() {
                                         onChange={(event) => updateQueryParams({ sort: event.target.value === 'newest' ? null : event.target.value })}
                                         className="h-11 rounded-xl border border-gray-200 bg-white px-3 text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-200"
                                     >
-                                        <option value="newest">Newest</option>
-                                        <option value="price_asc">Price: Low to High</option>
-                                        <option value="price_desc">Price: High to Low</option>
-                                        <option value="name_asc">Name: A to Z</option>
+                                        <option value="newest">{shop.sort.newest}</option>
+                                        <option value="price_asc">{shop.sort.priceAsc}</option>
+                                        <option value="price_desc">{shop.sort.priceDesc}</option>
+                                        <option value="name_asc">{shop.sort.nameAsc}</option>
                                     </select>
                                 </div>
                             </div>
@@ -586,7 +594,7 @@ export default function StorefrontShopPage() {
                             {visibleProducts.length === 0 ? (
                                 <div className="text-center py-16 text-gray-400 border border-dashed border-gray-200 rounded-2xl">
                                     <Package className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                                    <p className="text-lg font-medium">No products match your current filters.</p>
+                                    <p className="text-lg font-medium">{shop.noFilteredProducts}</p>
                                 </div>
                             ) : (
                                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -608,13 +616,13 @@ export default function StorefrontShopPage() {
 
                                                     {onSale && (
                                                         <div className="absolute top-4 left-4 bg-white text-black text-xs font-bold px-3 py-1.5 rounded-full shadow-sm">
-                                                            Sale
+                                                            {m.sale}
                                                         </div>
                                                     )}
                                                 </div>
 
                                                 <div className="p-5 flex flex-col flex-1">
-                                                    <div className="text-sm text-gray-500 mb-1.5 font-medium">{product.group_name || 'Category'}</div>
+                                                    <div className="text-sm text-gray-500 mb-1.5 font-medium">{product.group_name || m.categoryFallback}</div>
                                                     <h3 className="font-semibold text-gray-900 leading-snug mb-3">{product.name}</h3>
                                                     <div className="flex items-center gap-2 mt-auto pt-2 border-t border-gray-50">
                                                         <span className="font-black text-lg">{formatBDT(price)}</span>
@@ -628,7 +636,7 @@ export default function StorefrontShopPage() {
                                                         disabled={product.stock_quantity <= 0}
                                                         className="mt-4 inline-flex items-center justify-center rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white hover:bg-blue-700 transition-colors disabled:bg-gray-300"
                                                     >
-                                                        {product.stock_quantity > 0 ? 'Add to Cart' : 'Out of Stock'}
+                                                        {product.stock_quantity > 0 ? m.addToCart : m.outOfStock}
                                                     </button>
                                                 </div>
                                             </article>
@@ -643,9 +651,9 @@ export default function StorefrontShopPage() {
 
             <footer id="contact" className="bg-gray-900 text-white py-12 mt-16">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-sm text-gray-400 flex flex-col sm:flex-row items-center justify-between gap-3">
-                    <p>© {new Date().getFullYear()} {data.tenant.name}. All rights reserved.</p>
+                    <p>{formatMessage(footer.allRightsReserved, { year: new Date().getFullYear(), name: data.tenant.name })}</p>
                     <Link href={`/store/${slug}`} className="text-white hover:text-gray-200 transition-colors">
-                        Back to Home
+                        {footer.backToHome}
                     </Link>
                 </div>
             </footer>
@@ -654,7 +662,7 @@ export default function StorefrontShopPage() {
                 <div className="fixed inset-0 z-50 flex justify-end">
                     <button
                         type="button"
-                        aria-label="Close cart overlay"
+                        aria-label={m.closeCartOverlayAria}
                         className="absolute inset-0 bg-black/40 backdrop-blur-sm"
                         onClick={() => setCartOpen(false)}
                     />
@@ -662,7 +670,7 @@ export default function StorefrontShopPage() {
                         <div className="flex items-center justify-between p-6 border-b border-gray-100">
                             <h2 className="text-xl font-bold flex items-center space-x-2">
                                 <ShoppingCart className="w-5 h-5" />
-                                <span>Your Cart ({cartCount})</span>
+                                <span>{formatMessage(m.yourCart, { count: cartCount })}</span>
                             </h2>
                             <button type="button" onClick={() => setCartOpen(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
                                 <X className="w-5 h-5 text-gray-500" />
@@ -673,13 +681,13 @@ export default function StorefrontShopPage() {
                             {cart.length === 0 ? (
                                 <div className="h-full flex flex-col items-center justify-center text-gray-400 space-y-4">
                                     <ShoppingCart className="w-16 h-16 opacity-20" />
-                                    <p className="text-lg">Your cart is empty</p>
+                                    <p className="text-lg">{m.emptyCart}</p>
                                     <button
                                         type="button"
                                         onClick={() => setCartOpen(false)}
                                         className="mt-4 border border-gray-300 text-gray-600 hover:bg-gray-50 px-6 py-2 rounded-full font-medium transition-colors"
                                     >
-                                        Continue Shopping
+                                        {m.continueShopping}
                                     </button>
                                 </div>
                             ) : (
@@ -729,10 +737,10 @@ export default function StorefrontShopPage() {
                         {cart.length > 0 && (
                             <div className="p-6 bg-gray-50 border-t border-gray-100 space-y-4">
                                 <div className="flex justify-between items-center text-lg font-bold">
-                                    <span>Subtotal</span>
+                                    <span>{m.subtotal}</span>
                                     <span>{formatBDT(cartTotal)}</span>
                                 </div>
-                                <p className="text-sm text-gray-500 text-center">Shipping and taxes calculated at checkout.</p>
+                                <p className="text-sm text-gray-500 text-center">{m.shippingNote}</p>
                                 <button
                                     type="button"
                                     onClick={() => {
@@ -741,7 +749,7 @@ export default function StorefrontShopPage() {
                                     }}
                                     className="w-full bg-black hover:bg-gray-800 text-white font-bold py-4 rounded-xl transition-colors shadow-lg shadow-black/10"
                                 >
-                                    Proceed to Checkout
+                                    {m.proceedToCheckout}
                                 </button>
                             </div>
                         )}
@@ -753,13 +761,13 @@ export default function StorefrontShopPage() {
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <button
                         type="button"
-                        aria-label="Close checkout overlay"
+                        aria-label={m.closeCheckoutOverlayAria}
                         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
                         onClick={() => setCheckoutOpen(false)}
                     />
                     <div className="relative bg-white rounded-2xl w-full max-w-lg z-10 overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
                         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-                            <h2 className="text-xl font-bold tracking-tight">Checkout</h2>
+                            <h2 className="text-xl font-bold tracking-tight">{m.checkout}</h2>
                             <button type="button" onClick={() => setCheckoutOpen(false)} className="p-1 hover:bg-gray-100 rounded-full transition-colors">
                                 <X className="w-5 h-5 text-gray-500" />
                             </button>
@@ -768,7 +776,7 @@ export default function StorefrontShopPage() {
                         <div className="overflow-y-auto flex-1">
                             <form id="checkout-form" onSubmit={handleCheckout} className="p-6 space-y-5">
                                 <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-                                    <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Order Summary</h3>
+                                    <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">{m.orderSummary}</h3>
                                     <div className="space-y-2">
                                         {cart.map((item) => (
                                             <div key={item.product.id} className="flex justify-between text-sm text-gray-700 gap-4">
@@ -784,12 +792,12 @@ export default function StorefrontShopPage() {
                                     <div className="border-t border-gray-200 mt-3 pt-3 space-y-1">
                                         {pointsDiscount > 0 && (
                                             <div className="flex justify-between text-sm text-green-700">
-                                                <span>Points discount</span>
+                                                <span>{m.pointsDiscount}</span>
                                                 <span>-{formatBDT(pointsDiscount)}</span>
                                             </div>
                                         )}
                                         <div className="flex justify-between text-base font-bold text-gray-900">
-                                            <span>Total</span>
+                                            <span>{m.total}</span>
                                             <span className="text-blue-600">{formatBDT(finalTotal)}</span>
                                         </div>
                                     </div>
@@ -806,10 +814,10 @@ export default function StorefrontShopPage() {
                                             />
                                             <div className="text-sm">
                                                 <p className="font-semibold text-amber-800">
-                                                    Use {loyaltyPoints} loyalty points
+                                                    {formatMessage(m.useLoyaltyPoints, { points: loyaltyPoints })}
                                                 </p>
                                                 <p className="text-amber-700 mt-0.5">
-                                                    Worth {formatBDT(Math.min(loyaltyPoints * redeemRate, cartTotal))} off this order
+                                                    {formatMessage(m.pointsWorth, { amount: formatBDT(Math.min(loyaltyPoints * redeemRate, cartTotal)) })}
                                                 </p>
                                             </div>
                                         </label>
@@ -818,55 +826,55 @@ export default function StorefrontShopPage() {
 
                                 {session && data?.tenant.loyalty_enabled && data.tenant.loyalty_earn_rate && !loyaltyEligible && (
                                     <p className="text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
-                                        🏆 You&apos;ll earn ~{Math.floor(finalTotal * data.tenant.loyalty_earn_rate)} points on this order
+                                        🏆 {formatMessage(m.earnPoints, { points: Math.floor(finalTotal * data.tenant.loyalty_earn_rate) })}
                                     </p>
                                 )}
 
                                 <div className="space-y-4">
-                                    <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mt-6 mb-2">Customer Details</h3>
+                                    <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mt-6 mb-2">{m.customerDetails}</h3>
 
                                     <div>
-                                        <label htmlFor="customer-name" className="block text-sm font-semibold text-gray-700 mb-1.5">Full Name <span className="text-red-500">*</span></label>
+                                        <label htmlFor="customer-name" className="block text-sm font-semibold text-gray-700 mb-1.5">{m.fullName} <span className="text-red-500">*</span></label>
                                         <input
                                             id="customer-name"
                                             type="text"
                                             required
                                             value={customerName}
                                             onChange={(event) => setCustomerName(event.target.value)}
-                                            placeholder="Jane Doe"
+                                            placeholder={p.name}
                                             className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all"
                                         />
                                     </div>
                                     <div>
-                                        <label htmlFor="customer-email" className="block text-sm font-semibold text-gray-700 mb-1.5">Email <span className="text-red-500">*</span></label>
+                                        <label htmlFor="customer-email" className="block text-sm font-semibold text-gray-700 mb-1.5">{m.email} <span className="text-red-500">*</span></label>
                                         <input
                                             id="customer-email"
                                             type="email"
                                             required
                                             value={customerEmail}
                                             onChange={(event) => setCustomerEmail(event.target.value)}
-                                            placeholder="jane@example.com"
+                                            placeholder={p.email}
                                             className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all"
                                         />
                                     </div>
                                     <div>
-                                        <label htmlFor="customer-phone" className="block text-sm font-semibold text-gray-700 mb-1.5">Phone (optional)</label>
+                                        <label htmlFor="customer-phone" className="block text-sm font-semibold text-gray-700 mb-1.5">{m.phoneOptional}</label>
                                         <input
                                             id="customer-phone"
                                             type="tel"
                                             value={customerPhone}
                                             onChange={(event) => setCustomerPhone(event.target.value)}
-                                            placeholder="+880 1..."
+                                            placeholder={p.phone}
                                             className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all"
                                         />
                                     </div>
                                     <div>
-                                        <label htmlFor="delivery-notes" className="block text-sm font-semibold text-gray-700 mb-1.5">Delivery Notes (optional)</label>
+                                        <label htmlFor="delivery-notes" className="block text-sm font-semibold text-gray-700 mb-1.5">{m.deliveryNotesOptional}</label>
                                         <textarea
                                             id="delivery-notes"
                                             value={notes}
                                             onChange={(event) => setNotes(event.target.value)}
-                                            placeholder="Special instructions for delivery..."
+                                            placeholder={p.deliveryNotes}
                                             rows={2}
                                             className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all resize-none"
                                         />
@@ -889,7 +897,7 @@ export default function StorefrontShopPage() {
                                 disabled={submitting}
                                 className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl transition-colors disabled:opacity-60 shadow-lg shadow-blue-600/20 text-lg"
                             >
-                                {submitting ? 'Processing...' : `Pay ${formatBDT(finalTotal)}`}
+                                {submitting ? m.processing : formatMessage(m.payAmount, { amount: formatBDT(finalTotal) })}
                             </button>
                         </div>
                     </div>

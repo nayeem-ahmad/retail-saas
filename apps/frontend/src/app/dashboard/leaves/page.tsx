@@ -6,6 +6,7 @@ import { api } from '../../../lib/api';
 import { formatDate } from '../../../lib/format';
 import { createColumnHelper, type ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table';
+import { useI18n } from '@/lib/i18n';
 
 interface Employee { id: string; name: string; employee_code: string; }
 interface LeaveType { id: string; name: string; days_per_year: number; }
@@ -46,6 +47,7 @@ const EMPTY_REQUEST_FORM = {
 const EMPTY_TYPE_FORM = { name: '', days_per_year: '' };
 
 export default function LeavesPage() {
+    const { t } = useI18n();
     const [tab, setTab] = useState<'requests' | 'types'>('requests');
 
     // Requests state
@@ -123,7 +125,7 @@ export default function LeavesPage() {
             setRequestForm(EMPTY_REQUEST_FORM);
             loadRequests();
         } catch (err: any) {
-            setReqError(err.message || 'Failed to create leave request');
+            setReqError(err.message || t.leaves.createRequestFailed);
         } finally {
             setSubmittingReq(false);
         }
@@ -135,19 +137,19 @@ export default function LeavesPage() {
             await api.reviewLeaveRequest(id, { status });
             loadRequests();
         } catch (err: any) {
-            alert(err.message || 'Failed to update leave request');
+            alert(err.message || t.leaves.updateRequestFailed);
         } finally {
             setReviewingId(null);
         }
     };
 
     const handleCancel = async (id: string) => {
-        if (!confirm('Cancel this leave request?')) return;
+        if (!confirm(t.leaves.cancelRequestConfirm)) return;
         try {
             await api.cancelLeaveRequest(id);
             loadRequests();
         } catch (err: any) {
-            alert(err.message || 'Failed to cancel leave request');
+            alert(err.message || t.leaves.cancelRequestFailed);
         }
     };
 
@@ -163,19 +165,19 @@ export default function LeavesPage() {
             setTypeForm(EMPTY_TYPE_FORM);
             loadLeaveTypes();
         } catch (err: any) {
-            setTypeError(err.message || 'Failed to create leave type');
+            setTypeError(err.message || t.leaves.createTypeFailed);
         } finally {
             setSubmittingType(false);
         }
     };
 
     const handleDeleteType = async (id: string) => {
-        if (!confirm('Delete this leave type?')) return;
+        if (!confirm(t.leaves.deleteTypeConfirm)) return;
         try {
             await api.deleteLeaveType(id);
             loadLeaveTypes();
         } catch (err: any) {
-            alert(err.message || 'Failed to delete leave type');
+            alert(err.message || t.leaves.deleteTypeFailed);
         }
     };
 
@@ -183,7 +185,7 @@ export default function LeavesPage() {
         () => [
             columnHelper.accessor((row) => row.employee?.name ?? '', {
                 id: 'employee',
-                header: 'Employee',
+                header: t.leaves.columns.employee,
                 cell: (info) => {
                     const req = info.row.original;
                     return (
@@ -197,13 +199,13 @@ export default function LeavesPage() {
             }),
             columnHelper.accessor((row) => row.leave_type?.name ?? '', {
                 id: 'leave_type',
-                header: 'Leave Type',
+                header: t.leaves.columns.leaveType,
                 cell: (info) => <span className="text-sm text-gray-700">{info.getValue() || '—'}</span>,
                 size: 120,
             }),
             columnHelper.display({
                 id: 'dates',
-                header: 'Period',
+                header: t.leaves.columns.period,
                 cell: (info) => {
                     const req = info.row.original;
                     return (
@@ -218,12 +220,12 @@ export default function LeavesPage() {
                 size: 180,
             }),
             columnHelper.accessor('days', {
-                header: 'Days',
+                header: t.leaves.columns.days,
                 cell: (info) => <span className="text-sm font-bold text-gray-700">{info.getValue()}</span>,
                 size: 70,
             }),
             columnHelper.accessor('status', {
-                header: 'Status',
+                header: t.leaves.columns.status,
                 cell: (info) => {
                     const status = info.getValue();
                     const cls = REQUEST_STATUS_COLORS[status] ?? 'bg-gray-100 text-gray-500 border-gray-200';
@@ -236,13 +238,13 @@ export default function LeavesPage() {
                 size: 100,
             }),
             columnHelper.accessor('reason', {
-                header: 'Reason',
+                header: t.leaves.columns.reason,
                 cell: (info) => <span className="text-sm text-gray-500">{info.getValue() || '—'}</span>,
                 size: 160,
             }),
             columnHelper.display({
                 id: 'actions',
-                header: 'Actions',
+                header: t.leaves.columns.actions,
                 cell: (info) => {
                     const req = info.row.original;
                     const isReviewing = reviewingId === req.id;
@@ -252,7 +254,7 @@ export default function LeavesPage() {
                                 onClick={() => handleCancel(req.id)}
                                 disabled={req.status === 'CANCELLED'}
                                 className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-50 disabled:opacity-30 transition-colors"
-                                title="Cancel"
+                                title={t.leaves.cancel}
                             >
                                 <X className="w-4 h-4" />
                             </button>
@@ -264,7 +266,7 @@ export default function LeavesPage() {
                                 onClick={() => handleReview(req.id, 'APPROVED')}
                                 disabled={isReviewing}
                                 className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 disabled:opacity-50 transition-colors"
-                                title="Approve"
+                                title={t.leaves.approve}
                             >
                                 <Check className="w-4 h-4" />
                             </button>
@@ -272,7 +274,7 @@ export default function LeavesPage() {
                                 onClick={() => handleReview(req.id, 'REJECTED')}
                                 disabled={isReviewing}
                                 className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 disabled:opacity-50 transition-colors"
-                                title="Reject"
+                                title={t.leaves.reject}
                             >
                                 <X className="w-4 h-4" />
                             </button>
@@ -288,10 +290,10 @@ export default function LeavesPage() {
     );
 
     const filterPresets = useMemo(() => [
-        { label: 'Pending', filters: [{ id: 'status', value: 'PENDING' }] },
-        { label: 'Approved', filters: [{ id: 'status', value: 'APPROVED' }] },
-        { label: 'Rejected', filters: [{ id: 'status', value: 'REJECTED' }] },
-    ], []);
+        { label: t.leaves.filterPresets.pending, filters: [{ id: 'status', value: 'PENDING' }] },
+        { label: t.leaves.filterPresets.approved, filters: [{ id: 'status', value: 'APPROVED' }] },
+        { label: t.leaves.filterPresets.rejected, filters: [{ id: 'status', value: 'REJECTED' }] },
+    ], [t]);
 
     return (
         <div className="overflow-y-auto h-full bg-[#f3f4f6] p-6 font-sans text-gray-900">
@@ -299,9 +301,9 @@ export default function LeavesPage() {
                 {/* Header */}
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-black tracking-tight">Leaves</h1>
+                        <h1 className="text-2xl font-black tracking-tight">{t.leaves.title}</h1>
                         <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mt-0.5">
-                            Leave requests and leave type management
+                            {t.leaves.subtitle}
                         </p>
                     </div>
                     {tab === 'requests' && (
@@ -310,24 +312,24 @@ export default function LeavesPage() {
                             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl font-bold text-sm flex items-center shadow-lg shadow-blue-200 transition-all hover:-translate-y-0.5 active:translate-y-0"
                         >
                             <Plus className="w-4 h-4 mr-2" />
-                            New Request
+                            {t.leaves.newRequest}
                         </button>
                     )}
                 </div>
 
                 {/* Tabs */}
                 <div className="flex gap-2 border-b border-gray-200">
-                    {(['requests', 'types'] as const).map((t) => (
+                    {(['requests', 'types'] as const).map((tabKey) => (
                         <button
-                            key={t}
-                            onClick={() => setTab(t)}
+                            key={tabKey}
+                            onClick={() => setTab(tabKey)}
                             className={`px-4 py-2.5 text-sm font-black uppercase tracking-widest border-b-2 transition-colors ${
-                                tab === t
+                                tab === tabKey
                                     ? 'border-blue-600 text-blue-600'
                                     : 'border-transparent text-gray-400 hover:text-gray-700'
                             }`}
                         >
-                            {t === 'requests' ? 'Leave Requests' : 'Leave Types'}
+                            {tabKey === 'requests' ? t.leaves.tabs.requests : t.leaves.tabs.types}
                         </button>
                     ))}
                 </div>
@@ -339,27 +341,27 @@ export default function LeavesPage() {
                         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
                             <div className="flex flex-wrap gap-3 items-end">
                                 <div className="space-y-1">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block">Status</label>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block">{t.leaves.columns.status}</label>
                                     <select
                                         value={statusFilter}
                                         onChange={(e) => setStatusFilter(e.target.value)}
                                         className="bg-gray-50 border border-gray-100 rounded-xl py-2.5 px-3 text-sm font-bold text-gray-700 focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all appearance-none min-w-[150px]"
                                     >
-                                        <option value="">All Statuses</option>
-                                        <option value="PENDING">Pending</option>
-                                        <option value="APPROVED">Approved</option>
-                                        <option value="REJECTED">Rejected</option>
-                                        <option value="CANCELLED">Cancelled</option>
+                                        <option value="">{t.leaves.allStatuses}</option>
+                                        <option value="PENDING">{t.leaves.filterPresets.pending}</option>
+                                        <option value="APPROVED">{t.leaves.filterPresets.approved}</option>
+                                        <option value="REJECTED">{t.leaves.filterPresets.rejected}</option>
+                                        <option value="CANCELLED">{t.leaves.cancel}</option>
                                     </select>
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block">Employee</label>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block">{t.leaves.columns.employee}</label>
                                     <select
                                         value={employeeFilter}
                                         onChange={(e) => setEmployeeFilter(e.target.value)}
                                         className="bg-gray-50 border border-gray-100 rounded-xl py-2.5 px-3 text-sm font-bold text-gray-700 focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all appearance-none min-w-[180px]"
                                     >
-                                        <option value="">All Employees</option>
+                                        <option value="">{t.leaves.allEmployees}</option>
                                         {employees.map((emp) => (
                                             <option key={emp.id} value={emp.id}>
                                                 {emp.name} ({emp.employee_code})
@@ -374,11 +376,11 @@ export default function LeavesPage() {
                             tableId="leave-requests"
                             columns={requestColumns}
                             data={requests}
-                            title="Leave Requests"
+                            title={t.leaves.tabs.requests}
                             isLoading={loadingReqs}
-                            emptyMessage="No leave requests found"
+                            emptyMessage={t.leaves.emptyRequests}
                             emptyIcon={<CalendarOff className="w-16 h-16 text-gray-200" />}
-                            searchPlaceholder="Search by employee or leave type..."
+                            searchPlaceholder={t.leaves.searchRequestsPlaceholder}
                             filterPresets={filterPresets}
                         />
                     </>
@@ -389,7 +391,7 @@ export default function LeavesPage() {
                     <div className="space-y-6">
                         {/* Add leave type form */}
                         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-                            <h2 className="text-sm font-black uppercase tracking-widest text-gray-400 mb-4">Add Leave Type</h2>
+                            <h2 className="text-sm font-black uppercase tracking-widest text-gray-400 mb-4">{t.leaves.addLeaveType}</h2>
                             {typeError && (
                                 <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-xl text-sm font-bold border border-red-100">
                                     {typeError}
@@ -397,18 +399,18 @@ export default function LeavesPage() {
                             )}
                             <form onSubmit={handleCreateType} className="flex gap-3 items-end">
                                 <div className="flex-1 space-y-1.5">
-                                    <label className="text-xs font-black uppercase tracking-widest text-gray-400 block">Name</label>
+                                    <label className="text-xs font-black uppercase tracking-widest text-gray-400 block">{t.leaves.name}</label>
                                     <input
                                         required
                                         type="text"
                                         value={typeForm.name}
                                         onChange={(e) => setTypeForm({ ...typeForm, name: e.target.value })}
-                                        placeholder="e.g. Annual Leave"
+                                        placeholder={t.leaves.placeholders.leaveTypeName}
                                         className="w-full bg-gray-50 border border-gray-100 rounded-xl py-3 px-4 text-sm font-bold text-gray-700 focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all"
                                     />
                                 </div>
                                 <div className="w-40 space-y-1.5">
-                                    <label className="text-xs font-black uppercase tracking-widest text-gray-400 block">Days/Year</label>
+                                    <label className="text-xs font-black uppercase tracking-widest text-gray-400 block">{t.leaves.columns.daysPerYear}</label>
                                     <input
                                         required
                                         type="number"
@@ -416,7 +418,7 @@ export default function LeavesPage() {
                                         step="0.5"
                                         value={typeForm.days_per_year}
                                         onChange={(e) => setTypeForm({ ...typeForm, days_per_year: e.target.value })}
-                                        placeholder="e.g. 15"
+                                        placeholder={t.leaves.placeholders.daysPerYear}
                                         className="w-full bg-gray-50 border border-gray-100 rounded-xl py-3 px-4 text-sm font-bold text-gray-700 focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all"
                                     />
                                 </div>
@@ -426,7 +428,7 @@ export default function LeavesPage() {
                                     className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-xl font-bold text-sm flex items-center shadow-lg shadow-blue-200 transition-all hover:-translate-y-0.5 disabled:opacity-50"
                                 >
                                     <Plus className="w-4 h-4 mr-1.5" />
-                                    Add
+                                    {t.leaves.add}
                                 </button>
                             </form>
                         </div>
@@ -434,18 +436,18 @@ export default function LeavesPage() {
                         {/* Leave types list */}
                         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                             {loadingTypes ? (
-                                <div className="p-8 text-center text-gray-400 font-bold text-sm">Loading...</div>
+                                <div className="p-8 text-center text-gray-400 font-bold text-sm">{t.common.loading}</div>
                             ) : leaveTypes.length === 0 ? (
                                 <div className="p-8 text-center">
                                     <CalendarOff className="w-12 h-12 text-gray-200 mx-auto mb-2" />
-                                    <p className="text-sm text-gray-400 font-bold">No leave types defined yet</p>
+                                    <p className="text-sm text-gray-400 font-bold">{t.leaves.noLeaveTypesDefined}</p>
                                 </div>
                             ) : (
                                 <table className="w-full">
                                     <thead>
                                         <tr className="border-b border-gray-100">
-                                            <th className="text-left text-[10px] font-black uppercase tracking-widest text-gray-400 px-6 py-3">Name</th>
-                                            <th className="text-left text-[10px] font-black uppercase tracking-widest text-gray-400 px-6 py-3">Days / Year</th>
+                                            <th className="text-left text-[10px] font-black uppercase tracking-widest text-gray-400 px-6 py-3">{t.leaves.name}</th>
+                                            <th className="text-left text-[10px] font-black uppercase tracking-widest text-gray-400 px-6 py-3">{t.leaves.columns.daysPerYear}</th>
                                             <th className="text-right px-6 py-3"></th>
                                         </tr>
                                     </thead>
@@ -458,7 +460,7 @@ export default function LeavesPage() {
                                                     <button
                                                         onClick={() => handleDeleteType(lt.id)}
                                                         className="p-1.5 rounded-lg text-red-400 hover:bg-red-50 transition-colors"
-                                                        title="Delete"
+                                                        title={t.common.delete}
                                                     >
                                                         <Trash2 className="w-4 h-4" />
                                                     </button>
@@ -478,7 +480,7 @@ export default function LeavesPage() {
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
                     <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-5">
                         <div className="flex items-center justify-between">
-                            <h2 className="text-lg font-black tracking-tight">New Leave Request</h2>
+                            <h2 className="text-lg font-black tracking-tight">{t.leaves.newLeaveRequest}</h2>
                             <button
                                 onClick={() => { setShowRequestModal(false); setRequestForm(EMPTY_REQUEST_FORM); setReqError(''); }}
                                 className="text-gray-400 hover:text-gray-700 transition-colors text-xl font-bold leading-none"
@@ -495,14 +497,14 @@ export default function LeavesPage() {
 
                         <form onSubmit={handleCreateRequest} className="space-y-4">
                             <div className="space-y-1.5">
-                                <label className="text-xs font-black uppercase tracking-widest text-gray-400 block">Employee</label>
+                                <label className="text-xs font-black uppercase tracking-widest text-gray-400 block">{t.leaves.columns.employee}</label>
                                 <select
                                     required
                                     value={requestForm.employee_id}
                                     onChange={(e) => setRequestForm({ ...requestForm, employee_id: e.target.value })}
                                     className="w-full bg-gray-50 border border-gray-100 rounded-xl py-3 px-4 text-sm font-bold text-gray-700 focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all"
                                 >
-                                    <option value="">Select employee…</option>
+                                    <option value="">{t.leaves.selectEmployee}</option>
                                     {employees.map((emp) => (
                                         <option key={emp.id} value={emp.id}>{emp.name} ({emp.employee_code})</option>
                                     ))}
@@ -510,23 +512,23 @@ export default function LeavesPage() {
                             </div>
 
                             <div className="space-y-1.5">
-                                <label className="text-xs font-black uppercase tracking-widest text-gray-400 block">Leave Type</label>
+                                <label className="text-xs font-black uppercase tracking-widest text-gray-400 block">{t.leaves.columns.leaveType}</label>
                                 <select
                                     required
                                     value={requestForm.leave_type_id}
                                     onChange={(e) => setRequestForm({ ...requestForm, leave_type_id: e.target.value })}
                                     className="w-full bg-gray-50 border border-gray-100 rounded-xl py-3 px-4 text-sm font-bold text-gray-700 focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all"
                                 >
-                                    <option value="">Select leave type…</option>
+                                    <option value="">{t.leaves.selectLeaveType}</option>
                                     {leaveTypes.map((lt) => (
-                                        <option key={lt.id} value={lt.id}>{lt.name} ({lt.days_per_year} days/yr)</option>
+                                        <option key={lt.id} value={lt.id}>{lt.name} ({lt.days_per_year} {t.leaves.daysPerYearSuffix})</option>
                                     ))}
                                 </select>
                             </div>
 
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="space-y-1.5">
-                                    <label className="text-xs font-black uppercase tracking-widest text-gray-400 block">Start Date</label>
+                                    <label className="text-xs font-black uppercase tracking-widest text-gray-400 block">{t.leaves.columns.startDate}</label>
                                     <input
                                         required
                                         type="date"
@@ -536,7 +538,7 @@ export default function LeavesPage() {
                                     />
                                 </div>
                                 <div className="space-y-1.5">
-                                    <label className="text-xs font-black uppercase tracking-widest text-gray-400 block">End Date</label>
+                                    <label className="text-xs font-black uppercase tracking-widest text-gray-400 block">{t.leaves.columns.endDate}</label>
                                     <input
                                         required
                                         type="date"
@@ -548,7 +550,7 @@ export default function LeavesPage() {
                             </div>
 
                             <div className="space-y-1.5">
-                                <label className="text-xs font-black uppercase tracking-widest text-gray-400 block">Number of Days</label>
+                                <label className="text-xs font-black uppercase tracking-widest text-gray-400 block">{t.leaves.numberOfDays}</label>
                                 <input
                                     required
                                     type="number"
@@ -556,18 +558,18 @@ export default function LeavesPage() {
                                     step="0.5"
                                     value={requestForm.days}
                                     onChange={(e) => setRequestForm({ ...requestForm, days: e.target.value })}
-                                    placeholder="e.g. 2"
+                                    placeholder={t.leaves.placeholders.numberOfDays}
                                     className="w-full bg-gray-50 border border-gray-100 rounded-xl py-3 px-4 text-sm font-bold text-gray-700 focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all"
                                 />
                             </div>
 
                             <div className="space-y-1.5">
-                                <label className="text-xs font-black uppercase tracking-widest text-gray-400 block">Reason <span className="text-gray-300 font-normal normal-case">(optional)</span></label>
+                                <label className="text-xs font-black uppercase tracking-widest text-gray-400 block">{t.leaves.columns.reason} <span className="text-gray-300 font-normal normal-case">({t.common.optional})</span></label>
                                 <input
                                     type="text"
                                     value={requestForm.reason}
                                     onChange={(e) => setRequestForm({ ...requestForm, reason: e.target.value })}
-                                    placeholder="Brief reason…"
+                                    placeholder={t.common.notes}
                                     className="w-full bg-gray-50 border border-gray-100 rounded-xl py-3 px-4 text-sm text-gray-600 focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all"
                                 />
                             </div>
@@ -578,14 +580,14 @@ export default function LeavesPage() {
                                     onClick={() => { setShowRequestModal(false); setRequestForm(EMPTY_REQUEST_FORM); setReqError(''); }}
                                     className="px-4 py-2.5 rounded-xl font-bold text-sm text-gray-600 hover:bg-gray-100 transition-all"
                                 >
-                                    Cancel
+                                    {t.common.cancel}
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={submittingReq}
                                     className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow-lg shadow-blue-200 transition-all hover:-translate-y-0.5 disabled:opacity-50"
                                 >
-                                    {submittingReq ? 'Submitting…' : 'Submit Request'}
+                                    {submittingReq ? t.leaves.submittingRequest : t.leaves.submitRequest}
                                 </button>
                             </div>
                         </form>

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { X, User, Phone, Mail, Calendar, Briefcase } from 'lucide-react';
 import { api } from '../../../lib/api';
+import { useI18n } from '@/lib/i18n';
 
 interface AddEmployeeModalProps {
     isOpen: boolean;
@@ -17,6 +18,7 @@ const emptyForm = {
 };
 
 export default function AddEmployeeModal({ isOpen, onClose, onAdd }: AddEmployeeModalProps) {
+    const { t } = useI18n();
     const [formData, setFormData] = useState({ ...emptyForm });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -48,7 +50,7 @@ export default function AddEmployeeModal({ isOpen, onClose, onAdd }: AddEmployee
             setFormData({ ...emptyForm });
             onClose();
         } catch (err: any) {
-            setError(err.message || 'Failed to add employee.');
+            setError(err.message || t.employees.modal.addFailed);
         } finally {
             setLoading(false);
         }
@@ -62,8 +64,8 @@ export default function AddEmployeeModal({ isOpen, onClose, onAdd }: AddEmployee
             <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
                 <div className="p-6 border-b border-gray-100 flex items-center justify-between">
                     <div>
-                        <h2 className="text-xl font-black tracking-tight">New Employee</h2>
-                        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Add to staff directory</p>
+                        <h2 className="text-xl font-black tracking-tight">{t.employees.modal.title}</h2>
+                        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">{t.employees.modal.subtitle}</p>
                     </div>
                     <button onClick={onClose} className="p-2 hover:bg-gray-50 rounded-xl text-gray-400 transition-all">
                         <X className="w-5 h-5" />
@@ -75,37 +77,37 @@ export default function AddEmployeeModal({ isOpen, onClose, onAdd }: AddEmployee
 
                     <div className="grid grid-cols-2 gap-4">
                         <div className="col-span-2 space-y-2">
-                            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">Full Name</label>
+                            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">{t.employees.modal.fullName}</label>
                             <div className="relative">
                                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                                 <input required type="text" value={formData.name} onChange={set('name')}
                                     className="w-full bg-gray-50 border border-gray-100 rounded-xl py-3 pl-10 pr-4 font-black focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all text-sm"
-                                    placeholder="Rahim Uddin" />
+                                    placeholder={t.employees.modal.placeholders.name} />
                             </div>
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">Phone</label>
+                            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">{t.employees.modal.phone}</label>
                             <div className="relative">
                                 <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                                 <input required type="text" value={formData.phone} onChange={set('phone')}
                                     className="w-full bg-gray-50 border border-gray-100 rounded-xl py-3 pl-10 pr-4 font-black focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all text-sm"
-                                    placeholder="+8801234567890" />
+                                    placeholder={t.employees.modal.placeholders.phone} />
                             </div>
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">Email <span className="text-gray-300">(Optional)</span></label>
+                            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">{t.employees.modal.email} <span className="text-gray-300">({t.common.optional})</span></label>
                             <div className="relative">
                                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                                 <input type="email" value={formData.email} onChange={set('email')}
                                     className="w-full bg-gray-50 border border-gray-100 rounded-xl py-3 pl-10 pr-4 font-bold text-gray-600 focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all text-sm"
-                                    placeholder="rahim@example.com" />
+                                    placeholder={t.employees.modal.placeholders.email} />
                             </div>
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">Date of Joining <span className="text-gray-300">(Optional)</span></label>
+                            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">{t.employees.modal.dateOfJoining} <span className="text-gray-300">({t.common.optional})</span></label>
                             <div className="relative">
                                 <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                                 <input type="date" value={formData.date_of_joining} onChange={set('date_of_joining')}
@@ -114,39 +116,39 @@ export default function AddEmployeeModal({ isOpen, onClose, onAdd }: AddEmployee
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">NID <span className="text-gray-300">(Optional)</span></label>
+                            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">{t.employees.modal.nationalId} <span className="text-gray-300">({t.common.optional})</span></label>
                             <input type="text" value={formData.nid} onChange={set('nid')}
                                 className="w-full bg-gray-50 border border-gray-100 rounded-xl py-3 px-4 font-bold text-gray-600 focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all text-sm"
-                                placeholder="National ID number" />
+                                placeholder={t.employees.modal.placeholders.nationalId} />
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">Department <span className="text-gray-300">(Optional)</span></label>
+                            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">{t.employees.modal.department} <span className="text-gray-300">({t.common.optional})</span></label>
                             <div className="relative">
                                 <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                                 <select value={formData.department_id} onChange={set('department_id')}
                                     className="w-full bg-gray-50 border border-gray-100 rounded-xl py-3 pl-10 pr-4 font-bold text-gray-600 text-sm focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all appearance-none">
-                                    <option value="">None</option>
+                                    <option value="">{t.common.none}</option>
                                     {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
                                 </select>
                             </div>
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">Designation <span className="text-gray-300">(Optional)</span></label>
+                            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">{t.employees.modal.designation} <span className="text-gray-300">({t.common.optional})</span></label>
                             <select value={formData.designation_id} onChange={set('designation_id')}
                                 className="w-full bg-gray-50 border border-gray-100 rounded-xl py-3 px-4 font-bold text-gray-600 text-sm focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all">
-                                <option value="">None</option>
+                                <option value="">{t.common.none}</option>
                                 {designations.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
                             </select>
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">Status</label>
+                            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">{t.employees.modal.status}</label>
                             <select value={formData.status} onChange={set('status')}
                                 className="w-full bg-gray-50 border border-gray-100 rounded-xl py-3 px-4 font-black text-sm focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all">
-                                <option value="ACTIVE">Active</option>
-                                <option value="INACTIVE">Inactive</option>
+                                <option value="ACTIVE">{t.employees.detail.active}</option>
+                                <option value="INACTIVE">{t.employees.detail.inactive}</option>
                             </select>
                         </div>
                     </div>
@@ -154,7 +156,7 @@ export default function AddEmployeeModal({ isOpen, onClose, onAdd }: AddEmployee
                     <div className="pt-2">
                         <button disabled={loading} type="submit"
                             className="w-full py-4 rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl flex items-center justify-center transition-all bg-blue-600 hover:bg-blue-700 text-white shadow-blue-500/20 hover:-translate-y-0.5 disabled:opacity-50">
-                            {loading ? 'Adding...' : 'Add Employee'}
+                            {loading ? t.employees.modal.adding : t.employees.modal.addEmployee}
                         </button>
                     </div>
                 </form>

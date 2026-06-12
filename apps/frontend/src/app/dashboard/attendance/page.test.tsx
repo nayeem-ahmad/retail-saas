@@ -85,8 +85,8 @@ describe('AttendancePage', () => {
     it('renders status badges for attendance records', async () => {
         render(<AttendancePage />);
         await waitFor(() => {
-            expect(screen.getByText('PRESENT')).toBeInTheDocument();
-            expect(screen.getByText('ABSENT')).toBeInTheDocument();
+            expect(screen.getByText('Present')).toBeInTheDocument();
+            expect(screen.getByText('Absent')).toBeInTheDocument();
         });
     });
 

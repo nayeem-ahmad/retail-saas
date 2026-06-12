@@ -1,9 +1,10 @@
 'use client';
 
+import { useI18n, formatMessage } from '@/lib/i18n';
 import { useEffect, useMemo, useState } from 'react';
 import { Building2, Loader2, Search, ShieldCheck, Users, UserX, LogIn, CheckCircle } from 'lucide-react';
-import { api } from '../../../../lib/api';
-import { formatDate } from '../../../../lib/format';
+import { api } from '@/lib/api';
+import { formatDate } from '@/lib/format';
 
 type PlanCode = 'FREE' | 'BASIC' | 'STANDARD' | 'PREMIUM';
 
@@ -33,6 +34,8 @@ type TenantRecord = {
 };
 
 export default function AdminTenantsPage() {
+    const { t } = useI18n();
+    const m = t.admin.tenants;
     const [tenants, setTenants] = useState<TenantRecord[]>([]);
     const [selectedTenantId, setSelectedTenantId] = useState('');
     const [selectedTenant, setSelectedTenant] = useState<TenantRecord | null>(null);
@@ -65,7 +68,7 @@ export default function AdminTenantsPage() {
                 setSelectedTenant(null);
             }
         } catch (err: any) {
-            setError(err.message || 'Failed to load tenants.');
+            setError(err.message || m.loadFailed);
         } finally {
             setIsLoading(false);
         }
@@ -82,7 +85,7 @@ export default function AdminTenantsPage() {
             const detail = await api.getAdminTenant(tenantId);
             setSelectedTenant(detail);
         } catch (err: any) {
-            setError(err.message || 'Failed to load tenant detail.');
+            setError(err.message || m.loadDetailFailed);
         }
     };
 
@@ -127,7 +130,7 @@ export default function AdminTenantsPage() {
             await selectTenant(selectedTenant.id);
             await loadTenants();
         } catch (err: any) {
-            setError(err.message || 'Failed to update tenant subscription.');
+            setError(err.message || m.updateSubscriptionFailed);
         } finally {
             setIsSaving(false);
         }
@@ -135,7 +138,7 @@ export default function AdminTenantsPage() {
 
     const suspendTenant = async () => {
         if (!selectedTenant) return;
-        if (!window.confirm(`Suspend "${selectedTenant.name}"? This sets their subscription to CANCELLED and blocks access.`)) return;
+        if (!window.confirm(formatMessage(m.suspendConfirm, { name: selectedTenant.name }))) return;
 
         setIsSuspending(true);
         setError('');
@@ -143,9 +146,9 @@ export default function AdminTenantsPage() {
             await api.suspendTenant(selectedTenant.id, 'Suspended by platform admin');
             await selectTenant(selectedTenant.id);
             await loadTenants();
-            showToast(`${selectedTenant.name} has been suspended.`);
+            showToast(formatMessage(m.suspendedToast, { name: selectedTenant.name }));
         } catch (err: any) {
-            setError(err.message || 'Failed to suspend tenant.');
+            setError(err.message || m.suspendFailed);
         } finally {
             setIsSuspending(false);
         }
@@ -161,10 +164,10 @@ export default function AdminTenantsPage() {
             localStorage.setItem('access_token', res.access_token);
             const firstTenantId = selectedTenant.id;
             localStorage.setItem('tenant_id', firstTenantId);
-            showToast(`Now impersonating ${res.impersonated_user.email} · token expires in 1 hour`);
+            showToast(formatMessage(m.impersonateToast, { email: res.impersonated_user.email }));
             setTimeout(() => { window.location.href = '/dashboard'; }, 1500);
         } catch (err: any) {
-            setError(err.message || 'Failed to impersonate tenant.');
+            setError(err.message || m.impersonateFailed);
         } finally {
             setIsImpersonating(false);
         }
@@ -174,9 +177,9 @@ export default function AdminTenantsPage() {
         <div className="overflow-y-auto h-full bg-[#f3f4f6] p-6 font-sans text-gray-900">
             <div className="max-w-7xl mx-auto space-y-6">
                 <div>
-                    <h1 className="text-2xl font-black tracking-tight">Tenant Management</h1>
+                    <h1 className="text-2xl font-black tracking-tight">{m.title}</h1>
                     <p className="text-xs font-bold uppercase tracking-widest text-gray-500 mt-1">
-                        Platform-admin oversight for subscription health, owner assignment, and workspace footprint
+                        {m.subtitle}
                     </p>
                 </div>
 
@@ -200,33 +203,33 @@ export default function AdminTenantsPage() {
                                 <input
                                     value={search}
                                     onChange={(event) => setSearch(event.target.value)}
-                                    placeholder="Search by tenant or owner"
+                                    placeholder={m.searchPlaceholder}
                                     className="w-full bg-transparent outline-none text-sm"
                                 />
                             </label>
                             <select value={planCode} onChange={(event) => setPlanCode(event.target.value)} className="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-3 text-sm font-medium outline-none">
-                                <option value="">All plans</option>
-                                <option value="FREE">Free</option>
-                                <option value="BASIC">Basic</option>
-                                <option value="STANDARD">Standard</option>
-                                <option value="PREMIUM">Premium</option>
+                                <option value="">{m.allPlans}</option>
+                                <option value="FREE">{m.plans.free}</option>
+                                <option value="BASIC">{m.plans.basic}</option>
+                                <option value="STANDARD">{m.plans.standard}</option>
+                                <option value="PREMIUM">{m.plans.premium}</option>
                             </select>
                             <select value={status} onChange={(event) => setStatus(event.target.value)} className="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-3 text-sm font-medium outline-none">
-                                <option value="">All statuses</option>
-                                <option value="ACTIVE">Active</option>
-                                <option value="TRIALING">Trialing</option>
-                                <option value="PAST_DUE">Past due</option>
-                                <option value="CANCELLED">Cancelled</option>
+                                <option value="">{m.allStatuses}</option>
+                                <option value="ACTIVE">{m.statuses.active}</option>
+                                <option value="TRIALING">{m.statuses.trialing}</option>
+                                <option value="PAST_DUE">{m.statuses.pastDue}</option>
+                                <option value="CANCELLED">{m.statuses.cancelled}</option>
                             </select>
                         </div>
 
                         <div className="rounded-2xl border border-gray-100 overflow-hidden">
                             {isLoading ? (
                                 <div className="p-8 text-sm text-gray-500 flex items-center justify-center">
-                                    <Loader2 className="w-4 h-4 animate-spin mr-2" /> Loading tenants...
+                                    <Loader2 className="w-4 h-4 animate-spin mr-2" /> {m.loading}
                                 </div>
                             ) : tenants.length === 0 ? (
-                                <div className="p-8 text-sm text-gray-500 text-center">No tenants matched these filters.</div>
+                                <div className="p-8 text-sm text-gray-500 text-center">{m.noResults}</div>
                             ) : (
                                 <div className="divide-y divide-gray-100">
                                     {tenants.map((tenant) => {
@@ -241,18 +244,18 @@ export default function AdminTenantsPage() {
                                                 <div className="flex items-start justify-between gap-4">
                                                     <div>
                                                         <p className="text-sm font-black text-gray-900">{tenant.name}</p>
-                                                        <p className="mt-1 text-xs text-gray-500">{tenant.owner?.email || 'No owner assigned'}</p>
+                                                        <p className="mt-1 text-xs text-gray-500">{tenant.owner?.email || m.noOwner}</p>
                                                     </div>
                                                     <div className="text-right">
                                                         <span className={`inline-flex rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-widest ${tenant.subscription?.plan.code === 'PREMIUM' ? 'bg-amber-100 text-amber-700' : tenant.subscription?.plan.code === 'STANDARD' ? 'bg-indigo-100 text-indigo-700' : tenant.subscription?.plan.code === 'BASIC' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
                                                             {tenant.subscription?.plan.code || 'NONE'}
                                                         </span>
-                                                        <p className="mt-2 text-[11px] font-bold uppercase tracking-widest text-gray-400">{tenant.subscription?.status || 'UNASSIGNED'}</p>
+                                                        <p className="mt-2 text-[11px] font-bold uppercase tracking-widest text-gray-400">{tenant.subscription?.status || m.unassigned}</p>
                                                     </div>
                                                 </div>
                                                 <div className="mt-3 flex gap-4 text-xs text-gray-500">
-                                                    <span>{tenant.store_count} stores</span>
-                                                    <span>{tenant.user_count} users</span>
+                                                    <span>{formatMessage(m.storesCount, { count: tenant.store_count })}</span>
+                                                    <span>{formatMessage(m.usersCount, { count: tenant.user_count })}</span>
                                                 </div>
                                             </button>
                                         );
@@ -267,14 +270,14 @@ export default function AdminTenantsPage() {
                             <>
                                 <div className="flex flex-wrap items-start justify-between gap-4">
                                     <div>
-                                        <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Selected Tenant</p>
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">{m.selectedTenant}</p>
                                         <h2 className="mt-2 text-3xl font-black tracking-tight">{selectedTenant.name}</h2>
-                                        <p className="mt-2 text-sm text-gray-500">Created {formatDate(selectedTenant.created_at)}</p>
+                                        <p className="mt-2 text-sm text-gray-500">{formatMessage(m.created, { date: formatDate(selectedTenant.created_at) })}</p>
                                     </div>
                                     <div className="rounded-2xl bg-gray-50 px-4 py-3 text-right">
-                                        <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Owner</p>
-                                        <p className="mt-1 text-sm font-black text-gray-900">{selectedTenant.owner?.name || 'Unknown owner'}</p>
-                                        <p className="text-xs text-gray-500">{selectedTenant.owner?.email || 'No owner email'}</p>
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">{m.owner}</p>
+                                        <p className="mt-1 text-sm font-black text-gray-900">{selectedTenant.owner?.name || m.unknownOwner}</p>
+                                        <p className="text-xs text-gray-500">{selectedTenant.owner?.email || m.noOwnerEmail}</p>
                                     </div>
                                 </div>
 
@@ -286,7 +289,7 @@ export default function AdminTenantsPage() {
                                         className="inline-flex items-center gap-2 rounded-2xl bg-indigo-600 px-4 py-2.5 text-sm font-black text-white shadow-lg shadow-indigo-200 transition hover:bg-indigo-700 disabled:opacity-60"
                                     >
                                         {isImpersonating ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogIn className="w-4 h-4" />}
-                                        Impersonate Owner
+                                        {m.impersonateOwner}
                                     </button>
                                     <button
                                         type="button"
@@ -295,20 +298,20 @@ export default function AdminTenantsPage() {
                                         className="inline-flex items-center gap-2 rounded-2xl bg-red-50 px-4 py-2.5 text-sm font-black text-red-600 transition hover:bg-red-100 disabled:opacity-60"
                                     >
                                         {isSuspending ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserX className="w-4 h-4" />}
-                                        {selectedTenant.subscription?.status === 'CANCELLED' ? 'Already Suspended' : 'Suspend Tenant'}
+                                        {selectedTenant.subscription?.status === 'CANCELLED' ? m.alreadySuspended : m.suspendTenant}
                                     </button>
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <InfoCard icon={Building2} label="Stores" value={String(selectedTenant.store_count)} />
-                                    <InfoCard icon={Users} label="Users" value={String(selectedTenant.user_count)} />
-                                    <InfoCard icon={ShieldCheck} label="Provider" value={selectedTenant.subscription?.provider_name || 'manual'} />
+                                    <InfoCard icon={Building2} label={m.infoCards.stores} value={String(selectedTenant.store_count)} />
+                                    <InfoCard icon={Users} label={m.infoCards.users} value={String(selectedTenant.user_count)} />
+                                    <InfoCard icon={ShieldCheck} label={m.infoCards.provider} value={selectedTenant.subscription?.provider_name || 'manual'} />
                                 </div>
 
                                 <div className="rounded-3xl border border-blue-100 bg-blue-50/70 p-5 space-y-4">
                                     <div>
-                                        <p className="text-[10px] font-black uppercase tracking-widest text-blue-400">Subscription Controls</p>
-                                        <h3 className="mt-2 text-lg font-black tracking-tight text-blue-900">Adjust plan and status</h3>
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-blue-400">{m.subscriptionControls.badge}</p>
+                                        <h3 className="mt-2 text-lg font-black tracking-tight text-blue-900">{m.subscriptionControls.title}</h3>
                                     </div>
 
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -325,7 +328,7 @@ export default function AdminTenantsPage() {
                                             <option value="CANCELLED">Cancelled</option>
                                         </select>
                                         <label className="rounded-2xl border border-blue-100 bg-white px-4 py-3 text-sm font-medium flex items-center justify-between gap-3">
-                                            <span>Cancel at period end</span>
+                                            <span>{m.subscriptionControls.cancelAtPeriodEnd}</span>
                                             <input
                                                 type="checkbox"
                                                 checked={draft.cancelAtPeriodEnd}
@@ -342,25 +345,25 @@ export default function AdminTenantsPage() {
                                         className="inline-flex items-center rounded-2xl bg-blue-600 px-5 py-3 text-sm font-black text-white shadow-lg shadow-blue-200 transition hover:bg-blue-700 disabled:opacity-60"
                                     >
                                         {isSaving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                                        Save Subscription
+                                        {m.subscriptionControls.save}
                                     </button>
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="rounded-2xl border border-gray-100 p-4">
-                                        <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Stores</p>
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">{m.storesSection}</p>
                                         <div className="mt-3 space-y-3">
                                             {selectedTenant.stores.map((store) => (
                                                 <div key={store.id} className="rounded-2xl bg-gray-50 px-4 py-3">
                                                     <p className="text-sm font-black text-gray-900">{store.name}</p>
-                                                    <p className="mt-1 text-xs text-gray-500">{store.address || 'No address recorded'}</p>
+                                                    <p className="mt-1 text-xs text-gray-500">{store.address || m.noAddress}</p>
                                                 </div>
                                             ))}
                                         </div>
                                     </div>
 
                                     <div className="rounded-2xl border border-gray-100 p-4">
-                                        <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Users</p>
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">{m.usersSection}</p>
                                         <div className="mt-3 space-y-3">
                                             {selectedTenant.users.map((user) => (
                                                 <div key={user.id} className="rounded-2xl bg-gray-50 px-4 py-3">
@@ -379,7 +382,7 @@ export default function AdminTenantsPage() {
                             </>
                         ) : (
                             <div className="rounded-2xl border border-dashed border-gray-200 p-10 text-center text-sm text-gray-500">
-                                Select a tenant to inspect and update subscription settings.
+                                {m.selectPrompt}
                             </div>
                         )}
                     </section>

@@ -1,3 +1,19 @@
+jest.mock('@/lib/i18n', () => {
+  const { enMessages } = require('@/lib/localization/messages/en');
+
+  return {
+    useI18n: () => ({
+      t: enMessages,
+      locale: 'en',
+    }),
+    formatMessage: (template, values = {}) =>
+      Object.entries(values).reduce(
+        (result, [key, value]) => result.replaceAll(`{${key}}`, String(value)),
+        template,
+      ),
+  };
+}, { virtual: true });
+
 import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 

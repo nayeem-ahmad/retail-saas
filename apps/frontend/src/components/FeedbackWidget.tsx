@@ -1,18 +1,22 @@
 'use client';
 
+import { useI18n, formatMessage } from '@/lib/i18n';
 import { useEffect, useRef, useState } from 'react';
 import { MessageSquare } from 'lucide-react';
 import { fetchWithAuth } from '@/lib/api';
 
 type FeedbackType = 'bug' | 'feature' | 'general';
 
-const TYPE_OPTIONS: { value: FeedbackType; label: string; emoji: string }[] = [
-    { value: 'bug', label: 'Bug', emoji: '🐛' },
-    { value: 'feature', label: 'Feature', emoji: '✨' },
-    { value: 'general', label: 'General', emoji: '💬' },
-];
+const TYPE_EMOJI: Record<FeedbackType, string> = { bug: '🐛', feature: '✨', general: '💬' };
 
 export default function FeedbackWidget() {
+    const { t } = useI18n();
+    const m = t.components.feedbackWidget;
+    const TYPE_OPTIONS: { value: FeedbackType; label: string; emoji: string }[] = [
+        { value: 'bug', label: m.types.bug, emoji: TYPE_EMOJI.bug },
+        { value: 'feature', label: m.types.feature, emoji: TYPE_EMOJI.feature },
+        { value: 'general', label: m.types.general, emoji: TYPE_EMOJI.general },
+    ];
     const [open, setOpen] = useState(false);
     const [type, setType] = useState<FeedbackType>('general');
     const [message, setMessage] = useState('');
@@ -76,7 +80,7 @@ export default function FeedbackWidget() {
             setTimeout(() => closeWidget(), 2000);
         } catch (err: any) {
             setStatus('error');
-            setErrorMsg(err?.message || 'Something went wrong. Please try again.');
+            setErrorMsg(err?.message || m.defaultError);
         }
     }
 
@@ -99,19 +103,19 @@ export default function FeedbackWidget() {
                     {status === 'success' ? (
                         <div className="flex flex-col items-center justify-center py-10 px-6 text-center gap-3">
                             <span className="text-3xl">🎉</span>
-                            <p className="text-sm font-semibold text-gray-800">Thanks for your feedback!</p>
-                            <p className="text-xs text-gray-400">This window will close shortly.</p>
+                            <p className="text-sm font-semibold text-gray-800">{m.successTitle}</p>
+                            <p className="text-xs text-gray-400">{m.successDescription}</p>
                         </div>
                     ) : (
                         <form onSubmit={handleSubmit}>
                             {/* Header */}
                             <div className="px-4 pt-4 pb-3 border-b border-gray-100 flex items-center justify-between">
-                                <p className="text-sm font-bold text-gray-800">Send feedback</p>
+                                <p className="text-sm font-bold text-gray-800">{m.title}</p>
                                 <button
                                     type="button"
                                     onClick={closeWidget}
                                     className="text-gray-400 hover:text-gray-600 transition-colors text-lg leading-none"
-                                    aria-label="Close"
+                                    aria-label={m.closeAria}
                                 >
                                     ×
                                 </button>
@@ -141,7 +145,7 @@ export default function FeedbackWidget() {
                                 <textarea
                                     value={message}
                                     onChange={(e) => setMessage(e.target.value)}
-                                    placeholder="Describe your feedback..."
+                                    placeholder={m.placeholder}
                                     rows={4}
                                     className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-800 placeholder-gray-400 outline-none focus:border-blue-400 focus:bg-white transition resize-none"
                                     autoFocus
@@ -166,7 +170,7 @@ export default function FeedbackWidget() {
                                         disabled={message.trim().length < 3 || status === 'submitting'}
                                         className="text-xs font-bold bg-blue-600 text-white px-4 py-1.5 rounded-lg hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                                     >
-                                        {status === 'submitting' ? 'Sending…' : 'Submit'}
+                                        {status === 'submitting' ? m.submitting : m.submit}
                                     </button>
                                 </div>
                             </div>
@@ -179,10 +183,10 @@ export default function FeedbackWidget() {
             <button
                 onClick={() => setOpen((v) => !v)}
                 className="flex items-center gap-1.5 bg-white text-gray-700 border border-gray-200 shadow-md hover:shadow-lg hover:border-gray-300 px-3.5 py-2 rounded-full text-xs font-semibold transition-all hover:scale-105 active:scale-95"
-                aria-label="Open feedback"
+                aria-label={m.openAria}
             >
                 <MessageSquare className="w-3.5 h-3.5 text-blue-500" />
-                Feedback
+                {m.button}
             </button>
         </div>
     );

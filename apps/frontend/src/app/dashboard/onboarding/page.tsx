@@ -6,7 +6,7 @@ import {
     Package, ShoppingCart, CheckCircle2, ArrowRight, Plus, Zap, Store, Loader2,
 } from 'lucide-react';
 import { api } from '../../../lib/api';
-import { useI18n } from '../../../lib/i18n';
+import { useI18n } from '@/lib/i18n';
 
 type Step = 'store' | 'products' | 'pos' | 'done';
 

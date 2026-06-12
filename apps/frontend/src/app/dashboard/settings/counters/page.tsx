@@ -1,4 +1,5 @@
 'use client';
+import { useI18n, formatMessage } from '@/lib/i18n';
 
 import { useState, useEffect } from 'react';
 import { Monitor, Plus, Pencil, Trash2, X, CheckCircle, XCircle, Loader2 } from 'lucide-react';
@@ -38,6 +39,8 @@ function Toast({ toast, onDismiss }: { toast: ToastState; onDismiss: () => void 
 }
 
 export default function CountersPage() {
+    const { t } = useI18n();
+    const m = t.settingsExtras.counters;
     const [counters, setCounters] = useState<Counter[]>([]);
     const [loading, setLoading] = useState(true);
     const [toast, setToast] = useState<ToastState>(null);
@@ -61,7 +64,7 @@ export default function CountersPage() {
             const data = await api.getCounters(storeId);
             setCounters(Array.isArray(data) ? data : (data?.data ?? []));
         } catch {
-            setToast({ type: 'error', message: 'Failed to load counters' });
+            setToast({ type: 'error', message: m.loadFailed });
         } finally {
             setLoading(false);
         }
@@ -85,35 +88,35 @@ export default function CountersPage() {
 
     const handleSave = async () => {
         if (!name.trim() || counterNumber === '') {
-            setToast({ type: 'error', message: 'Name and counter number are required' });
+            setToast({ type: 'error', message: m.nameRequired });
             return;
         }
         setSaving(true);
         try {
             if (editCounter) {
                 await api.updateCounter(editCounter.id, { name: name.trim(), status });
-                setToast({ type: 'success', message: 'Counter updated' });
+                setToast({ type: 'success', message: m.updated });
             } else {
                 await api.createCounter({ storeId, name: name.trim(), counterNumber: Number(counterNumber) });
-                setToast({ type: 'success', message: 'Counter created' });
+                setToast({ type: 'success', message: m.created });
             }
             setShowAdd(false);
             await loadCounters();
         } catch (err: any) {
-            setToast({ type: 'error', message: err?.message || 'Failed to save counter' });
+            setToast({ type: 'error', message: err?.message || m.saveFailed });
         } finally {
             setSaving(false);
         }
     };
 
     const handleDelete = async (id: string) => {
-        if (!confirm('Delete this counter? This cannot be undone.')) return;
+        if (!confirm(m.deleteConfirm)) return;
         try {
             await api.deleteCounter(id);
-            setToast({ type: 'success', message: 'Counter deleted' });
+            setToast({ type: 'success', message: m.deleted });
             await loadCounters();
         } catch (err: any) {
-            setToast({ type: 'error', message: err?.message || 'Failed to delete counter' });
+            setToast({ type: 'error', message: err?.message || m.deleteFailed });
         }
     };
 
@@ -121,17 +124,17 @@ export default function CountersPage() {
         try {
             const newStatus = c.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
             await api.updateCounter(c.id, { status: newStatus });
-            setToast({ type: 'success', message: `Counter ${newStatus === 'ACTIVE' ? 'activated' : 'deactivated'}` });
+            setToast({ type: 'success', message: newStatus === 'ACTIVE' ? m.activated : m.deactivated });
             await loadCounters();
         } catch (err: any) {
-            setToast({ type: 'error', message: err?.message || 'Failed to update counter' });
+            setToast({ type: 'error', message: err?.message || m.updateFailed });
         }
     };
 
     if (!storeId) {
         return (
             <div className="h-full flex items-center justify-center text-gray-400 text-sm">
-                No store selected. Please select a store first.
+                {m.noStore}
             </div>
         );
     }
@@ -141,32 +144,32 @@ export default function CountersPage() {
             <div className="max-w-3xl mx-auto px-6 py-8 space-y-6">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-black text-gray-900 tracking-tight">POS Counters</h1>
-                        <p className="mt-1 text-sm text-gray-500">Manage the sales counters for this store. Each cashier session is tied to a counter.</p>
+                        <h1 className="text-2xl font-black text-gray-900 tracking-tight">{m.title}</h1>
+                        <p className="mt-1 text-sm text-gray-500">{m.description}</p>
                     </div>
                     <button
                         onClick={openAdd}
                         className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-700 transition-colors shadow-sm"
                     >
                         <Plus className="w-4 h-4" />
-                        Add Counter
+                        {m.addCounter}
                     </button>
                 </div>
 
                 {loading ? (
                     <div className="flex items-center gap-2 text-gray-400 text-sm py-8">
-                        <Loader2 className="w-4 h-4 animate-spin" /> Loading…
+                        <Loader2 className="w-4 h-4 animate-spin" /> {m.loading}
                     </div>
                 ) : counters.length === 0 ? (
                     <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center">
                         <Monitor className="w-12 h-12 mx-auto text-gray-200 mb-3" />
-                        <p className="text-sm font-bold text-gray-400">No counters yet</p>
-                        <p className="text-xs text-gray-300 mt-1">Add counters to allow multiple cashier stations</p>
+                        <p className="text-sm font-bold text-gray-400">{m.emptyTitle}</p>
+                        <p className="text-xs text-gray-300 mt-1">{m.emptyDescription}</p>
                         <button
                             onClick={openAdd}
                             className="mt-4 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white hover:bg-blue-700 transition-colors"
                         >
-                            <Plus className="w-3 h-3" /> Add First Counter
+                            <Plus className="w-3 h-3" /> {m.addFirstCounter}
                         </button>
                     </div>
                 ) : (
@@ -174,9 +177,9 @@ export default function CountersPage() {
                         <table className="w-full text-sm">
                             <thead>
                                 <tr className="border-b border-gray-100 bg-gray-50">
-                                    <th className="text-left px-5 py-3 text-xs font-black uppercase tracking-widest text-gray-400">#</th>
-                                    <th className="text-left px-5 py-3 text-xs font-black uppercase tracking-widest text-gray-400">Name</th>
-                                    <th className="text-left px-5 py-3 text-xs font-black uppercase tracking-widest text-gray-400">Status</th>
+                                    <th className="text-left px-5 py-3 text-xs font-black uppercase tracking-widest text-gray-400">{m.columns.number}</th>
+                                    <th className="text-left px-5 py-3 text-xs font-black uppercase tracking-widest text-gray-400">{m.columns.name}</th>
+                                    <th className="text-left px-5 py-3 text-xs font-black uppercase tracking-widest text-gray-400">{m.columns.status}</th>
                                     <th className="px-5 py-3" />
                                 </tr>
                             </thead>
@@ -195,7 +198,7 @@ export default function CountersPage() {
                                                 }`}
                                             >
                                                 <span className={`w-1.5 h-1.5 rounded-full ${c.status === 'ACTIVE' ? 'bg-green-500' : 'bg-gray-400'}`} />
-                                                {c.status === 'ACTIVE' ? 'Active' : 'Inactive'}
+                                                {c.status === 'ACTIVE' ? m.status.active : m.status.inactive}
                                             </button>
                                         </td>
                                         <td className="px-5 py-3.5">
@@ -228,7 +231,7 @@ export default function CountersPage() {
                     <div className="bg-white w-[420px] rounded-3xl shadow-2xl overflow-hidden">
                         <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
                             <h2 className="text-lg font-black tracking-tight">
-                                {editCounter ? 'Edit Counter' : 'Add Counter'}
+                                {editCounter ? m.modal.editTitle : m.modal.addTitle}
                             </h2>
                             <button onClick={() => setShowAdd(false)} className="p-2 hover:bg-white rounded-xl text-gray-400 hover:text-gray-900 transition-all">
                                 <X className="w-5 h-5" />
@@ -236,31 +239,31 @@ export default function CountersPage() {
                         </div>
                         <div className="p-6 space-y-4">
                             <div className="space-y-2">
-                                <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">Counter Name</label>
+                                <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">{m.modal.nameLabel}</label>
                                 <input
                                     type="text"
                                     value={name}
                                     onChange={(e) => setName(e.target.value)}
-                                    placeholder="e.g. Counter 1, Express Lane"
+                                    placeholder={m.modal.namePlaceholder}
                                     className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 font-medium text-gray-900 focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all shadow-sm text-sm"
                                 />
                             </div>
                             {!editCounter && (
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">Counter Number</label>
+                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">{m.modal.numberLabel}</label>
                                     <input
                                         type="number"
                                         min="1"
                                         value={counterNumber}
                                         onChange={(e) => setCounterNumber(e.target.value === '' ? '' : parseInt(e.target.value))}
-                                        placeholder="1"
+                                        placeholder={m.modal.numberPlaceholder}
                                         className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 font-medium text-gray-900 focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all shadow-sm text-sm"
                                     />
                                 </div>
                             )}
                             {editCounter && (
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">Status</label>
+                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">{m.columns.status}</label>
                                     <select
                                         value={status}
                                         onChange={(e) => setStatus(e.target.value)}
@@ -279,7 +282,7 @@ export default function CountersPage() {
                                 className="w-full py-3 rounded-2xl font-black text-sm uppercase tracking-widest bg-blue-600 hover:bg-blue-700 text-white shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                             >
                                 {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-                                {saving ? 'Saving…' : editCounter ? 'Save Changes' : 'Create Counter'}
+                                {saving ? m.modal.saving : editCounter ? m.modal.saveChanges : m.modal.create}
                             </button>
                         </div>
                     </div>

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { AlertCircle, Receipt, Search, Undo2, X } from 'lucide-react';
 import { api } from '../../../lib/api';
 import { formatBDT, formatDate } from '../../../lib/format';
+import { useI18n, formatMessage } from '@/lib/i18n';
 
 interface PurchaseReturnItem {
     id: string;
@@ -47,6 +48,7 @@ export default function CreatePurchaseReturnModal({
     onSuccess,
     initialPurchaseId,
 }: CreatePurchaseReturnModalProps) {
+    const { t, locale } = useI18n();
     const [purchases, setPurchases] = useState<PurchaseRecord[]>([]);
     const [selectedPurchaseId, setSelectedPurchaseId] = useState<string | null>(initialPurchaseId || null);
     const [searchTerm, setSearchTerm] = useState('');
@@ -226,7 +228,7 @@ export default function CreatePurchaseReturnModal({
                                         type="text"
                                         value={searchTerm}
                                         onChange={(event) => setSearchTerm(event.target.value)}
-                                        placeholder="Purchase #, supplier, or product"
+                                        placeholder={t.purchaseReturns.modal.searchPlaceholder}
                                         className="flex-1 bg-transparent text-sm font-medium outline-none"
                                     />
                                 </div>
@@ -261,11 +263,11 @@ export default function CreatePurchaseReturnModal({
                                                             </p>
                                                         </div>
                                                         <span className="text-sm font-black text-emerald-600">
-                                                            {formatBDT(Number(purchase.total_amount || 0))}
+                                                            {formatBDT(Number(purchase.total_amount || 0), { locale })}
                                                         </span>
                                                     </div>
                                                     <p className="text-xs text-gray-500 mt-2">
-                                                        {formatDate(purchase.created_at)} · {purchase.items.length} items
+                                                        {formatDate(purchase.created_at, locale)} · {purchase.items.length} items
                                                     </p>
                                                 </button>
                                             );
@@ -279,7 +281,7 @@ export default function CreatePurchaseReturnModal({
                             {!selectedPurchase ? (
                                 <div className="h-full min-h-[420px] rounded-3xl border border-dashed border-gray-200 bg-gray-50 flex flex-col items-center justify-center text-center px-8">
                                     <Receipt className="w-10 h-10 text-gray-300 mb-4" />
-                                    <h3 className="text-lg font-black tracking-tight text-gray-700">Choose a purchase</h3>
+                                    <h3 className="text-lg font-black tracking-tight text-gray-700">{t.purchaseReturns.modal.choosePurchase}</h3>
                                     <p className="text-sm text-gray-400 mt-1 max-w-md">
                                         Select an original purchase to review supplier context, remaining returnable quantities, and create a purchase return.
                                     </p>
@@ -298,13 +300,13 @@ export default function CreatePurchaseReturnModal({
                                         <div>
                                             <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1">Purchase Date</span>
                                             <span className="text-sm font-bold text-gray-700">
-                                                {formatDate(selectedPurchase.created_at)}
+                                                {formatDate(selectedPurchase.created_at, locale)}
                                             </span>
                                         </div>
                                         <div>
                                             <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1">Original Total</span>
                                             <span className="text-sm font-black text-emerald-600">
-                                                {formatBDT(Number(selectedPurchase.total_amount || 0))}
+                                                {formatBDT(Number(selectedPurchase.total_amount || 0), { locale })}
                                             </span>
                                         </div>
                                     </div>
@@ -316,7 +318,7 @@ export default function CreatePurchaseReturnModal({
                                                 type="text"
                                                 value={referenceNumber}
                                                 onChange={(event) => setReferenceNumber(event.target.value)}
-                                                placeholder="Optional supplier reference"
+                                                placeholder={t.purchaseReturns.modal.referencePlaceholder}
                                                 className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-bold focus:ring-2 focus:ring-emerald-500/20"
                                             />
                                         </div>
@@ -326,7 +328,7 @@ export default function CreatePurchaseReturnModal({
                                                 type="text"
                                                 value={notes}
                                                 onChange={(event) => setNotes(event.target.value)}
-                                                placeholder="Optional notes"
+                                                placeholder={t.purchaseReturns.modal.notesPlaceholder}
                                                 className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-bold focus:ring-2 focus:ring-emerald-500/20"
                                             />
                                         </div>
@@ -341,12 +343,12 @@ export default function CreatePurchaseReturnModal({
                                             <table className="w-full">
                                                 <thead>
                                                     <tr className="border-b border-gray-100 bg-gray-50/80">
-                                                        <th className="text-left p-3 text-[10px] font-black uppercase tracking-widest text-gray-400">Product</th>
-                                                        <th className="text-center p-3 text-[10px] font-black uppercase tracking-widest text-gray-400 w-24">Purchased</th>
-                                                        <th className="text-center p-3 text-[10px] font-black uppercase tracking-widest text-gray-400 w-24">Remaining</th>
-                                                        <th className="text-right p-3 text-[10px] font-black uppercase tracking-widest text-gray-400 w-32">Unit Cost</th>
+                                                        <th className="text-left p-3 text-[10px] font-black uppercase tracking-widest text-gray-400">{t.common.product}</th>
+                                                        <th className="text-center p-3 text-[10px] font-black uppercase tracking-widest text-gray-400 w-24">{t.purchaseReturns.modal.purchased}</th>
+                                                        <th className="text-center p-3 text-[10px] font-black uppercase tracking-widest text-gray-400 w-24">{t.purchaseReturns.modal.remaining}</th>
+                                                        <th className="text-right p-3 text-[10px] font-black uppercase tracking-widest text-gray-400 w-32">{t.purchaseShared.unitCost}</th>
                                                         <th className="text-center p-3 text-[10px] font-black uppercase tracking-widest text-gray-400 w-28">Return Qty</th>
-                                                        <th className="text-right p-3 text-[10px] font-black uppercase tracking-widest text-gray-400 w-28">Line Total</th>
+                                                        <th className="text-right p-3 text-[10px] font-black uppercase tracking-widest text-gray-400 w-28">{t.purchaseShared.lineTotal}</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody className="divide-y divide-gray-50">
@@ -367,7 +369,7 @@ export default function CreatePurchaseReturnModal({
                                                                     </span>
                                                                 </td>
                                                                 <td className="p-3 text-right text-sm font-bold text-gray-700">
-                                                                    {formatBDT(Number(item.unit_cost || 0))}
+                                                                    {formatBDT(Number(item.unit_cost || 0), { locale })}
                                                                 </td>
                                                                 <td className="p-3">
                                                                     <input
@@ -381,7 +383,7 @@ export default function CreatePurchaseReturnModal({
                                                                     />
                                                                 </td>
                                                                 <td className="p-3 text-right text-sm font-black text-emerald-600">
-                                                                    {formatBDT(quantity * Number(item.unit_cost || 0))}
+                                                                    {formatBDT(quantity * Number(item.unit_cost || 0), { locale })}
                                                                 </td>
                                                             </tr>
                                                         );
@@ -394,9 +396,9 @@ export default function CreatePurchaseReturnModal({
                                     <div className="rounded-2xl bg-emerald-950 text-white p-5 flex items-center justify-between">
                                         <div>
                                             <p className="text-xs font-black uppercase tracking-widest text-emerald-200">Return Total</p>
-                                            <p className="text-sm text-emerald-100 mt-1">Calculated from client-side quantity caps and purchase unit costs</p>
+                                            <p className="text-sm text-emerald-100 mt-1">{t.purchaseReturns.modal.returnTotalHint}</p>
                                         </div>
-                                        <span className="text-2xl font-black">{formatBDT(totalAmount)}</span>
+                                        <span className="text-2xl font-black">{formatBDT(totalAmount, { locale })}</span>
                                     </div>
                                 </>
                             )}

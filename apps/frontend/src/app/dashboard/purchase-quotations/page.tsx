@@ -9,6 +9,7 @@ import { DataTable } from '@/components/data-table';
 import { api } from '@/lib/api';
 import { formatBDT, formatDate } from '@/lib/format';
 import CreatePurchaseQuotationModal from './CreatePurchaseQuotationModal';
+import { useI18n, formatMessage } from '@/lib/i18n';
 
 interface PurchaseQuotation {
     id: string;
@@ -36,6 +37,7 @@ const statusColors: Record<string, string> = {
 const columnHelper = createColumnHelper<PurchaseQuotation>();
 
 export default function PurchaseQuotationsPage() {
+    const { t, locale } = useI18n();
     const router = useRouter();
     const [rfqs, setRfqs] = useState<PurchaseQuotation[]>([]);
     const [loading, setLoading] = useState(true);
@@ -55,71 +57,75 @@ export default function PurchaseQuotationsPage() {
     };
 
     const handleDelete = async (id: string) => {
-        if (!window.confirm('Delete this RFQ?')) return;
+        if (!window.confirm(t.purchaseQuotations.deleteConfirm)) return;
         try {
             await api.deletePurchaseQuotation(id);
             setRfqs((prev) => prev.filter((r) => r.id !== id));
         } catch (err: any) {
-            alert(err.message || 'Failed to delete');
+            alert(err.message || t.purchaseQuotations.deleteFailed);
         }
     };
 
     const handleConvert = async (rfq: PurchaseQuotation) => {
-        if (!window.confirm(`Convert ${rfq.rfq_number} to a Purchase Order?`)) return;
+        if (!window.confirm(formatMessage(t.purchaseQuotations.convertConfirm, { rfqNumber: rfq.rfq_number }))) return;
         try {
             const po = await api.convertPurchaseQuotation(rfq.id);
-            alert(`Created Purchase Order ${po.po_number}`);
+            alert(formatMessage(t.purchaseQuotations.convertSuccess, { poNumber: po.po_number }));
             void load();
             router.push(`/dashboard/purchase-orders/${po.id}`);
         } catch (err: any) {
-            alert(err.message || 'Conversion failed');
+            alert(err.message || t.purchaseQuotations.convertFailed);
         }
     };
 
     const columns: ColumnDef<PurchaseQuotation, any>[] = useMemo(() => [
         columnHelper.accessor('rfq_number', {
-            header: 'RFQ #',
+            header: t.purchaseQuotations.columns.rfqNumber,
             cell: (info) => <span className="text-sm font-black text-gray-900">{info.getValue()}</span>,
             size: 130,
         }),
         columnHelper.accessor('created_at', {
-            header: 'Date',
-            cell: (info) => <span className="text-sm text-gray-600">{formatDate(info.getValue())}</span>,
+            header: t.purchaseQuotations.columns.date,
+            cell: (info) => <span className="text-sm text-gray-600">{formatDate(info.getValue(), locale)}</span>,
             sortingFn: 'datetime',
             size: 120,
         }),
         columnHelper.accessor((row) => row.supplier?.name ?? '', {
             id: 'supplier',
-            header: 'Supplier',
+            header: t.purchaseQuotations.columns.supplier,
             cell: (info) => (
                 <span className="text-sm text-gray-700 font-medium">
-                    {info.getValue() || <span className="text-gray-300 italic">No supplier</span>}
+                    {info.getValue() || <span className="text-gray-300 italic">{t.purchaseShared.noSupplierShort}</span>}
                 </span>
             ),
             size: 180,
         }),
         columnHelper.accessor((row) => row.items?.length ?? 0, {
             id: 'items',
-            header: 'Items',
-            cell: (info) => <span className="text-sm font-bold text-gray-700">{info.getValue()} items</span>,
+            header: t.purchaseQuotations.columns.items,
+            cell: (info) => (
+                <span className="text-sm font-bold text-gray-700">
+                    {formatMessage(t.purchaseShared.itemsCount, { count: info.getValue() })}
+                </span>
+            ),
             size: 80,
         }),
         columnHelper.accessor('valid_until', {
-            header: 'Valid Until',
+            header: t.purchaseQuotations.columns.validUntil,
             cell: (info) => (
                 <span className="text-sm text-gray-600">
-                    {info.getValue() ? formatDate(info.getValue() as string) : '—'}
+                    {info.getValue() ? formatDate(info.getValue() as string, locale) : '—'}
                 </span>
             ),
             size: 120,
         }),
         columnHelper.accessor('total_amount', {
-            header: 'Total',
-            cell: (info) => <span className="text-sm font-black text-blue-600">{formatBDT(parseFloat(info.getValue()))}</span>,
+            header: t.purchaseQuotations.columns.total,
+            cell: (info) => <span className="text-sm font-black text-blue-600">{formatBDT(parseFloat(info.getValue()), { locale })}</span>,
             size: 120,
         }),
         columnHelper.accessor('status', {
-            header: 'Status',
+            header: t.purchaseQuotations.columns.status,
             cell: (info) => {
                 const s = info.getValue();
                 return (
@@ -132,24 +138,24 @@ export default function PurchaseQuotationsPage() {
         }),
         columnHelper.display({
             id: 'actions',
-            header: 'Actions',
+            header: t.purchaseQuotations.columns.actions,
             cell: (info) => {
                 const rfq = info.row.original;
                 const canConvert = rfq.status !== 'CONVERTED' && rfq.status !== 'CANCELLED' && rfq.status !== 'REJECTED';
                 return (
                     <div className="flex items-center justify-end gap-1">
                         <Link href={`/dashboard/purchase-quotations/${rfq.id}`}
-                            className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors" title="View">
+                            className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors" title={t.common.view}>
                             <Eye className="w-4 h-4" />
                         </Link>
                         {canConvert && (
                             <button onClick={() => handleConvert(rfq)}
-                                className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors" title="Convert to PO">
+                                className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors" title={t.purchaseQuotations.convertToPo}>
                                 <ShoppingCart className="w-4 h-4" />
                             </button>
                         )}
                         <button onClick={() => handleDelete(rfq.id)}
-                            className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 transition-colors" title="Delete">
+                            className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 transition-colors" title={t.common.delete}>
                             <Trash2 className="w-4 h-4" />
                         </button>
                     </div>
@@ -159,14 +165,14 @@ export default function PurchaseQuotationsPage() {
             enableColumnFilter: false,
             size: 120,
         }),
-    ], [rfqs]);
+    ], [t, locale, rfqs]);
 
     const filterPresets = useMemo(() => [
-        { label: 'Draft', filters: [{ id: 'status', value: 'DRAFT' }] },
-        { label: 'Sent', filters: [{ id: 'status', value: 'SENT' }] },
-        { label: 'Received', filters: [{ id: 'status', value: 'RECEIVED' }] },
-        { label: 'Accepted', filters: [{ id: 'status', value: 'ACCEPTED' }] },
-        { label: 'Converted', filters: [{ id: 'status', value: 'CONVERTED' }] },
+        { label: t.purchaseShared.status.DRAFT, filters: [{ id: 'status', value: 'DRAFT' }] },
+        { label: t.purchaseShared.status.SENT, filters: [{ id: 'status', value: 'SENT' }] },
+        { label: t.purchaseShared.status.RECEIVED, filters: [{ id: 'status', value: 'RECEIVED' }] },
+        { label: t.purchaseShared.status.ACCEPTED, filters: [{ id: 'status', value: 'ACCEPTED' }] },
+        { label: t.purchaseShared.status.CONVERTED, filters: [{ id: 'status', value: 'CONVERTED' }] },
     ], []);
 
     return (
@@ -174,9 +180,9 @@ export default function PurchaseQuotationsPage() {
             <div className="max-w-[1400px] mx-auto space-y-6">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-black tracking-tight">Purchase Quotations (RFQ)</h1>
+                        <h1 className="text-2xl font-black tracking-tight">{t.purchaseQuotations.title}</h1>
                         <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mt-0.5">
-                            Request price quotes from suppliers
+                            {t.purchaseQuotations.subtitle}
                         </p>
                     </div>
                     <button onClick={() => setIsModalOpen(true)}
@@ -196,11 +202,11 @@ export default function PurchaseQuotationsPage() {
                     tableId="purchase-quotations"
                     columns={columns}
                     data={rfqs}
-                    title="Purchase Quotations"
+                    title={t.purchaseQuotations.tableTitle}
                     isLoading={loading}
-                    emptyMessage="No purchase quotations found"
+                    emptyMessage={t.purchaseQuotations.emptyMessage}
                     emptyIcon={<FileSearch className="w-16 h-16 text-gray-200" />}
-                    searchPlaceholder="Search by RFQ #, supplier, status..."
+                    searchPlaceholder={t.purchaseQuotations.searchPlaceholder}
                     filterPresets={filterPresets}
                     enableRowSelection
                 />

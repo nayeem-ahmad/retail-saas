@@ -8,6 +8,7 @@ import { VoucherType } from '@retail-saas/shared-types';
 import { DataTable } from '../../../../components/data-table';
 import { api } from '../../../../lib/api';
 import { formatBDT, formatDate } from '../../../../lib/format';
+import { useI18n, formatMessage } from '@/lib/i18n';
 
 type VoucherRow = {
     id: string;
@@ -42,6 +43,7 @@ const voucherTypeOptions = [
 ];
 
 export default function AccountingJournalPage() {
+    const { t, locale } = useI18n();
     const [response, setResponse] = useState<VoucherListResponse>({
         data: [],
         meta: { page: 1, limit: 20, total: 0, totalPages: 1 },
@@ -81,35 +83,35 @@ export default function AccountingJournalPage() {
     const columns: ColumnDef<VoucherRow, any>[] = useMemo(
         () => [
             columnHelper.accessor('voucher_number', {
-                header: 'Voucher #',
+                header: t.journal.columns.voucherNumber,
                 cell: (info) => <span className="text-sm font-black text-gray-900">{info.getValue()}</span>,
                 size: 140,
             }),
             columnHelper.accessor('date', {
-                header: 'Date',
+                header: t.accountingShared.date,
                 cell: (info) => {
-                    return <span className="text-sm font-bold text-gray-700">{formatDate(info.getValue())}</span>;
+                    return <span className="text-sm font-bold text-gray-700">{formatDate(info.getValue(), locale)}</span>;
                 },
                 size: 120,
             }),
             columnHelper.accessor('voucher_type', {
-                header: 'Type',
+                header: t.accountingShared.type,
                 cell: (info) => <span className="text-xs font-black uppercase tracking-widest text-sky-700">{info.getValue().replaceAll('_', ' ')}</span>,
                 size: 150,
             }),
             columnHelper.accessor('description', {
-                header: 'Description',
-                cell: (info) => <span className="text-sm text-gray-600">{info.getValue() || 'No narration'}</span>,
+                header: t.accountingShared.description,
+                cell: (info) => <span className="text-sm text-gray-600">{info.getValue() || '{t.accountingShared.noNarration}'}</span>,
                 size: 320,
             }),
             columnHelper.accessor('total_amount', {
-                header: 'Amount',
-                cell: (info) => <span className="text-sm font-black text-emerald-600">{formatBDT(Number(info.getValue() || 0))}</span>,
+                header: t.accountingShared.amount,
+                cell: (info) => <span className="text-sm font-black text-emerald-600">{formatBDT(Number(info.getValue() || 0), { locale })}</span>,
                 size: 120,
             }),
             columnHelper.display({
                 id: 'actions',
-                header: 'Detail',
+                header: t.accountingShared.detail,
                 cell: (info) => (
                     <Link href={`/dashboard/accounting/journal/${info.row.original.id}`} className="text-sm font-black text-blue-600 hover:text-blue-800">
                         Open
@@ -135,7 +137,7 @@ export default function AccountingJournalPage() {
                             <ClipboardList className="h-6 w-6" />
                         </div>
                         <div>
-                            <p className="text-xs font-black uppercase tracking-[0.24em] text-gray-400">Story 30.6</p>
+                            <p className="text-xs font-black uppercase tracking-[0.24em] text-gray-400">{t.journal.detail.story}</p>
                             <h1 className="text-2xl font-black tracking-tight">Journal Viewer</h1>
                             <p className="mt-2 max-w-3xl text-sm text-gray-500">
                                 Review vouchers in newest-first order, filter by type and date, and drill into a single voucher for full debit and credit detail.
@@ -147,26 +149,26 @@ export default function AccountingJournalPage() {
                 <section className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm space-y-5">
                     <div className="flex items-center gap-3">
                         <Filter className="h-5 w-5 text-gray-900" />
-                        <h2 className="text-lg font-black tracking-tight">Journal filters</h2>
+                        <h2 className="text-lg font-black tracking-tight">{t.journal.title}</h2>
                     </div>
 
                     <div className="grid gap-4 md:grid-cols-4">
                         <label className="block text-xs font-black uppercase tracking-[0.24em] text-gray-400">
-                            <span>Voucher type</span>
-                            <select aria-label="Journal voucher type" value={voucherType} onChange={(event) => { setVoucherType(event.target.value); setPage(1); }} className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-900">
+                            <span>{t.accountingShared.type}</span>
+                            <select aria-label={t.journal.voucherTypeAria} value={voucherType} onChange={(event) => { setVoucherType(event.target.value); setPage(1); }} className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-900">
                                 {voucherTypeOptions.map((option) => <option key={option.label} value={option.value}>{option.label}</option>)}
                             </select>
                         </label>
                         <label className="block text-xs font-black uppercase tracking-[0.24em] text-gray-400">
-                            <span>From</span>
-                            <input aria-label="Journal from date" type="date" value={from} onChange={(event) => { setFrom(event.target.value); setPage(1); }} className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-900" />
+                            <span>{t.accountingShared.from}</span>
+                            <input aria-label={t.journal.fromDateAria} type="date" value={from} onChange={(event) => { setFrom(event.target.value); setPage(1); }} className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-900" />
                         </label>
                         <label className="block text-xs font-black uppercase tracking-[0.24em] text-gray-400">
-                            <span>To</span>
-                            <input aria-label="Journal to date" type="date" value={to} onChange={(event) => { setTo(event.target.value); setPage(1); }} className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-900" />
+                            <span>{t.accountingShared.to}</span>
+                            <input aria-label={t.journal.toDateAria} type="date" value={to} onChange={(event) => { setTo(event.target.value); setPage(1); }} className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-900" />
                         </label>
                         <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
-                            <p className="text-xs font-black uppercase tracking-[0.24em] text-gray-400">Results</p>
+                            <p className="text-xs font-black uppercase tracking-[0.24em] text-gray-400">{t.journal.title}</p>
                             <p className="mt-2 text-2xl font-black tracking-tight text-gray-900">{response.meta.total}</p>
                             <p className="mt-1 text-sm text-gray-500">Page {response.meta.page} of {response.meta.totalPages}</p>
                         </div>
@@ -176,11 +178,11 @@ export default function AccountingJournalPage() {
                         tableId="accounting-journal"
                         columns={columns}
                         data={response.data}
-                        title="Accounting Journal"
+                        title={t.journal.accountingJournal}
                         isLoading={loading}
-                        emptyMessage="No vouchers found for the selected filters"
+                        emptyMessage={t.journal.emptyMessage}
                         emptyIcon={<ClipboardList className="w-16 h-16 text-gray-200" />}
-                        searchPlaceholder="Search journal rows by voucher number, description, or type..."
+                        searchPlaceholder={t.journal.searchPlaceholder}
                     />
 
                     <div className="flex items-center justify-end gap-3">

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { X, Camera } from 'lucide-react';
 import { api } from '../../../lib/api';
 import { COMPOUND_UNIT_DEFS, CompoundUnitType } from '../../../lib/compound-units';
+import { useI18n } from '@/lib/i18n';
 
 interface AddProductModalProps {
     isOpen: boolean;
@@ -14,6 +15,7 @@ interface AddProductModalProps {
 }
 
 export default function AddProductModal({ isOpen, onClose, mode = 'create', initialProduct = null, onSubmit }: AddProductModalProps) {
+    const { t } = useI18n();
     const [formData, setFormData] = useState({
         name: '',
         sku: '',
@@ -155,7 +157,7 @@ export default function AddProductModal({ isOpen, onClose, mode = 'create', init
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden animate-in fade-in zoom-in duration-200 flex flex-col">
                 <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
-                    <h2 className="text-xl font-bold tracking-tight text-gray-900">{mode === 'edit' ? 'Edit Product' : 'Add New Product'}</h2>
+                    <h2 className="text-xl font-bold tracking-tight text-gray-900">{mode === 'edit' ? t.addProductModal.editTitle : t.addProductModal.addTitle}</h2>
                     <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-white transition-all">
                         <X className="w-5 h-5" />
                     </button>
@@ -172,7 +174,7 @@ export default function AddProductModal({ isOpen, onClose, mode = 'create', init
                                     ) : (
                                         <div className="text-center">
                                             <Camera className="w-6 h-6 text-gray-400 mx-auto" />
-                                            <span className="text-[8px] font-black uppercase tracking-widest text-gray-400">Upload</span>
+                                            <span className="text-[8px] font-black uppercase tracking-widest text-gray-400">{t.addProductModal.upload}</span>
                                         </div>
                                     )}
                                 </div>
@@ -192,11 +194,11 @@ export default function AddProductModal({ isOpen, onClose, mode = 'create', init
                         </div>
 
                         <div>
-                            <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 ml-1">Product Name</label>
+                            <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 ml-1">{t.addProductModal.productName}</label>
                             <input
                                 required
                                 type="text"
-                                placeholder="e.g., Wireless Mechanical Keyboard"
+                                placeholder={t.addProductModal.placeholders.name}
                                 className="w-full bg-gray-50 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-500/10 transition-all font-medium"
                                 value={formData.name}
                                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -208,19 +210,19 @@ export default function AddProductModal({ isOpen, onClose, mode = 'create', init
                                 <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 ml-1">SKU</label>
                                 <input
                                     type="text"
-                                    placeholder="WH-KB-1032"
+                                    placeholder={t.addProductModal.placeholders.sku}
                                     className="w-full bg-gray-50 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-500/10 transition-all font-mono"
                                     value={formData.sku}
                                     onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
                                 />
                             </div>
                             <div>
-                                <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 ml-1">Sale Price ($)</label>
+                                <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 ml-1">{t.addProductModal.salePrice}</label>
                                 <input
                                     required
                                     type="number"
                                     step="0.01"
-                                    placeholder="120.00"
+                                    placeholder={t.addProductModal.placeholders.price}
                                     className="w-full bg-gray-50 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-500/10 transition-all font-bold"
                                     value={formData.price}
                                     onChange={(e) => setFormData({ ...formData, price: e.target.value })}
@@ -236,16 +238,16 @@ export default function AddProductModal({ isOpen, onClose, mode = 'create', init
                                     onChange={(e) => setFormData({ ...formData, isFeatured: e.target.checked })}
                                     className="rounded border-blue-300"
                                 />
-                                Mark product as Featured (shows in Trending)
+                                {t.addProductModal.featuredLabel}
                             </label>
                         </div>
 
                         <div>
-                            <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 ml-1">Initial Stock Level</label>
+                            <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 ml-1">{t.addProductModal.initialStock}</label>
                             <input
                                 required={mode === 'create'}
                                 type="number"
-                                placeholder="50"
+                                placeholder={t.addProductModal.placeholders.initialStock}
                                 disabled={mode === 'edit'}
                                 className="w-full bg-gray-50 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-500/10 transition-all font-bold"
                                 value={formData.initialStock}
@@ -261,14 +263,14 @@ export default function AddProductModal({ isOpen, onClose, mode = 'create', init
                                     onChange={(e) => setFormData({ ...formData, warrantyEnabled: e.target.checked, warrantyDurationDays: e.target.checked ? formData.warrantyDurationDays : '' })}
                                     className="rounded border-gray-300"
                                 />
-                                Warranty Enabled
+                                {t.addProductModal.warrantyEnabled}
                             </label>
                             <div>
-                                <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 ml-1">Warranty Duration (Days)</label>
+                                <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 ml-1">{t.addProductModal.warrantyDuration}</label>
                                 <input
                                     type="number"
                                     min="0"
-                                    placeholder="e.g. 365"
+                                    placeholder={t.addProductModal.placeholders.warrantyDays}
                                     disabled={!formData.warrantyEnabled}
                                     className="w-full bg-white border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-500/10 transition-all font-bold disabled:bg-gray-100"
                                     value={formData.warrantyDurationDays}
@@ -279,33 +281,33 @@ export default function AddProductModal({ isOpen, onClose, mode = 'create', init
 
                         <div className="grid grid-cols-3 gap-4">
                             <div>
-                                <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 ml-1">Reorder Level</label>
+                                <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 ml-1">{t.addProductModal.reorderLevel}</label>
                                 <input
                                     type="number"
                                     min="0"
-                                    placeholder="Use global"
+                                    placeholder={t.addProductModal.useGlobal}
                                     className="w-full bg-gray-50 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-500/10 transition-all font-bold"
                                     value={formData.reorderLevel}
                                     onChange={(e) => setFormData({ ...formData, reorderLevel: e.target.value })}
                                 />
                             </div>
                             <div>
-                                <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 ml-1">Safety Stock</label>
+                                <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 ml-1">{t.addProductModal.safetyStock}</label>
                                 <input
                                     type="number"
                                     min="0"
-                                    placeholder="Use global"
+                                    placeholder={t.addProductModal.useGlobal}
                                     className="w-full bg-gray-50 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-500/10 transition-all font-bold"
                                     value={formData.safetyStock}
                                     onChange={(e) => setFormData({ ...formData, safetyStock: e.target.value })}
                                 />
                             </div>
                             <div>
-                                <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 ml-1">Lead Time Days</label>
+                                <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 ml-1">{t.addProductModal.leadTimeDays}</label>
                                 <input
                                     type="number"
                                     min="0"
-                                    placeholder="Use global"
+                                    placeholder={t.addProductModal.useGlobal}
                                     className="w-full bg-gray-50 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-500/10 transition-all font-bold"
                                     value={formData.leadTimeDays}
                                     onChange={(e) => setFormData({ ...formData, leadTimeDays: e.target.value })}
@@ -314,7 +316,7 @@ export default function AddProductModal({ isOpen, onClose, mode = 'create', init
                         </div>
 
                         <div>
-                            <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 ml-1">Quantity Unit</label>
+                            <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 ml-1">{t.addProductModal.quantityUnit}</label>
                             <select
                                 className="w-full bg-gray-50 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-500/10 transition-all font-medium"
                                 value={formData.unitType}
@@ -327,13 +329,13 @@ export default function AddProductModal({ isOpen, onClose, mode = 'create', init
                         </div>
 
                         <div>
-                            <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 ml-1">Brand</label>
+                            <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 ml-1">{t.addProductModal.brand}</label>
                             <select
                                 className="w-full bg-gray-50 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-500/10 transition-all font-medium"
                                 value={formData.brandId}
                                 onChange={(e) => setFormData({ ...formData, brandId: e.target.value })}
                             >
-                                <option value="">No Brand</option>
+                                <option value="">{t.addProductModal.noBrand}</option>
                                 {brands.map((brand) => (
                                     <option key={brand.id} value={brand.id}>
                                         {brand.name}
@@ -344,7 +346,7 @@ export default function AddProductModal({ isOpen, onClose, mode = 'create', init
 
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 ml-1">Group</label>
+                                <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 ml-1">{t.addProductModal.group}</label>
                                 <select
                                     className="w-full bg-gray-50 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-500/10 transition-all font-medium"
                                     value={formData.groupId}
@@ -363,7 +365,7 @@ export default function AddProductModal({ isOpen, onClose, mode = 'create', init
                                         }))
                                     }
                                 >
-                                    <option value="">Uncategorized</option>
+                                    <option value="">{t.addProductModal.uncategorized}</option>
                                     {groups.map((group) => (
                                         <option key={group.id} value={group.id}>
                                             {group.name}
@@ -372,14 +374,14 @@ export default function AddProductModal({ isOpen, onClose, mode = 'create', init
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 ml-1">Subgroup</label>
+                                <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5 ml-1">{t.addProductModal.subgroup}</label>
                                 <select
                                     className="w-full bg-gray-50 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-500/10 transition-all font-medium"
                                     value={formData.subgroupId}
                                     onChange={(e) => setFormData({ ...formData, subgroupId: e.target.value })}
                                     disabled={!filteredSubgroups.length}
                                 >
-                                    <option value="">None</option>
+                                    <option value="">{t.common.none}</option>
                                     {filteredSubgroups.map((subgroup) => (
                                         <option key={subgroup.id} value={subgroup.id}>
                                             {subgroup.name}
@@ -403,7 +405,7 @@ export default function AddProductModal({ isOpen, onClose, mode = 'create', init
                             type="submit"
                             className="flex-[2] bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-bold text-sm shadow-lg shadow-blue-200 transition-all hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:translate-y-0"
                         >
-                            {loading ? (mode === 'edit' ? 'Saving Changes...' : 'Creating Product...') : (mode === 'edit' ? 'Save Changes' : 'Confirm & Add Product')}
+                            {loading ? (mode === 'edit' ? t.addProductModal.savingChanges : t.addProductModal.creatingProduct) : (mode === 'edit' ? t.common.saveChanges : t.addProductModal.confirmAdd)}
                         </button>
                     </div>
                 </form>

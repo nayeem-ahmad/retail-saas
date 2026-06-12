@@ -6,6 +6,7 @@ import { TrendingUp } from 'lucide-react';
 import { DataTable } from '@/components/data-table';
 import { api } from '../../../../../lib/api';
 import { formatBDT } from '../../../../../lib/format';
+import { useI18n } from '@/lib/i18n';
 
 interface SummaryRow {
     date: string;
@@ -36,6 +37,7 @@ function defaultTo() {
 }
 
 export default function SalesSummaryPage() {
+    const { t, locale } = useI18n();
     const [rows, setRows] = useState<SummaryRow[]>([]);
     const [summary, setSummary] = useState<Summary | null>(null);
     const [fromDate, setFromDate] = useState(defaultFrom());
@@ -64,77 +66,77 @@ export default function SalesSummaryPage() {
 
     const columns: ColumnDef<SummaryRow, any>[] = useMemo(
         () => [
-            columnHelper.accessor('date', { header: 'Date', size: 130 }),
-            columnHelper.accessor('transactions', { header: 'Transactions', size: 120 }),
+            columnHelper.accessor('date', { header: t.salesReports.common.date, size: 130 }),
+            columnHelper.accessor('transactions', { header: t.salesReports.common.transactions, size: 120 }),
             columnHelper.accessor('grossRevenue', {
-                header: 'Gross Revenue',
-                cell: (info) => formatBDT(Number(info.getValue())),
+                header: t.salesReports.common.grossRevenue,
+                cell: (info) => formatBDT(Number(info.getValue()), { locale }),
                 size: 140,
             }),
             columnHelper.accessor('returns', {
-                header: 'Returns',
+                header: t.salesReports.common.returns,
                 cell: (info) => (
-                    <span className="text-rose-600">{formatBDT(Number(info.getValue()))}</span>
+                    <span className="text-rose-600">{formatBDT(Number(info.getValue()), { locale })}</span>
                 ),
                 size: 120,
             }),
             columnHelper.accessor('netRevenue', {
-                header: 'Net Revenue',
+                header: t.salesReports.common.netRevenue,
                 cell: (info) => (
-                    <span className="font-black text-blue-700">{formatBDT(Number(info.getValue()))}</span>
+                    <span className="font-black text-blue-700">{formatBDT(Number(info.getValue()), { locale })}</span>
                 ),
                 size: 140,
             }),
         ],
-        [],
+        [t, locale],
     );
 
     return (
         <div className="overflow-y-auto h-full bg-[#f3f4f6] p-6 font-sans text-gray-900">
             <div className="max-w-[1400px] mx-auto space-y-6">
                 <div>
-                    <h1 className="text-2xl font-black tracking-tight">Sales Summary</h1>
+                    <h1 className="text-2xl font-black tracking-tight">{t.salesReports.summary.title}</h1>
                     <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mt-0.5">
-                        Revenue, returns, and transaction trends over a date range
+                        {t.salesReports.summary.subtitle}
                     </p>
                 </div>
 
                 <div className="grid md:grid-cols-5 gap-4">
                     <div className="bg-white border border-gray-100 rounded-2xl p-5">
-                        <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">Gross Revenue</div>
+                        <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">{t.salesReports.common.grossRevenue}</div>
                         <div className="text-2xl font-black text-gray-900 mt-2">
-                            {formatBDT(Number(summary?.totalRevenue ?? 0))}
+                            {formatBDT(Number(summary?.totalRevenue ?? 0), { locale })}
                         </div>
                     </div>
                     <div className="bg-white border border-gray-100 rounded-2xl p-5">
-                        <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">Returns</div>
+                        <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">{t.salesReports.common.returns}</div>
                         <div className="text-2xl font-black text-rose-600 mt-2">
-                            {formatBDT(Number(summary?.totalReturns ?? 0))}
+                            {formatBDT(Number(summary?.totalReturns ?? 0), { locale })}
                         </div>
                     </div>
                     <div className="bg-white border border-gray-100 rounded-2xl p-5">
-                        <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">Net Revenue</div>
+                        <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">{t.salesReports.common.netRevenue}</div>
                         <div className="text-2xl font-black text-blue-700 mt-2">
-                            {formatBDT(Number(summary?.netRevenue ?? 0))}
+                            {formatBDT(Number(summary?.netRevenue ?? 0), { locale })}
                         </div>
                     </div>
                     <div className="bg-white border border-gray-100 rounded-2xl p-5">
-                        <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">Transactions</div>
+                        <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">{t.salesReports.common.transactions}</div>
                         <div className="text-2xl font-black text-gray-900 mt-2">
                             {summary?.transactionCount ?? 0}
                         </div>
                     </div>
                     <div className="bg-white border border-gray-100 rounded-2xl p-5">
-                        <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">Avg Order Value</div>
+                        <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">{t.salesReports.common.avgOrderValue}</div>
                         <div className="text-2xl font-black text-gray-900 mt-2">
-                            {formatBDT(Number(summary?.avgOrderValue ?? 0))}
+                            {formatBDT(Number(summary?.avgOrderValue ?? 0), { locale })}
                         </div>
                     </div>
                 </div>
 
                 <div className="bg-white border border-gray-100 rounded-2xl p-4 flex flex-wrap gap-3 items-end">
                     <div className="flex flex-col gap-1">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">From</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">{t.salesReports.common.from}</span>
                         <input
                             type="date"
                             value={fromDate}
@@ -143,7 +145,7 @@ export default function SalesSummaryPage() {
                         />
                     </div>
                     <div className="flex flex-col gap-1">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">To</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">{t.salesReports.common.to}</span>
                         <input
                             type="date"
                             value={toDate}
@@ -157,11 +159,11 @@ export default function SalesSummaryPage() {
                     tableId="sales-summary"
                     columns={columns}
                     data={rows}
-                    title="Daily Breakdown"
+                    title={t.salesReports.summary.dailyBreakdown}
                     isLoading={loading}
-                    emptyMessage="No sales recorded in this period"
+                    emptyMessage={t.salesReports.common.noSalesInPeriod}
                     emptyIcon={<TrendingUp className="w-16 h-16 text-gray-200" />}
-                    searchPlaceholder="Search by date..."
+                    searchPlaceholder={t.salesReports.summary.searchPlaceholder}
                 />
             </div>
         </div>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { formatBDT } from '@/lib/format';
+import { useI18n, formatMessage } from '@/lib/i18n';
 
 function defaultToday() { return new Date().toISOString().slice(0, 10); }
 
@@ -19,6 +20,7 @@ interface AgingData {
 }
 
 export default function ArAgingPage() {
+    const { t, locale } = useI18n();
     const [data, setData] = useState<AgingData | null>(null);
     const [asOfDate, setAsOfDate] = useState(defaultToday());
     const [loading, setLoading] = useState(true);
@@ -70,22 +72,22 @@ export default function ArAgingPage() {
                                     {data.accounts.map((a) => (
                                         <tr key={a.id} className="border-b border-gray-50 hover:bg-gray-50/50">
                                             <td className="px-4 py-2.5 font-medium text-gray-800">{a.name}{a.code && <span className="ml-2 text-xs text-gray-400">{a.code}</span>}</td>
-                                            <td className="px-4 py-2.5 text-right">{formatBDT(a.balance)}</td>
-                                            <td className="px-4 py-2.5 text-right">{formatBDT(a.buckets.current)}</td>
-                                            <td className="px-4 py-2.5 text-right text-amber-700">{formatBDT(a.buckets.overdue_31_60)}</td>
-                                            <td className="px-4 py-2.5 text-right text-orange-700">{formatBDT(a.buckets.overdue_61_90)}</td>
-                                            <td className="px-4 py-2.5 text-right text-red-700">{formatBDT(a.buckets.overdue_90_plus)}</td>
+                                            <td className="px-4 py-2.5 text-right">{formatBDT(a.balance, { locale })}</td>
+                                            <td className="px-4 py-2.5 text-right">{formatBDT(a.buckets.current, { locale })}</td>
+                                            <td className="px-4 py-2.5 text-right text-amber-700">{formatBDT(a.buckets.overdue_31_60, { locale })}</td>
+                                            <td className="px-4 py-2.5 text-right text-orange-700">{formatBDT(a.buckets.overdue_61_90, { locale })}</td>
+                                            <td className="px-4 py-2.5 text-right text-red-700">{formatBDT(a.buckets.overdue_90_plus, { locale })}</td>
                                         </tr>
                                     ))}
                                 </tbody>
                                 <tfoot>
                                     <tr className="bg-gray-50 font-black border-t border-gray-200">
                                         <td className="px-4 py-3 text-xs uppercase tracking-widest">Totals</td>
-                                        <td className="px-4 py-3 text-right">{formatBDT(data.totals.balance)}</td>
-                                        <td className="px-4 py-3 text-right">{formatBDT(data.totals.current)}</td>
-                                        <td className="px-4 py-3 text-right text-amber-700">{formatBDT(data.totals.overdue_31_60)}</td>
-                                        <td className="px-4 py-3 text-right text-orange-700">{formatBDT(data.totals.overdue_61_90)}</td>
-                                        <td className="px-4 py-3 text-right text-red-700">{formatBDT(data.totals.overdue_90_plus)}</td>
+                                        <td className="px-4 py-3 text-right">{formatBDT(data.totals.balance, { locale })}</td>
+                                        <td className="px-4 py-3 text-right">{formatBDT(data.totals.current, { locale })}</td>
+                                        <td className="px-4 py-3 text-right text-amber-700">{formatBDT(data.totals.overdue_31_60, { locale })}</td>
+                                        <td className="px-4 py-3 text-right text-orange-700">{formatBDT(data.totals.overdue_61_90, { locale })}</td>
+                                        <td className="px-4 py-3 text-right text-red-700">{formatBDT(data.totals.overdue_90_plus, { locale })}</td>
                                     </tr>
                                 </tfoot>
                             </table>

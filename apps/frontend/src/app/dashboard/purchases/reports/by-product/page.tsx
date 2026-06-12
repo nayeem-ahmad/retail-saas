@@ -6,6 +6,7 @@ import { Package } from 'lucide-react';
 import { DataTable } from '@/components/data-table';
 import { api } from '@/lib/api';
 import { formatBDT } from '@/lib/format';
+import { useI18n } from '@/lib/i18n';
 
 interface ProductRow {
     product: {
@@ -39,6 +40,7 @@ function defaultTo() {
 }
 
 export default function PurchasesByProductPage() {
+    const { t, locale } = useI18n();
     const [rows, setRows] = useState<ProductRow[]>([]);
     const [summary, setSummary] = useState<Summary | null>(null);
     const [groups, setGroups] = useState<any[]>([]);
@@ -97,30 +99,30 @@ export default function PurchasesByProductPage() {
         () => [
             columnHelper.accessor((row) => row.product.name, {
                 id: 'product',
-                header: 'Product',
+                header: t.purchaseReports.byProduct.columns.product,
                 size: 240,
             }),
             columnHelper.accessor((row) => row.product.sku ?? '-', {
                 id: 'sku',
-                header: 'SKU',
+                header: t.purchaseReports.byProduct.columns.sku,
                 size: 120,
             }),
-            columnHelper.accessor((row) => row.product.group?.name ?? 'Uncategorized', {
+            columnHelper.accessor((row) => row.product.group?.name ?? t.purchaseReports.byProduct.uncategorized, {
                 id: 'group',
-                header: 'Group',
+                header: t.purchaseReports.byProduct.columns.group,
                 size: 160,
             }),
             columnHelper.accessor('unitsOrdered', {
-                header: 'Units Ordered',
+                header: t.purchaseReports.byProduct.columns.unitsOrdered,
                 size: 120,
             }),
             columnHelper.accessor('spend', {
-                header: 'Spend',
-                cell: (info) => formatBDT(Number(info.getValue())),
+                header: t.purchaseReports.byProduct.columns.spend,
+                cell: (info) => formatBDT(Number(info.getValue()), { locale }),
                 size: 140,
             }),
             columnHelper.accessor('spendShare', {
-                header: '% of Total',
+                header: t.purchaseReports.byProduct.columns.share,
                 cell: (info) => (
                     <div className="flex items-center gap-2">
                         <div className="flex-1 bg-gray-100 rounded-full h-1.5 min-w-[60px]">
@@ -137,34 +139,34 @@ export default function PurchasesByProductPage() {
                 size: 180,
             }),
         ],
-        [],
+        [t, locale],
     );
 
     return (
         <div className="overflow-y-auto h-full bg-[#f3f4f6] p-6 font-sans text-gray-900">
             <div className="max-w-[1400px] mx-auto space-y-6">
                 <div>
-                    <h1 className="text-2xl font-black tracking-tight">Purchases by Product</h1>
+                    <h1 className="text-2xl font-black tracking-tight">{t.purchaseReports.byProduct.title}</h1>
                     <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mt-0.5">
-                        Units ordered and spend per product over a date range
+                        {t.purchaseReports.byProduct.subtitle}
                     </p>
                 </div>
 
                 <div className="grid md:grid-cols-3 gap-4">
                     <div className="bg-white border border-gray-100 rounded-2xl p-5">
-                        <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">Total Spend</div>
+                        <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">{t.purchaseReports.byProduct.totalSpend}</div>
                         <div className="text-2xl font-black text-blue-700 mt-2">
-                            {formatBDT(Number(summary?.totalSpend ?? 0))}
+                            {formatBDT(Number(summary?.totalSpend ?? 0), { locale })}
                         </div>
                     </div>
                     <div className="bg-white border border-gray-100 rounded-2xl p-5">
-                        <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">Units Ordered</div>
+                        <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">{t.purchaseReports.byProduct.totalUnits}</div>
                         <div className="text-2xl font-black text-gray-900 mt-2">
                             {summary?.totalUnits ?? 0}
                         </div>
                     </div>
                     <div className="bg-white border border-gray-100 rounded-2xl p-5">
-                        <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">Products Purchased</div>
+                        <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">{t.purchaseReports.byProduct.products}</div>
                         <div className="text-2xl font-black text-gray-900 mt-2">
                             {summary?.productCount ?? 0}
                         </div>
@@ -177,7 +179,7 @@ export default function PurchasesByProductPage() {
                         onChange={(e) => { setGroupId(e.target.value); setSubgroupId(''); }}
                         className="bg-gray-50 border-none rounded-xl py-3 px-4 text-sm font-medium min-w-[200px]"
                     >
-                        <option value="">All Groups</option>
+                        <option value="">{t.purchaseReports.byProduct.allGroups}</option>
                         {groups.map((g: any) => (
                             <option key={g.id} value={g.id}>{g.name}</option>
                         ))}
@@ -187,13 +189,13 @@ export default function PurchasesByProductPage() {
                         onChange={(e) => setSubgroupId(e.target.value)}
                         className="bg-gray-50 border-none rounded-xl py-3 px-4 text-sm font-medium min-w-[200px]"
                     >
-                        <option value="">All Subgroups</option>
+                        <option value="">{t.purchaseReports.byProduct.allSubgroups}</option>
                         {filteredSubgroups.map((s: any) => (
                             <option key={s.id} value={s.id}>{s.name}</option>
                         ))}
                     </select>
                     <div className="flex flex-col gap-1">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">From</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">{t.accountingShared.from}</span>
                         <input
                             type="date"
                             value={fromDate}
@@ -202,7 +204,7 @@ export default function PurchasesByProductPage() {
                         />
                     </div>
                     <div className="flex flex-col gap-1">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">To</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">{t.accountingShared.to}</span>
                         <input
                             type="date"
                             value={toDate}
@@ -216,11 +218,11 @@ export default function PurchasesByProductPage() {
                     tableId="purchases-by-product"
                     columns={columns}
                     data={rows}
-                    title="Product Spend"
+                    title={t.purchaseReports.byProduct.tableTitle}
                     isLoading={loading}
-                    emptyMessage="No purchases recorded for this filter"
+                    emptyMessage={t.purchaseReports.byProduct.emptyMessage}
                     emptyIcon={<Package className="w-16 h-16 text-gray-200" />}
-                    searchPlaceholder="Search products..."
+                    searchPlaceholder={t.purchaseReports.byProduct.searchPlaceholder}
                 />
             </div>
         </div>

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { useI18n } from '@/lib/i18n';
 
 const API_BASE =
     ((process.env.NEXT_PUBLIC_API_BASE || process.env.NEXT_PUBLIC_API_URL) ||
@@ -12,6 +13,10 @@ const API_BASE =
             : 'http://localhost:4000')) + '/api/v1';
 
 export default function StorefrontSignUpPage() {
+    const { t } = useI18n();
+    const m = t.storefront.public;
+    const a = m.auth;
+    const p = m.placeholders;
     const params = useParams();
     const router = useRouter();
     const slug = params?.slug as string;
@@ -51,7 +56,7 @@ export default function StorefrontSignUpPage() {
             const json = await res.json();
 
             if (!res.ok) {
-                throw new Error(json.message || 'Sign up failed');
+                throw new Error(json.message || a.signUpFailed);
             }
 
             const payload = 'data' in json ? json.data : json;
@@ -62,7 +67,7 @@ export default function StorefrontSignUpPage() {
 
             router.push(`/store/${slug}`);
         } catch (err: any) {
-            setError(err.message || 'Something went wrong');
+            setError(err.message || a.defaultError);
         } finally {
             setSubmitting(false);
         }
@@ -73,10 +78,10 @@ export default function StorefrontSignUpPage() {
             <div className="w-full max-w-md">
                 <div className="mb-8 text-center">
                     <Link href={`/store/${slug}`} className="text-2xl font-black tracking-tighter text-gray-900">
-                        {storeName || 'Store'}
+                        {storeName || m.storeFallback}
                     </Link>
-                    <h1 className="mt-4 text-xl font-bold text-gray-800">Create an account</h1>
-                    <p className="mt-1 text-sm text-gray-500">Track your orders and save your details</p>
+                    <h1 className="mt-4 text-xl font-bold text-gray-800">{a.signUpPageTitle}</h1>
+                    <p className="mt-1 text-sm text-gray-500">{a.signUpPageSubtitle}</p>
                 </div>
 
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
@@ -90,7 +95,7 @@ export default function StorefrontSignUpPage() {
 
                         <div>
                             <label htmlFor="name" className="block text-sm font-semibold text-gray-700 mb-1.5">
-                                Full Name <span className="text-red-500">*</span>
+                                {m.fullName} <span className="text-red-500">*</span>
                             </label>
                             <input
                                 id="name"
@@ -98,14 +103,14 @@ export default function StorefrontSignUpPage() {
                                 required
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
-                                placeholder="Jane Doe"
+                                placeholder={p.name}
                                 className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all"
                             />
                         </div>
 
                         <div>
                             <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-1.5">
-                                Email <span className="text-red-500">*</span>
+                                {m.email} <span className="text-red-500">*</span>
                             </label>
                             <input
                                 id="email"
@@ -113,14 +118,14 @@ export default function StorefrontSignUpPage() {
                                 required
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                placeholder="you@example.com"
+                                placeholder={p.emailGeneric}
                                 className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all"
                             />
                         </div>
 
                         <div>
                             <label htmlFor="phone" className="block text-sm font-semibold text-gray-700 mb-1.5">
-                                Phone <span className="text-red-500">*</span>
+                                {m.phone} <span className="text-red-500">*</span>
                             </label>
                             <input
                                 id="phone"
@@ -128,14 +133,14 @@ export default function StorefrontSignUpPage() {
                                 required
                                 value={phone}
                                 onChange={(e) => setPhone(e.target.value)}
-                                placeholder="+880 1XXXXXXXXX"
+                                placeholder={p.phoneSignup}
                                 className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all"
                             />
                         </div>
 
                         <div>
                             <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-1.5">
-                                Password <span className="text-red-500">*</span>
+                                {a.password} <span className="text-red-500">*</span>
                             </label>
                             <div className="relative">
                                 <input
@@ -145,7 +150,7 @@ export default function StorefrontSignUpPage() {
                                     minLength={8}
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    placeholder="Minimum 8 characters"
+                                    placeholder={p.passwordMin}
                                     className="w-full border border-gray-300 rounded-xl px-4 py-3 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all"
                                 />
                                 <button
@@ -164,21 +169,21 @@ export default function StorefrontSignUpPage() {
                             disabled={submitting}
                             className="w-full bg-black hover:bg-gray-800 text-white font-bold py-3.5 rounded-xl transition-colors disabled:opacity-60 mt-2"
                         >
-                            {submitting ? 'Creating account…' : 'Create Account'}
+                            {submitting ? a.signingUp : a.createAccountButton}
                         </button>
                     </form>
 
                     <p className="mt-6 text-center text-sm text-gray-500">
-                        Already have an account?{' '}
+                        {a.hasAccount}{' '}
                         <Link href={`/store/${slug}/auth/signin`} className="font-semibold text-black hover:underline">
-                            Sign in
+                            {m.signIn}
                         </Link>
                     </p>
                 </div>
 
                 <p className="mt-6 text-center text-sm text-gray-400">
                     <Link href={`/store/${slug}`} className="hover:text-gray-600 transition-colors">
-                        ← Back to store
+                        {a.backToStore}
                     </Link>
                 </p>
             </div>

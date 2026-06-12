@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { TrendingUp } from 'lucide-react';
 import { api } from '@/lib/api';
 import { formatBDT } from '@/lib/format';
+import { useI18n, formatMessage } from '@/lib/i18n';
 
 function defaultFrom() {
     const d = new Date();
@@ -35,7 +36,7 @@ interface PLData {
     net_profit: number;
 }
 
-function AccountSection({ groups, label, colorClass }: { groups: Group[]; label: string; colorClass: string }) {
+function AccountSection({ groups, label, colorClass, locale }: { groups: Group[]; label: string; colorClass: string; locale: string }) {
     return (
         <div>
             <div className={`px-4 py-2 rounded-xl font-black text-xs uppercase tracking-widest ${colorClass} mb-2`}>
@@ -45,12 +46,12 @@ function AccountSection({ groups, label, colorClass }: { groups: Group[]; label:
                 <div key={g.group.id} className="mb-4">
                     <div className="flex justify-between items-center px-4 py-2 bg-gray-50 rounded-lg font-bold text-sm text-gray-700">
                         <span>{g.group.name}</span>
-                        <span>{formatBDT(g.total)}</span>
+                        <span>{formatBDT(g.total, { locale })}</span>
                     </div>
                     {g.accounts.map((a) => (
                         <div key={a.id} className="flex justify-between items-center px-6 py-1.5 text-sm text-gray-600">
                             <span>{a.name}{a.code ? <span className="ml-2 text-xs text-gray-400">{a.code}</span> : null}</span>
-                            <span>{formatBDT(a.balance)}</span>
+                            <span>{formatBDT(a.balance, { locale })}</span>
                         </div>
                     ))}
                 </div>
@@ -60,6 +61,7 @@ function AccountSection({ groups, label, colorClass }: { groups: Group[]; label:
 }
 
 export default function ProfitLossPage() {
+    const { t, locale } = useI18n();
     const [data, setData] = useState<PLData | null>(null);
     const [fromDate, setFromDate] = useState(defaultFrom());
     const [toDate, setToDate] = useState(defaultTo());
@@ -77,7 +79,7 @@ export default function ProfitLossPage() {
             const result = await api.getProfitLoss({ from: fromDate || undefined, to: toDate || undefined });
             setData(result);
         } catch (err: any) {
-            setError(err?.message ?? 'Failed to load report');
+            setError(err?.message ?? t.reports.loadFailed);
         } finally {
             setLoading(false);
         }
@@ -89,20 +91,20 @@ export default function ProfitLossPage() {
         <div className="overflow-y-auto h-full bg-[#f3f4f6] p-6 font-sans text-gray-900">
             <div className="max-w-[900px] mx-auto space-y-6">
                 <div>
-                    <h1 className="text-2xl font-black tracking-tight">Profit & Loss Account</h1>
+                    <h1 className="text-2xl font-black tracking-tight">{t.reports.pl.title}</h1>
                     <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mt-0.5">
-                        Income statement — revenue, expenses, and net profit for a period
+                        {t.reports.pl.subtitle}
                     </p>
                 </div>
 
                 <div className="bg-white border border-gray-100 rounded-2xl p-4 flex flex-wrap gap-3 items-end">
                     <div className="flex flex-col gap-1">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">From</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">{t.accountingShared.from}</span>
                         <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)}
                             className="bg-gray-50 border-none rounded-xl py-3 px-4 text-sm font-medium" />
                     </div>
                     <div className="flex flex-col gap-1">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">To</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">{t.accountingShared.to}</span>
                         <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)}
                             className="bg-gray-50 border-none rounded-xl py-3 px-4 text-sm font-medium" />
                     </div>
@@ -112,35 +114,35 @@ export default function ProfitLossPage() {
 
                 {loading ? (
                     <div className="bg-white border border-gray-100 rounded-2xl p-12 text-center text-gray-400 text-sm font-medium">
-                        Loading…
+                        {t.accountingShared.loading}
                     </div>
                 ) : data ? (
                     <div className="bg-white border border-gray-100 rounded-2xl p-6 space-y-6">
                         <div className="text-center border-b border-gray-100 pb-4">
-                            <p className="text-xs font-black uppercase tracking-widest text-gray-400">Period</p>
+                            <p className="text-xs font-black uppercase tracking-widest text-gray-400">{t.accountingShared.period}</p>
                             <p className="text-sm font-bold text-gray-700 mt-1">{data.filters.from} — {data.filters.to}</p>
                         </div>
 
-                        <AccountSection groups={data.revenue.groups} label="Revenue" colorClass="bg-emerald-50 text-emerald-700" />
+                        <AccountSection groups={data.revenue.groups} label={t.reports.revenue} colorClass="bg-emerald-50 text-emerald-700" locale={locale} />
 
                         <div className="flex justify-between items-center px-4 py-3 bg-emerald-50 rounded-xl font-black text-sm text-emerald-800 border border-emerald-100">
-                            <span>Total Revenue</span>
-                            <span>{formatBDT(data.revenue.total)}</span>
+                            <span>{t.reports.totalRevenue}</span>
+                            <span>{formatBDT(data.revenue.total, { locale })}</span>
                         </div>
 
-                        <AccountSection groups={data.expenses.groups} label="Expenses" colorClass="bg-rose-50 text-rose-700" />
+                        <AccountSection groups={data.expenses.groups} label={t.reports.expenses} colorClass="bg-rose-50 text-rose-700" locale={locale} />
 
                         <div className="flex justify-between items-center px-4 py-3 bg-rose-50 rounded-xl font-black text-sm text-rose-800 border border-rose-100">
-                            <span>Total Expenses</span>
-                            <span>{formatBDT(data.expenses.total)}</span>
+                            <span>{t.reports.totalExpenses}</span>
+                            <span>{formatBDT(data.expenses.total, { locale })}</span>
                         </div>
 
                         <div className={`flex justify-between items-center px-5 py-4 rounded-2xl font-black text-base border ${isProfit ? 'bg-blue-50 text-blue-800 border-blue-200' : 'bg-red-50 text-red-800 border-red-200'}`}>
                             <div className="flex items-center gap-2">
                                 <TrendingUp className="w-5 h-5" />
-                                <span>{isProfit ? 'Net Profit' : 'Net Loss'}</span>
+                                <span>{isProfit ? t.reports.netProfit : t.reports.netLoss}</span>
                             </div>
-                            <span>{formatBDT(Math.abs(data.net_profit))}</span>
+                            <span>{formatBDT(Math.abs(data.net_profit), { locale })}</span>
                         </div>
                     </div>
                 ) : null}

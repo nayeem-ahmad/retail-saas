@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Settings, ArrowLeft, Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { fetchWithAuth } from '@/lib/api';
+import { useI18n } from '@/lib/i18n';
 
 type GeneralSettings = {
     platform_name: string;
@@ -36,6 +37,9 @@ function ToastBanner({ toast, onDismiss }: { toast: Toast; onDismiss: () => void
 }
 
 export default function PlatformGeneralSettingsPage() {
+    const { t } = useI18n();
+    const m = t.admin.platformSettings.general;
+    const c = t.admin.platformSettings.common;
     const [settings, setSettings] = useState<GeneralSettings>(DEFAULTS);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -52,7 +56,7 @@ export default function PlatformGeneralSettingsPage() {
                     maintenance_mode: d.maintenance_mode ?? DEFAULTS.maintenance_mode,
                 });
             })
-            .catch(() => setToast({ type: 'error', message: 'Failed to load settings.' }))
+            .catch(() => setToast({ type: 'error', message: c.loadFailed }))
             .finally(() => setLoading(false));
     }, []);
 
@@ -69,9 +73,9 @@ export default function PlatformGeneralSettingsPage() {
                 body: JSON.stringify({ settings }),
             });
             if (!res.ok) throw new Error('Save failed');
-            setToast({ type: 'success', message: 'General settings saved.' });
+            setToast({ type: 'success', message: m.saved });
         } catch (e: any) {
-            setToast({ type: 'error', message: e.message ?? 'Failed to save.' });
+            setToast({ type: 'error', message: e.message ?? c.saveFailed });
         } finally {
             setSaving(false);
         }
@@ -88,49 +92,45 @@ export default function PlatformGeneralSettingsPage() {
                         <ArrowLeft className="w-4 h-4 text-gray-500" />
                     </Link>
                     <Settings className="w-5 h-5 text-amber-600" />
-                    <h1 className="text-xl font-black tracking-tight">General</h1>
+                    <h1 className="text-xl font-black tracking-tight">{m.title}</h1>
                 </div>
 
                 {loading ? (
                     <div className="flex items-center gap-2 text-gray-400 text-sm py-8 justify-center">
-                        <Loader2 className="w-4 h-4 animate-spin" /> Loading…
+                        <Loader2 className="w-4 h-4 animate-spin" /> {c.loading}
                     </div>
                 ) : (
                     <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-5">
                         <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-1">Platform Name</label>
+                            <label className="block text-sm font-semibold text-gray-700 mb-1">{m.platformName.label}</label>
                             <input
                                 type="text"
                                 value={settings.platform_name}
                                 onChange={(e) => set('platform_name', e.target.value)}
-                                placeholder="RetailSaaS"
+                                placeholder={m.platformName.placeholder}
                                 className={inputCls}
                             />
-                            <p className="mt-1 text-xs text-gray-400">Shown in email subjects and notifications.</p>
+                            <p className="mt-1 text-xs text-gray-400">{m.platformName.hint}</p>
                         </div>
 
                         <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-1">Support Email</label>
+                            <label className="block text-sm font-semibold text-gray-700 mb-1">{m.supportEmail.label}</label>
                             <input
                                 type="email"
                                 value={settings.support_email}
                                 onChange={(e) => set('support_email', e.target.value)}
-                                placeholder="support@retailsaas.app"
+                                placeholder={m.supportEmail.placeholder}
                                 className={inputCls}
                             />
-                            <p className="mt-1 text-xs text-gray-400">Destination for contact form submissions.</p>
+                            <p className="mt-1 text-xs text-gray-400">{m.supportEmail.hint}</p>
                         </div>
 
                         <div className="flex items-start justify-between gap-4 pt-2">
                             <div>
-                                <p className="text-sm font-semibold text-gray-800">Maintenance Mode</p>
-                                <p className="mt-0.5 text-xs text-gray-500">
-                                    When enabled, the API returns a 503 for all non-admin requests.
-                                </p>
+                                <p className="text-sm font-semibold text-gray-800">{m.maintenance.label}</p>
+                                <p className="mt-0.5 text-xs text-gray-500">{m.maintenance.hint}</p>
                                 {maintenanceOn && (
-                                    <p className="mt-1 text-xs font-bold text-red-600">
-                                        Maintenance mode is ON — tenants cannot access the platform.
-                                    </p>
+                                    <p className="mt-1 text-xs font-bold text-red-600">{m.maintenance.activeWarning}</p>
                                 )}
                             </div>
                             <button
@@ -151,7 +151,7 @@ export default function PlatformGeneralSettingsPage() {
                                 className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors shadow-sm"
                             >
                                 {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-                                {saving ? 'Saving…' : 'Save Settings'}
+                                {saving ? c.saving : c.saveSettings}
                             </button>
                         </div>
                     </div>

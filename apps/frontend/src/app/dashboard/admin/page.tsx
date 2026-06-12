@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Building2, Users, TrendingUp, ShieldCheck, ArrowRight, Loader2, Settings } from 'lucide-react';
 import { api } from '@/lib/api';
+import { useI18n } from '@/lib/i18n';
 
 type Metrics = {
     total_tenants: number;
@@ -18,6 +19,8 @@ type Metrics = {
 };
 
 export default function PlatformAdminPage() {
+    const { t } = useI18n();
+    const m = t.admin.overview;
     const [metrics, setMetrics] = useState<Metrics | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
@@ -25,9 +28,9 @@ export default function PlatformAdminPage() {
     useEffect(() => {
         api.getAdminMetrics()
             .then((data: any) => setMetrics(data))
-            .catch((err: any) => setError(err.message || 'Failed to load metrics'))
+            .catch((err: any) => setError(err.message || m.loadFailed))
             .finally(() => setIsLoading(false));
-    }, []);
+    }, [m.loadFailed]);
 
     return (
         <div className="overflow-y-auto h-full bg-[#f3f4f6] p-6 font-sans text-gray-900">
@@ -35,10 +38,10 @@ export default function PlatformAdminPage() {
                 <div>
                     <div className="flex items-center gap-2 mb-1">
                         <ShieldCheck className="w-5 h-5 text-indigo-600" />
-                        <p className="text-[10px] font-black uppercase tracking-widest text-indigo-600">Platform Admin</p>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-indigo-600">{m.badge}</p>
                     </div>
-                    <h1 className="text-3xl font-black tracking-tight">Overview</h1>
-                    <p className="mt-1 text-sm text-gray-500">Platform-wide metrics and quick access to admin tools.</p>
+                    <h1 className="text-3xl font-black tracking-tight">{m.title}</h1>
+                    <p className="mt-1 text-sm text-gray-500">{m.description}</p>
                 </div>
 
                 {error && (
@@ -46,47 +49,32 @@ export default function PlatformAdminPage() {
                 )}
 
                 {isLoading ? (
-                    <div className="flex items-center gap-2 text-sm text-gray-500"><Loader2 className="w-4 h-4 animate-spin" /> Loading metrics...</div>
+                    <div className="flex items-center gap-2 text-sm text-gray-500"><Loader2 className="w-4 h-4 animate-spin" /> {m.loadingMetrics}</div>
                 ) : metrics && (
                     <>
                         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                            <StatCard icon={Building2} label="Total Tenants" value={metrics.total_tenants} color="blue" />
-                            <StatCard icon={Users} label="Total Users" value={metrics.total_users} color="violet" />
-                            <StatCard icon={TrendingUp} label="New This Month" value={metrics.new_tenants_this_month} color="emerald" />
-                            <StatCard icon={ShieldCheck} label="Active Subscriptions" value={metrics.subscriptions.active} color="amber" />
+                            <StatCard icon={Building2} label={m.stats.totalTenants} value={metrics.total_tenants} color="blue" />
+                            <StatCard icon={Users} label={m.stats.totalUsers} value={metrics.total_users} color="violet" />
+                            <StatCard icon={TrendingUp} label={m.stats.newThisMonth} value={metrics.new_tenants_this_month} color="emerald" />
+                            <StatCard icon={ShieldCheck} label={m.stats.activeSubscriptions} value={metrics.subscriptions.active} color="amber" />
                         </div>
 
                         <div className="rounded-3xl border border-gray-100 bg-white p-6 space-y-4">
-                            <h2 className="text-sm font-black uppercase tracking-widest text-gray-400">Subscription Breakdown</h2>
+                            <h2 className="text-sm font-black uppercase tracking-widest text-gray-400">{m.subscriptionBreakdown}</h2>
                             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                                <SubBadge label="Active" value={metrics.subscriptions.active} color="bg-emerald-100 text-emerald-700" />
-                                <SubBadge label="Trialing" value={metrics.subscriptions.trialing} color="bg-blue-100 text-blue-700" />
-                                <SubBadge label="Past Due" value={metrics.subscriptions.past_due} color="bg-amber-100 text-amber-700" />
-                                <SubBadge label="Cancelled" value={metrics.subscriptions.cancelled} color="bg-red-100 text-red-700" />
+                                <SubBadge label={m.subscriptionStatus.active} value={metrics.subscriptions.active} color="bg-emerald-100 text-emerald-700" />
+                                <SubBadge label={m.subscriptionStatus.trialing} value={metrics.subscriptions.trialing} color="bg-blue-100 text-blue-700" />
+                                <SubBadge label={m.subscriptionStatus.pastDue} value={metrics.subscriptions.past_due} color="bg-amber-100 text-amber-700" />
+                                <SubBadge label={m.subscriptionStatus.cancelled} value={metrics.subscriptions.cancelled} color="bg-red-100 text-red-700" />
                             </div>
                         </div>
                     </>
                 )}
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <QuickLink
-                        href="/dashboard/admin/tenants"
-                        icon={Building2}
-                        title="Tenant Management"
-                        description="View all tenants, adjust subscriptions, suspend accounts, and impersonate owners."
-                    />
-                    <QuickLink
-                        href="/dashboard/admin/users"
-                        icon={Users}
-                        title="User Management"
-                        description="List all platform users, grant or revoke superadmin access."
-                    />
-                    <QuickLink
-                        href="/dashboard/admin/platform-settings"
-                        icon={Settings}
-                        title="Platform Settings"
-                        description="Configure SMS gateway, email / SMTP, payment gateway credentials, and global defaults."
-                    />
+                    <QuickLink href="/dashboard/admin/tenants" icon={Building2} title={m.quickLinks.tenants.title} description={m.quickLinks.tenants.description} />
+                    <QuickLink href="/dashboard/admin/users" icon={Users} title={m.quickLinks.users.title} description={m.quickLinks.users.description} />
+                    <QuickLink href="/dashboard/admin/platform-settings" icon={Settings} title={m.quickLinks.platformSettings.title} description={m.quickLinks.platformSettings.description} />
                 </div>
             </div>
         </div>
@@ -122,10 +110,7 @@ function SubBadge({ label, value, color }: { label: string; value: number; color
 
 function QuickLink({ href, icon: Icon, title, description }: { href: string; icon: any; title: string; description: string }) {
     return (
-        <Link
-            href={href}
-            className="group rounded-3xl border border-gray-100 bg-white p-6 hover:border-indigo-200 hover:bg-indigo-50/30 transition block"
-        >
+        <Link href={href} className="group rounded-3xl border border-gray-100 bg-white p-6 hover:border-indigo-200 hover:bg-indigo-50/30 transition block">
             <div className="flex items-start justify-between gap-4">
                 <div>
                     <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-3">

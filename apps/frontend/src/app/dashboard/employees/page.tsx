@@ -8,6 +8,7 @@ import AddEmployeeModal from './AddEmployeeModal';
 import Link from 'next/link';
 import { createColumnHelper, type ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table';
+import { useI18n } from '@/lib/i18n';
 
 interface Employee {
     id: string;
@@ -26,6 +27,7 @@ interface Employee {
 const columnHelper = createColumnHelper<Employee>();
 
 export default function EmployeesPage() {
+    const { t } = useI18n();
     const [employees, setEmployees] = useState<Employee[]>([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -53,12 +55,12 @@ export default function EmployeesPage() {
     const columns: ColumnDef<Employee, any>[] = useMemo(
         () => [
             columnHelper.accessor('employee_code', {
-                header: 'Code',
+                header: t.employees.columns.code,
                 cell: (info) => <span className="text-sm font-mono text-gray-500">{info.getValue()}</span>,
                 size: 120,
             }),
             columnHelper.accessor('name', {
-                header: 'Employee',
+                header: t.employees.columns.employee,
                 cell: (info) => {
                     const emp = info.row.original;
                     return (
@@ -72,18 +74,18 @@ export default function EmployeesPage() {
             }),
             columnHelper.accessor((row) => row.department?.name ?? '', {
                 id: 'department',
-                header: 'Department',
+                header: t.employees.columns.department,
                 cell: (info) => <span className="text-sm text-gray-700">{info.getValue() || '—'}</span>,
                 size: 150,
             }),
             columnHelper.accessor((row) => row.designation?.name ?? '', {
                 id: 'designation',
-                header: 'Designation',
+                header: t.employees.columns.designation,
                 cell: (info) => <span className="text-sm text-gray-700">{info.getValue() || '—'}</span>,
                 size: 150,
             }),
             columnHelper.accessor('date_of_joining', {
-                header: 'Joined',
+                header: t.employees.columns.joined,
                 cell: (info) => (
                     <span className="text-sm text-gray-600">
                         {info.getValue() ? formatDate(info.getValue()!) : '—'}
@@ -93,17 +95,17 @@ export default function EmployeesPage() {
             }),
             columnHelper.accessor((row) => row.user?.email ?? '', {
                 id: 'system_user',
-                header: 'System Access',
+                header: t.employees.columns.systemAccess,
                 cell: (info) => {
                     const val = info.getValue();
                     return val
                         ? <span className="inline-flex items-center gap-1 rounded-full bg-green-50 border border-green-200 px-2.5 py-0.5 text-xs font-bold text-green-700">{val}</span>
-                        : <span className="text-xs text-gray-400">Not linked</span>;
+                        : <span className="text-xs text-gray-400">{t.employees.noAccess}</span>;
                 },
                 size: 180,
             }),
             columnHelper.accessor('status', {
-                header: 'Status',
+                header: t.common.status,
                 cell: (info) => {
                     const status = info.getValue();
                     const cls = status === 'ACTIVE'
@@ -119,13 +121,13 @@ export default function EmployeesPage() {
             }),
             columnHelper.display({
                 id: 'actions',
-                header: 'Actions',
+                header: t.common.actions,
                 cell: (info) => (
                     <div className="flex items-center justify-end">
                         <Link
                             href={`/dashboard/employees/${info.row.original.id}`}
                             className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors"
-                            title="View"
+                            title={t.common.view}
                         >
                             <Eye className="w-4 h-4" />
                         </Link>
@@ -135,15 +137,15 @@ export default function EmployeesPage() {
                 size: 80,
             }),
         ],
-        [],
+        [t],
     );
 
     const filterPresets = useMemo(
         () => [
-            { label: 'Active', filters: [{ id: 'status', value: 'ACTIVE' }] },
-            { label: 'Inactive', filters: [{ id: 'status', value: 'INACTIVE' }] },
+            { label: t.employees.filterPresets.active, filters: [{ id: 'status', value: 'ACTIVE' }] },
+            { label: t.employees.filterPresets.inactive, filters: [{ id: 'status', value: 'INACTIVE' }] },
         ],
-        [],
+        [t],
     );
 
     return (
@@ -151,9 +153,9 @@ export default function EmployeesPage() {
             <div className="max-w-[1400px] mx-auto space-y-6">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-black tracking-tight">Employees</h1>
+                        <h1 className="text-2xl font-black tracking-tight">{t.employees.title}</h1>
                         <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mt-0.5">
-                            Staff directory and profiles
+                            {t.employees.subtitle}
                         </p>
                     </div>
                     <button
@@ -161,7 +163,7 @@ export default function EmployeesPage() {
                         className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl font-bold text-sm flex items-center shadow-lg shadow-blue-200 transition-all hover:-translate-y-0.5 active:translate-y-0"
                     >
                         <Plus className="w-4 h-4 mr-2" />
-                        New Employee
+                        {t.employees.newEmployee}
                     </button>
                 </div>
 
@@ -171,11 +173,11 @@ export default function EmployeesPage() {
                     tableId="employees"
                     columns={columns}
                     data={employees}
-                    title="Employees"
+                    title={t.employees.title}
                     isLoading={loading}
-                    emptyMessage="No employees found"
+                    emptyMessage={t.employees.emptyMessage}
                     emptyIcon={<Users className="w-16 h-16 text-gray-200" />}
-                    searchPlaceholder="Search by code, name, or phone..."
+                    searchPlaceholder={t.employees.searchPlaceholder}
                     filterPresets={filterPresets}
                     enableRowSelection
                 />

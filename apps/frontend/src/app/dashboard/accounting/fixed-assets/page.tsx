@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Plus, Play } from 'lucide-react';
 import { api } from '@/lib/api';
 import { formatBDT } from '@/lib/format';
+import { useI18n, formatMessage } from '@/lib/i18n';
 
 interface FixedAsset {
     id: string;
@@ -19,6 +20,7 @@ interface FixedAsset {
 }
 
 export default function FixedAssetsPage() {
+    const { t, locale } = useI18n();
     const [assets, setAssets] = useState<FixedAsset[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -203,9 +205,9 @@ export default function FixedAssetsPage() {
                                         <td className="px-4 py-3 font-mono text-xs text-gray-500">{a.asset_code}</td>
                                         <td className="px-4 py-3 font-bold text-gray-800">{a.name}</td>
                                         <td className="px-4 py-3 text-gray-500">{new Date(a.purchase_date).toLocaleDateString()}</td>
-                                        <td className="px-4 py-3">{formatBDT(Number(a.cost))}</td>
-                                        <td className="px-4 py-3 text-rose-600">{formatBDT(Number(a.accumulated_depreciation))}</td>
-                                        <td className="px-4 py-3 font-bold">{formatBDT(Number(a.cost) - Number(a.accumulated_depreciation))}</td>
+                                        <td className="px-4 py-3">{formatBDT(Number(a.cost), { locale })}</td>
+                                        <td className="px-4 py-3 text-rose-600">{formatBDT(Number(a.accumulated_depreciation), { locale })}</td>
+                                        <td className="px-4 py-3 font-bold">{formatBDT(Number(a.cost), { locale } - Number(a.accumulated_depreciation))}</td>
                                         <td className="px-4 py-3 text-xs text-gray-400">{a.depreciation_method === 'STRAIGHT_LINE' ? 'SL' : 'DB'}</td>
                                     </tr>
                                 ))}

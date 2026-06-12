@@ -3,11 +3,14 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { Mail, ArrowLeft, Loader2, CheckCircle } from 'lucide-react';
+import { useI18n, formatMessage } from '@/lib/i18n';
 
 const API_BASE = ((process.env.NEXT_PUBLIC_API_BASE || process.env.NEXT_PUBLIC_API_URL)
     || (process.env.NODE_ENV === 'production' ? 'https://retail-saas-backend.onrender.com' : 'http://localhost:4000')) + '/api/v1';
 
 export default function ForgotPasswordPage() {
+    const { t } = useI18n();
+    const m = t.auth.forgotPassword;
     const [email, setEmail] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -27,7 +30,7 @@ export default function ForgotPasswordPage() {
 
             if (!res.ok) {
                 const body = await res.json().catch(() => null);
-                throw new Error(body?.message || 'Something went wrong. Please try again.');
+                throw new Error(body?.message || m.defaultError);
             }
 
             setSubmitted(true);
@@ -47,17 +50,16 @@ export default function ForgotPasswordPage() {
                             <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mb-4">
                                 <CheckCircle className="text-green-600 w-6 h-6" />
                             </div>
-                            <h1 className="text-2xl font-bold tracking-tight">Check your inbox</h1>
+                            <h1 className="text-2xl font-bold tracking-tight">{m.successTitle}</h1>
                             <p className="text-gray-500 mt-3 text-sm leading-relaxed">
-                                If <span className="font-medium text-gray-700">{email}</span> is registered,
-                                you&apos;ll receive a password reset link shortly.
+                                {formatMessage(m.successDescription, { email })}
                             </p>
                             <Link
                                 href="/login"
                                 className="mt-8 flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
                             >
                                 <ArrowLeft className="w-4 h-4" />
-                                Back to sign in
+                                {m.backToSignIn}
                             </Link>
                         </div>
                     ) : (
@@ -66,10 +68,8 @@ export default function ForgotPasswordPage() {
                                 <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center mb-4 shadow-lg shadow-blue-200">
                                     <Mail className="text-white w-6 h-6" />
                                 </div>
-                                <h1 className="text-2xl font-bold tracking-tight">Forgot password?</h1>
-                                <p className="text-gray-500 mt-2 text-sm text-center">
-                                    Enter your email and we&apos;ll send you a reset link.
-                                </p>
+                                <h1 className="text-2xl font-bold tracking-tight">{m.title}</h1>
+                                <p className="text-gray-500 mt-2 text-sm text-center">{m.description}</p>
                             </div>
 
                             {error && (
@@ -80,7 +80,7 @@ export default function ForgotPasswordPage() {
 
                             <form onSubmit={handleSubmit} className="space-y-6">
                                 <div className="space-y-2">
-                                    <label className="text-sm font-medium text-gray-700 ml-1">Email address</label>
+                                    <label className="text-sm font-medium text-gray-700 ml-1">{m.emailLabel}</label>
                                     <div className="relative">
                                         <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                                         <input
@@ -89,7 +89,7 @@ export default function ForgotPasswordPage() {
                                             value={email}
                                             onChange={(e) => setEmail(e.target.value)}
                                             className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3 pl-10 pr-4 outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200"
-                                            placeholder="name@company.com"
+                                            placeholder={m.emailPlaceholder}
                                         />
                                     </div>
                                 </div>
@@ -102,7 +102,7 @@ export default function ForgotPasswordPage() {
                                     {isLoading ? (
                                         <Loader2 className="w-5 h-5 animate-spin" />
                                     ) : (
-                                        <span>Send reset link</span>
+                                        <span>{m.submit}</span>
                                     )}
                                 </button>
                             </form>
@@ -113,7 +113,7 @@ export default function ForgotPasswordPage() {
                                     className="flex items-center justify-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-700 transition-colors"
                                 >
                                     <ArrowLeft className="w-4 h-4" />
-                                    Back to sign in
+                                    {m.backToSignIn}
                                 </Link>
                             </div>
                         </>

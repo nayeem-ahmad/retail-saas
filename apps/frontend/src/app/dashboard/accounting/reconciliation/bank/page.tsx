@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { CheckCircle, Circle } from 'lucide-react';
 import { api } from '@/lib/api';
 import { formatBDT } from '@/lib/format';
+import { useI18n, formatMessage } from '@/lib/i18n';
 
 interface BankAccount { id: string; name: string; code?: string | null; }
 interface StatementEntry {
@@ -26,6 +27,7 @@ interface ReconciliationReport {
 }
 
 export default function BankReconciliationPage() {
+    const { t, locale } = useI18n();
     const [accounts, setAccounts] = useState<BankAccount[]>([]);
     const [step, setStep] = useState<'setup' | 'import' | 'match' | 'done'>('setup');
     const [reconId, setReconId] = useState<string | null>(null);
@@ -183,9 +185,9 @@ export default function BankReconciliationPage() {
                         {/* Summary */}
                         <div className="grid grid-cols-3 gap-4">
                             {[
-                                { label: 'Book Balance', value: formatBDT(report.book_balance), color: 'text-gray-900' },
-                                { label: 'Statement Balance', value: formatBDT(report.statement_balance), color: 'text-gray-900' },
-                                { label: 'Difference', value: formatBDT(report.difference), color: Math.abs(report.difference) < 0.01 ? 'text-emerald-600' : 'text-rose-600' },
+                                { label: 'Book Balance', value: formatBDT(report.book_balance, { locale }), color: 'text-gray-900' },
+                                { label: 'Statement Balance', value: formatBDT(report.statement_balance, { locale }), color: 'text-gray-900' },
+                                { label: 'Difference', value: formatBDT(report.difference, { locale }), color: Math.abs(report.difference) < 0.01 ? 'text-emerald-600' : 'text-rose-600' },
                             ].map(({ label, value, color }) => (
                                 <div key={label} className="bg-white border border-gray-100 rounded-2xl p-4 text-center">
                                     <div className="text-xs font-black uppercase tracking-widest text-gray-400 mb-1">{label}</div>
@@ -224,7 +226,7 @@ export default function BankReconciliationPage() {
                                         <tr key={e.id} className={`border-b border-gray-50 ${e.is_matched ? 'opacity-60' : ''}`}>
                                             <td className="px-4 py-3 text-gray-500">{new Date(e.entry_date).toLocaleDateString()}</td>
                                             <td className="px-4 py-3 text-gray-700">{e.description ?? '—'}</td>
-                                            <td className="px-4 py-3 text-right font-medium">{formatBDT(Number(e.amount))}</td>
+                                            <td className="px-4 py-3 text-right font-medium">{formatBDT(Number(e.amount), { locale })}</td>
                                             <td className="px-4 py-3 text-center">
                                                 <span className={`text-xs font-bold ${e.entry_type === 'CREDIT' ? 'text-emerald-600' : 'text-rose-600'}`}>
                                                     {e.entry_type}

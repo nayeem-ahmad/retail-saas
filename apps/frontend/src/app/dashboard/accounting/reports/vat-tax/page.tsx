@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { formatBDT } from '@/lib/format';
+import { useI18n, formatMessage } from '@/lib/i18n';
 
 function defaultFrom() {
     const d = new Date();
@@ -20,6 +21,7 @@ interface VatData {
 }
 
 export default function VatTaxPage() {
+    const { t, locale } = useI18n();
     const [data, setData] = useState<VatData | null>(null);
     const [fromDate, setFromDate] = useState(defaultFrom());
     const [toDate, setToDate] = useState(defaultTo());
@@ -65,7 +67,7 @@ export default function VatTaxPage() {
                             <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 flex justify-between items-center">
                                 <div>
                                     <p className="text-xs font-black uppercase tracking-widest text-amber-700">Net VAT Payable</p>
-                                    <p className="text-2xl font-black text-amber-900 mt-1">{formatBDT(data.net_vat_payable)}</p>
+                                    <p className="text-2xl font-black text-amber-900 mt-1">{formatBDT(data.net_vat_payable, { locale })}</p>
                                 </div>
                                 <p className="text-xs text-amber-600 max-w-xs text-right">{data.note}</p>
                             </div>
@@ -83,12 +85,12 @@ export default function VatTaxPage() {
                             {data.output_vat.accounts.map((a) => (
                                 <div key={a.id} className="flex justify-between text-sm py-1.5 border-b border-gray-50">
                                     <span className="text-gray-700">{a.name}{a.code && <span className="ml-2 text-xs text-gray-400">{a.code}</span>}</span>
-                                    <span className="font-medium text-gray-900">{formatBDT(a.total)}</span>
+                                    <span className="font-medium text-gray-900">{formatBDT(a.total, { locale })}</span>
                                 </div>
                             ))}
                             <div className="flex justify-between font-black text-sm pt-2">
                                 <span>Total Output VAT</span>
-                                <span className="text-rose-700">{formatBDT(data.output_vat.total)}</span>
+                                <span className="text-rose-700">{formatBDT(data.output_vat.total, { locale })}</span>
                             </div>
                         </div>
                         <div className="bg-white border border-gray-100 rounded-2xl p-6 space-y-3">
@@ -96,12 +98,12 @@ export default function VatTaxPage() {
                             {data.input_vat.accounts.map((a) => (
                                 <div key={a.id} className="flex justify-between text-sm py-1.5 border-b border-gray-50">
                                     <span className="text-gray-700">{a.name}{a.code && <span className="ml-2 text-xs text-gray-400">{a.code}</span>}</span>
-                                    <span className="font-medium text-gray-900">{formatBDT(a.total)}</span>
+                                    <span className="font-medium text-gray-900">{formatBDT(a.total, { locale })}</span>
                                 </div>
                             ))}
                             <div className="flex justify-between font-black text-sm pt-2">
                                 <span>Total Input VAT</span>
-                                <span className="text-emerald-700">{formatBDT(data.input_vat.total)}</span>
+                                <span className="text-emerald-700">{formatBDT(data.input_vat.total, { locale })}</span>
                             </div>
                         </div>
                     </div>

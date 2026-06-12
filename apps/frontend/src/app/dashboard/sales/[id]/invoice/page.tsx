@@ -4,32 +4,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Download, Printer } from 'lucide-react';
 import { api } from '../../../../../lib/api';
-
-function formatBDT(amount: number) {
-    return new Intl.NumberFormat('en-BD', {
-        style: 'currency',
-        currency: 'BDT',
-        minimumFractionDigits: 2,
-    }).format(amount);
-}
-
-function formatDate(dateStr: string) {
-    return new Date(dateStr).toLocaleDateString('en-BD', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-    });
-}
-
-function formatDateTime(dateStr: string) {
-    return new Date(dateStr).toLocaleString('en-BD', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-    });
-}
+import { useI18n, formatMessage } from '@/lib/i18n';
+import { formatBDT, formatDate } from '@/lib/format';
 
 interface InvoiceData {
     sale: {
@@ -74,6 +50,7 @@ interface InvoiceData {
 }
 
 export default function InvoicePage() {
+    const { t, locale } = useI18n();
     const params = useParams();
     const router = useRouter();
     const invoiceRef = useRef<HTMLDivElement>(null);
@@ -85,7 +62,7 @@ export default function InvoicePage() {
         if (!params.id) return;
         api.getSaleInvoice(params.id as string)
             .then((d: InvoiceData) => setData(d))
-            .catch(() => setError('Failed to load invoice'))
+            .catch(() => setError(t.shared.errors.loadInvoice))
             .finally(() => setLoading(false));
     }, [params.id]);
 
@@ -96,7 +73,7 @@ export default function InvoicePage() {
     if (loading) {
         return (
             <div className="flex items-center justify-center h-full">
-                <p className="text-gray-400 text-sm">Loading invoice…</p>
+                <p className="text-gray-400 text-sm">{t.shared.loading.invoice}</p>
             </div>
         );
     }
@@ -104,13 +81,13 @@ export default function InvoicePage() {
     if (error || !data) {
         return (
             <div className="flex items-center justify-center h-full">
-                <p className="text-red-500 text-sm">{error || 'Invoice not found'}</p>
+                <p className="text-red-500 text-sm">{error || '{t.shared.notFound.invoice}'}</p>
             </div>
         );
     }
 
     const { sale, tenant } = data;
-    const businessName = tenant?.brand_business_name || tenant?.name || 'Business';
+    const businessName = tenant?.brand_business_name || tenant?.name || t.shared.business;
     const primaryColor = tenant?.brand_primary_color || '#1d4ed8';
 
     // Calculate line totals and VAT
@@ -161,7 +138,7 @@ export default function InvoicePage() {
                         className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
                     >
                         <ArrowLeft className="h-4 w-4" />
-                        Back to Sale
+                        {t.sales.invoice.backToSale}
                     </button>
                     <div className="flex items-center gap-3">
                         <button
@@ -177,7 +154,7 @@ export default function InvoicePage() {
                             style={{ backgroundColor: primaryColor }}
                         >
                             <Download className="h-4 w-4" />
-                            Download PDF
+                            {t.sales.invoice.downloadPdf}
                         </button>
                     </div>
                 </div>
@@ -206,10 +183,10 @@ export default function InvoicePage() {
                             </div>
                             <div className="text-right">
                                 <div className="text-white/70 text-xs uppercase tracking-widest font-semibold mb-1">
-                                    {hasVat ? 'VAT Invoice (Mushak 6.3)' : 'Invoice'}
+                                    {hasVat ? t.sales.invoice.vatInvoice : t.sales.invoice.invoice}
                                 </div>
                                 <div className="text-white text-2xl font-black">{sale.serial_number}</div>
-                                <div className="text-white/80 text-sm mt-1">{formatDateTime(sale.created_at)}</div>
+                                <div className="text-white/80 text-sm mt-1">{formatDate(sale.created_at, locale)}</div>
                             </div>
                         </div>
                     </div>
@@ -218,25 +195,25 @@ export default function InvoicePage() {
                         {/* Business info + Customer info */}
                         <div className="grid grid-cols-2 gap-8">
                             <div>
-                                <div className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">Seller</div>
+                                <div className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">{t.sales.invoice.seller}</div>
                                 <div className="text-sm font-bold text-gray-900">{businessName}</div>
                                 {sale.store && (
                                     <div className="text-sm text-gray-500">{sale.store.name}</div>
                                 )}
                                 {tenant?.vat_registration_no && (
                                     <div className="text-xs text-gray-500 mt-1">
-                                        BIN (VAT Reg): <span className="font-mono font-semibold">{tenant.vat_registration_no}</span>
+                                        {t.sales.invoice.binVatReg} <span className="font-mono font-semibold">{tenant.vat_registration_no}</span>
                                     </div>
                                 )}
                                 {tenant?.business_tin && (
                                     <div className="text-xs text-gray-500">
-                                        TIN: <span className="font-mono font-semibold">{tenant.business_tin}</span>
+                                        {t.sales.invoice.tin} <span className="font-mono font-semibold">{tenant.business_tin}</span>
                                     </div>
                                 )}
                             </div>
                             <div>
                                 <div className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">
-                                    {sale.customer ? 'Bill To' : 'Walk-in Customer'}
+                                    {sale.customer ? t.sales.invoice.billTo : t.shared.walkInCustomer}
                                 </div>
                                 {sale.customer ? (
                                     <>
@@ -252,7 +229,7 @@ export default function InvoicePage() {
                                         )}
                                     </>
                                 ) : (
-                                    <div className="text-sm text-gray-400 italic">Walk-in Customer</div>
+                                    <div className="text-sm text-gray-400 italic">{t.shared.walkInCustomer}</div>
                                 )}
                             </div>
                         </div>
@@ -260,15 +237,15 @@ export default function InvoicePage() {
                         {/* Invoice meta */}
                         <div className="grid grid-cols-3 gap-4 bg-gray-50 rounded-xl p-4 text-sm">
                             <div>
-                                <div className="text-xs text-gray-400 font-semibold uppercase tracking-wide">Invoice No.</div>
+                                <div className="text-xs text-gray-400 font-semibold uppercase tracking-wide">{t.sales.invoice.invoiceNo}</div>
                                 <div className="font-bold text-gray-800 mt-0.5">{sale.serial_number}</div>
                             </div>
                             <div>
-                                <div className="text-xs text-gray-400 font-semibold uppercase tracking-wide">Date</div>
-                                <div className="font-bold text-gray-800 mt-0.5">{formatDate(sale.created_at)}</div>
+                                <div className="text-xs text-gray-400 font-semibold uppercase tracking-wide">{t.sales.invoice.date}</div>
+                                <div className="font-bold text-gray-800 mt-0.5">{formatDate(sale.created_at, locale)}</div>
                             </div>
                             <div>
-                                <div className="text-xs text-gray-400 font-semibold uppercase tracking-wide">Status</div>
+                                <div className="text-xs text-gray-400 font-semibold uppercase tracking-wide">{t.common.status}</div>
                                 <div className="mt-0.5">
                                     <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
                                         sale.status === 'COMPLETED'
@@ -288,31 +265,31 @@ export default function InvoicePage() {
                             <table className="w-full text-sm">
                                 <thead>
                                     <tr className="border-b-2 border-gray-200">
-                                        <th className="text-left py-3 text-xs font-bold uppercase tracking-widest text-gray-500">Description</th>
-                                        <th className="text-left py-3 text-xs font-bold uppercase tracking-widest text-gray-500">SKU</th>
-                                        <th className="text-center py-3 text-xs font-bold uppercase tracking-widest text-gray-500">Qty</th>
-                                        <th className="text-right py-3 text-xs font-bold uppercase tracking-widest text-gray-500">Unit Price</th>
+                                        <th className="text-left py-3 text-xs font-bold uppercase tracking-widest text-gray-500">{t.sales.invoice.description}</th>
+                                        <th className="text-left py-3 text-xs font-bold uppercase tracking-widest text-gray-500">{t.shared.columns.sku}</th>
+                                        <th className="text-center py-3 text-xs font-bold uppercase tracking-widest text-gray-500">{t.sales.invoice.qty}</th>
+                                        <th className="text-right py-3 text-xs font-bold uppercase tracking-widest text-gray-500">{t.sales.invoice.unitPrice}</th>
                                         {hasVat && (
-                                            <th className="text-right py-3 text-xs font-bold uppercase tracking-widest text-gray-500">VAT</th>
+                                            <th className="text-right py-3 text-xs font-bold uppercase tracking-widest text-gray-500">{t.sales.invoice.vat}</th>
                                         )}
-                                        <th className="text-right py-3 text-xs font-bold uppercase tracking-widest text-gray-500">Amount</th>
+                                        <th className="text-right py-3 text-xs font-bold uppercase tracking-widest text-gray-500">{t.sales.invoice.amount}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100">
                                     {lineItems.map(item => (
                                         <tr key={item.id}>
-                                            <td className="py-3 font-medium text-gray-900">{item.product?.name ?? 'Unknown Product'}</td>
+                                            <td className="py-3 font-medium text-gray-900">{item.product?.name ?? t.shared.unknownProduct}</td>
                                             <td className="py-3 text-gray-400 font-mono text-xs">{item.product?.sku ?? '—'}</td>
                                             <td className="py-3 text-center text-gray-700">{item.quantity}</td>
-                                            <td className="py-3 text-right text-gray-700">{formatBDT(item.unitPrice)}</td>
+                                            <td className="py-3 text-right text-gray-700">{formatBDT(item.unitPrice, { locale })}</td>
                                             {hasVat && (
                                                 <td className="py-3 text-right text-gray-500 text-xs">
                                                     {item.vatRate > 0
-                                                        ? `${item.vatRate}% / ${formatBDT(item.vatAmount)}`
+                                                        ? `${item.vatRate}% / ${formatBDT(item.vatAmount, { locale })}`
                                                         : '—'}
                                                 </td>
                                             )}
-                                            <td className="py-3 text-right font-semibold text-gray-900">{formatBDT(item.lineTotal)}</td>
+                                            <td className="py-3 text-right font-semibold text-gray-900">{formatBDT(item.lineTotal, { locale })}</td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -325,28 +302,28 @@ export default function InvoicePage() {
                                 {hasVat && (
                                     <>
                                         <div className="flex justify-between text-gray-600">
-                                            <span>Subtotal (excl. VAT)</span>
-                                            <span>{formatBDT(subtotal)}</span>
+                                            <span>{t.sales.invoice.subtotalExclVat}</span>
+                                            <span>{formatBDT(subtotal, { locale })}</span>
                                         </div>
                                         <div className="flex justify-between text-gray-600">
-                                            <span>VAT</span>
-                                            <span>{formatBDT(totalVat)}</span>
+                                            <span>{t.sales.invoice.vat}</span>
+                                            <span>{formatBDT(totalVat, { locale })}</span>
                                         </div>
                                     </>
                                 )}
                                 <div
                                     className="flex justify-between font-bold text-base pt-2 border-t-2 border-gray-200"
                                 >
-                                    <span>Total</span>
-                                    <span style={{ color: primaryColor }}>{formatBDT(grandTotal)}</span>
+                                    <span>{t.common.total}</span>
+                                    <span style={{ color: primaryColor }}>{formatBDT(grandTotal, { locale })}</span>
                                 </div>
                                 <div className="flex justify-between text-gray-600">
-                                    <span>Amount Paid</span>
-                                    <span>{formatBDT(amountPaid)}</span>
+                                    <span>{t.sales.invoice.amountPaid}</span>
+                                    <span>{formatBDT(amountPaid, { locale })}</span>
                                 </div>
                                 {Math.abs(balance) > 0.005 && (
                                     <div className={`flex justify-between font-bold ${balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                        <span>{balance >= 0 ? 'Change' : 'Balance Due'}</span>
+                                        <span>{balance >= 0 ? t.sales.invoice.change : t.sales.invoice.balanceDue}</span>
                                         <span>{formatBDT(Math.abs(balance))}</span>
                                     </div>
                                 )}
@@ -356,12 +333,12 @@ export default function InvoicePage() {
                         {/* Payment methods */}
                         {sale.payments.length > 0 && (
                             <div>
-                                <div className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">Payment Details</div>
+                                <div className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">{t.sales.invoice.paymentDetails}</div>
                                 <div className="flex flex-wrap gap-2">
                                     {sale.payments.map((p, i) => (
                                         <div key={i} className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5 text-xs">
                                             <span className="font-semibold text-gray-700">{p.payment_method.replace(/_/g, ' ')}</span>
-                                            <span className="text-gray-500 ml-2">{formatBDT(parseFloat(p.amount))}</span>
+                                            <span className="text-gray-500 ml-2">{formatBDT(parseFloat(p.amount, { locale }))}</span>
                                         </div>
                                     ))}
                                 </div>
@@ -371,24 +348,24 @@ export default function InvoicePage() {
                         {/* Note */}
                         {sale.note && (
                             <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-800">
-                                <span className="font-semibold">Note: </span>{sale.note}
+                                <span className="font-semibold">{t.sales.invoice.notePrefix}</span>{sale.note}
                             </div>
                         )}
 
                         {/* NBR compliance footer */}
                         {hasVat && (
                             <div className="border-t border-dashed border-gray-200 pt-4 text-xs text-gray-400 space-y-1">
-                                <p className="font-semibold text-gray-500">NBR VAT Compliance (Mushak 6.3)</p>
+                                <p className="font-semibold text-gray-500">{t.sales.invoice.nbrCompliance}</p>
                                 {tenant?.vat_registration_no && (
-                                    <p>Supplier BIN: {tenant.vat_registration_no}</p>
+                                    <p>{formatMessage(t.sales.invoice.supplierBin, { bin: tenant.vat_registration_no })}</p>
                                 )}
-                                <p>VAT calculated on the taxable value as per the VAT and Supplementary Duty Act 2012.</p>
+                                <p>{t.sales.invoice.vatActNote}</p>
                             </div>
                         )}
 
                         {/* Footer */}
                         <div className="text-center text-xs text-gray-400 pt-2 border-t border-gray-100">
-                            Thank you for your business · {businessName}
+                            {formatMessage(t.shared.print.thankYouBusiness, { business: businessName })}
                         </div>
                     </div>
                 </div>

@@ -1,3 +1,21 @@
+jest.mock('@/lib/i18n', () => {
+  const { enMessages } = require('@/lib/localization/messages/en');
+
+  return {
+    useI18n: () => ({
+      t: enMessages,
+      locale: 'en',
+    }),
+    formatMessage: (template, values = {}) =>
+      Object.entries(values).reduce(
+        (result, [key, value]) => result.replaceAll(`{${key}}`, String(value)),
+        template,
+      ),
+  };
+}, { virtual: true });
+
+const { enMessages } = require('@/lib/localization/messages/en');
+
 import React from 'react';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import SaleDetailPage from './page';
@@ -98,7 +116,7 @@ describe('SaleDetailPage', () => {
     it('shows loading state initially', () => {
         getApi().getSale.mockReturnValue(new Promise(() => {}));
         render(<SaleDetailPage />);
-        expect(screen.getByText('Loading sale...')).toBeInTheDocument();
+        expect(screen.getByText(enMessages.shared.loading.sale)).toBeInTheDocument();
     });
 
     it('renders the sale serial number after loading', async () => {
@@ -111,7 +129,7 @@ describe('SaleDetailPage', () => {
     it('renders status badge', async () => {
         render(<SaleDetailPage />);
         await waitFor(() => {
-            expect(screen.getByText('COMPLETED')).toBeInTheDocument();
+            expect(screen.getByText(enMessages.shared.statuses.sale.COMPLETED)).toBeInTheDocument();
         });
     });
 
@@ -126,7 +144,7 @@ describe('SaleDetailPage', () => {
     it('renders payment records section', async () => {
         render(<SaleDetailPage />);
         await waitFor(() => {
-            expect(screen.getByText('Payment Records')).toBeInTheDocument();
+            expect(screen.getByText(enMessages.sales.detail.paymentRecords)).toBeInTheDocument();
             expect(screen.getByText('CASH')).toBeInTheDocument();
         });
     });
@@ -142,7 +160,7 @@ describe('SaleDetailPage', () => {
         getApi().getSale.mockResolvedValue({ ...mockSale, note: null });
         render(<SaleDetailPage />);
         await waitFor(() => {
-            expect(screen.getByText('No note added')).toBeInTheDocument();
+            expect(screen.getByText(enMessages.shared.empty.noNote)).toBeInTheDocument();
         });
     });
 
@@ -150,7 +168,7 @@ describe('SaleDetailPage', () => {
         getApi().getSale.mockRejectedValue(new Error('Not found'));
         render(<SaleDetailPage />);
         await waitFor(() => {
-            expect(screen.getByText('Sale not found')).toBeInTheDocument();
+            expect(screen.getByText(enMessages.shared.notFound.sale)).toBeInTheDocument();
         });
     });
 
@@ -174,9 +192,9 @@ describe('SaleDetailPage', () => {
     it('shows summary cards with correct labels', async () => {
         render(<SaleDetailPage />);
         await waitFor(() => {
-            expect(screen.getAllByText('Total').length).toBeGreaterThan(0);
-            expect(screen.getByText('Paid')).toBeInTheDocument();
-            expect(screen.getByText('Items')).toBeInTheDocument();
+            expect(screen.getAllByText(enMessages.common.total).length).toBeGreaterThan(0);
+            expect(screen.getByText(enMessages.sales.columns.paid)).toBeInTheDocument();
+            expect(screen.getByText(enMessages.sales.columns.items)).toBeInTheDocument();
         });
     });
 
@@ -202,7 +220,7 @@ describe('SaleDetailPage', () => {
         getApi().getSale.mockResolvedValue({ ...mockSale, payments: [] });
         render(<SaleDetailPage />);
         await waitFor(() => {
-            expect(screen.getByText('No payment records')).toBeInTheDocument();
+            expect(screen.getByText(enMessages.shared.empty.noPaymentRecords)).toBeInTheDocument();
         });
     });
 
@@ -217,14 +235,14 @@ describe('SaleDetailPage', () => {
     it('shows Line Items heading', async () => {
         render(<SaleDetailPage />);
         await waitFor(() => {
-            expect(screen.getByText('Line Items')).toBeInTheDocument();
+            expect(screen.getByText(enMessages.sales.detail.lineItems)).toBeInTheDocument();
         });
     });
 
     it('shows Note heading', async () => {
         render(<SaleDetailPage />);
         await waitFor(() => {
-            expect(screen.getByText('Note')).toBeInTheDocument();
+            expect(screen.getByText(enMessages.sales.detail.note)).toBeInTheDocument();
         });
     });
 });
@@ -254,7 +272,7 @@ describe('SaleDetailPage - edit mode', () => {
         render(<SaleDetailPage />);
         await waitFor(() => {
             expect(
-                screen.getByText(/edit mode — modify items, payments, customer, status, and note/i),
+                screen.getByText(enMessages.shared.editMode.sale),
             ).toBeInTheDocument();
         });
     });
@@ -263,7 +281,7 @@ describe('SaleDetailPage - edit mode', () => {
         setEditMode(true);
         render(<SaleDetailPage />);
         await waitFor(() => {
-            expect(screen.getByDisplayValue('COMPLETED')).toBeInTheDocument();
+            expect(screen.getByDisplayValue(enMessages.shared.statuses.sale.COMPLETED)).toBeInTheDocument();
         });
     });
 
@@ -294,7 +312,7 @@ describe('SaleDetailPage - edit mode', () => {
         setEditMode(true);
         render(<SaleDetailPage />);
         await waitFor(() => {
-            expect(screen.getByPlaceholderText(/add a note about this sale/i)).toBeInTheDocument();
+            expect(screen.getByPlaceholderText(enMessages.sales.detail.notePlaceholder)).toBeInTheDocument();
         });
     });
 

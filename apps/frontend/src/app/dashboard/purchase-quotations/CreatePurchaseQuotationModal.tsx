@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Search, Trash2, X } from 'lucide-react';
 import { api } from '@/lib/api';
 import { formatBDT } from '@/lib/format';
+import { useI18n, formatMessage } from '@/lib/i18n';
 
 interface Product {
     id: string;
@@ -91,7 +92,7 @@ export default function CreatePurchaseQuotationModal({ isOpen, onClose, onSucces
     const total = items.reduce((s, i) => s + i.quantity * i.unitCost, 0);
 
     const handleSubmit = async () => {
-        if (items.length === 0) { setError('Add at least one product.'); return; }
+        if (items.length === 0) { setError(t.purchaseShared.addOneProduct); return; }
         setLoading(true);
         setError('');
         try {
@@ -106,7 +107,7 @@ export default function CreatePurchaseQuotationModal({ isOpen, onClose, onSucces
             onSuccess();
             onClose();
         } catch (err: any) {
-            setError(err.message || 'Failed to create RFQ');
+            setError(err.message || t.purchaseShared.failedCreateRfq);
         } finally {
             setLoading(false);
         }
@@ -142,7 +143,7 @@ export default function CreatePurchaseQuotationModal({ isOpen, onClose, onSucces
                                         <Search className="w-4 h-4 text-gray-400" />
                                         <input
                                             type="text"
-                                            placeholder="Search by name or SKU..."
+                                            placeholder={t.purchaseShared.searchProductsShort}
                                             value={productSearch}
                                             onChange={(e) => { setProductSearch(e.target.value); setShowDropdown(true); }}
                                             onFocus={() => setShowDropdown(true)}
@@ -158,7 +159,7 @@ export default function CreatePurchaseQuotationModal({ isOpen, onClose, onSucces
                                                         <span className="text-sm font-bold">{p.name}</span>
                                                         <span className="text-xs text-gray-400 ml-2">{p.sku}</span>
                                                     </div>
-                                                    <span className="text-sm font-bold text-blue-600">{formatBDT(Number(p.price || 0))}</span>
+                                                    <span className="text-sm font-bold text-blue-600">{formatBDT(Number(p.price || 0), { locale })}</span>
                                                 </button>
                                             ))}
                                         </div>
@@ -170,10 +171,10 @@ export default function CreatePurchaseQuotationModal({ isOpen, onClose, onSucces
                                 <table className="w-full">
                                     <thead>
                                         <tr className="border-b border-gray-100">
-                                            <th className="text-left pb-2 text-[10px] font-black uppercase tracking-widest text-gray-400">Product</th>
-                                            <th className="text-center pb-2 text-[10px] font-black uppercase tracking-widest text-gray-400 w-24">Qty</th>
-                                            <th className="text-right pb-2 text-[10px] font-black uppercase tracking-widest text-gray-400 w-32">Unit Cost</th>
-                                            <th className="text-right pb-2 text-[10px] font-black uppercase tracking-widest text-gray-400 w-28">Total</th>
+                                            <th className="text-left pb-2 text-[10px] font-black uppercase tracking-widest text-gray-400">{t.common.product}</th>
+                                            <th className="text-center pb-2 text-[10px] font-black uppercase tracking-widest text-gray-400 w-24">{t.purchaseShared.qty}</th>
+                                            <th className="text-right pb-2 text-[10px] font-black uppercase tracking-widest text-gray-400 w-32">{t.purchaseShared.unitCost}</th>
+                                            <th className="text-right pb-2 text-[10px] font-black uppercase tracking-widest text-gray-400 w-28">{t.common.total}</th>
                                             <th className="w-10"></th>
                                         </tr>
                                     </thead>
@@ -195,7 +196,7 @@ export default function CreatePurchaseQuotationModal({ isOpen, onClose, onSucces
                                                         className="w-full text-right bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 text-sm font-bold" />
                                                 </td>
                                                 <td className="py-3 text-right text-sm font-black text-blue-600">
-                                                    {formatBDT(item.quantity * item.unitCost)}
+                                                    {formatBDT(item.quantity * item.unitCost, { locale })}
                                                 </td>
                                                 <td className="py-3 text-center">
                                                     <button onClick={() => removeItem(idx)} className="p-1 text-gray-300 hover:text-red-500">
@@ -212,10 +213,10 @@ export default function CreatePurchaseQuotationModal({ isOpen, onClose, onSucces
                         {/* Right: supplier + validity */}
                         <div className="space-y-5">
                             <div className="rounded-2xl border border-gray-100 bg-gray-50/70 p-4 space-y-3">
-                                <h3 className="text-sm font-black tracking-tight">Supplier</h3>
+                                <h3 className="text-sm font-black tracking-tight">{t.common.supplier}</h3>
                                 <select value={supplierId} onChange={(e) => setSupplierId(e.target.value)}
                                     className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-bold focus:ring-2 focus:ring-blue-500/20">
-                                    <option value="">No supplier selected</option>
+                                    <option value="">{t.purchaseShared.noSupplier}</option>
                                     {suppliers.map((s) => (
                                         <option key={s.id} value={s.id}>{s.name}</option>
                                     ))}
@@ -227,7 +228,7 @@ export default function CreatePurchaseQuotationModal({ isOpen, onClose, onSucces
                                 </div>
                                 <div>
                                     <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1">Notes</label>
-                                    <textarea placeholder="Notes or special requirements..." value={notes} onChange={(e) => setNotes(e.target.value)}
+                                    <textarea placeholder={t.purchaseShared.notesRequirementsPlaceholder} value={notes} onChange={(e) => setNotes(e.target.value)}
                                         rows={3} className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-medium focus:ring-2 focus:ring-blue-500/20" />
                                 </div>
                             </div>
@@ -235,9 +236,9 @@ export default function CreatePurchaseQuotationModal({ isOpen, onClose, onSucces
                             <div className="rounded-2xl bg-blue-950 text-white p-5">
                                 <div className="flex justify-between items-center">
                                     <span className="text-xs font-black uppercase tracking-widest text-blue-200">RFQ Total</span>
-                                    <span className="text-2xl font-black">{formatBDT(total)}</span>
+                                    <span className="text-2xl font-black">{formatBDT(total, { locale })}</span>
                                 </div>
-                                <p className="text-xs text-blue-300 mt-2">Estimated based on current prices</p>
+                                <p className="text-xs text-blue-300 mt-2">{t.purchaseShared.rfqTotalHint}</p>
                             </div>
                         </div>
                     </div>

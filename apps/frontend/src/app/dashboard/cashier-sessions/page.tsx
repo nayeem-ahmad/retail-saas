@@ -4,8 +4,10 @@ import { useState, useEffect } from 'react';
 import { Clock, DollarSign, ArrowDownCircle, ArrowUpCircle, X, CheckCircle, AlertCircle, Monitor } from 'lucide-react';
 import { api } from '../../../lib/api';
 import { formatBDT } from '../../../lib/format';
+import { useI18n, formatMessage } from '@/lib/i18n';
 
 export default function CashierSessionsPage() {
+    const { t, locale } = useI18n();
     const [session, setSession] = useState<any>(null);
     const [transactions, setTransactions] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -69,7 +71,7 @@ export default function CashierSessionsPage() {
             setSelectedCounterId('');
             loadSession();
         } catch (error: any) {
-            alert(error.message || 'Failed to open session');
+            alert(error.message || t.shared.errors.openSession);
         }
     };
 
@@ -84,7 +86,7 @@ export default function CashierSessionsPage() {
             setTransactions([]);
             loadSession();
         } catch (error: any) {
-            alert(error.message || 'Failed to close session');
+            alert(error.message || t.shared.errors.closeSession);
         }
     };
 
@@ -103,17 +105,17 @@ export default function CashierSessionsPage() {
             const txData = await api.getCashTransactions(session.id);
             setTransactions(txData);
         } catch (error: any) {
-            alert(error.message || 'Failed to add transaction');
+            alert(error.message || t.shared.errors.addTransaction);
         }
     };
 
-    const totalCashIn = transactions.filter(t => parseFloat(t.amount) > 0).reduce((sum, t) => sum + parseFloat(t.amount), 0);
-    const totalCashOut = transactions.filter(t => parseFloat(t.amount) < 0).reduce((sum, t) => sum + Math.abs(parseFloat(t.amount)), 0);
+    const totalCashIn = transactions.filter((tx) => parseFloat(tx.amount) > 0).reduce((sum, tx) => sum + parseFloat(tx.amount), 0);
+    const totalCashOut = transactions.filter((tx) => parseFloat(tx.amount) < 0).reduce((sum, tx) => sum + Math.abs(parseFloat(tx.amount)), 0);
 
     if (loading) {
         return (
             <div className="flex items-center justify-center h-full bg-[#f3f4f6]">
-                <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Loading...</p>
+                <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">{t.common.loading}</p>
             </div>
         );
     }
@@ -124,8 +126,8 @@ export default function CashierSessionsPage() {
                 {/* Header */}
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-black tracking-tight">Cashier Session</h1>
-                        <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mt-0.5">Daily register management</p>
+                        <h1 className="text-2xl font-black tracking-tight">{t.cashierSessions.title}</h1>
+                        <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mt-0.5">{t.cashierSessions.subtitle}</p>
                     </div>
                     {!session ? (
                         <button
@@ -133,7 +135,7 @@ export default function CashierSessionsPage() {
                             className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-2xl font-black text-sm uppercase tracking-widest shadow-lg flex items-center space-x-2 transition-all hover:-translate-y-0.5"
                         >
                             <Clock className="w-5 h-5" />
-                            <span>Open Shift</span>
+                            <span>{t.cashierSessions.openShift}</span>
                         </button>
                     ) : (
                         <button
@@ -141,7 +143,7 @@ export default function CashierSessionsPage() {
                             className="bg-rose-600 hover:bg-rose-700 text-white px-6 py-3 rounded-2xl font-black text-sm uppercase tracking-widest shadow-lg flex items-center space-x-2 transition-all hover:-translate-y-0.5"
                         >
                             <Clock className="w-5 h-5" />
-                            <span>Close Shift</span>
+                            <span>{t.cashierSessions.closeShift}</span>
                         </button>
                     )}
                 </div>
@@ -156,9 +158,9 @@ export default function CashierSessionsPage() {
                                         <CheckCircle className="w-6 h-6" />
                                     </div>
                                     <div>
-                                        <h2 className="text-lg font-black tracking-tight">Session Active</h2>
+                                        <h2 className="text-lg font-black tracking-tight">{t.cashierSessions.sessionActive}</h2>
                                         <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">
-                                            Opened: {new Date(session.opened_at).toLocaleString()}
+                                            {formatMessage(t.cashierSessions.opened, { date: new Date(session.opened_at).toLocaleString() })}
                                         </p>
                                     </div>
                                 </div>
@@ -166,7 +168,7 @@ export default function CashierSessionsPage() {
                                     <div className="flex items-center gap-2 bg-blue-50 border border-blue-100 rounded-xl px-3 py-2">
                                         <Monitor className="w-4 h-4 text-blue-500" />
                                         <div>
-                                            <span className="text-[10px] font-black uppercase tracking-widest text-blue-400 block">Counter</span>
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-blue-400 block">{t.cashierSessions.counter}</span>
                                             <span className="text-sm font-black text-blue-700">{session.counter.name}</span>
                                         </div>
                                     </div>
@@ -174,16 +176,16 @@ export default function CashierSessionsPage() {
                             </div>
                             <div className="grid grid-cols-3 gap-4">
                                 <div className="bg-gray-50 p-4 rounded-2xl">
-                                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1">Opening Cash</span>
-                                    <span className="text-xl font-black text-gray-900">{formatBDT(parseFloat(session.opening_cash))}</span>
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-1">{t.cashierSessions.openingCash}</span>
+                                    <span className="text-xl font-black text-gray-900">{formatBDT(parseFloat(session.opening_cash), { locale })}</span>
                                 </div>
                                 <div className="bg-green-50 p-4 rounded-2xl">
-                                    <span className="text-[10px] font-black uppercase tracking-widest text-green-500 block mb-1">Cash In</span>
-                                    <span className="text-xl font-black text-green-600">{formatBDT(totalCashIn)}</span>
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-green-500 block mb-1">{t.cashierSessions.cashIn}</span>
+                                    <span className="text-xl font-black text-green-600">{formatBDT(totalCashIn, { locale })}</span>
                                 </div>
                                 <div className="bg-rose-50 p-4 rounded-2xl">
-                                    <span className="text-[10px] font-black uppercase tracking-widest text-rose-400 block mb-1">Cash Out</span>
-                                    <span className="text-xl font-black text-rose-600">{formatBDT(totalCashOut)}</span>
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-rose-400 block mb-1">{t.cashierSessions.cashOut}</span>
+                                    <span className="text-xl font-black text-rose-600">{formatBDT(totalCashOut, { locale })}</span>
                                 </div>
                             </div>
                         </div>
@@ -195,19 +197,19 @@ export default function CashierSessionsPage() {
                                 className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest shadow-md flex items-center space-x-2 transition-all"
                             >
                                 <DollarSign className="w-4 h-4" />
-                                <span>Record Cash In/Out</span>
+                                <span>{t.cashierSessions.recordCashInOut}</span>
                             </button>
                         </div>
 
                         {/* Transactions List */}
                         <div className="bg-white rounded-3xl shadow-sm overflow-hidden">
                             <div className="p-6 border-b border-gray-100">
-                                <h3 className="text-lg font-black tracking-tight">Cash Transactions</h3>
+                                <h3 className="text-lg font-black tracking-tight">{t.cashierSessions.cashTransactions}</h3>
                             </div>
                             {transactions.length === 0 ? (
                                 <div className="p-8 text-center text-gray-300">
                                     <DollarSign className="w-12 h-12 mx-auto opacity-20 mb-2" />
-                                    <p className="text-xs font-black uppercase tracking-widest">No transactions yet</p>
+                                    <p className="text-xs font-black uppercase tracking-widest">{t.shared.empty.noTransactions}</p>
                                 </div>
                             ) : (
                                 <div className="divide-y divide-gray-50">
@@ -225,12 +227,12 @@ export default function CashierSessionsPage() {
                                                 )}
                                                 <div>
                                                     <span className="text-sm font-black text-gray-900 block">{tx.type}</span>
-                                                    <span className="text-xs text-gray-400">{tx.description || '—'}</span>
+                                                    <span className="text-xs text-gray-400">{tx.description || t.shared.dash}</span>
                                                 </div>
                                             </div>
                                             <div className="text-right">
                                                 <span className={`text-sm font-black ${parseFloat(tx.amount) > 0 ? 'text-green-600' : 'text-rose-600'}`}>
-                                                    {parseFloat(tx.amount) > 0 ? '+' : ''}{formatBDT(parseFloat(tx.amount))}
+                                                    {parseFloat(tx.amount) > 0 ? '+' : ''}{formatBDT(parseFloat(tx.amount), { locale })}
                                                 </span>
                                                 <span className="text-[10px] text-gray-400 block">{new Date(tx.created_at).toLocaleTimeString()}</span>
                                             </div>
@@ -243,8 +245,8 @@ export default function CashierSessionsPage() {
                 ) : (
                     <div className="bg-white rounded-3xl shadow-sm p-12 text-center">
                         <AlertCircle className="w-16 h-16 mx-auto text-gray-200 mb-4" />
-                        <h2 className="text-lg font-black tracking-tight text-gray-400">No Active Session</h2>
-                        <p className="text-xs font-bold text-gray-300 uppercase tracking-widest mt-1">Open a shift to start tracking cash</p>
+                        <h2 className="text-lg font-black tracking-tight text-gray-400">{t.cashierSessions.noActiveSession}</h2>
+                        <p className="text-xs font-bold text-gray-300 uppercase tracking-widest mt-1">{t.cashierSessions.noActiveSessionHint}</p>
                     </div>
                 )}
             </div>
@@ -254,7 +256,7 @@ export default function CashierSessionsPage() {
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
                     <div className="bg-white w-[420px] rounded-3xl shadow-2xl overflow-hidden">
                         <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
-                            <h2 className="text-xl font-black tracking-tight">Open Shift</h2>
+                            <h2 className="text-xl font-black tracking-tight">{t.cashierSessions.openShiftTitle}</h2>
                             <button onClick={() => setShowOpenModal(false)} className="p-2 hover:bg-white rounded-xl text-gray-400 hover:text-gray-900 transition-all">
                                 <X className="w-5 h-5" />
                             </button>
@@ -262,13 +264,13 @@ export default function CashierSessionsPage() {
                         <div className="p-6 space-y-4">
                             {counters.length > 0 && (
                                 <div className="space-y-2">
-                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">Counter</label>
+                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">{t.cashierSessions.counter}</label>
                                     <select
                                         value={selectedCounterId}
                                         onChange={(e) => setSelectedCounterId(e.target.value)}
                                         className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 font-bold text-gray-900 focus:ring-2 focus:ring-green-500/20 focus:bg-white transition-all shadow-sm"
                                     >
-                                        <option value="">No counter (walk-in)</option>
+                                        <option value="">{t.shared.form.walkInNoCounter}</option>
                                         {counters.map((c) => (
                                             <option key={c.id} value={c.id}>#{c.counter_number} — {c.name}</option>
                                         ))}
@@ -276,14 +278,14 @@ export default function CashierSessionsPage() {
                                 </div>
                             )}
                             <div className="space-y-2">
-                                <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">Opening Cash Amount</label>
+                                <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">{t.cashierSessions.openingCashAmount}</label>
                                 <input
                                     type="number"
                                     min="0"
                                     value={openingCash || ''}
                                     onChange={(e) => setOpeningCash(parseFloat(e.target.value) || 0)}
                                     className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 font-black text-gray-900 focus:ring-2 focus:ring-green-500/20 focus:bg-white transition-all shadow-sm"
-                                    placeholder="0.00"
+                                    placeholder={t.shared.form.amountPlaceholder}
                                 />
                             </div>
                         </div>
@@ -304,32 +306,32 @@ export default function CashierSessionsPage() {
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
                     <div className="bg-white w-[420px] rounded-3xl shadow-2xl overflow-hidden">
                         <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
-                            <h2 className="text-xl font-black tracking-tight">Close Shift</h2>
+                            <h2 className="text-xl font-black tracking-tight">{t.cashierSessions.closeShiftTitle}</h2>
                             <button onClick={() => setShowCloseModal(false)} className="p-2 hover:bg-white rounded-xl text-gray-400 hover:text-gray-900 transition-all">
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
                         <div className="p-6 space-y-4">
                             <div className="bg-blue-50 p-4 rounded-2xl border border-blue-100">
-                                <span className="text-[10px] font-black uppercase tracking-widest text-blue-400 block mb-1">Expected Cash</span>
+                                <span className="text-[10px] font-black uppercase tracking-widest text-blue-400 block mb-1">{t.cashierSessions.expectedCash}</span>
                                 <span className="text-2xl font-black text-blue-600">
                                     {formatBDT(parseFloat(session?.opening_cash || 0) + totalCashIn - totalCashOut)}
                                 </span>
                             </div>
                             <div className="space-y-2">
-                                <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">Actual Closing Cash</label>
+                                <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">{t.cashierSessions.actualClosingCash}</label>
                                 <input
                                     type="number"
                                     min="0"
                                     value={closingCash || ''}
                                     onChange={(e) => setClosingCash(parseFloat(e.target.value) || 0)}
                                     className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 font-black text-gray-900 focus:ring-2 focus:ring-rose-500/20 focus:bg-white transition-all shadow-sm"
-                                    placeholder="0.00"
+                                    placeholder={t.shared.form.amountPlaceholder}
                                 />
                             </div>
                             {closingCash > 0 && (
                                 <div className={`p-3 rounded-2xl ${Math.abs(closingCash - (parseFloat(session?.opening_cash || 0) + totalCashIn - totalCashOut)) < 0.01 ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-600'}`}>
-                                    <span className="text-[10px] font-black uppercase tracking-widest block mb-1">Difference</span>
+                                    <span className="text-[10px] font-black uppercase tracking-widest block mb-1">{t.cashierSessions.difference}</span>
                                     <span className="text-lg font-black">
                                         {formatBDT(closingCash - (parseFloat(session?.opening_cash || 0) + totalCashIn - totalCashOut))}
                                     </span>
@@ -353,43 +355,43 @@ export default function CashierSessionsPage() {
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
                     <div className="bg-white w-[420px] rounded-3xl shadow-2xl overflow-hidden">
                         <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
-                            <h2 className="text-xl font-black tracking-tight">Cash In/Out</h2>
+                            <h2 className="text-xl font-black tracking-tight">{t.cashierSessions.cashInOutTitle}</h2>
                             <button onClick={() => setShowTxModal(false)} className="p-2 hover:bg-white rounded-xl text-gray-400 hover:text-gray-900 transition-all">
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
                         <div className="p-6 space-y-4">
                             <div className="space-y-2">
-                                <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">Type</label>
+                                <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">{t.cashierSessions.type}</label>
                                 <select
                                     value={txType}
                                     onChange={(e) => setTxType(e.target.value)}
                                     className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 font-bold text-gray-900 focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all shadow-sm"
                                 >
-                                    <option value="DROP">Cash Drop (In)</option>
-                                    <option value="LOAN">Cash Loan (In)</option>
-                                    <option value="PAYOUT">Payout (Out)</option>
-                                    <option value="OTHER">Other</option>
+                                    <option value="DROP">{t.cashierSessions.types.drop}</option>
+                                    <option value="LOAN">{t.cashierSessions.types.loan}</option>
+                                    <option value="PAYOUT">{t.cashierSessions.types.payout}</option>
+                                    <option value="OTHER">{t.cashierSessions.types.other}</option>
                                 </select>
                             </div>
                             <div className="space-y-2">
-                                <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">Amount (positive = in, negative = out)</label>
+                                <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">{t.shared.form.amountInOutHint}</label>
                                 <input
                                     type="number"
                                     value={txAmount || ''}
                                     onChange={(e) => setTxAmount(parseFloat(e.target.value) || 0)}
                                     className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 font-black text-gray-900 focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all shadow-sm"
-                                    placeholder="0.00"
+                                    placeholder={t.shared.form.amountPlaceholder}
                                 />
                             </div>
                             <div className="space-y-2">
-                                <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">Description (optional)</label>
+                                <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block">{t.cashierSessions.descriptionOptional}</label>
                                 <input
                                     type="text"
                                     value={txDescription}
                                     onChange={(e) => setTxDescription(e.target.value)}
                                     className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 font-medium text-gray-900 focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all shadow-sm"
-                                    placeholder="e.g. Change for register"
+                                    placeholder={t.shared.form.changeDescription}
                                 />
                             </div>
                         </div>

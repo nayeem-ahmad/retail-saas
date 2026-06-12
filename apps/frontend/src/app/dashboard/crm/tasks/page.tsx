@@ -5,6 +5,7 @@ import { CheckCircle2, Clock, AlertCircle, Plus, Phone, RefreshCw, CheckCheck, T
 import { api } from '../../../../lib/api';
 import { formatDate } from '../../../../lib/format';
 import Link from 'next/link';
+import { useI18n } from '@/lib/i18n';
 
 interface CrmTask {
     id: string;
@@ -40,6 +41,7 @@ const typeLabels: Record<string, string> = {
 };
 
 export default function CrmTasksPage() {
+    const { t } = useI18n();
     const [tasks, setTasks] = useState<CrmTask[]>([]);
     const [summary, setSummary] = useState<TaskSummary | null>(null);
     const [loading, setLoading] = useState(true);

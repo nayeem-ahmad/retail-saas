@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { TrendingUp, ShoppingCart, BarChart3, RotateCcw, Package } from 'lucide-react';
 import { api } from '@/lib/api';
 import { formatBDT } from '@/lib/format';
+import { useI18n, formatMessage } from '@/lib/i18n';
 
 function defaultFrom() {
     const d = new Date();
@@ -89,6 +90,8 @@ function Skeleton({ className }: { className?: string }) {
 }
 
 export default function BranchReportPage() {
+    const { t } = useI18n();
+    const m = t.reports.branch;
     const [stores, setStores] = useState<Store[]>([]);
     const [selectedStore, setSelectedStore] = useState<string>('');
     const [fromDate, setFromDate] = useState(defaultFrom());
@@ -126,7 +129,7 @@ export default function BranchReportPage() {
             const data = await api.getBranchReport({ storeId, from, to });
             setReport(data as BranchReport);
         } catch (err: any) {
-            setError(err?.message ?? 'Failed to load report');
+            setError(err?.message ?? m.loadFailed);
         } finally {
             setLoading(false);
         }
@@ -149,9 +152,9 @@ export default function BranchReportPage() {
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row sm:items-end gap-4">
                     <div className="flex-1">
-                        <h1 className="text-2xl font-bold text-gray-900">Branch Report</h1>
+                        <h1 className="text-2xl font-bold text-gray-900">{m.title}</h1>
                         <p className="mt-1 text-sm text-gray-500">
-                            Detailed sales performance for a single branch
+                            {m.description}
                         </p>
                     </div>
 
@@ -166,7 +169,7 @@ export default function BranchReportPage() {
                                 className="bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-700 shadow-sm outline-none focus:ring-2 focus:ring-blue-500"
                             >
                                 {stores.length === 0 && (
-                                    <option value="">No stores found</option>
+                                    <option value="">{m.noStores}</option>
                                 )}
                                 {stores.map((s) => (
                                     <option key={s.id} value={s.id}>{s.name}</option>
@@ -175,7 +178,7 @@ export default function BranchReportPage() {
                         )}
 
                         <div className="flex items-center gap-1.5 bg-white border border-gray-200 rounded-xl px-3 py-2 shadow-sm">
-                            <label className="text-xs font-semibold text-gray-400 uppercase tracking-widest shrink-0">From</label>
+                            <label className="text-xs font-semibold text-gray-400 uppercase tracking-widest shrink-0">{m.fromLabel}</label>
                             <input
                                 type="date"
                                 value={inputFrom}
@@ -185,7 +188,7 @@ export default function BranchReportPage() {
                             />
                         </div>
                         <div className="flex items-center gap-1.5 bg-white border border-gray-200 rounded-xl px-3 py-2 shadow-sm">
-                            <label className="text-xs font-semibold text-gray-400 uppercase tracking-widest shrink-0">To</label>
+                            <label className="text-xs font-semibold text-gray-400 uppercase tracking-widest shrink-0">{m.toLabel}</label>
                             <input
                                 type="date"
                                 value={inputTo}
@@ -199,7 +202,7 @@ export default function BranchReportPage() {
                             disabled={loading || !selectedStore}
                             className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-semibold px-4 py-2 rounded-xl shadow-sm transition-colors"
                         >
-                            {loading ? 'Loading…' : 'Generate'}
+                            {loading ? m.loading : m.generate}
                         </button>
                     </div>
                 </div>
@@ -242,37 +245,37 @@ export default function BranchReportPage() {
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                             <KpiCard
                                 icon={TrendingUp}
-                                label="Branch Revenue"
+                                label={m.summary.branchRevenue}
                                 value={formatBDT(r.summary.revenue)}
                                 accent="bg-blue-500"
-                                sub={`${r.company_comparison.revenue_share.toFixed(1)}% of company`}
+                                sub={formatMessage(m.summary.percentOfCompany, { percent: r.company_comparison.revenue_share.toFixed(1) })}
                             />
                             <KpiCard
                                 icon={ShoppingCart}
-                                label="Transactions"
+                                label={m.summary.transactions}
                                 value={r.summary.transactions.toLocaleString()}
                                 accent="bg-emerald-500"
-                                sub={`of ${r.company_comparison.company_transactions.toLocaleString()} total`}
+                                sub={formatMessage(m.summary.transactionsSub, { total: r.company_comparison.company_transactions.toLocaleString() })}
                             />
                             <KpiCard
                                 icon={BarChart3}
-                                label="Avg Order Value"
+                                label={m.summary.avgOrder}
                                 value={formatBDT(r.summary.avg_order)}
                                 accent="bg-violet-500"
                             />
                             <KpiCard
                                 icon={RotateCcw}
-                                label="Returns"
+                                label={m.summary.returns}
                                 value={formatBDT(r.summary.returns)}
                                 accent="bg-rose-500"
-                                sub={`Net: ${formatBDT(r.summary.net_revenue)}`}
+                                sub={formatMessage(m.summary.netSub, { amount: formatBDT(r.summary.net_revenue) })}
                             />
                         </div>
 
                         {/* Company comparison bar */}
                         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
                             <h3 className="text-sm font-bold uppercase tracking-widest text-gray-400 mb-4">
-                                Branch vs Company Revenue
+                                {m.companyComparison.title}
                             </h3>
                             <div className="space-y-3">
                                 <div className="flex items-center gap-3">
@@ -288,7 +291,7 @@ export default function BranchReportPage() {
                                     </span>
                                 </div>
                                 <div className="flex items-center gap-3">
-                                    <span className="w-28 shrink-0 text-sm text-gray-500 text-right">All Branches</span>
+                                    <span className="w-28 shrink-0 text-sm text-gray-500 text-right">{m.companyComparison.allBranches}</span>
                                     <div className="flex-1 h-7 bg-gray-100 rounded-lg overflow-hidden">
                                         <div className="h-full bg-gray-300 rounded-lg w-full" />
                                     </div>
@@ -304,21 +307,21 @@ export default function BranchReportPage() {
                             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                                 <div className="px-6 py-4 border-b border-gray-100">
                                     <h3 className="text-sm font-bold uppercase tracking-widest text-gray-400">
-                                        Top Products
+                                        {m.topProducts.title}
                                     </h3>
                                 </div>
                                 {r.top_products.length === 0 ? (
                                     <div className="px-6 py-8 text-center text-gray-400 text-sm">
                                         <Package className="w-8 h-8 mx-auto mb-2 text-gray-200" />
-                                        No sales data
+                                        {m.topProducts.empty}
                                     </div>
                                 ) : (
                                     <table className="w-full text-sm">
                                         <thead>
                                             <tr className="bg-gray-50">
-                                                <th className="text-left px-6 py-3 text-xs font-semibold uppercase tracking-widest text-gray-400">Product</th>
-                                                <th className="text-right px-4 py-3 text-xs font-semibold uppercase tracking-widest text-gray-400">Units</th>
-                                                <th className="text-right px-4 py-3 text-xs font-semibold uppercase tracking-widest text-gray-400">Revenue</th>
+                                                <th className="text-left px-6 py-3 text-xs font-semibold uppercase tracking-widest text-gray-400">{m.topProducts.product}</th>
+                                                <th className="text-right px-4 py-3 text-xs font-semibold uppercase tracking-widest text-gray-400">{m.topProducts.units}</th>
+                                                <th className="text-right px-4 py-3 text-xs font-semibold uppercase tracking-widest text-gray-400">{m.topProducts.revenue}</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-gray-50">
@@ -338,22 +341,22 @@ export default function BranchReportPage() {
                             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                                 <div className="px-6 py-4 border-b border-gray-100">
                                     <h3 className="text-sm font-bold uppercase tracking-widest text-gray-400">
-                                        Daily Breakdown
+                                        {m.dailyBreakdown.title}
                                     </h3>
                                 </div>
                                 {r.daily.length === 0 ? (
                                     <div className="px-6 py-8 text-center text-gray-400 text-sm">
                                         <BarChart3 className="w-8 h-8 mx-auto mb-2 text-gray-200" />
-                                        No daily data
+                                        {m.dailyBreakdown.empty}
                                     </div>
                                 ) : (
                                     <div className="overflow-y-auto max-h-72">
                                         <table className="w-full text-sm">
                                             <thead className="sticky top-0 bg-gray-50">
                                                 <tr>
-                                                    <th className="text-left px-6 py-3 text-xs font-semibold uppercase tracking-widest text-gray-400">Date</th>
-                                                    <th className="text-right px-4 py-3 text-xs font-semibold uppercase tracking-widest text-gray-400">Txns</th>
-                                                    <th className="text-right px-4 py-3 text-xs font-semibold uppercase tracking-widest text-gray-400">Net Revenue</th>
+                                                    <th className="text-left px-6 py-3 text-xs font-semibold uppercase tracking-widest text-gray-400">{m.dailyBreakdown.date}</th>
+                                                    <th className="text-right px-4 py-3 text-xs font-semibold uppercase tracking-widest text-gray-400">{m.dailyBreakdown.txns}</th>
+                                                    <th className="text-right px-4 py-3 text-xs font-semibold uppercase tracking-widest text-gray-400">{m.dailyBreakdown.netRevenue}</th>
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-gray-50">
@@ -378,8 +381,8 @@ export default function BranchReportPage() {
                         <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mb-4">
                             <BarChart3 className="w-8 h-8 text-gray-300" />
                         </div>
-                        <p className="text-base font-semibold text-gray-500">No data yet</p>
-                        <p className="text-sm text-gray-400 mt-1">Select a branch and date range, then click Generate.</p>
+                        <p className="text-base font-semibold text-gray-500">{m.empty.title}</p>
+                        <p className="text-sm text-gray-400 mt-1">{m.empty.description}</p>
                     </div>
                 )}
             </div>

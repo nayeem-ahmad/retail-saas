@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Lock, Unlock, AlertTriangle } from 'lucide-react';
 import { api } from '@/lib/api';
+import { useI18n, formatMessage } from '@/lib/i18n';
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'];
@@ -17,6 +18,7 @@ interface FiscalPeriod {
 }
 
 export default function FiscalPeriodsPage() {
+    const { t, locale } = useI18n();
     const currentYear = new Date().getFullYear();
     const [year, setYear] = useState(currentYear);
     const [periods, setPeriods] = useState<FiscalPeriod[]>([]);

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { useI18n } from '@/lib/i18n';
 
 const API_BASE =
     ((process.env.NEXT_PUBLIC_API_BASE || process.env.NEXT_PUBLIC_API_URL) ||
@@ -12,6 +13,9 @@ const API_BASE =
             : 'http://localhost:4000')) + '/api/v1';
 
 export default function StorefrontSignInPage() {
+    const { t } = useI18n();
+    const m = t.storefront.public;
+    const a = m.auth;
     const params = useParams();
     const router = useRouter();
     const slug = params?.slug as string;
@@ -49,7 +53,7 @@ export default function StorefrontSignInPage() {
             const json = await res.json();
 
             if (!res.ok) {
-                throw new Error(json.message || 'Sign in failed');
+                throw new Error(json.message || a.signInFailed);
             }
 
             const payload = 'data' in json ? json.data : json;
@@ -60,7 +64,7 @@ export default function StorefrontSignInPage() {
 
             router.push(`/store/${slug}`);
         } catch (err: any) {
-            setError(err.message || 'Something went wrong');
+            setError(err.message || a.defaultError);
         } finally {
             setSubmitting(false);
         }
@@ -71,10 +75,10 @@ export default function StorefrontSignInPage() {
             <div className="w-full max-w-md">
                 <div className="mb-8 text-center">
                     <Link href={`/store/${slug}`} className="text-2xl font-black tracking-tighter text-gray-900">
-                        {storeName || 'Store'}
+                        {storeName || m.storeFallback}
                     </Link>
-                    <h1 className="mt-4 text-xl font-bold text-gray-800">Sign in to your account</h1>
-                    <p className="mt-1 text-sm text-gray-500">Track orders and manage your profile</p>
+                    <h1 className="mt-4 text-xl font-bold text-gray-800">{a.signInTitle}</h1>
+                    <p className="mt-1 text-sm text-gray-500">{a.signInSubtitle}</p>
                 </div>
 
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">

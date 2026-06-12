@@ -5,6 +5,7 @@ import { api } from '../../../lib/api';
 import { Plus, FolderTree, Pencil, Trash2, X } from 'lucide-react';
 import { createColumnHelper, type ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table';
+import { useI18n } from '@/lib/i18n';
 
 interface CustomerGroup {
     id: string;
@@ -17,6 +18,7 @@ interface CustomerGroup {
 const columnHelper = createColumnHelper<CustomerGroup>();
 
 export default function CustomerGroupsPage() {
+    const { t } = useI18n();
     const [groups, setGroups] = useState<CustomerGroup[]>([]);
     const [loading, setLoading] = useState(true);
     const [editingGroup, setEditingGroup] = useState<CustomerGroup | null>(null);
@@ -47,12 +49,12 @@ export default function CustomerGroupsPage() {
     };
 
     const handleDelete = async (id: string) => {
-        if (!confirm('Delete this group? Customers in this group will be unassigned.')) return;
+        if (!confirm(t.customerGroups.deleteConfirm)) return;
         try {
             await api.deleteCustomerGroup(id);
             loadGroups();
         } catch (err: any) {
-            alert(err.message || 'Cannot delete group with assigned customers.');
+            alert(err.message || t.customerGroups.deleteFailed);
         }
     };
 
@@ -69,13 +71,13 @@ export default function CustomerGroupsPage() {
     const columns: ColumnDef<CustomerGroup, any>[] = useMemo(
         () => [
             columnHelper.accessor('name', {
-                header: 'Group',
+                header: t.customerGroups.columns.group,
                 cell: (info) => {
                     const group = info.row.original;
                     return (
                         <div>
                             <span className="block text-sm font-black text-gray-900">{group.name}</span>
-                            <span className="block text-xs text-gray-400">{group.description || 'No description'}</span>
+                            <span className="block text-xs text-gray-400">{group.description || t.customerGroups.noDescription}</span>
                         </div>
                     );
                 },
@@ -83,7 +85,7 @@ export default function CustomerGroupsPage() {
             }),
             columnHelper.accessor((row) => row._count?.customers ?? 0, {
                 id: 'customers',
-                header: 'Customers',
+                header: t.customerGroups.columns.customers,
                 cell: (info) => (
                     <span className="text-sm font-bold text-gray-700">{info.getValue()}</span>
                 ),
@@ -91,7 +93,7 @@ export default function CustomerGroupsPage() {
                 size: 110,
             }),
             columnHelper.accessor('default_discount_pct', {
-                header: 'Default Discount',
+                header: t.customerGroups.defaultDiscount,
                 cell: (info) => {
                     const value = Number(info.getValue() || 0);
                     return value > 0 ? (
@@ -99,7 +101,7 @@ export default function CustomerGroupsPage() {
                             {value}%
                         </span>
                     ) : (
-                        <span className="text-sm text-gray-400">None</span>
+                        <span className="text-sm text-gray-400">{t.common.none}</span>
                     );
                 },
                 sortingFn: (a, b) => Number(a.getValue('default_discount_pct') || 0) - Number(b.getValue('default_discount_pct') || 0),
@@ -107,7 +109,7 @@ export default function CustomerGroupsPage() {
             }),
             columnHelper.display({
                 id: 'actions',
-                header: 'Actions',
+                header: t.common.actions,
                 cell: (info) => {
                     const group = info.row.original;
                     return (
@@ -115,14 +117,14 @@ export default function CustomerGroupsPage() {
                             <button
                                 onClick={() => openEdit(group)}
                                 className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
-                                title="Edit"
+                                title={t.common.edit}
                             >
                                 <Pencil className="w-4 h-4" />
                             </button>
                             <button
                                 onClick={() => handleDelete(group.id)}
                                 className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 transition-colors"
-                                title="Delete"
+                                title={t.common.delete}
                             >
                                 <Trash2 className="w-4 h-4" />
                             </button>
@@ -135,7 +137,7 @@ export default function CustomerGroupsPage() {
                 size: 110,
             }),
         ],
-        [editingGroup],
+        [t],
     );
 
     return (
@@ -143,13 +145,13 @@ export default function CustomerGroupsPage() {
             <div className="max-w-[1400px] mx-auto space-y-6">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-black tracking-tight">Customer Groups</h1>
+                        <h1 className="text-2xl font-black tracking-tight">{t.customerGroups.title}</h1>
                         <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mt-0.5">
-                            Organize customers with reusable pricing rules
+                            {t.customerGroups.subtitle}
                         </p>
                     </div>
                     <button onClick={openCreate} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl font-bold text-sm flex items-center shadow-lg shadow-blue-200 transition-all hover:-translate-y-0.5 active:translate-y-0">
-                        <Plus className="w-4 h-4 mr-2" /> New Group
+                        <Plus className="w-4 h-4 mr-2" /> {t.customerGroups.newGroup}
                     </button>
                 </div>
 
@@ -165,11 +167,11 @@ export default function CustomerGroupsPage() {
                     tableId="customer-groups"
                     columns={columns}
                     data={groups}
-                    title="Customer Groups"
+                    title={t.customerGroups.title}
                     isLoading={loading}
-                    emptyMessage="No customer groups found"
+                    emptyMessage={t.customerGroups.emptyMessage}
                     emptyIcon={<FolderTree className="w-16 h-16 text-gray-200" />}
-                    searchPlaceholder="Search by group name..."
+                    searchPlaceholder={t.customerGroups.searchPlaceholder}
                 />
             </div>
         </div>
@@ -177,6 +179,7 @@ export default function CustomerGroupsPage() {
 }
 
 function GroupForm({ group, onSave, onCancel }: { group: any; onSave: (d: any) => Promise<void>; onCancel: () => void }) {
+    const { t } = useI18n();
     const [name, setName] = useState(group?.name || '');
     const [description, setDescription] = useState(group?.description || '');
     const [discount, setDiscount] = useState(group?.default_discount_pct ? String(Number(group.default_discount_pct)) : '');
@@ -193,7 +196,7 @@ function GroupForm({ group, onSave, onCancel }: { group: any; onSave: (d: any) =
             if (discount) payload.default_discount_pct = parseFloat(discount);
             await onSave(payload);
         } catch (err: any) {
-            setError(err.message || 'Failed to save');
+            setError(err.message || t.customerGroups.saveFailed);
         } finally {
             setLoading(false);
         }
@@ -202,25 +205,25 @@ function GroupForm({ group, onSave, onCancel }: { group: any; onSave: (d: any) =
     return (
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-8">
             <div className="flex items-center justify-between mb-4">
-                <h3 className="font-black text-sm">{group ? 'Edit Group' : 'New Group'}</h3>
+                <h3 className="font-black text-sm">{group ? t.customerGroups.editGroup : t.customerGroups.newGroup}</h3>
                 <button onClick={onCancel} className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400"><X className="w-4 h-4" /></button>
             </div>
             {error && <div className="p-3 bg-red-50 text-red-600 rounded-xl text-sm font-bold mb-4">{error}</div>}
             <form onSubmit={handleSubmit} className="flex flex-wrap gap-4 items-end">
                 <div className="flex-1 min-w-[200px]">
-                    <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block mb-1">Name</label>
-                    <input required value={name} onChange={e => setName(e.target.value)} className="w-full bg-gray-50 border border-gray-100 rounded-xl py-2.5 px-4 font-black text-sm focus:ring-2 focus:ring-blue-500/20" placeholder="e.g. Wholesale" />
+                    <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block mb-1">{t.common.name}</label>
+                    <input required value={name} onChange={e => setName(e.target.value)} className="w-full bg-gray-50 border border-gray-100 rounded-xl py-2.5 px-4 font-black text-sm focus:ring-2 focus:ring-blue-500/20" placeholder={t.customerGroups.placeholders.name} />
                 </div>
                 <div className="flex-1 min-w-[200px]">
-                    <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block mb-1">Description <span className="text-gray-300">(Optional)</span></label>
-                    <input value={description} onChange={e => setDescription(e.target.value)} className="w-full bg-gray-50 border border-gray-100 rounded-xl py-2.5 px-4 font-bold text-gray-600 text-sm focus:ring-2 focus:ring-blue-500/20" placeholder="Group description" />
+                    <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block mb-1">{t.common.description} <span className="text-gray-300">({t.common.optional})</span></label>
+                    <input value={description} onChange={e => setDescription(e.target.value)} className="w-full bg-gray-50 border border-gray-100 rounded-xl py-2.5 px-4 font-bold text-gray-600 text-sm focus:ring-2 focus:ring-blue-500/20" placeholder={t.customerGroups.placeholders.description} />
                 </div>
                 <div className="w-32">
-                    <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block mb-1">Discount %</label>
+                    <label className="text-xs font-bold text-gray-500 uppercase tracking-widest block mb-1">{t.customerGroups.discountPct}</label>
                     <input type="number" min="0" max="100" step="0.01" value={discount} onChange={e => setDiscount(e.target.value)} className="w-full bg-gray-50 border border-gray-100 rounded-xl py-2.5 px-4 font-bold text-gray-600 text-sm focus:ring-2 focus:ring-blue-500/20" placeholder="0" />
                 </div>
                 <button disabled={loading} type="submit" className="px-6 py-2.5 rounded-xl font-black text-sm bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200 transition-all disabled:opacity-50">
-                    {loading ? 'Saving...' : group ? 'Update' : 'Create'}
+                    {loading ? t.customerGroups.saving : group ? t.common.update : t.common.create}
                 </button>
             </form>
         </div>

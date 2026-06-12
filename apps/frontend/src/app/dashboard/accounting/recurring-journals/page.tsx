@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Plus, Play, Trash2 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { formatBDT } from '@/lib/format';
+import { useI18n, formatMessage } from '@/lib/i18n';
 
 interface RJLine { accountId: string; debitAmount: string; creditAmount: string; comment: string; }
 interface RJTemplate {
@@ -18,6 +19,7 @@ interface RJTemplate {
 }
 
 export default function RecurringJournalsPage() {
+    const { t, locale } = useI18n();
     const [templates, setTemplates] = useState<RJTemplate[]>([]);
     const [accounts, setAccounts] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -187,7 +189,7 @@ export default function RecurringJournalsPage() {
                                 <Plus className="w-3.5 h-3.5" /> Add Line
                             </button>
                             <span className={`text-xs font-bold ${isBalanced && totalDebit > 0 ? 'text-emerald-600' : 'text-rose-500'}`}>
-                                {isBalanced && totalDebit > 0 ? `Balanced — ${formatBDT(totalDebit)}` : `Diff: ${formatBDT(Math.abs(totalDebit - totalCredit))}`}
+                                {isBalanced && totalDebit > 0 ? `Balanced — ${formatBDT(totalDebit, { locale })}` : `Diff: ${formatBDT(Math.abs(totalDebit - totalCredit))}`}
                             </span>
                         </div>
 
@@ -235,7 +237,7 @@ export default function RecurringJournalsPage() {
                                         <div key={i} className="flex justify-between text-xs text-gray-500">
                                             <span>{l.account.name}</span>
                                             <span>
-                                                {Number(l.debit_amount) > 0 ? <span className="text-gray-700">Dr {formatBDT(Number(l.debit_amount))}</span> : <span className="text-gray-400">Cr {formatBDT(Number(l.credit_amount))}</span>}
+                                                {Number(l.debit_amount) > 0 ? <span className="text-gray-700">Dr {formatBDT(Number(l.debit_amount), { locale })}</span> : <span className="text-gray-400">Cr {formatBDT(Number(l.credit_amount), { locale })}</span>}
                                             </span>
                                         </div>
                                     ))}

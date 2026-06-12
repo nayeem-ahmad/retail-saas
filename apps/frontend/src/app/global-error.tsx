@@ -1,9 +1,17 @@
 'use client';
 
 import * as Sentry from '@sentry/nextjs';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
+import { DEFAULT_LOCALE } from '@/lib/localization/config';
+import { messageCatalog } from '@/lib/localization/messages';
+import { getStoredLocalePreference } from '@/lib/localization/preference';
 
 export default function GlobalError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+    const m = useMemo(() => {
+        const locale = getStoredLocalePreference() ?? DEFAULT_LOCALE;
+        return messageCatalog[locale].marketing.globalError;
+    }, []);
+
     useEffect(() => {
         Sentry.captureException(error);
     }, [error]);
@@ -12,10 +20,10 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
         <html>
             <body>
                 <div style={{ padding: 40, textAlign: 'center', fontFamily: 'sans-serif' }}>
-                    <h2>Something went wrong</h2>
-                    <p style={{ color: '#666' }}>An unexpected error occurred. Our team has been notified.</p>
+                    <h2>{m.title}</h2>
+                    <p style={{ color: '#666' }}>{m.description}</p>
                     <button onClick={reset} style={{ marginTop: 16, padding: '8px 20px', cursor: 'pointer' }}>
-                        Try again
+                        {m.tryAgain}
                     </button>
                 </div>
             </body>

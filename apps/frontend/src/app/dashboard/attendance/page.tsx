@@ -6,6 +6,7 @@ import { api } from '../../../lib/api';
 import { formatDate } from '../../../lib/format';
 import { createColumnHelper, type ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table';
+import { useI18n } from '@/lib/i18n';
 
 interface Employee {
     id: string;
@@ -61,6 +62,7 @@ const EMPTY_FORM = {
 };
 
 export default function AttendancePage() {
+    const { t } = useI18n();
     const range = getMonthRange();
     const [records, setRecords] = useState<AttendanceRecord[]>([]);
     const [employees, setEmployees] = useState<Employee[]>([]);
@@ -98,12 +100,12 @@ export default function AttendancePage() {
     }, [loadData]);
 
     const handleDelete = async (id: string) => {
-        if (!confirm('Delete this attendance record?')) return;
+        if (!confirm(t.attendance.deleteConfirm)) return;
         try {
             await api.deleteAttendance(id);
             loadData();
         } catch (err: any) {
-            alert(err.message || 'Failed to delete record');
+            alert(err.message || t.attendance.deleteFailed);
         }
     };
 
@@ -125,17 +127,24 @@ export default function AttendancePage() {
             setForm(EMPTY_FORM);
             loadData();
         } catch (err: any) {
-            setError(err.message || 'Failed to log attendance');
+            setError(err.message || t.attendance.logFailed);
         } finally {
             setSubmitting(false);
         }
+    };
+
+    const statusLabels: Record<string, string> = {
+        PRESENT: t.attendance.statuses.present,
+        ABSENT: t.attendance.statuses.absent,
+        HALF_DAY: t.attendance.statuses.halfDay,
+        HOLIDAY: t.attendance.statuses.holiday,
     };
 
     const columns: ColumnDef<AttendanceRecord, any>[] = useMemo(
         () => [
             columnHelper.accessor((row) => row.employee?.name ?? '', {
                 id: 'employee',
-                header: 'Employee',
+                header: t.attendance.columns.employee,
                 cell: (info) => {
                     const rec = info.row.original;
                     return (
@@ -148,49 +157,49 @@ export default function AttendancePage() {
                 size: 180,
             }),
             columnHelper.accessor('date', {
-                header: 'Date',
+                header: t.attendance.columns.date,
                 cell: (info) => (
                     <span className="text-sm text-gray-700">{formatDate(info.getValue())}</span>
                 ),
                 size: 120,
             }),
             columnHelper.accessor('status', {
-                header: 'Status',
+                header: t.attendance.columns.status,
                 cell: (info) => {
                     const status = info.getValue();
                     const cls = STATUS_COLORS[status] ?? 'bg-gray-100 text-gray-500 border-gray-200';
                     return (
                         <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${cls}`}>
-                            {status.replace('_', ' ')}
+                            {statusLabels[status] ?? status.replace('_', ' ')}
                         </span>
                     );
                 },
                 size: 110,
             }),
             columnHelper.accessor('clock_in', {
-                header: 'Clock In',
+                header: t.attendance.columns.clockIn,
                 cell: (info) => <span className="text-sm text-gray-600 font-mono">{formatTime(info.getValue())}</span>,
                 size: 100,
             }),
             columnHelper.accessor('clock_out', {
-                header: 'Clock Out',
+                header: t.attendance.columns.clockOut,
                 cell: (info) => <span className="text-sm text-gray-600 font-mono">{formatTime(info.getValue())}</span>,
                 size: 100,
             }),
             columnHelper.accessor('notes', {
-                header: 'Notes',
+                header: t.attendance.columns.notes,
                 cell: (info) => <span className="text-sm text-gray-500">{info.getValue() || '—'}</span>,
                 size: 160,
             }),
             columnHelper.display({
                 id: 'actions',
-                header: 'Actions',
+                header: t.attendance.columns.actions,
                 cell: (info) => (
                     <div className="flex items-center justify-end">
                         <button
                             onClick={() => handleDelete(info.row.original.id)}
                             className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 transition-colors"
-                            title="Delete"
+                            title={t.common.delete}
                         >
                             <Trash2 className="w-4 h-4" />
                         </button>
@@ -200,8 +209,7 @@ export default function AttendancePage() {
                 size: 70,
             }),
         ],
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-        [],
+        [t, statusLabels],
     );
 
     return (
@@ -210,9 +218,9 @@ export default function AttendancePage() {
                 {/* Header */}
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-black tracking-tight">Attendance</h1>
+                        <h1 className="text-2xl font-black tracking-tight">{t.attendance.title}</h1>
                         <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mt-0.5">
-                            Daily clock-in / clock-out records
+                            {t.attendance.pageSubtitle}
                         </p>
                     </div>
                     <button
@@ -220,7 +228,7 @@ export default function AttendancePage() {
                         className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl font-bold text-sm flex items-center shadow-lg shadow-blue-200 transition-all hover:-translate-y-0.5 active:translate-y-0"
                     >
                         <Plus className="w-4 h-4 mr-2" />
-                        Log Attendance
+                        {t.attendance.logAttendance}
                     </button>
                 </div>
 
@@ -228,7 +236,7 @@ export default function AttendancePage() {
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
                     <div className="flex flex-wrap gap-3 items-end">
                         <div className="space-y-1">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block">From</label>
+                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block">{t.attendance.filters.from}</label>
                             <input
                                 type="date"
                                 value={startDate}
@@ -237,7 +245,7 @@ export default function AttendancePage() {
                             />
                         </div>
                         <div className="space-y-1">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block">To</label>
+                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block">{t.attendance.filters.to}</label>
                             <input
                                 type="date"
                                 value={endDate}
@@ -246,13 +254,13 @@ export default function AttendancePage() {
                             />
                         </div>
                         <div className="space-y-1">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block">Employee</label>
+                            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block">{t.attendance.columns.employee}</label>
                             <select
                                 value={filterEmployee}
                                 onChange={(e) => setFilterEmployee(e.target.value)}
                                 className="bg-gray-50 border border-gray-100 rounded-xl py-2.5 px-3 text-sm font-bold text-gray-700 focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all appearance-none min-w-[180px]"
                             >
-                                <option value="">All Employees</option>
+                                <option value="">{t.attendance.allEmployees}</option>
                                 {employees.map((emp) => (
                                     <option key={emp.id} value={emp.id}>
                                         {emp.name} ({emp.employee_code})
@@ -268,20 +276,20 @@ export default function AttendancePage() {
                     tableId="attendance"
                     columns={columns}
                     data={records}
-                    title="Attendance Records"
+                    title={t.attendance.recordsTitle}
                     isLoading={loading}
-                    emptyMessage="No attendance records found"
+                    emptyMessage={t.attendance.emptyMessage}
                     emptyIcon={<Clock className="w-16 h-16 text-gray-200" />}
-                    searchPlaceholder="Search by employee name..."
+                    searchPlaceholder={t.attendance.searchPlaceholder}
                 />
             </div>
 
-            {/* Log Attendance Modal */}
+            {/* {t.attendance.logAttendance} Modal */}
             {showModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
                     <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-5">
                         <div className="flex items-center justify-between">
-                            <h2 className="text-lg font-black tracking-tight">Log Attendance</h2>
+                            <h2 className="text-lg font-black tracking-tight">{t.attendance.logAttendance}</h2>
                             <button
                                 onClick={() => { setShowModal(false); setForm(EMPTY_FORM); setError(''); }}
                                 className="text-gray-400 hover:text-gray-700 transition-colors text-xl font-bold leading-none"
@@ -298,14 +306,14 @@ export default function AttendancePage() {
 
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div className="space-y-1.5">
-                                <label className="text-xs font-black uppercase tracking-widest text-gray-400 block">Employee</label>
+                                <label className="text-xs font-black uppercase tracking-widest text-gray-400 block">{t.attendance.modal.employee}</label>
                                 <select
                                     required
                                     value={form.employee_id}
                                     onChange={(e) => setForm({ ...form, employee_id: e.target.value })}
                                     className="w-full bg-gray-50 border border-gray-100 rounded-xl py-3 px-4 text-sm font-bold text-gray-700 focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all"
                                 >
-                                    <option value="">Select employee…</option>
+                                    <option value="">{t.attendance.modal.selectEmployee}</option>
                                     {employees.map((emp) => (
                                         <option key={emp.id} value={emp.id}>
                                             {emp.name} ({emp.employee_code})
@@ -315,7 +323,7 @@ export default function AttendancePage() {
                             </div>
 
                             <div className="space-y-1.5">
-                                <label className="text-xs font-black uppercase tracking-widest text-gray-400 block">Date</label>
+                                <label className="text-xs font-black uppercase tracking-widest text-gray-400 block">{t.attendance.modal.date}</label>
                                 <input
                                     required
                                     type="date"
@@ -326,22 +334,22 @@ export default function AttendancePage() {
                             </div>
 
                             <div className="space-y-1.5">
-                                <label className="text-xs font-black uppercase tracking-widest text-gray-400 block">Status</label>
+                                <label className="text-xs font-black uppercase tracking-widest text-gray-400 block">{t.attendance.modal.status}</label>
                                 <select
                                     value={form.status}
                                     onChange={(e) => setForm({ ...form, status: e.target.value })}
                                     className="w-full bg-gray-50 border border-gray-100 rounded-xl py-3 px-4 text-sm font-bold text-gray-700 focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all"
                                 >
-                                    <option value="PRESENT">Present</option>
-                                    <option value="ABSENT">Absent</option>
-                                    <option value="HALF_DAY">Half Day</option>
-                                    <option value="HOLIDAY">Holiday</option>
+                                    <option value="PRESENT">{t.attendance.statuses.present}</option>
+                                    <option value="ABSENT">{t.attendance.statuses.absent}</option>
+                                    <option value="HALF_DAY">{t.attendance.statuses.halfDay}</option>
+                                    <option value="HOLIDAY">{t.attendance.statuses.holiday}</option>
                                 </select>
                             </div>
 
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="space-y-1.5">
-                                    <label className="text-xs font-black uppercase tracking-widest text-gray-400 block">Clock In</label>
+                                    <label className="text-xs font-black uppercase tracking-widest text-gray-400 block">{t.attendance.modal.clockIn}</label>
                                     <input
                                         type="time"
                                         value={form.clock_in}
@@ -350,7 +358,7 @@ export default function AttendancePage() {
                                     />
                                 </div>
                                 <div className="space-y-1.5">
-                                    <label className="text-xs font-black uppercase tracking-widest text-gray-400 block">Clock Out</label>
+                                    <label className="text-xs font-black uppercase tracking-widest text-gray-400 block">{t.attendance.modal.clockOut}</label>
                                     <input
                                         type="time"
                                         value={form.clock_out}
@@ -361,12 +369,12 @@ export default function AttendancePage() {
                             </div>
 
                             <div className="space-y-1.5">
-                                <label className="text-xs font-black uppercase tracking-widest text-gray-400 block">Notes</label>
+                                <label className="text-xs font-black uppercase tracking-widest text-gray-400 block">{t.attendance.modal.notes}</label>
                                 <input
                                     type="text"
                                     value={form.notes}
                                     onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                                    placeholder="Optional notes…"
+                                    placeholder={t.attendance.modal.notesPlaceholder}
                                     className="w-full bg-gray-50 border border-gray-100 rounded-xl py-3 px-4 text-sm text-gray-700 focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all"
                                 />
                             </div>
@@ -377,14 +385,14 @@ export default function AttendancePage() {
                                     onClick={() => { setShowModal(false); setForm(EMPTY_FORM); setError(''); }}
                                     className="px-4 py-2.5 rounded-xl font-bold text-sm text-gray-600 hover:bg-gray-100 transition-colors"
                                 >
-                                    Cancel
+                                    {t.common.cancel}
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={submitting}
                                     className="px-5 py-2.5 rounded-xl font-black text-sm bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200 transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:translate-y-0"
                                 >
-                                    {submitting ? 'Saving…' : 'Save'}
+                                    {submitting ? t.attendance.modal.submitting : t.common.save}
                                 </button>
                             </div>
                         </form>

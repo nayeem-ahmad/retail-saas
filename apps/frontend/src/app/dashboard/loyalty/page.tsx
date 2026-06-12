@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { fetchWithAuth } from '@/lib/api';
 import { formatDate } from '@/lib/format';
+import { useI18n, formatMessage } from '@/lib/i18n';
 
 type ToastState = { type: 'success' | 'error'; message: string } | null;
 
@@ -77,6 +78,7 @@ function AdjustPointsModal({
     onClose: () => void;
     onSuccess: () => void;
 }) {
+    const { t } = useI18n();
     const [points, setPoints] = useState('');
     const [description, setDescription] = useState('');
     const [saving, setSaving] = useState(false);
@@ -86,7 +88,7 @@ function AdjustPointsModal({
         e.preventDefault();
         const pts = parseInt(points, 10);
         if (isNaN(pts) || pts === 0) {
-            setError('Please enter a non-zero number of points.');
+            setError(t.shared.form.nonZeroPoints);
             return;
         }
         setSaving(true);
@@ -100,7 +102,7 @@ function AdjustPointsModal({
             onSuccess();
             onClose();
         } catch (err: any) {
-            setError(err?.message || 'Failed to adjust points.');
+            setError(err?.message || t.shared.errors.adjustPoints);
         } finally {
             setSaving(false);
         }
@@ -109,16 +111,16 @@ function AdjustPointsModal({
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
             <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-6 w-full max-w-md mx-4">
-                <h2 className="text-lg font-black text-gray-900 mb-1">Adjust Points</h2>
+                <h2 className="text-lg font-black text-gray-900 mb-1">{t.loyalty.adjustPoints}</h2>
                 <p className="text-sm text-gray-500 mb-4">
-                    {customer.name} &bull; Current balance:{' '}
-                    <span className="font-bold text-purple-700">{customer.loyalty_points} pts</span>
+                    {customer.name} &bull; {t.loyalty.currentBalance}{' '}
+                    <span className="font-bold text-purple-700">{customer.loyalty_points} {t.loyalty.pointsSuffix}</span>
                 </p>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                            Points Adjustment
+                            {t.loyalty.pointsAdjustment}
                         </label>
                         <div className="flex items-center gap-2">
                             <button
@@ -136,24 +138,24 @@ function AdjustPointsModal({
                                 type="number"
                                 value={points}
                                 onChange={(e) => setPoints(e.target.value)}
-                                placeholder="e.g. 50 or -50"
+                                placeholder={t.shared.form.pointsPlaceholder}
                                 className="flex-1 rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition"
                             />
                         </div>
                         <p className="mt-1 text-xs text-gray-400">
-                            Positive to add points, negative to subtract.
+                            {t.shared.form.pointsHint}
                         </p>
                     </div>
 
                     <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                            Description (optional)
+                            {t.shared.form.descriptionOptional}
                         </label>
                         <input
                             type="text"
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
-                            placeholder="Reason for adjustment"
+                            placeholder={t.shared.form.reasonOptional}
                             className="w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition"
                         />
                     </div>
@@ -178,7 +180,7 @@ function AdjustPointsModal({
                             className="inline-flex items-center gap-2 rounded-xl bg-purple-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-purple-700 disabled:opacity-60 transition-colors"
                         >
                             {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-                            {saving ? 'Saving…' : 'Adjust Points'}
+                            {saving ? t.loyalty.saving : t.loyalty.adjustPointsButton}
                         </button>
                     </div>
                 </form>
@@ -205,6 +207,7 @@ function TransactionTypeBadge({ type }: { type: string }) {
 }
 
 export default function LoyaltyPage() {
+    const { t, locale } = useI18n();
     const [customers, setCustomers] = useState<LoyaltyCustomer[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
@@ -228,7 +231,7 @@ export default function LoyaltyPage() {
             const data = (await fetchWithAuth(`/loyalty/customers${params}`)) as LoyaltyCustomer[];
             setCustomers(data);
         } catch (err: any) {
-            setToast({ type: 'error', message: err?.message || 'Failed to load customers.' });
+            setToast({ type: 'error', message: err?.message || t.shared.errors.loadCustomers });
         } finally {
             setLoading(false);
         }
@@ -253,14 +256,14 @@ export default function LoyaltyPage() {
             )) as CustomerDetail;
             setDetailMap((prev) => ({ ...prev, [customer.id]: detail }));
         } catch (err: any) {
-            setToast({ type: 'error', message: err?.message || 'Failed to load transactions.' });
+            setToast({ type: 'error', message: err?.message || t.shared.errors.loadTransactions });
         } finally {
             setLoadingDetail(null);
         }
     };
 
     const handleAdjustSuccess = () => {
-        setToast({ type: 'success', message: 'Points adjusted successfully.' });
+        setToast({ type: 'success', message: t.shared.success.pointsAdjusted });
         // Refresh list and clear cached detail for the customer
         if (adjustCustomer) {
             setDetailMap((prev) => {
@@ -282,8 +285,8 @@ export default function LoyaltyPage() {
                             <Gift className="w-5 h-5 text-purple-600" />
                         </div>
                         <div>
-                            <h1 className="text-2xl font-black text-gray-900 tracking-tight">Loyalty Points</h1>
-                            <p className="text-sm text-gray-500">View and manage customer reward points.</p>
+                            <h1 className="text-2xl font-black text-gray-900 tracking-tight">{t.loyalty.title}</h1>
+                            <p className="text-sm text-gray-500">{t.loyalty.subtitle}</p>
                         </div>
                     </div>
                 </div>
@@ -295,7 +298,7 @@ export default function LoyaltyPage() {
                         type="text"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        placeholder="Search by name or phone…"
+                        placeholder={t.loyalty.searchPlaceholder}
                         className="w-full rounded-xl border border-gray-200 bg-white pl-9 pr-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition"
                     />
                 </div>
@@ -304,24 +307,24 @@ export default function LoyaltyPage() {
                 <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
                     {/* Table header */}
                     <div className="grid grid-cols-[1fr_140px_120px_140px_120px] gap-4 px-5 py-3 bg-gray-50 border-b border-gray-100">
-                        <span className="text-xs font-black uppercase tracking-wider text-gray-400">Customer</span>
-                        <span className="text-xs font-black uppercase tracking-wider text-gray-400">Phone</span>
-                        <span className="text-xs font-black uppercase tracking-wider text-gray-400 text-right">Points</span>
-                        <span className="text-xs font-black uppercase tracking-wider text-gray-400">Last Transaction</span>
-                        <span className="text-xs font-black uppercase tracking-wider text-gray-400 text-right">Actions</span>
+                        <span className="text-xs font-black uppercase tracking-wider text-gray-400">{t.shared.columns.customer}</span>
+                        <span className="text-xs font-black uppercase tracking-wider text-gray-400">{t.shared.columns.phone}</span>
+                        <span className="text-xs font-black uppercase tracking-wider text-gray-400 text-right">{t.shared.columns.points}</span>
+                        <span className="text-xs font-black uppercase tracking-wider text-gray-400">{t.shared.columns.lastTransaction}</span>
+                        <span className="text-xs font-black uppercase tracking-wider text-gray-400 text-right">{t.shared.columns.actions}</span>
                     </div>
 
                     {loading ? (
                         <div className="flex items-center justify-center gap-2 py-16 text-gray-400 text-sm">
                             <Loader2 className="w-5 h-5 animate-spin" />
-                            Loading…
+                            {t.shared.loading.generic}
                         </div>
                     ) : customers.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-16 text-gray-400">
                             <Gift className="w-10 h-10 mb-3 opacity-30" />
-                            <p className="text-sm font-semibold">No customers found</p>
+                            <p className="text-sm font-semibold">{t.shared.empty.noCustomers}</p>
                             {debouncedSearch && (
-                                <p className="text-xs mt-1">Try a different search term.</p>
+                                <p className="text-xs mt-1">{t.shared.empty.tryDifferentSearch}</p>
                             )}
                         </div>
                     ) : (
@@ -354,7 +357,7 @@ export default function LoyaltyPage() {
                                             </span>
                                             <span className="text-sm text-gray-400">
                                                 {customer.last_transaction_at
-                                                    ? formatDate(customer.last_transaction_at)
+                                                    ? formatDate(customer.last_transaction_at, locale)
                                                     : '—'}
                                             </span>
                                             <div className="flex justify-end">
@@ -373,16 +376,16 @@ export default function LoyaltyPage() {
                                                 {isLoadingDetail ? (
                                                     <div className="flex items-center gap-2 text-gray-400 text-sm">
                                                         <Loader2 className="w-4 h-4 animate-spin" />
-                                                        Loading transactions…
+                                                        {t.shared.loading.transactions}
                                                     </div>
                                                 ) : !detail ? (
-                                                    <p className="text-sm text-gray-400">No data available.</p>
+                                                    <p className="text-sm text-gray-400">{t.shared.empty.noData}</p>
                                                 ) : detail.transactions.length === 0 ? (
-                                                    <p className="text-sm text-gray-400">No transactions yet.</p>
+                                                    <p className="text-sm text-gray-400">{t.shared.empty.noTransactionsYet}</p>
                                                 ) : (
                                                     <div>
                                                         <h4 className="text-xs font-black uppercase tracking-wider text-gray-400 mb-3">
-                                                            Recent Transactions
+                                                            {t.loyalty.recentTransactions}
                                                         </h4>
                                                         <div className="space-y-2">
                                                             {detail.transactions.slice(0, 10).map((tx) => (
@@ -408,7 +411,7 @@ export default function LoyaltyPage() {
                                                                             {tx.points}
                                                                         </span>
                                                                         <span className="text-xs text-gray-400 w-24 text-right">
-                                                                            {formatDate(tx.created_at)}
+                                                                            {formatDate(tx.created_at, locale)}
                                                                         </span>
                                                                     </div>
                                                                 </div>

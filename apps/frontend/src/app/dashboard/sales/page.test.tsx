@@ -1,4 +1,20 @@
 'use client';
+jest.mock('@/lib/i18n', () => {
+  const { enMessages } = require('@/lib/localization/messages/en');
+
+  return {
+    useI18n: () => ({
+      t: enMessages,
+      locale: 'en',
+    }),
+    formatMessage: (template, values = {}) =>
+      Object.entries(values).reduce(
+        (result, [key, value]) => result.replaceAll(`{${key}}`, String(value)),
+        template,
+      ),
+  };
+}, { virtual: true });
+
 import { render, screen, waitFor } from '@testing-library/react';
 import SalesPage from './page';
 
@@ -95,14 +111,14 @@ describe('SalesPage — Sales Transaction List', () => {
     it('renders COMPLETED status badge', async () => {
         render(<SalesPage />);
         await waitFor(() => {
-            expect(screen.getByText('COMPLETED')).toBeInTheDocument();
+            expect(screen.getByText('Completed')).toBeInTheDocument();
         });
     });
 
     it('renders REFUNDED status badge', async () => {
         render(<SalesPage />);
         await waitFor(() => {
-            expect(screen.getByText('REFUNDED')).toBeInTheDocument();
+            expect(screen.getByText('Refunded')).toBeInTheDocument();
         });
     });
 

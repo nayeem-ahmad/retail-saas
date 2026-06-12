@@ -1,5 +1,6 @@
 'use client';
 
+import { useI18n, formatMessage } from '@/lib/i18n';
 import { useEffect, useState } from 'react';
 import { Search, ShieldCheck, ShieldOff, Loader2, CheckCircle, User } from 'lucide-react';
 import { api } from '@/lib/api';
@@ -15,6 +16,8 @@ type AdminUser = {
 };
 
 export default function AdminUsersPage() {
+    const { t } = useI18n();
+    const m = t.admin.users;
     const [users, setUsers] = useState<AdminUser[]>([]);
     const [total, setTotal] = useState(0);
     const [search, setSearch] = useState('');
@@ -30,7 +33,7 @@ export default function AdminUsersPage() {
             setUsers(res.data ?? []);
             setTotal(res.total ?? 0);
         } catch (err: any) {
-            setError(err.message || 'Failed to load users');
+            setError(err.message || m.loadFailed);
         } finally {
             setIsLoading(false);
         }
@@ -54,14 +57,14 @@ export default function AdminUsersPage() {
         try {
             if (user.is_platform_admin) {
                 await api.demoteUser(user.id);
-                showToast(`${user.email} removed as platform admin`);
+                showToast(formatMessage(m.removedAdmin, { email: user.email }));
             } else {
                 await api.promoteUser(user.id);
-                showToast(`${user.email} granted platform admin`);
+                showToast(formatMessage(m.grantedAdmin, { email: user.email }));
             }
             await load();
         } catch (err: any) {
-            setError(err.message || 'Action failed');
+            setError(err.message || m.actionFailed);
         } finally {
             setActionUserId('');
         }
@@ -71,9 +74,9 @@ export default function AdminUsersPage() {
         <div className="overflow-y-auto h-full bg-[#f3f4f6] p-6 font-sans text-gray-900">
             <div className="max-w-4xl mx-auto space-y-6">
                 <div>
-                    <h1 className="text-2xl font-black tracking-tight">User Management</h1>
+                    <h1 className="text-2xl font-black tracking-tight">{m.title}</h1>
                     <p className="text-xs font-bold uppercase tracking-widest text-gray-500 mt-1">
-                        Grant or revoke platform admin access · {total} users total
+                        {formatMessage(m.subtitle, { total })}
                     </p>
                 </div>
 
@@ -94,7 +97,7 @@ export default function AdminUsersPage() {
                             <input
                                 value={search}
                                 onChange={(e) => handleSearch(e.target.value)}
-                                placeholder="Search by name or email…"
+                                placeholder={m.searchPlaceholder}
                                 className="w-full bg-transparent outline-none text-sm"
                             />
                         </label>
@@ -102,10 +105,10 @@ export default function AdminUsersPage() {
 
                     {isLoading ? (
                         <div className="p-10 flex items-center justify-center text-sm text-gray-500">
-                            <Loader2 className="w-4 h-4 animate-spin mr-2" /> Loading users…
+                            <Loader2 className="w-4 h-4 animate-spin mr-2" /> {m.loading}
                         </div>
                     ) : users.length === 0 ? (
-                        <div className="p-10 text-center text-sm text-gray-500">No users found.</div>
+                        <div className="p-10 text-center text-sm text-gray-500">{m.noUsers}</div>
                     ) : (
                         <div className="divide-y divide-gray-100">
                             {users.map((user) => (
@@ -117,7 +120,7 @@ export default function AdminUsersPage() {
                                         <div className="min-w-0">
                                             <p className="text-sm font-black text-gray-900 truncate">{user.name || user.email}</p>
                                             <p className="text-xs text-gray-500 truncate">{user.email}</p>
-                                            <p className="text-[10px] text-gray-400 mt-0.5">{user.tenant_count} tenant{user.tenant_count !== 1 ? 's' : ''}</p>
+                                            <p className="text-[10px] text-gray-400 mt-0.5">{user.tenant_count === 1 ? formatMessage(m.tenantCount, { count: user.tenant_count }) : formatMessage(m.tenantCountPlural, { count: user.tenant_count })}</p>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-3 shrink-0">
@@ -143,7 +146,7 @@ export default function AdminUsersPage() {
                                             ) : (
                                                 <ShieldCheck className="w-3 h-3" />
                                             )}
-                                            {user.is_platform_admin ? 'Revoke Admin' : 'Make Admin'}
+                                            {user.is_platform_admin ? m.revokeAdmin : m.makeAdmin}
                                         </button>
                                     </div>
                                 </div>

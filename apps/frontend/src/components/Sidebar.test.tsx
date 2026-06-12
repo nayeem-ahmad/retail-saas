@@ -57,6 +57,8 @@ jest.mock('lucide-react', () => {
         UserCog: icon,
         CalendarOff: icon,
         Landmark: icon,
+        Megaphone: icon,
+        CheckSquare: icon,
     };
 });
 

@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { createColumnHelper } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table';
 import { api } from '../../../../lib/api';
+import { useI18n, formatMessage } from '@/lib/i18n';
 
 const STATUS_STYLES: Record<string, string> = {
     posted: 'bg-emerald-50 text-emerald-700 border-emerald-200',
@@ -56,6 +57,7 @@ interface Pagination {
 const columnHelper = createColumnHelper<PostingEvent>();
 
 export default function PostingExceptionsPage() {
+    const { t, locale } = useI18n();
     const [events, setEvents] = useState<PostingEvent[]>([]);
     const [pagination, setPagination] = useState<Pagination>({ page: 1, limit: 20, total: 0 });
     const [loading, setLoading] = useState(true);
@@ -108,7 +110,7 @@ export default function PostingExceptionsPage() {
     const columns = useMemo(
         () => [
             columnHelper.accessor('eventType', {
-                header: 'Event',
+                header: t.postingExceptions.columns.event,
                 cell: (info) => (
                     <span className="text-sm font-medium text-gray-800">
                         {EVENT_TYPE_LABELS[info.getValue()] ?? info.getValue()}
@@ -116,7 +118,7 @@ export default function PostingExceptionsPage() {
                 ),
             }),
             columnHelper.accessor('sourceModule', {
-                header: 'Module',
+                header: t.postingExceptions.columns.module,
                 cell: (info) => (
                     <span className="font-mono text-xs bg-gray-100 px-2 py-0.5 rounded text-gray-700">
                         {info.getValue()}
@@ -124,7 +126,7 @@ export default function PostingExceptionsPage() {
                 ),
             }),
             columnHelper.accessor('sourceId', {
-                header: 'Source',
+                header: t.postingExceptions.columns.source,
                 cell: (info) => (
                     <div>
                         <span className="block text-xs text-gray-500">{info.row.original.sourceType}</span>
@@ -135,7 +137,7 @@ export default function PostingExceptionsPage() {
                 ),
             }),
             columnHelper.accessor('status', {
-                header: 'Status',
+                header: t.accountingShared.status,
                 cell: (info) => {
                     const s = info.getValue();
                     return (
@@ -147,13 +149,13 @@ export default function PostingExceptionsPage() {
                 },
             }),
             columnHelper.accessor('attemptCount', {
-                header: 'Attempts',
+                header: t.postingExceptions.columns.attempts,
                 cell: (info) => (
                     <span className="text-sm text-gray-500 font-mono">{info.getValue()}</span>
                 ),
             }),
             columnHelper.accessor('lastError', {
-                header: 'Last Error',
+                header: t.postingExceptions.columns.lastError,
                 cell: (info) => {
                     const err = info.getValue();
                     return err ? (
@@ -167,7 +169,7 @@ export default function PostingExceptionsPage() {
             }),
             columnHelper.display({
                 id: 'voucher',
-                header: 'Voucher',
+                header: t.postingExceptions.columns.voucher,
                 cell: ({ row }) => {
                     const v = row.original.voucher;
                     return v ? (
@@ -180,7 +182,7 @@ export default function PostingExceptionsPage() {
                 },
             }),
             columnHelper.accessor('lastAttemptAt', {
-                header: 'Last Attempt',
+                header: t.postingExceptions.columns.lastAttempt,
                 cell: (info) => {
                     const v = info.getValue();
                     return v ? (
@@ -293,12 +295,12 @@ export default function PostingExceptionsPage() {
 
                 {/* Table */}
                 {loading ? (
-                    <div className="text-center py-16 text-gray-400">Loading posting events...</div>
+                    <div className="text-center py-16 text-gray-400">{t.postingExceptions.title}...</div>
                 ) : (
                     <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
                         <DataTable
                             tableId="posting-exceptions"
-                            title="Posting Events"
+                            title={t.accountingShared.postingEvents}
                             columns={columns}
                             data={events}
                         />

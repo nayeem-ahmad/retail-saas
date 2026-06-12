@@ -145,7 +145,7 @@ describe('PurchaseInvoicePage', () => {
         getApi().getPurchaseInvoice.mockRejectedValue(new Error('Server error'));
         render(<PurchaseInvoicePage />);
         await waitFor(() => {
-            expect(screen.getByText(/failed to load invoice/i)).toBeInTheDocument();
+            expect(screen.getByText(/purchase not found/i)).toBeInTheDocument();
         });
     });
 });

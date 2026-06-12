@@ -1,4 +1,5 @@
 'use client';
+import { useI18n, formatMessage } from '@/lib/i18n';
 
 import { useState, useEffect } from 'react';
 import { MessageSquare, CheckCircle, Info, Loader2 } from 'lucide-react';
@@ -43,6 +44,8 @@ function Toggle({
 }
 
 export default function SmsSettingsPage() {
+    const { t } = useI18n();
+    const m = t.settingsExtras.sms;
     const [settings, setSettings] = useState<SmsSettings>({
         sms_enabled: false,
         sms_on_sale: false,
@@ -66,7 +69,7 @@ export default function SmsSettingsPage() {
                     });
                 }
             })
-            .catch(() => setError('Failed to load SMS settings.'))
+            .catch(() => setError(m.loadFailed))
             .finally(() => setLoading(false));
     }, []);
 
@@ -84,7 +87,7 @@ export default function SmsSettingsPage() {
             setSuccess(true);
             setTimeout(() => setSuccess(false), 3000);
         } catch (e: any) {
-            setError(e.message ?? 'Failed to save SMS settings.');
+            setError(e.message ?? m.saveFailed);
         } finally {
             setSaving(false);
         }
@@ -98,27 +101,21 @@ export default function SmsSettingsPage() {
         <div className="p-6 max-w-2xl space-y-6">
             <div className="flex items-center gap-2">
                 <MessageSquare className="h-6 w-6 text-gray-600" />
-                <h1 className="text-2xl font-bold text-gray-900">SMS Notifications</h1>
+                <h1 className="text-2xl font-bold text-gray-900">{m.title}</h1>
             </div>
 
             {/* Info box */}
             <div className="flex gap-3 bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">
                 <Info className="h-5 w-5 flex-shrink-0 mt-0.5 text-blue-500" />
                 <div>
-                    <strong>Server configuration required</strong> — SMS delivery requires the following
-                    environment variables to be set on the server:{' '}
-                    <code className="font-mono text-xs bg-blue-100 px-1 py-0.5 rounded">SMS_API_URL</code>,{' '}
-                    <code className="font-mono text-xs bg-blue-100 px-1 py-0.5 rounded">SMS_API_TOKEN</code>,{' '}
-                    <code className="font-mono text-xs bg-blue-100 px-1 py-0.5 rounded">SMS_SENDER_ID</code>.
-                    Contact support to configure. Compatible with SSL Wireless, Bulk SMS BD, Alpha SMS,
-                    and other Bangladeshi SMS gateways.
+                    <strong>{m.infoTitle}</strong> — {m.infoBody}
                 </div>
             </div>
 
             {loading ? (
                 <div className="flex items-center gap-2 text-gray-400 py-8 justify-center text-sm">
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    Loading…
+                    {m.loading}
                 </div>
             ) : (
                 <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-6">
@@ -132,7 +129,7 @@ export default function SmsSettingsPage() {
                                 Enable SMS Notifications
                             </label>
                             <p className="mt-0.5 text-xs text-gray-500">
-                                Master switch for all SMS notifications for this tenant.
+                                {m.enable.hint}
                             </p>
                         </div>
                         <Toggle
@@ -156,8 +153,7 @@ export default function SmsSettingsPage() {
                                 Send SMS receipt after each sale
                             </label>
                             <p className="mt-0.5 text-xs text-gray-500">
-                                Sends the customer a purchase confirmation SMS after a completed sale.
-                                Requires the customer to have a phone number on file.
+                                {m.onSale.hint}
                             </p>
                         </div>
                         <Toggle
@@ -182,8 +178,7 @@ export default function SmsSettingsPage() {
                                 Send SMS for low stock alerts
                             </label>
                             <p className="mt-0.5 text-xs text-gray-500">
-                                Sends the tenant owner an SMS when products fall below their reorder
-                                point during the daily stock check.
+                                {m.onLowStock.hint}
                             </p>
                         </div>
                         <Toggle
@@ -203,7 +198,7 @@ export default function SmsSettingsPage() {
                     {success && (
                         <div className="flex items-center gap-2 bg-green-50 border border-green-200 text-green-700 rounded-lg p-3 text-sm">
                             <CheckCircle className="h-4 w-4 flex-shrink-0" />
-                            SMS settings saved successfully.
+                            {m.saved}
                         </div>
                     )}
 
@@ -214,7 +209,7 @@ export default function SmsSettingsPage() {
                             className="inline-flex items-center gap-2 px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
                             {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-                            {saving ? 'Saving…' : 'Save SMS Settings'}
+                            {saving ? m.saving : m.saveButton}
                         </button>
                     </div>
                 </div>

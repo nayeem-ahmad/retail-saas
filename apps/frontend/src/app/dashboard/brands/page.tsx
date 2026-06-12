@@ -6,6 +6,7 @@ import { Tag, Plus, Pencil, Trash2, X } from 'lucide-react';
 import { DataTable } from '@/components/data-table';
 import { api } from '@/lib/api';
 import { formatDate } from '@/lib/format';
+import { useI18n } from '@/lib/i18n';
 
 interface Brand {
     id: string;
@@ -21,6 +22,7 @@ const emptyForm = { name: '', description: '', logo_url: '', website_url: '' };
 const columnHelper = createColumnHelper<Brand>();
 
 export default function BrandsPage() {
+    const { t } = useI18n();
     const [brands, setBrands] = useState<Brand[]>([]);
     const [loading, setLoading] = useState(true);
     const [modalOpen, setModalOpen] = useState(false);
@@ -73,7 +75,7 @@ export default function BrandsPage() {
 
     const handleSave = async () => {
         if (!form.name.trim()) {
-            setError('Brand name is required.');
+            setError(t.brands.nameRequired);
             return;
         }
         setSaving(true);
@@ -93,7 +95,7 @@ export default function BrandsPage() {
             closeModal();
             void load();
         } catch (err: any) {
-            setError(err.message || 'Failed to save brand.');
+            setError(err.message || t.brands.saveFailed);
         } finally {
             setSaving(false);
         }
@@ -113,21 +115,21 @@ export default function BrandsPage() {
     const columns: ColumnDef<Brand, any>[] = useMemo(
         () => [
             columnHelper.accessor('name', {
-                header: 'Brand',
+                header: t.brands.columns.brand,
                 cell: (info) => (
                     <span className="text-sm font-black text-gray-900">{info.getValue()}</span>
                 ),
                 size: 200,
             }),
             columnHelper.accessor('description', {
-                header: 'Description',
+                header: t.common.description,
                 cell: (info) => (
                     <span className="text-sm text-gray-500 truncate max-w-xs block">{info.getValue() ?? '-'}</span>
                 ),
                 size: 260,
             }),
             columnHelper.accessor('website_url', {
-                header: 'Website',
+                header: t.brands.columns.website,
                 cell: (info) => {
                     const url = info.getValue();
                     if (!url) return <span className="text-sm text-gray-400">-</span>;
@@ -145,7 +147,7 @@ export default function BrandsPage() {
                 size: 200,
             }),
             columnHelper.accessor('created_at', {
-                header: 'Added',
+                header: t.brands.columns.added,
                 cell: (info) => (
                     <span className="text-sm text-gray-500">{formatDate(info.getValue())}</span>
                 ),
@@ -153,20 +155,20 @@ export default function BrandsPage() {
             }),
             columnHelper.display({
                 id: 'actions',
-                header: 'Actions',
+                header: t.common.actions,
                 cell: (info) => (
                     <div className="flex items-center gap-1">
                         <button
                             onClick={() => openEdit(info.row.original)}
                             className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-                            title="Edit"
+                            title={t.common.edit}
                         >
                             <Pencil className="w-4 h-4" />
                         </button>
                         <button
                             onClick={() => setDeleteId(info.row.original.id)}
                             className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                            title="Delete"
+                            title={t.common.delete}
                         >
                             <Trash2 className="w-4 h-4" />
                         </button>
@@ -177,7 +179,7 @@ export default function BrandsPage() {
                 size: 90,
             }),
         ],
-        [],
+        [t],
     );
 
     return (
@@ -185,9 +187,9 @@ export default function BrandsPage() {
             <div className="max-w-[1400px] mx-auto space-y-6">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-black tracking-tight">Brands</h1>
+                        <h1 className="text-2xl font-black tracking-tight">{t.brands.title}</h1>
                         <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mt-0.5">
-                            Manage your product brands
+                            {t.brands.subtitle}
                         </p>
                     </div>
                     <button
@@ -195,7 +197,7 @@ export default function BrandsPage() {
                         className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl font-bold text-sm flex items-center shadow-lg shadow-blue-200 transition-all hover:-translate-y-0.5 active:translate-y-0"
                     >
                         <Plus className="w-4 h-4 mr-2" />
-                        New Brand
+                        {t.brands.newBrand}
                     </button>
                 </div>
 
@@ -203,21 +205,20 @@ export default function BrandsPage() {
                     tableId="brands"
                     columns={columns}
                     data={brands}
-                    title="Brands"
+                    title={t.brands.title}
                     isLoading={loading}
-                    emptyMessage="No brands yet. Add your first brand."
+                    emptyMessage={t.brands.emptyMessage}
                     emptyIcon={<Tag className="w-16 h-16 text-gray-200" />}
-                    searchPlaceholder="Search brands..."
+                    searchPlaceholder={t.brands.searchPlaceholder}
                 />
             </div>
 
-            {/* Create / Edit Modal */}
             {modalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
                     <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl">
                         <div className="p-6 border-b border-gray-100 flex items-center justify-between">
                             <h2 className="text-lg font-black tracking-tight">
-                                {editTarget ? 'Edit Brand' : 'New Brand'}
+                                {editTarget ? t.brands.editBrand : t.brands.newBrand}
                             </h2>
                             <button onClick={closeModal} className="p-2 hover:bg-gray-50 rounded-xl text-gray-400">
                                 <X className="w-5 h-5" />
@@ -229,33 +230,33 @@ export default function BrandsPage() {
                             )}
                             <div>
                                 <label className="text-xs font-black uppercase tracking-widest text-gray-500 block mb-1.5">
-                                    Name <span className="text-red-500">*</span>
+                                    {t.common.name} <span className="text-red-500">*</span>
                                 </label>
                                 <input
                                     type="text"
                                     value={form.name}
                                     onChange={(e) => setForm({ ...form, name: e.target.value })}
-                                    placeholder="e.g., Samsung, Apple, Nike"
+                                    placeholder={t.brands.placeholders.name}
                                     className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-bold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-300 outline-none"
                                 />
                             </div>
                             <div>
-                                <label className="text-xs font-black uppercase tracking-widest text-gray-500 block mb-1.5">Description</label>
+                                <label className="text-xs font-black uppercase tracking-widest text-gray-500 block mb-1.5">{t.common.description}</label>
                                 <textarea
                                     value={form.description}
                                     onChange={(e) => setForm({ ...form, description: e.target.value })}
-                                    placeholder="Optional brand description"
+                                    placeholder={t.brands.placeholders.description}
                                     rows={2}
                                     className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-300 outline-none resize-none"
                                 />
                             </div>
                             <div>
-                                <label className="text-xs font-black uppercase tracking-widest text-gray-500 block mb-1.5">Website URL</label>
+                                <label className="text-xs font-black uppercase tracking-widest text-gray-500 block mb-1.5">{t.brands.columns.website}</label>
                                 <input
                                     type="url"
                                     value={form.website_url}
                                     onChange={(e) => setForm({ ...form, website_url: e.target.value })}
-                                    placeholder="https://brand.com"
+                                    placeholder={t.brands.placeholders.website}
                                     className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-300 outline-none"
                                 />
                             </div>
@@ -265,40 +266,39 @@ export default function BrandsPage() {
                                 onClick={closeModal}
                                 className="px-5 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-gray-50"
                             >
-                                Cancel
+                                {t.common.cancel}
                             </button>
                             <button
                                 onClick={handleSave}
                                 disabled={saving}
                                 className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-md disabled:opacity-50"
                             >
-                                {saving ? 'Saving...' : editTarget ? 'Save Changes' : 'Create'}
+                                {saving ? t.brands.saving : editTarget ? t.common.saveChanges : t.common.create}
                             </button>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* Delete Confirm */}
             {deleteId && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
                     <div className="bg-white w-full max-w-sm rounded-3xl shadow-2xl p-6 space-y-4">
-                        <h2 className="text-lg font-black tracking-tight">Delete Brand?</h2>
+                        <h2 className="text-lg font-black tracking-tight">{t.brands.deleteTitle}</h2>
                         <p className="text-sm text-gray-500">
-                            This brand will be removed. Products linked to it will become unbranded.
+                            {t.brands.deleteDescription}
                         </p>
                         <div className="flex justify-end gap-3 pt-2">
                             <button
                                 onClick={() => setDeleteId(null)}
                                 className="px-5 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-gray-50"
                             >
-                                Cancel
+                                {t.common.cancel}
                             </button>
                             <button
                                 onClick={() => handleDelete(deleteId)}
                                 className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-md"
                             >
-                                Delete
+                                {t.common.delete}
                             </button>
                         </div>
                     </div>

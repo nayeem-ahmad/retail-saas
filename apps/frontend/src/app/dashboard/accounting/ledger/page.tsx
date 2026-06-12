@@ -8,6 +8,7 @@ import { createColumnHelper, type ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '../../../../components/data-table';
 import { api } from '../../../../lib/api';
 import { formatBDT, formatDate } from '../../../../lib/format';
+import { useI18n, formatMessage } from '@/lib/i18n';
 
 type LedgerAccount = {
     id: string;
@@ -54,15 +55,21 @@ type LedgerResponse = {
 
 const columnHelper = createColumnHelper<LedgerRow>();
 
+function LedgerLoadingFallback() {
+    const { t } = useI18n();
+    return <div className="p-6 text-sm text-gray-500">{t.ledger.loading}</div>;
+}
+
 export default function AccountingLedgerPage() {
     return (
-        <Suspense fallback={<div className="p-6 text-sm text-gray-500">Loading ledger...</div>}>
+        <Suspense fallback={<LedgerLoadingFallback />}>
             <AccountingLedgerPageContent />
         </Suspense>
     );
 }
 
 function AccountingLedgerPageContent() {
+    const { t, locale } = useI18n();
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
@@ -186,12 +193,12 @@ function AccountingLedgerPageContent() {
     const columns: ColumnDef<LedgerRow, any>[] = useMemo(
         () => [
             columnHelper.accessor('date', {
-                header: 'Date',
-                cell: (info) => <span className="text-sm font-bold text-gray-700">{formatDate(info.getValue())}</span>,
+                header: t.accountingShared.date,
+                cell: (info) => <span className="text-sm font-bold text-gray-700">{formatDate(info.getValue(), locale)}</span>,
                 size: 120,
             }),
             columnHelper.accessor('voucher_number', {
-                header: 'Voucher #',
+                header: t.journal.columns.voucherNumber,
                 cell: (info) => (
                     <Link href={`/dashboard/accounting/journal/${info.row.original.voucher_id}`} className="text-sm font-black text-blue-600 hover:text-blue-800">
                         {info.getValue()}
@@ -200,31 +207,31 @@ function AccountingLedgerPageContent() {
                 size: 140,
             }),
             columnHelper.accessor('voucher_type', {
-                header: 'Type',
+                header: t.accountingShared.type,
                 cell: (info) => <span className="text-xs font-black uppercase tracking-widest text-violet-700">{info.getValue().replaceAll('_', ' ')}</span>,
                 size: 150,
             }),
-            columnHelper.accessor((row) => row.narration || row.description || 'No narration', {
+            columnHelper.accessor((row) => row.narration || row.description || '{t.accountingShared.noNarration}', {
                 id: 'narration',
-                header: 'Narration',
+                header: t.accountingShared.narration,
                 cell: (info) => <span className="text-sm text-gray-600">{info.getValue()}</span>,
                 size: 320,
             }),
             columnHelper.accessor('debit_amount', {
-                header: 'Debit',
-                cell: (info) => <span className="text-sm font-black text-amber-700">{formatBDT(info.getValue())}</span>,
+                header: t.accountingShared.debit,
+                cell: (info) => <span className="text-sm font-black text-amber-700">{formatBDT(info.getValue(), { locale })}</span>,
                 size: 120,
             }),
             columnHelper.accessor('credit_amount', {
-                header: 'Credit',
-                cell: (info) => <span className="text-sm font-black text-sky-700">{formatBDT(info.getValue())}</span>,
+                header: t.accountingShared.credit,
+                cell: (info) => <span className="text-sm font-black text-sky-700">{formatBDT(info.getValue(), { locale })}</span>,
                 size: 120,
             }),
             columnHelper.accessor('running_balance', {
-                header: 'Running balance',
+                header: t.ledger.columns.runningBalance,
                 cell: (info) => (
                     <div className="flex flex-col">
-                        <span className="text-sm font-black text-gray-900">{formatBDT(info.getValue())}</span>
+                        <span className="text-sm font-black text-gray-900">{formatBDT(info.getValue(), { locale })}</span>
                         <span className="text-[11px] font-black uppercase tracking-[0.2em] text-gray-400">{info.row.original.running_balance_side}</span>
                     </div>
                 ),
@@ -247,7 +254,7 @@ function AccountingLedgerPageContent() {
             <div className="max-w-[1400px] mx-auto space-y-6">
                 <Link href="/dashboard/accounting" className="inline-flex items-center text-sm font-bold text-gray-500 hover:text-gray-900 transition-colors">
                     <ArrowLeft className="w-4 h-4 mr-2" />
-                    Back to Accounting
+                    {t.accountingShared.backToAccounting}
                 </Link>
 
                 <section className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
@@ -256,7 +263,7 @@ function AccountingLedgerPageContent() {
                             <Calculator className="h-6 w-6" />
                         </div>
                         <div className="space-y-2">
-                            <p className="text-xs font-black uppercase tracking-[0.24em] text-gray-400">Story 30.8</p>
+                            <p className="text-xs font-black uppercase tracking-[0.24em] text-gray-400">{t.ledger.story}</p>
                             <h1 className="text-2xl font-black tracking-tight">General Ledger</h1>
                             <p className="text-sm text-gray-500 max-w-3xl">
                                 Review one account at a time with opening balance, period movement, closing position, and voucher drill-down linked directly into journal detail.
@@ -268,19 +275,19 @@ function AccountingLedgerPageContent() {
                 <section className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm space-y-5">
                     <div className="flex items-center gap-3">
                         <Filter className="h-5 w-5 text-gray-900" />
-                        <h2 className="text-lg font-black tracking-tight">Ledger filters</h2>
+                        <h2 className="text-lg font-black tracking-tight">{t.ledger.title}</h2>
                     </div>
 
                     <div className="grid gap-4 lg:grid-cols-[1.6fr,1fr,1fr,auto]">
                         <label className="block text-xs font-black uppercase tracking-[0.24em] text-gray-400">
-                            <span>Account</span>
+                            <span>{t.accountingShared.account}</span>
                             <select
-                                aria-label="Ledger account"
+                                aria-label={t.ledger.accountAria}
                                 value={selectedAccountId}
                                 onChange={(event) => setSelectedAccountId(event.target.value)}
                                 className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-900"
                             >
-                                <option value="">Select an account</option>
+                                <option value="">{t.accountingShared.selectAccount}</option>
                                 {accounts.map((account) => (
                                     <option key={account.id} value={account.id}>
                                         {account.code ? `${account.code} - ` : ''}{account.name}
@@ -290,9 +297,9 @@ function AccountingLedgerPageContent() {
                         </label>
 
                         <label className="block text-xs font-black uppercase tracking-[0.24em] text-gray-400">
-                            <span>From</span>
+                            <span>{t.accountingShared.from}</span>
                             <input
-                                aria-label="Ledger from date"
+                                aria-label={t.ledger.fromDateAria}
                                 type="date"
                                 value={from}
                                 onChange={(event) => setFrom(event.target.value)}
@@ -301,9 +308,9 @@ function AccountingLedgerPageContent() {
                         </label>
 
                         <label className="block text-xs font-black uppercase tracking-[0.24em] text-gray-400">
-                            <span>To</span>
+                            <span>{t.accountingShared.to}</span>
                             <input
-                                aria-label="Ledger to date"
+                                aria-label={t.ledger.toDateAria}
                                 type="date"
                                 value={to}
                                 onChange={(event) => setTo(event.target.value)}
@@ -329,24 +336,24 @@ function AccountingLedgerPageContent() {
                                 {selectedAccount ? selectedAccount.name : 'None selected'}
                             </p>
                             <p className="mt-1 text-sm text-gray-500">
-                                {selectedAccount ? `${selectedAccount.code || 'No code'} • ${selectedAccount.type}` : 'Choose an account to load the ledger.'}
+                                {selectedAccount ? `${selectedAccount.code || t.accountingShared.noCode} • ${selectedAccount.type}` : 'Choose an account to load the ledger.'}
                             </p>
                         </div>
-                        <LedgerStatCard label="Opening balance" value={ledger ? formatBalance(ledger.opening_balance, ledger.opening_balance_side) : 'Awaiting selection'} accent="text-amber-700" />
-                        <LedgerStatCard label="Period movement" value={ledger ? formatBalance(periodMovement.amount, periodMovement.side) : 'Awaiting selection'} accent="text-violet-700" />
-                        <LedgerStatCard label="Closing balance" value={ledger ? formatBalance(ledger.closing_balance, ledger.closing_balance_side) : 'Awaiting selection'} accent="text-emerald-700" />
+                        <LedgerStatCard label={t.ledger.openingBalance} value={ledger ? formatBalance(ledger.opening_balance, ledger.opening_balance_side, locale) : t.accountingShared.awaitingSelection} accent="text-amber-700" />
+                        <LedgerStatCard label={t.ledger.periodMovement} value={ledger ? formatBalance(periodMovement.amount, periodMovement.side, locale) : t.accountingShared.awaitingSelection} accent="text-violet-700" />
+                        <LedgerStatCard label={t.accountingShared.closingBalance} value={ledger ? formatBalance(ledger.closing_balance, ledger.closing_balance_side, locale) : t.accountingShared.awaitingSelection} accent="text-emerald-700" />
                     </div>
                 </section>
 
-                {isLoadingAccounts ? <InfoPanel tone="neutral" message="Loading account options..." /> : null}
+                {isLoadingAccounts ? <InfoPanel tone="neutral" message={t.accountingShared.loadingAccountOptions} /> : null}
                 {accountError ? <InfoPanel tone="error" message={accountError} /> : null}
-                {isLoadingLedger ? <InfoPanel tone="neutral" message="Loading ledger report..." /> : null}
+                {isLoadingLedger ? <InfoPanel tone="neutral" message={t.accountingShared.loadingLedgerReport} /> : null}
                 {ledgerError ? <InfoPanel tone="error" message={ledgerError} /> : null}
 
                 {!selectedAccountId && !isLoadingAccounts ? (
                     <section className="rounded-3xl border border-dashed border-gray-300 bg-white p-10 text-center shadow-sm">
                         <Wallet className="mx-auto h-8 w-8 text-gray-300" />
-                        <h2 className="mt-4 text-lg font-black tracking-tight text-gray-900">Select an account to review the ledger</h2>
+                        <h2 className="mt-4 text-lg font-black tracking-tight text-gray-900">{t.ledger.selectAccountHint}</h2>
                         <p className="mt-2 text-sm text-gray-500">
                             The screen keeps one account in focus so running balance math stays readable during audit work.
                         </p>
@@ -363,7 +370,7 @@ function AccountingLedgerPageContent() {
                                 </h2>
                                 <p className="mt-1 text-sm text-gray-500">
                                     {ledger
-                                        ? `Debit movement ${formatBDT(ledger.totals.debit)} • Credit movement ${formatBDT(ledger.totals.credit)}`
+                                        ? `Debit movement ${formatBDT(ledger.totals.debit, { locale })} • Credit movement ${formatBDT(ledger.totals.credit, { locale })}`
                                         : 'Waiting for report data.'}
                                 </p>
                             </div>
@@ -379,11 +386,11 @@ function AccountingLedgerPageContent() {
                             tableId="accounting-ledger"
                             columns={columns}
                             data={ledger?.data || []}
-                            title="General Ledger"
+                            title={t.accountingShared.generalLedger}
                             isLoading={isLoadingLedger}
-                            emptyMessage="No ledger movements were found for the selected account and date range"
+                            emptyMessage={t.ledger.emptyMessage}
                             emptyIcon={<Wallet className="w-16 h-16 text-gray-200" />}
-                            searchPlaceholder="Search ledger rows by voucher number, narration, or voucher type..."
+                            searchPlaceholder={t.ledger.searchPlaceholder}
                         />
                     </section>
                 ) : null}
@@ -409,12 +416,12 @@ function InfoPanel({ tone, message }: { tone: 'neutral' | 'error'; message: stri
     return <div className={`rounded-3xl border p-6 shadow-sm text-sm font-bold ${classes}`}>{message}</div>;
 }
 
-function formatBalance(amount: number, side: 'debit' | 'credit' | 'neutral') {
+function formatBalance(amount: number, side: 'debit' | 'credit' | 'neutral', locale: string) {
     if (side === 'neutral') {
-        return `${formatBDT(0)} neutral`;
+        return `${formatBDT(0, { locale })} neutral`;
     }
 
-    return `${formatBDT(amount)} ${side}`;
+    return `${formatBDT(amount, { locale })} ${side}`;
 }
 
 function getPeriodMovement(

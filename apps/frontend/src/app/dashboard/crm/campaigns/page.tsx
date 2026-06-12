@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Megaphone, Plus, Send, Eye, Trash2, RefreshCw, Users, CheckCircle2, XCircle, Clock } from 'lucide-react';
 import { api } from '../../../../lib/api';
 import { formatDate } from '../../../../lib/format';
+import { useI18n } from '@/lib/i18n';
 
 interface Campaign {
     id: string;
@@ -46,6 +47,7 @@ function Toast({ message, type, onClose }: { message: string; type: 'success' | 
 }
 
 export default function CrmCampaignsPage() {
+    const { t } = useI18n();
     const [campaigns, setCampaigns] = useState<Campaign[]>([]);
     const [loading, setLoading] = useState(true);
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -91,12 +93,12 @@ export default function CrmCampaignsPage() {
                 scheduled_at: form.scheduled_at || undefined,
                 description: form.description || undefined,
             });
-            showToast('Campaign created', 'success');
+            showToast(t.crmCampaigns.created, 'success');
             setShowCreate(false);
             setForm({ name: '', description: '', channel: 'SMS', target_segment: 'ALL', message: '', scheduled_at: '' });
             await loadCampaigns();
         } catch {
-            showToast('Failed to create campaign', 'error');
+            showToast(t.crmCampaigns.createFailed, 'error');
         } finally {
             setCreating(false);
         }
@@ -126,7 +128,7 @@ export default function CrmCampaignsPage() {
             setSelected(null);
             await loadCampaigns();
         } catch (err: any) {
-            showToast(err?.message ?? 'Failed to send', 'error');
+            showToast(err?.message ?? t.crmCampaigns.sendFailed, 'error');
         } finally {
             setSending(false);
         }
@@ -136,10 +138,10 @@ export default function CrmCampaignsPage() {
         if (!confirm('Delete this campaign?')) return;
         try {
             await api.deleteCrmCampaign(id);
-            showToast('Campaign deleted', 'success');
+            showToast(t.crmCampaigns.deleted, 'success');
             await loadCampaigns();
         } catch {
-            showToast('Failed to delete', 'error');
+            showToast(t.crmCampaigns.deleteFailed, 'error');
         }
     };
 
@@ -214,7 +216,7 @@ export default function CrmCampaignsPage() {
                                 <button
                                     onClick={() => handleSelect(c)}
                                     className="p-2 text-gray-400 hover:text-violet-600 rounded-lg hover:bg-violet-50"
-                                    title="View / Send"
+                                    title={t.crmCampaigns.viewSend}
                                 >
                                     <Eye className="w-4 h-4" />
                                 </button>
@@ -222,7 +224,7 @@ export default function CrmCampaignsPage() {
                                     <button
                                         onClick={() => handleDelete(c.id)}
                                         className="p-2 text-gray-400 hover:text-rose-500 rounded-lg hover:bg-rose-50"
-                                        title="Delete"
+                                        title={t.common.delete}
                                     >
                                         <Trash2 className="w-4 h-4" />
                                     </button>
@@ -241,7 +243,7 @@ export default function CrmCampaignsPage() {
 
                         <input
                             type="text"
-                            placeholder="Campaign name *"
+                            placeholder={t.crmCampaigns.placeholders.name}
                             value={form.name}
                             onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                             className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
@@ -273,7 +275,7 @@ export default function CrmCampaignsPage() {
                         <div>
                             <label className="text-xs font-medium text-gray-500 mb-1 block">Message *</label>
                             <textarea
-                                placeholder="Your message text..."
+                                placeholder={t.crmCampaigns.placeholders.message}
                                 value={form.message}
                                 onChange={(e) => setForm((f) => ({ ...f, message: e.target.value }))}
                                 className="w-full border border-gray-200 rounded-lg p-3 text-sm resize-none"
@@ -302,7 +304,7 @@ export default function CrmCampaignsPage() {
                                 disabled={creating || !form.name.trim() || !form.message.trim()}
                                 className="flex-1 py-2.5 bg-violet-600 text-white rounded-lg text-sm font-medium hover:bg-violet-700 disabled:opacity-50"
                             >
-                                {creating ? 'Creating...' : 'Create Campaign'}
+                                {creating ? t.crmCampaigns.creating : t.crmCampaigns.createCampaign}
                             </button>
                             <button
                                 onClick={() => setShowCreate(false)}
@@ -335,7 +337,7 @@ export default function CrmCampaignsPage() {
 
                         <div className="grid grid-cols-2 gap-3 text-sm">
                             <div><span className="text-gray-400">Channel:</span> <span className="font-medium">{selected.channel}</span></div>
-                            <div><span className="text-gray-400">Segment:</span> <span className="font-medium">{selected.target_segment ?? 'ALL'}</span></div>
+                            <div><span className="text-gray-400">{t.crmCampaigns.segmentLabel}</span> <span className="font-medium">{selected.target_segment ?? 'ALL'}</span></div>
                             {selected.status === 'COMPLETED' && (
                                 <>
                                     <div><span className="text-gray-400">Delivered:</span> <span className="font-medium text-emerald-600">{selected.delivered_count}</span></div>
@@ -382,7 +384,7 @@ export default function CrmCampaignsPage() {
                                     disabled={sending || (preview?.count === 0)}
                                     className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-violet-600 text-white rounded-lg text-sm font-medium hover:bg-violet-700 disabled:opacity-50"
                                 >
-                                    <Send className="w-4 h-4" /> {sending ? 'Sending...' : 'Send Now'}
+                                    <Send className="w-4 h-4" /> {sending ? t.crmCampaigns.sending : t.crmCampaigns.sendNow}
                                 </button>
                                 <button onClick={() => setSelected(null)} className="px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-600">
                                     Close
