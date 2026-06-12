@@ -19,7 +19,7 @@ COPY . .
 # Build the shared package first
 RUN npm run build --workspace=@retail-saas/shared-types || true
 # Generate Prisma client
-RUN npx prisma generate --schema=packages/database/prisma/schema.prisma
+RUN npm run generate --workspace=@retail-saas/database
 # Build the backend
 RUN npm run build --workspace=@retail-saas/backend
 

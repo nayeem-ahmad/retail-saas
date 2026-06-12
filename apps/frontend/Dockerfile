@@ -22,7 +22,7 @@ RUN mkdir -p /app/apps/frontend/public
 # Build the shared package first
 RUN npm run build --workspace=@retail-saas/shared-types || true
 # Generate Prisma client
-RUN npx prisma generate --schema=packages/database/prisma/schema.prisma
+RUN npm run generate --workspace=@retail-saas/database
 # Build the frontend with debug info
 ARG NEXT_PUBLIC_API_BASE
 ARG NEXT_PUBLIC_API_URL
