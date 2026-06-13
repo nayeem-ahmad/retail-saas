@@ -43,7 +43,7 @@ Track all work here. Check off items as they're completed. Add new items as they
 - [x] Set up uptime monitoring (BetterStack or similar) — `docs/ops/uptime-monitoring.md` + `scripts/smoke-check.sh` with production URLs — done 2026-06-12
 - [x] Configure alerts for: error rate spikes, payment webhook failures, DB connection exhaustion — documented in `docs/ops/uptime-monitoring.md`; Sentry payment tag wired — done 2026-06-12
 - [x] Write dev-ready system-health monitoring plan — `docs/ops/system-health-monitoring-plan.md` (6 phases: deep health checks, cron observability, metrics endpoint, alerting, admin dashboard) — done 2026-06-13
-- [ ] Implement system-health Phase 0–1: `system-health` module + deep health/readiness checks (DB pool, Redis, external providers) — see `docs/ops/system-health-monitoring-plan.md`
+- [x] Implement system-health Phase 0–1: `system-health` module + deep health/readiness checks (DB pool/latency/size, Redis ping, external provider reachability) behind `PlatformAdminGuard` at `GET /api/v1/admin/system-health` — done 2026-06-13
 - [ ] Implement system-health Phase 2: cron job observability (`JobRun` model + job tracker, overdue detection)
 - [ ] Implement system-health Phase 3: Prometheus `/metrics` endpoint (latency, throughput, runtime, job metrics)
 - [ ] Implement system-health Phase 4: threshold alerting (degraded-state email/SMS to platform admins, SMS-credit-low, cooldown)
