@@ -727,6 +727,40 @@ export interface CheckResult {
   details?: Record<string, unknown>;
 }
 
+// ── AI Credits ───────────────────────────────────────────────────────────────
+
+/** Monthly AI credit allowance per subscription plan. 1 credit = 1,000 tokens. */
+export const AI_CREDITS_PER_PLAN: Record<SubscriptionPlanCode, number> = {
+  FREE: 0,
+  BASIC: 100,
+  STANDARD: 500,
+  PREMIUM: 2000,
+};
+
+/** Tokens per credit (used for conversion in both directions). */
+export const AI_TOKENS_PER_CREDIT = 1000;
+
+export interface AiUsageSummary {
+  plan: SubscriptionPlanCode;
+  credits_limit: number;
+  credits_used: number;
+  credits_remaining: number;
+  period_start: string;
+  period_end: string;
+  logs: AiUsageLogEntry[];
+}
+
+export interface AiUsageLogEntry {
+  id: string;
+  feature: string;
+  model: string;
+  input_tokens: number;
+  output_tokens: number;
+  credits_used: number;
+  cost_usd: number;
+  created_at: string;
+}
+
 export interface SystemHealthReport {
   /** Worst-of rollup across all checks (optional/disabled deps excluded). */
   status: DependencyState;

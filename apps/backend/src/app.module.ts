@@ -69,6 +69,7 @@ import { CrmInteractionsModule } from './crm-interactions/crm-interactions.modul
 import { CrmTasksModule } from './crm-tasks/crm-tasks.module';
 import { CrmCampaignsModule } from './crm-campaigns/crm-campaigns.module';
 import { ExpensesModule } from './expenses/expenses.module';
+import { AiModule } from './ai/ai.module';
 
 @Module({
     imports: [
@@ -139,6 +140,7 @@ import { ExpensesModule } from './expenses/expenses.module';
         CrmTasksModule,
         CrmCampaignsModule,
         ExpensesModule,
+        AiModule,
     ],
     controllers: [],
     providers: [

@@ -268,6 +268,22 @@ Track all work here. Check off items as they're completed. Add new items as they
 
 ---
 
+## AI Credits (LLM-powered features)
+
+- [x] AI Credits billing model (Option A): 1 credit = 1,000 tokens; BASIC=100/month, STANDARD=500/month, PREMIUM=2,000/month, FREE=0 — done 2026-06-13
+- [x] `AiUsageLog` Prisma model (tenant_id, feature, model, input/output tokens, cache tokens, cost_usd, credits_used) + migration `20260613010000_add_ai_usage_log` — done 2026-06-13
+- [x] `AI_CREDITS_PER_PLAN`, `AI_TOKENS_PER_CREDIT`, `AiUsageSummary`, `AiUsageLogEntry` added to `packages/shared-types/index.ts` — done 2026-06-13
+- [x] `AiModule` with `AiService` (wraps Anthropic SDK, logs usage, enforces per-tenant monthly credit limits) and `AiController` (GET /ai/usage, POST /ai/narrate-report, POST /ai/draft-message) — done 2026-06-13
+- [x] `@anthropic-ai/sdk` installed in backend; `ANTHROPIC_API_KEY` env var required — done 2026-06-13
+- [x] Frontend AI Credits page at `/dashboard/ai-credits` — plan, credits used/remaining, usage bar, per-request log — done 2026-06-13
+- [x] Sidebar link "AI Credits" (Sparkles icon) added — done 2026-06-13
+- [x] `api.getAiUsage()`, `api.aiNarrateReport()`, `api.aiDraftMessage()` added to `apps/frontend/src/lib/api.ts` — done 2026-06-13
+- [x] Add `ANTHROPIC_API_KEY` to `render.yaml` and `.env.example` — done 2026-06-13
+- [ ] Wire `aiNarrateReport` into the sales reports page for a one-click "Narrate this report" button
+- [ ] Wire `aiDraftMessage` into the CRM interactions page for a "Draft WhatsApp message" button
+
+---
+
 ## ROADMAP — Post-launch features
 
 - [ ] E-commerce storefront (Standard/Premium tier feature per PRD)

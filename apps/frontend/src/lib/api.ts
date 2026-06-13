@@ -1249,4 +1249,17 @@ export const api = {
         body: JSON.stringify({ token }),
         headers: { 'Content-Type': 'application/json' },
     }),
+    getAiUsage: () => fetchWithAuth('/ai/usage'),
+    aiNarrateReport: (data: { reportType: string; reportData: Record<string, unknown>; locale?: string }) =>
+        fetchWithAuth('/ai/narrate-report', {
+            method: 'POST',
+            body: JSON.stringify(data),
+            headers: { 'Content-Type': 'application/json' },
+        }),
+    aiDraftMessage: (data: { channel: string; purpose: string; customerContext: Record<string, unknown>; locale?: string }) =>
+        fetchWithAuth('/ai/draft-message', {
+            method: 'POST',
+            body: JSON.stringify(data),
+            headers: { 'Content-Type': 'application/json' },
+        }),
 };

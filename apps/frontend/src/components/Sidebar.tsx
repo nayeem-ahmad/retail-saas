@@ -47,6 +47,7 @@ import {
     FileSearch,
     CheckSquare,
     Megaphone,
+    Sparkles,
     type LucideIcon,
 } from 'lucide-react';
 import { useBranding } from '@/lib/branding';
@@ -213,6 +214,12 @@ function buildModules(t: ReturnType<typeof useI18n>['t']): NavModule[] {
         icon: MessageSquare,
         label: 'SMS Credits',
         href: '/dashboard/sms-credits',
+    },
+    {
+        key: 'ai-credits',
+        icon: Sparkles,
+        label: 'AI Credits',
+        href: '/dashboard/ai-credits',
     },
     {
         key: 'team',
