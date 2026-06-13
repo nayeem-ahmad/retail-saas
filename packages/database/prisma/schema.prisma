@@ -354,6 +354,7 @@ model Tenant {
   expenseCategories ExpenseCategory[]
   expenseEntries    ExpenseEntry[]
   smsTransactions   SmsTransaction[]
+  aiUsageLogs       AiUsageLog[]
 }
 
 model TenantUser {
@@ -2305,4 +2306,25 @@ model ExpenseEntry {
   store          Store?   @relation(fields: [store_id], references: [id])
   @@index([tenant_id, expense_date])
   @@index([tenant_id, category_id])
+}
+
+// ── AI Usage Logging ──────────────────────────────────────────────────────────
+
+model AiUsageLog {
+  id                    String   @id @default(cuid())
+  tenant_id             String
+  feature               String   // 'report_narration' | 'message_drafter' | etc.
+  model                 String
+  input_tokens          Int
+  output_tokens         Int
+  cache_read_tokens     Int      @default(0)
+  cache_creation_tokens Int      @default(0)
+  cost_usd              Float
+  credits_used          Float    // tokens / 1000
+  created_at            DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+
+  @@index([tenant_id, created_at])
+  @@index([tenant_id, feature, created_at])
 }
