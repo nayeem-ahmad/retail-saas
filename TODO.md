@@ -116,6 +116,20 @@ Track all work here. Check off items as they're completed. Add new items as they
 
 ## IMPORTANT — First month after launch
 
+### Mobile Responsiveness
+- [ ] Add viewport meta tag to root layout (`apps/frontend/src/app/layout.tsx`) — missing `viewport: { width: 'device-width', initialScale: 1 }` in metadata; affects all pages
+- [ ] Mobile sidebar: hide sidebar completely on small screens, add hamburger toggle button to header (`apps/frontend/src/app/dashboard/layout.tsx` + `Sidebar.tsx`) — currently sidebar is always visible (collapsed to 64px), consuming ~25% of phone width
+- [ ] Mobile drawer navigation — implement slide-in overlay drawer for sidebar on screens narrower than `md:` (768px); use `fixed inset-0` overlay + `translate-x` animation
+- [ ] Marketing nav mobile menu — `MarketingNav` hides links with `hidden md:flex` but has no hamburger/drawer fallback; mobile visitors see no navigation
+- [ ] POS page mobile layout — two-panel `flex` layout (products left, cart right) breaks on mobile; needs `flex-col` stacking on small screens, full-screen cart modal, and touch-optimized buttons (`apps/frontend/src/app/dashboard/pos/page.tsx:537`)
+- [ ] POS search bar hardcoded width `w-72` (`pos/page.tsx:546`) — must be `w-full` on mobile; header row needs `flex-col` stacking below `sm:`
+- [ ] POS product grid skips `sm:` and `md:` breakpoints — `grid-cols-2 lg:grid-cols-4 xl:grid-cols-5` jumps from 2 columns directly to 4; add `sm:grid-cols-3 md:grid-cols-3` (`pos/page.tsx:579`)
+- [ ] Dashboard header overflow on small screens — store branch selector + notification bell + user avatar all in a `flex` row with no wrapping; shrinks to unusable on phones (`dashboard/layout.tsx:154`)
+- [ ] DataTable toolbar doesn't stack on mobile — filter/column/export buttons in nested `flex` containers overflow on narrow screens (`components/data-table/DataTable.tsx`)
+- [ ] DataTable: no responsive column hiding — all columns visible on mobile causing horizontal scroll; add ability to hide low-priority columns below `sm:` breakpoint
+- [ ] Responsive padding audit — most dashboard pages use fixed `p-8` (32px) padding; should be `p-4 md:p-8` for mobile breathing room
+- [ ] Dashboard home skips `sm:` breakpoint in KPI grid — `grid-cols-1 md:grid-cols-2 xl:grid-cols-4`; add `sm:grid-cols-2` so 640–768px screens get 2 columns instead of 1 (`apps/frontend/src/app/dashboard/page.tsx`)
+
 ### Marketing & Onboarding
 - [x] Build real marketing/landing page — `apps/frontend/src/app/page.tsx` with hero preview, how-it-works, modules, 4-tier pricing preview, shared marketing components — done 2026-06-12
 - [x] Pricing page with feature comparison table across all 4 tiers — `apps/frontend/src/app/pricing/page.tsx` + `src/lib/marketing/plans.ts` aligned with seed prices — done 2026-06-12
