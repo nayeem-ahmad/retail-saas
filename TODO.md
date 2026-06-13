@@ -116,6 +116,20 @@ Track all work here. Check off items as they're completed. Add new items as they
 
 ## IMPORTANT — First month after launch
 
+### Mobile Responsiveness
+- [x] Add viewport meta tag to root layout (`apps/frontend/src/app/layout.tsx`) — added `export const viewport: Viewport` with `width: 'device-width', initialScale: 1, maximumScale: 5` — done 2026-06-13
+- [x] Mobile sidebar: hide sidebar completely on small screens, add hamburger toggle button to header (`apps/frontend/src/app/dashboard/layout.tsx` + `Sidebar.tsx`) — sidebar now uses `fixed` on mobile with `translate-x` animation; hamburger button in header on `md:hidden` — done 2026-06-13
+- [x] Mobile drawer navigation — slide-in overlay drawer with backdrop for sidebar on `< md`; closes on navigation via pathname `useEffect`; desktop behavior unchanged — done 2026-06-13
+- [x] Marketing nav mobile menu — `MarketingNav` now has hamburger/X toggle with full-width dropdown showing all nav links + auth CTAs — done 2026-06-13
+- [x] POS page mobile layout — `flex-col md:flex-row` layout; cart panel is a slide-up bottom sheet on mobile (90vh) with backdrop overlay; floating "View Cart" button shows item count — done 2026-06-13
+- [x] POS search bar hardcoded width `w-72` — replaced with `flex-1 min-w-0 sm:flex-none sm:w-64`; header row now `flex-col sm:flex-row` — done 2026-06-13
+- [x] POS product grid breakpoints — `grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5`; POS modals made responsive (`w-full max-w-[N]`, `p-4` container padding) — done 2026-06-13
+- [x] Dashboard header overflow on small screens — `px-3 md:px-6`, `space-x-2 md:space-x-4`, branch label hidden below `sm:`, store select capped at `max-w-[100px]` on mobile, separator hidden below `sm:` — done 2026-06-13
+- [x] DataTable toolbar doesn't stack on mobile — added `flex-wrap` to buttons container so filter/column/export buttons wrap onto new lines — done 2026-06-13
+- [ ] DataTable: no responsive column hiding — all columns visible on mobile causing horizontal scroll; add ability to hide low-priority columns below `sm:` breakpoint
+- [x] Responsive padding audit — dashboard home changed from `p-8` to `p-4 md:p-8` — done 2026-06-13
+- [x] Dashboard home skips `sm:` breakpoint in KPI grid — changed to `grid-cols-1 sm:grid-cols-2 xl:grid-cols-4` — done 2026-06-13
+
 ### Marketing & Onboarding
 - [x] Build real marketing/landing page — `apps/frontend/src/app/page.tsx` with hero preview, how-it-works, modules, 4-tier pricing preview, shared marketing components — done 2026-06-12
 - [x] Pricing page with feature comparison table across all 4 tiers — `apps/frontend/src/app/pricing/page.tsx` + `src/lib/marketing/plans.ts` aligned with seed prices — done 2026-06-12
