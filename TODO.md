@@ -400,5 +400,6 @@ Track all work here. Check off items as they're completed. Add new items as they
 - [x] Sync `main` with `origin/main` and fix post-merge build failures — rebased local DataTable fix onto origin; regenerated Prisma client; fixed i18n key paths (`t.accounting.reports`), missing hooks/locale, duplicate API keys, `formatBDT`/`parseFloat` typos, and storefront duplicate key — done 2026-06-12
 - [x] Fix Render backend deploy crash on missing `FIELD_ENCRYPTION_KEY` — added env var to `render.yaml` with `generateValue`, accept hex or base64 keys in `EncryptionService` — done 2026-06-12
 - [x] Fix Render backend still crashing without `FIELD_ENCRYPTION_KEY` on existing services — derive encryption key from `JWT_SECRET` fallback when dedicated key unset — done 2026-06-12
+- [x] Fix login 500 after recent deployment — root cause: local DB missing `sms_credits` column (Tenant table) and new tables (SmsPackage, SmsTransaction, AiUsageLog, JobRun) from recent migrations; fixed by running `prisma db push`; also fixed HttpExceptionFilter to log unhandled exceptions via NestJS Logger instead of silently swallowing them — done 2026-06-13
 - [x] Write comprehensive shop owner & staff user manual — covers all 20 topic areas (POS, sales, inventory, purchases, CRM, accounting, HR, loyalty, e-commerce, billing, etc.) — `docs/user-manual/shop-owner-guide.md` — done 2026-06-13
 
