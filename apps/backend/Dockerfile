@@ -41,5 +41,8 @@ EXPOSE 4000
 ENV PORT=4000
 ENV HOSTNAME="0.0.0.0"
 
-# Command to run the NestJS application
-CMD ["node", "apps/backend/dist/src/main.js"]
+# Sync schema and seed before starting the app.
+# DIRECT_URL is overridden with DATABASE_URL so prisma db push uses the
+# internal Render hostname, bypassing the IP allowlist that blocks external
+# connections during preDeployCommand.
+CMD ["sh", "-c", "DIRECT_URL=$DATABASE_URL npx prisma db push --skip-generate --schema=packages/database/prisma/schema.prisma && npm run db:seed --workspace=@retail-saas/database && node apps/backend/dist/src/main.js"]
