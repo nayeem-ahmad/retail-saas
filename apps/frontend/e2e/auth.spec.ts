@@ -10,16 +10,16 @@ import { test, expect } from '@playwright/test';
 test.describe('Authentication', () => {
     test('signup page renders and validates required fields', { tag: '@readonly' }, async ({ page }) => {
         await page.goto('/signup');
-        await expect(page.getByRole('heading', { name: /sign up|create account|register/i })).toBeVisible();
+        await expect(page.getByRole('heading', { name: /create your retail saas workspace|sign up|create account|register/i })).toBeVisible();
 
         // Submit without filling fields to trigger validation
-        await page.getByRole('button', { name: /sign up|create account|register/i }).click();
+        await page.getByRole('button', { name: /create workspace|sign up|create account|register/i }).click();
         await expect(page.getByText(/required|please enter|invalid/i)).toBeVisible();
     });
 
     test('login page renders and shows error for wrong credentials', { tag: '@readonly' }, async ({ page }) => {
         await page.goto('/login');
-        await expect(page.getByRole('heading', { name: /sign in|log in/i })).toBeVisible();
+        await expect(page.getByRole('heading', { name: /welcome back|sign in|log in/i })).toBeVisible();
 
         await page.getByLabel(/email/i).fill('wrong@example.com');
         await page.getByLabel(/password/i).fill('wrongpassword');
@@ -39,7 +39,7 @@ test.describe('Authentication', () => {
         await page.getByLabel(/email/i).fill(email);
         await page.getByLabel(/password/i).fill('SecurePassword123!');
 
-        await page.getByRole('button', { name: /sign up|create account|register/i }).click();
+        await page.getByRole('button', { name: /create workspace|sign up|create account|register/i }).click();
 
         // After signup, expect redirect to dashboard or onboarding
         await expect(page).toHaveURL(/dashboard|onboarding/, { timeout: 15_000 });

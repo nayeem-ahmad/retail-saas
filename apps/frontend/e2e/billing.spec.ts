@@ -10,14 +10,14 @@ async function loginIfNeeded(page: Page) {
     const email = process.env.E2E_TEST_EMAIL || 'test@example.com';
     const password = process.env.E2E_TEST_PASSWORD || 'TestPassword123!';
 
-    await page.goto('/login');
-    const heading = page.getByRole('heading', { name: /sign in|log in/i });
-    if (await heading.isVisible({ timeout: 3_000 }).catch(() => false)) {
-        await page.getByLabel(/email/i).fill(email);
-        await page.getByLabel(/password/i).fill(password);
-        await page.getByRole('button', { name: /sign in|log in/i }).click();
-        await page.waitForURL(/dashboard/, { timeout: 15_000 });
-    }
+    await page.goto('/login', { waitUntil: 'domcontentloaded' });
+    // If already authenticated, the app redirects away from /login
+    if (!page.url().includes('/login')) return;
+
+    await page.getByLabel(/email/i).fill(email);
+    await page.getByLabel(/password/i).fill(password);
+    await page.getByRole('button', { name: /sign in/i }).click();
+    await page.waitForURL(/dashboard/, { timeout: 15_000 });
 }
 
 test.describe('Billing', { tag: '@readonly' }, () => {

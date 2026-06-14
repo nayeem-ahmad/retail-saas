@@ -84,7 +84,8 @@ const FATAL_PATTERNS = [
     /is not defined/i,
     /failed to fetch/i,
     /network error/i,
-    /500/,
+    // Use a narrow pattern to catch Next.js 500 pages without matching monetary values like "৳500"
+    /500\s*\|\s*internal server error/i,
 ];
 
 // Console error patterns to flag (less strict for warnings)
@@ -121,8 +122,8 @@ async function setupAuth(page: Page, token: string, tenantId: string, storeId: s
     await page.evaluate(
         ({ token, tenantId, storeId }) => {
             localStorage.setItem('access_token', token);
-            localStorage.setItem('selected_tenant_id', tenantId);
-            localStorage.setItem('selected_store_id', storeId);
+            localStorage.setItem('tenant_id', tenantId);
+            localStorage.setItem('store_id', storeId);
         },
         { token, tenantId, storeId }
     );
@@ -173,8 +174,8 @@ test.describe('Sidebar navigation — all routes load without errors', { tag: '@
             await page.evaluate(
                 ({ token, tenantId, storeId }) => {
                     localStorage.setItem('access_token', token);
-                    localStorage.setItem('selected_tenant_id', tenantId);
-                    localStorage.setItem('selected_store_id', storeId);
+                    localStorage.setItem('tenant_id', tenantId);
+                    localStorage.setItem('store_id', storeId);
                 },
                 { token, tenantId, storeId }
             );
