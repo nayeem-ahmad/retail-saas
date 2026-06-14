@@ -255,6 +255,7 @@ export const coreMessages = {
             storefrontSettings: 'Settings',
             tenants: 'Tenants',
             users: 'Users',
+            feedback: 'Feedback',
             customers: 'Customers',
             customerGroups: 'Customer Groups',
             territories: 'Territories',

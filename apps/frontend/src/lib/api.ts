@@ -904,6 +904,14 @@ export const api = {
     },
     promoteUser: (userId: string) => fetchWithAuth(`/admin/users/${userId}/promote`, { method: 'POST' }),
     demoteUser: (userId: string) => fetchWithAuth(`/admin/users/${userId}/promote`, { method: 'DELETE' }),
+    getAdminFeedback: (params?: { type?: string; search?: string; page?: number; limit?: number }) => {
+        const query = new URLSearchParams();
+        if (params?.type) query.set('type', params.type);
+        if (params?.search) query.set('search', params.search);
+        if (params?.page) query.set('page', String(params.page));
+        if (params?.limit) query.set('limit', String(params.limit));
+        return fetchWithAuth(`/admin/feedback${query.toString() ? `?${query.toString()}` : ''}`);
+    },
     // Team & permissions (tenant-scoped staff management)
     getTeamMembers: () => fetchWithAuth('/team/members?limit=100').then((r: any) => r?.items ?? r),
     getTeamMember: (userId: string) => fetchWithAuth(`/team/members/${userId}`),

@@ -255,6 +255,7 @@ export const coreMessages = {
                 storefrontSettings: "সেটিংস",
                 tenants: "টেন্যান্ট",
                 users: "ব্যবহারকারীরা",
+                feedback: "ফিডব্যাক",
                 customers: "গ্রাহক",
                 customerGroups: "গ্রাহক গ্রুপ",
                 territories: "এরিয়া",

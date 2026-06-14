@@ -255,6 +255,7 @@ export const coreMessages = {
                 storefrontSettings: "Tetapan",
                 tenants: "Penyewa",
                 users: "Pengguna",
+                feedback: "Maklum Balas",
                 customers: "Pelanggan",
                 customerGroups: "Kumpulan Pelanggan",
                 territories: "Wilayah",
