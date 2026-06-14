@@ -32,7 +32,7 @@ export const componentsMessages = {
                 justNow: 'baru sahaja',
                 minutes: '{count}m lalu',
                 hours: '{count}j lalu',
-                days: '{count}h lalu',
+                days: '{count} hari lalu',
             },
         },
         feedbackWidget: {

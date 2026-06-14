@@ -45,7 +45,7 @@ export const purchasesMessages = {
                 SENT: 'Dihantar',
                 RECEIVED: 'Diterima',
                 CANCELLED: 'Dibatalkan',
-                ACCEPTED: 'Diterima',
+                ACCEPTED: 'Disetujui',
                 REJECTED: 'Ditolak',
                 CONVERTED: 'Ditukar',
             },

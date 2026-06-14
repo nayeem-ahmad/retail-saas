@@ -188,7 +188,7 @@ export const settingsExtrasMessages = {
             },
             monthly: {
                 label: "Laporan jualan bulanan",
-                hint: "Dihantar pada 1 hab setiap bulan dengan ringkasan bulan sebelumnya.",
+                hint: "Dihantar pada 1hb setiap bulan dengan ringkasan bulan sebelumnya.",
             },
             email: {
                 label: "Ganti alamat e-mel",
