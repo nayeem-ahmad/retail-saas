@@ -55,6 +55,10 @@ export const StorePermission = {
   MANAGE_CRM_TASKS: "MANAGE_CRM_TASKS",
   VIEW_CUSTOMER_CREDIT: "VIEW_CUSTOMER_CREDIT",
   MANAGE_CUSTOMER_CREDIT: "MANAGE_CUSTOMER_CREDIT",
+
+  // Loans
+  VIEW_LOANS: "VIEW_LOANS",
+  MANAGE_LOANS: "MANAGE_LOANS",
 } as const;
 export type StorePermission = (typeof StorePermission)[keyof typeof StorePermission];
 
@@ -86,6 +90,8 @@ export const ROLE_DEFAULT_PERMISSIONS: Record<UserRole, StorePermission[]> = {
     StorePermission.MANAGE_CRM_TASKS,
     StorePermission.VIEW_CUSTOMER_CREDIT,
     StorePermission.MANAGE_CUSTOMER_CREDIT,
+    StorePermission.VIEW_LOANS,
+    StorePermission.MANAGE_LOANS,
   ],
   [UserRole.CASHIER]: [
     StorePermission.VIEW_PRODUCT_CATALOG,
@@ -101,6 +107,8 @@ export const ROLE_DEFAULT_PERMISSIONS: Record<UserRole, StorePermission[]> = {
     StorePermission.VIEW_FINANCIAL_REPORTS,
     StorePermission.SWITCH_STORES,
     StorePermission.VIEW_CONSOLIDATED_REPORTS,
+    StorePermission.VIEW_LOANS,
+    StorePermission.MANAGE_LOANS,
   ],
 };
 
@@ -135,6 +143,8 @@ export const STORE_PERMISSION_LABELS: Record<StorePermission, string> = {
   [StorePermission.MANAGE_CRM_TASKS]: "Manage CRM tasks",
   [StorePermission.VIEW_CUSTOMER_CREDIT]: "View customer credit",
   [StorePermission.MANAGE_CUSTOMER_CREDIT]: "Manage customer credit",
+  [StorePermission.VIEW_LOANS]: "View loans",
+  [StorePermission.MANAGE_LOANS]: "Manage loans",
 };
 
 /** Store permissions grouped by feature area — drives the per-branch permission matrix UI. */
@@ -176,6 +186,8 @@ export const STORE_PERMISSION_GROUPS: { label: string; permissions: StorePermiss
       StorePermission.VIEW_FINANCIAL_REPORTS,
       StorePermission.CREATE_FUND_TRANSFER,
       StorePermission.APPROVE_FUND_TRANSFER,
+      StorePermission.VIEW_LOANS,
+      StorePermission.MANAGE_LOANS,
     ],
   },
   {

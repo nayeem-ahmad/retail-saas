@@ -1252,6 +1252,35 @@ export const api = {
         if (params?.to) q.set('to', params.to);
         return fetchWithAuth(`/expenses/summary?${q}`);
     },
+    getLoans: (params?: { page?: number; limit?: number; direction?: string; status?: string; storeId?: string; search?: string }) => {
+        const q = new URLSearchParams();
+        if (params?.page) q.set('page', String(params.page));
+        if (params?.limit) q.set('limit', String(params.limit));
+        if (params?.direction) q.set('direction', params.direction);
+        if (params?.status) q.set('status', params.status);
+        if (params?.storeId) q.set('storeId', params.storeId);
+        if (params?.search) q.set('search', params.search);
+        return fetchWithAuth(`/loans?${q}`);
+    },
+    getLoanSummary: () => fetchWithAuth('/loans/summary'),
+    getLoan: (id: string) => fetchWithAuth(`/loans/${id}`),
+    createLoan: (data: any) => fetchWithAuth('/loans', {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+    }),
+    updateLoan: (id: string, data: any) => fetchWithAuth(`/loans/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+    }),
+    deleteLoan: (id: string) => fetchWithAuth(`/loans/${id}`, { method: 'DELETE' }),
+    addLoanPayment: (id: string, data: any) => fetchWithAuth(`/loans/${id}/payments`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+    }),
+    deleteLoanPayment: (id: string, paymentId: string) => fetchWithAuth(`/loans/${id}/payments/${paymentId}`, { method: 'DELETE' }),
     acceptInvitation: (token: string) => fetchWithAuth('/invitations/accept', {
         method: 'POST',
         body: JSON.stringify({ token }),
