@@ -892,6 +892,23 @@ export const api = {
     impersonateTenant: (tenantId: string) => fetchWithAuth(`/admin/tenants/${tenantId}/impersonate`, {
         method: 'POST',
     }),
+    createAdminTenant: (data: {
+        ownerMode: 'new' | 'existing';
+        ownerEmail?: string;
+        ownerName?: string;
+        ownerUserId?: string;
+        tenantName: string;
+        storeName: string;
+        address?: string;
+        businessType?: string;
+        planCode: string;
+    }) => fetchWithAuth('/admin/tenants', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+    }),
+    lookupAdminUser: (email: string) =>
+        fetchWithAuth(`/admin/users/lookup?email=${encodeURIComponent(email)}`),
     getAdminMetrics: () => fetchWithAuth('/admin/metrics'),
     getSystemHealth: () => fetchWithAuth('/admin/system-health'),
     getSystemHealthJobs: () => fetchWithAuth('/admin/system-health/jobs'),
