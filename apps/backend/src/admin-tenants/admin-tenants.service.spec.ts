@@ -4,10 +4,6 @@ jest.mock('@retail-saas/database', () => ({
     PrismaClient: class MockPrismaClient {},
 }));
 
-jest.mock('bcrypt', () => ({
-    hash: jest.fn().mockResolvedValue('hashed-temp-password'),
-}));
-
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
