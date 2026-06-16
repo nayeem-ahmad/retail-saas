@@ -1,10 +1,21 @@
+jest.mock('@retail-saas/database', () => ({
+    bootstrapDefaultAccountingForTenant: jest.fn().mockResolvedValue(undefined),
+    seedBusinessTypeTemplate: jest.fn().mockResolvedValue(undefined),
+    PrismaClient: class MockPrismaClient {},
+}));
+
+jest.mock('bcrypt', () => ({
+    hash: jest.fn().mockResolvedValue('hashed-temp-password'),
+}));
+
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotFoundException } from '@nestjs/common';
+import { ConflictException, NotFoundException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { AdminTenantsService } from './admin-tenants.service';
 import { DatabaseService } from '../database/database.service';
 import { BillingService } from '../billing/billing.service';
 import { AuditService } from '../audit/audit.service';
+import { EmailService } from '../email/email.service';
 
 describe('AdminTenantsService', () => {
   let service: AdminTenantsService;
@@ -12,6 +23,7 @@ describe('AdminTenantsService', () => {
   let billingService: any;
   let jwtService: any;
   let auditService: any;
+  let emailService: any;
 
   const makeTenant = (overrides: any = {}) => ({
     id: 't-1',
@@ -51,19 +63,31 @@ describe('AdminTenantsService', () => {
         findUnique: jest.fn(),
         findMany: jest.fn(),
         count: jest.fn(),
+        create: jest.fn(),
       },
+      tenantUser: { create: jest.fn() },
+      store: { create: jest.fn() },
+      subscriptionPlan: { findUnique: jest.fn() },
       tenantSubscription: {
         findUnique: jest.fn(),
         update: jest.fn(),
         groupBy: jest.fn(),
+        create: jest.fn(),
       },
+      userStoreAccess: { create: jest.fn() },
+      userStorePermission: { createMany: jest.fn() },
       user: {
         findUnique: jest.fn(),
         findMany: jest.fn(),
         update: jest.fn(),
         count: jest.fn(),
+        create: jest.fn(),
       },
       $transaction: jest.fn().mockImplementation(async (cb: any) => cb(db)),
+    };
+
+    emailService = {
+      sendWelcome: jest.fn().mockResolvedValue(undefined),
     };
 
     billingService = {
@@ -85,6 +109,7 @@ describe('AdminTenantsService', () => {
         { provide: BillingService, useValue: billingService },
         { provide: JwtService, useValue: jwtService },
         { provide: AuditService, useValue: auditService },
+        { provide: EmailService, useValue: emailService },
       ],
     }).compile();
 
@@ -683,6 +708,146 @@ describe('AdminTenantsService', () => {
       const result = service.demoteUser('nonexistent', 'super-admin');
       await expect(result).rejects.toThrow(NotFoundException);
       await expect(result).rejects.toThrow('User not found');
+    });
+  });
+
+  /* ------------------------------------------------------------------ */
+  /*  lookupUserByEmail                                                   */
+  /* ------------------------------------------------------------------ */
+
+  describe('lookupUserByEmail', () => {
+    it('returns id, email, name when user exists', async () => {
+      db.user.findUnique.mockResolvedValue({
+        id: 'u-1',
+        email: 'test@example.com',
+        name: 'Test User',
+      });
+
+      const result = await service.lookupUserByEmail('test@example.com');
+
+      expect(result).toEqual({ id: 'u-1', email: 'test@example.com', name: 'Test User' });
+      expect(db.user.findUnique).toHaveBeenCalledWith({
+        where: { email: 'test@example.com' },
+        select: { id: true, email: true, name: true },
+      });
+    });
+
+    it('throws NotFoundException when user does not exist', async () => {
+      db.user.findUnique.mockResolvedValue(null);
+
+      await expect(service.lookupUserByEmail('ghost@example.com')).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  /* ------------------------------------------------------------------ */
+  /*  createTenant                                                        */
+  /* ------------------------------------------------------------------ */
+
+  describe('createTenant', () => {
+    const plan = { id: 'plan-1', code: 'FREE', is_active: true };
+
+    beforeEach(() => {
+      db.subscriptionPlan.findUnique.mockResolvedValue(plan);
+      db.tenant.create.mockResolvedValue({ id: 't-new', name: 'Acme Ltd' });
+      db.tenantUser.create.mockResolvedValue({});
+      db.store.create.mockResolvedValue({ id: 's-new', name: 'Acme Store' });
+      db.tenantSubscription.create.mockResolvedValue({});
+      db.userStoreAccess.create.mockResolvedValue({});
+      db.userStorePermission.createMany.mockResolvedValue({ count: 10 });
+      db.tenant.findUnique.mockResolvedValue(makeTenant({ id: 't-new', name: 'Acme Ltd' }));
+    });
+
+    describe('ownerMode = new', () => {
+      it('creates a new user and provisions the tenant', async () => {
+        db.user.findUnique.mockResolvedValueOnce(null); // email check → not taken
+        db.user.create.mockResolvedValue({ id: 'u-new', email: 'owner@acme.com', name: 'Alice' });
+
+        const result = await service.createTenant(
+          {
+            ownerMode: 'new',
+            ownerEmail: 'owner@acme.com',
+            ownerName: 'Alice',
+            tenantName: 'Acme Ltd',
+            storeName: 'Acme Store',
+            planCode: 'FREE',
+          },
+          'admin-1',
+        );
+
+        expect(db.user.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            data: expect.objectContaining({ email: 'owner@acme.com', name: 'Alice' }),
+          }),
+        );
+        expect(emailService.sendWelcome).toHaveBeenCalledWith('owner@acme.com', 'Alice');
+        expect(db.tenant.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            data: expect.objectContaining({ name: 'Acme Ltd', owner_id: 'u-new' }),
+          }),
+        );
+        expect(auditService.log).toHaveBeenCalledWith(
+          'tenant.admin_create',
+          'Tenant',
+          expect.anything(),
+          't-new',
+          expect.objectContaining({ owner_mode: 'new' }),
+        );
+        expect(result.id).toBe('t-new');
+      });
+
+      it('throws ConflictException when email is already registered', async () => {
+        db.user.findUnique.mockResolvedValueOnce({ id: 'u-taken' }); // email taken
+
+        await expect(
+          service.createTenant(
+            { ownerMode: 'new', ownerEmail: 'taken@test.com', tenantName: 'X', storeName: 'X', planCode: 'FREE' },
+            'admin-1',
+          ),
+        ).rejects.toThrow(ConflictException);
+
+        expect(db.user.create).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('ownerMode = existing', () => {
+      it('reuses an existing user and skips user creation', async () => {
+        db.user.findUnique.mockResolvedValueOnce({
+          id: 'u-existing',
+          email: 'owner@acme.com',
+          name: 'Bob',
+        });
+
+        const result = await service.createTenant(
+          {
+            ownerMode: 'existing',
+            ownerUserId: 'u-existing',
+            tenantName: 'Acme Ltd',
+            storeName: 'Acme Store',
+            planCode: 'FREE',
+          },
+          'admin-1',
+        );
+
+        expect(db.user.create).not.toHaveBeenCalled();
+        expect(emailService.sendWelcome).not.toHaveBeenCalled();
+        expect(db.tenant.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            data: expect.objectContaining({ owner_id: 'u-existing' }),
+          }),
+        );
+        expect(result.id).toBe('t-new');
+      });
+
+      it('throws NotFoundException when ownerUserId does not exist', async () => {
+        db.user.findUnique.mockResolvedValueOnce(null);
+
+        await expect(
+          service.createTenant(
+            { ownerMode: 'existing', ownerUserId: 'ghost', tenantName: 'X', storeName: 'X', planCode: 'FREE' },
+            'admin-1',
+          ),
+        ).rejects.toThrow(NotFoundException);
+      });
     });
   });
 });

@@ -1,13 +1,19 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { BillingService } from '../billing/billing.service';
 import { DatabaseService } from '../database/database.service';
 import { AuditService } from '../audit/audit.service';
+import { EmailService } from '../email/email.service';
+import * as bcrypt from 'bcrypt';
+import * as crypto from 'node:crypto';
+import { bootstrapDefaultAccountingForTenant, seedBusinessTypeTemplate } from '@retail-saas/database';
+import { ROLE_DEFAULT_PERMISSIONS, UserRole } from '@retail-saas/shared-types';
 import {
     ListAdminTenantsQueryDto,
     ListAdminUsersQueryDto,
     SuspendTenantDto,
     UpdateAdminTenantSubscriptionDto,
+    CreateAdminTenantDto,
 } from './admin-tenants.dto';
 
 @Injectable()
@@ -17,6 +23,7 @@ export class AdminTenantsService {
         private readonly billingService: BillingService,
         private readonly jwtService: JwtService,
         private readonly auditService: AuditService,
+        private readonly emailService: EmailService,
     ) {}
 
     async listTenants(query: ListAdminTenantsQueryDto) {
@@ -195,6 +202,117 @@ export class AdminTenantsService {
             impersonated_user: { id: tenant.owner.id, email: tenant.owner.email },
             tenant: { id: tenant.id, name: tenant.name },
         };
+    }
+
+    async lookupUserByEmail(email: string) {
+        const user = await this.db.user.findUnique({
+            where: { email },
+            select: { id: true, email: true, name: true },
+        });
+        if (!user) throw new NotFoundException('User not found');
+        return user;
+    }
+
+    async createTenant(dto: CreateAdminTenantDto, adminUserId: string) {
+        let ownerId: string;
+        let ownerEmail: string;
+        let ownerName: string | null;
+
+        if (dto.ownerMode === 'new') {
+            const existing = await this.db.user.findUnique({ where: { email: dto.ownerEmail! } });
+            if (existing) throw new ConflictException('Email is already registered');
+
+            const tempPassword = crypto.randomBytes(8).toString('hex');
+            const passwordHash = await bcrypt.hash(tempPassword, 10);
+
+            const newUser = await this.db.user.create({
+                data: { email: dto.ownerEmail!, name: dto.ownerName ?? null, passwordHash },
+            });
+
+            ownerId = newUser.id;
+            ownerEmail = newUser.email;
+            ownerName = (newUser as any).name ?? null;
+
+            this.emailService.sendWelcome(ownerEmail, ownerName ?? ownerEmail).catch((err: any) => {
+                console.warn(`[AdminTenantsService] Welcome email failed for ${ownerEmail}:`, err?.message);
+            });
+        } else {
+            const user = await this.db.user.findUnique({ where: { id: dto.ownerUserId! } });
+            if (!user) throw new NotFoundException('User not found');
+            ownerId = user.id;
+            ownerEmail = user.email;
+            ownerName = (user as any).name ?? null;
+        }
+
+        const plan = await this.db.subscriptionPlan.findUnique({ where: { code: dto.planCode } });
+        if (!plan?.is_active) throw new BadRequestException('Selected subscription plan is not available.');
+
+        const { tenant } = await this.db.$transaction(async (tx: any) => {
+            const tenant = await tx.tenant.create({
+                data: {
+                    name: dto.tenantName,
+                    owner_id: ownerId,
+                    ...(dto.businessType ? { business_type: dto.businessType } : {}),
+                },
+            });
+
+            await tx.tenantUser.create({
+                data: { tenant_id: tenant.id, user_id: ownerId, role: 'OWNER' },
+            });
+
+            const store = await tx.store.create({
+                data: { tenant_id: tenant.id, name: dto.storeName, address: dto.address ?? null },
+            });
+
+            await tx.tenantSubscription.create({
+                data: {
+                    tenant_id: tenant.id,
+                    plan_id: plan.id,
+                    status: 'TRIALING',
+                    current_period_start: new Date(),
+                    current_period_end: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+                    provider_name: 'manual',
+                },
+            });
+
+            await tx.userStoreAccess.create({
+                data: {
+                    user_id: ownerId,
+                    store_id: store.id,
+                    tenant_id: tenant.id,
+                    access_level: 'MULTI_STORE_CAPABLE',
+                },
+            });
+
+            const ownerPermissions = ROLE_DEFAULT_PERMISSIONS[UserRole.OWNER];
+            await tx.userStorePermission.createMany({
+                data: ownerPermissions.map((permission: string) => ({
+                    user_id: ownerId,
+                    store_id: store.id,
+                    tenant_id: tenant.id,
+                    permission,
+                    granted_by: ownerId,
+                })),
+                skipDuplicates: true,
+            });
+
+            await bootstrapDefaultAccountingForTenant(tx, tenant.id);
+
+            return { tenant, store };
+        });
+
+        if (dto.businessType) {
+            seedBusinessTypeTemplate(this.db, tenant.id, dto.businessType).catch((err: any) =>
+                console.error(`[AdminTenantsService] Failed to seed business type template:`, err),
+            );
+        }
+
+        await this.auditService.log('tenant.admin_create', 'Tenant', { userId: adminUserId }, tenant.id, {
+            owner_email: ownerEmail,
+            owner_mode: dto.ownerMode,
+        });
+
+        return this.getTenant(tenant.id);
     }
 
     async getMetrics() {
