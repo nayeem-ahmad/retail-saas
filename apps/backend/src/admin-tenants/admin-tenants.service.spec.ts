@@ -76,6 +76,7 @@ describe('AdminTenantsService', () => {
       },
       userStoreAccess: { create: jest.fn() },
       userStorePermission: { createMany: jest.fn() },
+      passwordResetToken: { create: jest.fn().mockResolvedValue({}) },
       user: {
         findUnique: jest.fn(),
         findMany: jest.fn(),
@@ -88,6 +89,7 @@ describe('AdminTenantsService', () => {
 
     emailService = {
       sendWelcome: jest.fn().mockResolvedValue(undefined),
+      sendPasswordReset: jest.fn().mockResolvedValue(undefined),
     };
 
     billingService = {
@@ -776,10 +778,15 @@ describe('AdminTenantsService', () => {
 
         expect(db.user.create).toHaveBeenCalledWith(
           expect.objectContaining({
-            data: expect.objectContaining({ email: 'owner@acme.com', name: 'Alice' }),
+            data: expect.objectContaining({ email: 'owner@acme.com', name: 'Alice', passwordHash: null }),
           }),
         );
-        expect(emailService.sendWelcome).toHaveBeenCalledWith('owner@acme.com', 'Alice');
+        expect(db.passwordResetToken.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            data: expect.objectContaining({ user_id: 'u-new' }),
+          }),
+        );
+        expect(emailService.sendPasswordReset).toHaveBeenCalledWith('owner@acme.com', expect.any(String));
         expect(db.tenant.create).toHaveBeenCalledWith(
           expect.objectContaining({
             data: expect.objectContaining({ name: 'Acme Ltd', owner_id: 'u-new' }),

@@ -4,7 +4,6 @@ import { BillingService } from '../billing/billing.service';
 import { DatabaseService } from '../database/database.service';
 import { AuditService } from '../audit/audit.service';
 import { EmailService } from '../email/email.service';
-import * as bcrypt from 'bcrypt';
 import * as crypto from 'node:crypto';
 import { bootstrapDefaultAccountingForTenant, seedBusinessTypeTemplate } from '@retail-saas/database';
 import { ROLE_DEFAULT_PERMISSIONS, UserRole } from '@retail-saas/shared-types';
@@ -217,25 +216,15 @@ export class AdminTenantsService {
         let ownerId: string;
         let ownerEmail: string;
         let ownerName: string | null;
+        let sendPasswordResetAfterTx: (() => void) | null = null;
 
         if (dto.ownerMode === 'new') {
+            // Check uniqueness before the transaction (read-only, no rollback needed)
             const existing = await this.db.user.findUnique({ where: { email: dto.ownerEmail! } });
             if (existing) throw new ConflictException('Email is already registered');
 
-            const tempPassword = crypto.randomBytes(8).toString('hex');
-            const passwordHash = await bcrypt.hash(tempPassword, 10);
-
-            const newUser = await this.db.user.create({
-                data: { email: dto.ownerEmail!, name: dto.ownerName ?? null, passwordHash },
-            });
-
-            ownerId = newUser.id;
-            ownerEmail = newUser.email;
-            ownerName = (newUser as any).name ?? null;
-
-            this.emailService.sendWelcome(ownerEmail, ownerName ?? ownerEmail).catch((err: any) => {
-                console.warn(`[AdminTenantsService] Welcome email failed for ${ownerEmail}:`, err?.message);
-            });
+            ownerEmail = dto.ownerEmail!;
+            ownerName = dto.ownerName ?? null;
         } else {
             const user = await this.db.user.findUnique({ where: { id: dto.ownerUserId! } });
             if (!user) throw new NotFoundException('User not found');
@@ -248,6 +237,29 @@ export class AdminTenantsService {
         if (!plan?.is_active) throw new BadRequestException('Selected subscription plan is not available.');
 
         const { tenant } = await this.db.$transaction(async (tx: any) => {
+            if (dto.ownerMode === 'new') {
+                // Create the user inside the transaction so it rolls back on any failure
+                const newUser = await tx.user.create({
+                    data: { email: ownerEmail, name: ownerName ?? null, passwordHash: null },
+                });
+                ownerId = newUser.id;
+
+                // Create a password-reset token so the user can set their own password
+                const rawToken = crypto.randomBytes(32).toString('hex');
+                const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+                const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+                await tx.passwordResetToken.create({
+                    data: { user_id: ownerId, token_hash: tokenHash, expires_at: expiresAt },
+                });
+
+                // Capture the email send for after the transaction commits
+                sendPasswordResetAfterTx = () => {
+                    this.emailService.sendPasswordReset(ownerEmail, rawToken).catch((err: any) => {
+                        console.warn(`[AdminTenantsService] Password reset email failed for ${ownerEmail}:`, err?.message);
+                    });
+                };
+            }
+
             const tenant = await tx.tenant.create({
                 data: {
                     name: dto.tenantName,
@@ -300,6 +312,9 @@ export class AdminTenantsService {
 
             return { tenant, store };
         });
+
+        // Fire-and-forget: send password-set email to newly created owner
+        sendPasswordResetAfterTx?.();
 
         if (dto.businessType) {
             seedBusinessTypeTemplate(this.db, tenant.id, dto.businessType).catch((err: any) =>
