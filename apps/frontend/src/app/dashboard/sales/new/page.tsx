@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { ChevronLeft, Printer } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { ChevronLeft, Printer, ChevronDown } from 'lucide-react';
 import Link from 'next/link';
 import { api } from '../../../../lib/api';
 import { useI18n } from '@/lib/i18n';
@@ -13,6 +13,7 @@ import TotalsFooter from './components/TotalsFooter';
 import PaymentSection from './components/PaymentSection';
 import SalesHeader from './components/SalesHeader';
 import { useNewSaleCart } from '../../../../lib/hooks/useNewSaleCart';
+import { printSalesInvoice, type PaperSize } from '@/lib/sales-invoice-printer';
 
 export default function NewSalePage() {
     const { t } = useI18n();
@@ -36,6 +37,9 @@ export default function NewSalePage() {
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [currentUser, setCurrentUser] = useState<any>(null);
+    const [showPaperMenu, setShowPaperMenu] = useState(false);
+    const [paperSize, setPaperSize] = useState<PaperSize>('A4');
+    const printMenuRef = useRef<HTMLDivElement>(null);
     const [totals, setTotals] = useState({
         subtotal: 0,
         discount: 0,
@@ -51,6 +55,17 @@ export default function NewSalePage() {
         loadPageData();
     }, []);
 
+    // Close paper size menu when clicking outside
+    useEffect(() => {
+        function handleClickOutside(e: MouseEvent) {
+            if (printMenuRef.current && !printMenuRef.current.contains(e.target as Node)) {
+                setShowPaperMenu(false);
+            }
+        }
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
     useEffect(() => {
         calculateTotals();
     }, [items, totals.discountPercent, totals.transportCost, totals.laborCost]);
@@ -63,11 +78,46 @@ export default function NewSalePage() {
             ]);
             setSalesSettings(settings);
             setCurrentUser(user);
+            // Use default paper size from settings if available
+            if (settings?.default_paper_size) {
+                setPaperSize(settings.default_paper_size as PaperSize);
+            }
         } catch (error) {
             console.error('Failed to load page data', error);
         } finally {
             setLoading(false);
         }
+    };
+
+    const handlePrint = (size?: PaperSize) => {
+        const selectedSize = size ?? paperSize;
+        setShowPaperMenu(false);
+        printSalesInvoice(
+            {
+                referenceNumber: refNumber || '—',
+                date: new Date().toLocaleDateString('en-BD'),
+                companyName: currentUser?.store?.name || salesSettings?.tenant?.business_name,
+                customerName: customer?.name,
+                customerPhone: customer?.phone,
+                items: items.map((item) => ({
+                    name: item.name,
+                    quantity: item.quantity,
+                    unitPrice: item.price,
+                    discount: item.discount || 0,
+                })),
+                payments: payments.map((p) => ({ method: p.method, amount: p.amount })),
+                subtotal: totals.subtotal,
+                discountAmount: totals.discount > 0 ? totals.discount : undefined,
+                discountPercent: totals.discountPercent > 0 ? totals.discountPercent : undefined,
+                vat: totals.vat > 0 ? totals.vat : undefined,
+                transportCost: totals.transportCost > 0 ? totals.transportCost : undefined,
+                laborCost: totals.laborCost > 0 ? totals.laborCost : undefined,
+                rounding: totals.rounding || undefined,
+                total: totals.total,
+                note: description || undefined,
+            },
+            selectedSize,
+        );
     };
 
     const calculateTotals = () => {
@@ -238,13 +288,42 @@ export default function NewSalePage() {
                     >
                         Cancel
                     </Link>
-                    <button
-                        type="button"
-                        className="px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50 flex items-center gap-2"
-                    >
-                        <Printer className="w-4 h-4" />
-                        Print
-                    </button>
+                    {/* Print button with paper-size dropdown */}
+                    <div className="relative" ref={printMenuRef}>
+                        <div className="flex items-center border rounded-lg overflow-hidden">
+                            <button
+                                type="button"
+                                onClick={() => handlePrint()}
+                                className="px-4 py-2 text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                            >
+                                <Printer className="w-4 h-4" />
+                                Print ({paperSize})
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setShowPaperMenu((v) => !v)}
+                                className="px-2 py-2 border-l text-gray-500 hover:bg-gray-50"
+                                title="Choose paper size"
+                            >
+                                <ChevronDown className="w-4 h-4" />
+                            </button>
+                        </div>
+                        {showPaperMenu && (
+                            <div className="absolute right-0 bottom-full mb-1 z-10 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[160px]">
+                                <p className="px-3 py-1 text-xs font-bold text-gray-400 uppercase tracking-wider">Paper Size</p>
+                                {(['A4', 'Letter', 'Thermal80', 'Thermal58'] as PaperSize[]).map((size) => (
+                                    <button
+                                        key={size}
+                                        type="button"
+                                        onClick={() => { setPaperSize(size); handlePrint(size); }}
+                                        className={`w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 ${paperSize === size ? 'font-bold text-blue-600' : 'text-gray-700'}`}
+                                    >
+                                        {size === 'Thermal80' ? '80mm Thermal' : size === 'Thermal58' ? '58mm Thermal' : size}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                     <button
                         type="submit"
                         disabled={submitting || items.length === 0}

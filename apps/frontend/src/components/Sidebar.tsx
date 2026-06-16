@@ -120,6 +120,8 @@ function buildModules(t: ReturnType<typeof useI18n>['t']): NavModule[] {
             { href: '/dashboard/customers',         icon: Users,           label: t.sidebar.items.customers },
             { href: '/dashboard/customer-groups',   icon: FolderTree,      label: t.sidebar.items.customerGroups },
             { href: '/dashboard/territories',       icon: MapPin,          label: t.sidebar.items.territories },
+            { href: '/dashboard/settings/sales',    icon: Cog,             label: 'Sales Settings' },
+            { href: '/dashboard/settings/payment-methods', icon: CreditCard, label: 'Payment Methods' },
         ],
     },
     {
