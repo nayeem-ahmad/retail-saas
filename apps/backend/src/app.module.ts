@@ -23,6 +23,8 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { ProductsModule } from './products/products.module';
 import { AssetsModule } from './assets/assets.module';
 import { SalesModule } from './sales/sales.module';
+import { PaymentMethodsModule } from './payment-methods/payment-methods.module';
+import { SalesSettingsModule } from './sales-settings/sales-settings.module';
 import { CustomersModule } from './customers/customers.module';
 import { CustomerGroupsModule } from './customer-groups/customer-groups.module';
 import { TerritoriesModule } from './territories/territories.module';
@@ -100,6 +102,8 @@ import { SupportModule } from './support/support.module';
         ProductsModule,
         AssetsModule,
         SalesModule,
+        PaymentMethodsModule,
+        SalesSettingsModule,
         CustomersModule,
         CustomerGroupsModule,
         TerritoriesModule,
