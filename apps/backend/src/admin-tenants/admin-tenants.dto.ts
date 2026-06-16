@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsInt, Min, Max } from 'class-validator';
+import { IsEmail, IsIn, IsInt, IsOptional, IsString, Max, Min, ValidateIf } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class ListAdminTenantsQueryDto {
@@ -26,4 +26,39 @@ export class ListAdminUsersQueryDto {
 
 export class PromoteUserDto {
     @IsString() userId: string;
+}
+
+export class CreateAdminTenantDto {
+    @IsIn(['new', 'existing'])
+    ownerMode: 'new' | 'existing';
+
+    @ValidateIf((o) => o.ownerMode === 'new')
+    @IsEmail()
+    ownerEmail?: string;
+
+    @ValidateIf((o) => o.ownerMode === 'new')
+    @IsOptional()
+    @IsString()
+    ownerName?: string;
+
+    @ValidateIf((o) => o.ownerMode === 'existing')
+    @IsString()
+    ownerUserId?: string;
+
+    @IsString()
+    tenantName: string;
+
+    @IsString()
+    storeName: string;
+
+    @IsOptional()
+    @IsString()
+    address?: string;
+
+    @IsOptional()
+    @IsString()
+    businessType?: string;
+
+    @IsIn(['FREE', 'BASIC', 'STANDARD', 'PREMIUM'])
+    planCode: 'FREE' | 'BASIC' | 'STANDARD' | 'PREMIUM';
 }
