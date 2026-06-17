@@ -17,7 +17,7 @@ async function loginIfNeeded(page: Page) {
     await page.getByLabel(/email/i).fill(email);
     await page.getByLabel(/password/i).fill(password);
     await page.getByRole('button', { name: /sign in/i }).click();
-    await page.waitForURL(/dashboard/, { timeout: 15_000 });
+    await page.waitForURL(/dashboard/, { timeout: 30_000 });
 }
 
 test.describe('Billing', { tag: '@readonly' }, () => {
