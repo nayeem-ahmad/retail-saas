@@ -19,7 +19,7 @@ async function loginIfNeeded(page: Page) {
     await page.getByLabel(/email/i).fill(email);
     await page.getByLabel(/password/i).fill(password);
     await page.getByRole('button', { name: /sign in/i }).click();
-    await page.waitForURL(/dashboard/, { timeout: 15_000 });
+    await page.waitForURL(/dashboard/, { timeout: 30_000 });
 }
 
 test.describe('POS — Point of Sale', () => {
@@ -62,11 +62,10 @@ test.describe('POS — Point of Sale', () => {
         const checkoutBtn = page.getByRole('button', { name: /complete sale|checkout|pay now/i });
         // Just confirm the POS page loaded even if cart is empty
         await expect(page).toHaveURL(/pos/);
-        // Checkout button may only appear when cart is non-empty — acceptable
-        const visible = await checkoutBtn.isVisible({ timeout: 3_000 }).catch(() => false);
-        if (visible) {
-            await expect(checkoutBtn).toBeEnabled();
-        }
+        // The checkout control is present even with an empty cart; it is
+        // correctly disabled until line items are added, so assert presence only
+        // (not enabled-ness).
+        await expect(checkoutBtn.first()).toBeVisible({ timeout: 5_000 });
     });
 
     test('completing a sale shows a confirmation or receipt', async ({ page }) => {

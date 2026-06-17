@@ -127,6 +127,9 @@ jobs:
       FIELD_ENCRYPTION_KEY: 0000000000000000000000000000000000000000000000000000000000000000
       NODE_ENV: test
       NEXT_PUBLIC_API_URL: http://localhost:4000
+      # E2E drives many requests per IP (e.g. the sidebar route sweep); relax the
+      # API rate limiter so legitimate test traffic isn't throttled with 429s.
+      THROTTLE_LIMIT: '100000'
     services:
       postgres:
         image: postgres:16
@@ -150,6 +153,8 @@ jobs:
       - run: npm install
       - run: npx prisma generate --schema=packages/database/prisma/schema.prisma
       - run: npx prisma db push --schema=packages/database/prisma/schema.prisma --skip-generate
+      - name: Seed database (subscription plans, base data)
+        run: npm run db:seed --workspace=@retail-saas/database
       - name: Build frontend for E2E
         run: npm run build
         working-directory: apps/frontend
@@ -163,6 +168,14 @@ jobs:
           PORT: 4000
       - name: Wait for backend
         run: npx wait-on http://localhost:4000/api/v1/health --timeout 30000
+      - name: Start frontend
+        run: npm run start &
+        working-directory: apps/frontend
+        env:
+          PORT: 3000
+          NEXT_PUBLIC_API_URL: http://localhost:4000
+      - name: Wait for frontend
+        run: npx wait-on http://localhost:3000 --timeout 60000
       - name: Run Playwright E2E tests
         run: npx playwright test --reporter=list
         working-directory: apps/frontend
