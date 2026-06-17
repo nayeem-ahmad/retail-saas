@@ -107,7 +107,7 @@ export default function StorefrontOrdersPage() {
                         <div className="flex items-center justify-center py-16">
                             <div className="animate-spin w-7 h-7 border-4 border-blue-600 border-t-transparent rounded-full" />
                         </div>
-                    ) : !data || data.items.length === 0 ? (
+                    ) : !data?.items?.length ? (
                         <div className="text-center py-16 text-gray-400">
                             <ShoppingBag className="w-12 h-12 mx-auto mb-3 opacity-30" />
                             <p className="font-medium">{m.emptyTitle}</p>
