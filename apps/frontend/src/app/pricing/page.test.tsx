@@ -74,12 +74,13 @@ describe('PricingPage', () => {
         const toggle = screen.getByRole('button', { name: /toggle billing period/i });
         fireEvent.click(toggle);
         const savingsMessages = screen.getAllByText(/Save 17% vs monthly/);
-        expect(savingsMessages.length).toBe(3);
+        expect(savingsMessages.length).toBe(4);
     });
 
     it('renders monthly prices aligned with backend seed', () => {
         render(<PricingPage />);
         expect(screen.getByText('৳499')).toBeInTheDocument();
+        expect(screen.getByText('৳749')).toBeInTheDocument();
         expect(screen.getByText('৳999')).toBeInTheDocument();
         expect(screen.getByText('৳1,499')).toBeInTheDocument();
     });
