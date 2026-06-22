@@ -83,43 +83,39 @@ export default function PaymentSection({ payments, total, onPaymentChange }: Pay
     const paymentValid = Math.abs(balance) < 0.01;
 
     return (
-        <div className="bg-white rounded-lg border p-6 space-y-4">
-            <div className="flex justify-between items-center">
-                <h3 className="font-semibold text-gray-900">Payment Methods</h3>
-                <div className="text-right">
-                    <div className="text-sm text-gray-600">Total to Pay: ৳{total.toFixed(2)}</div>
-                    <div className="text-sm text-gray-600">Total Paid: ৳{totalPaid.toFixed(2)}</div>
-                    <div
-                        className={`text-sm font-semibold ${
-                            paymentValid ? 'text-green-600' : balance > 0 ? 'text-red-600' : 'text-amber-600'
-                        }`}
-                    >
-                        {paymentValid ? '✓ Balance Settled' : `Remaining: ৳${Math.abs(balance).toFixed(2)}`}
-                    </div>
-                </div>
+        <div className="space-y-2">
+            <div className="flex items-center justify-between">
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">Payment</h3>
+                <span
+                    className={`text-xs font-semibold ${
+                        paymentValid ? 'text-green-600' : balance > 0 ? 'text-red-600' : 'text-amber-600'
+                    }`}
+                >
+                    {paymentValid ? '✓ Settled' : `Due ৳${Math.abs(balance).toFixed(2)}`}
+                </span>
             </div>
 
             {/* Payment List */}
             {payments.length > 0 && (
-                <div className="space-y-2 bg-gray-50 p-4 rounded">
+                <div className="rounded border divide-y">
                     {payments.map((payment, index) => (
-                        <div key={index} className="flex justify-between items-center py-2 border-b last:border-b-0">
-                            <div className="text-sm">
+                        <div key={index} className="flex justify-between items-center px-2 py-1 text-sm">
+                            <div className="min-w-0 truncate">
                                 <span className="font-medium">{payment.method}</span>
                                 {payment.accountId && (
-                                    <span className="text-gray-600 ml-2">
-                                        - {accounts.find((a) => a.id === payment.accountId)?.name}
+                                    <span className="text-gray-500 ml-1 text-xs">
+                                        · {accounts.find((a) => a.id === payment.accountId)?.name}
                                     </span>
                                 )}
                             </div>
-                            <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-2 flex-shrink-0">
                                 <span className="font-medium">৳{payment.amount.toFixed(2)}</span>
                                 <button
                                     type="button"
                                     onClick={() => handleRemovePayment(index)}
-                                    className="text-red-600 hover:bg-red-50 p-1 rounded"
+                                    className="text-red-500 hover:text-red-700"
                                 >
-                                    <Trash2 className="w-4 h-4" />
+                                    <Trash2 className="w-3.5 h-3.5" />
                                 </button>
                             </div>
                         </div>
@@ -127,78 +123,61 @@ export default function PaymentSection({ payments, total, onPaymentChange }: Pay
                 </div>
             )}
 
-            {/* Add Payment */}
-            <div className="border rounded-lg p-4 space-y-4 bg-blue-50">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                        <label className="block text-xs font-semibold text-gray-700 mb-1">
-                            Payment Method
-                        </label>
-                        <select
-                            value={newPayment.method || ''}
-                            onChange={(e) =>
-                                setNewPayment({ ...newPayment, method: e.target.value, accountId: undefined })
-                            }
-                            className="w-full px-3 py-2 border rounded text-sm"
-                        >
-                            <option value="">Select...</option>
-                            {PAYMENT_METHODS.map((method) => (
-                                <option key={method.value} value={method.value}>
-                                    {method.label}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-
-                    {newPayment.method && (
-                        <div>
-                            <label className="block text-xs font-semibold text-gray-700 mb-1">
-                                Account (Optional)
-                            </label>
-                            <select
-                                value={newPayment.accountId || ''}
-                                onChange={(e) =>
-                                    setNewPayment({ ...newPayment, accountId: e.target.value || undefined })
-                                }
-                                className="w-full px-3 py-2 border rounded text-sm"
-                                disabled={getFilteredAccounts(newPayment.method).length === 0}
-                            >
-                                <option value="">-- Select Account --</option>
-                                {getFilteredAccounts(newPayment.method).map((account) => (
-                                    <option key={account.id} value={account.id}>
-                                        {account.name}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                    )}
-
-                    <div>
-                        <label className="block text-xs font-semibold text-gray-700 mb-1">
-                            Amount
-                        </label>
-                        <input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={newPayment.amount || ''}
-                            onChange={(e) =>
-                                setNewPayment({ ...newPayment, amount: parseFloat(e.target.value) || 0 })
-                            }
-                            placeholder={`Remaining: ৳${balance.toFixed(2)}`}
-                            className="w-full px-3 py-2 border rounded text-sm"
-                        />
-                    </div>
-                </div>
-
-                <button
-                    type="button"
-                    onClick={handleAddPayment}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
+            {/* Add Payment — stacked for the narrow panel */}
+            <div className="space-y-1.5">
+                <select
+                    value={newPayment.method || ''}
+                    onChange={(e) =>
+                        setNewPayment({ ...newPayment, method: e.target.value, accountId: undefined })
+                    }
+                    className="w-full px-2 py-1.5 border rounded text-sm"
                 >
-                    <Plus className="w-4 h-4" />
-                    Add Payment Method
-                </button>
+                    <option value="">Payment method…</option>
+                    {PAYMENT_METHODS.map((method) => (
+                        <option key={method.value} value={method.value}>
+                            {method.label}
+                        </option>
+                    ))}
+                </select>
+
+                {newPayment.method && getFilteredAccounts(newPayment.method).length > 0 && (
+                    <select
+                        value={newPayment.accountId || ''}
+                        onChange={(e) =>
+                            setNewPayment({ ...newPayment, accountId: e.target.value || undefined })
+                        }
+                        className="w-full px-2 py-1.5 border rounded text-sm"
+                    >
+                        <option value="">Account (optional)…</option>
+                        {getFilteredAccounts(newPayment.method).map((account) => (
+                            <option key={account.id} value={account.id}>
+                                {account.name}
+                            </option>
+                        ))}
+                    </select>
+                )}
+
+                <div className="flex gap-1.5">
+                    <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={newPayment.amount || ''}
+                        onChange={(e) =>
+                            setNewPayment({ ...newPayment, amount: parseFloat(e.target.value) || 0 })
+                        }
+                        placeholder={`Amount (৳${balance.toFixed(2)})`}
+                        className="flex-1 min-w-0 px-2 py-1.5 border rounded text-sm"
+                    />
+                    <button
+                        type="button"
+                        onClick={handleAddPayment}
+                        className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-medium flex-shrink-0"
+                    >
+                        <Plus className="w-4 h-4" />
+                        Add
+                    </button>
+                </div>
             </div>
         </div>
     );
