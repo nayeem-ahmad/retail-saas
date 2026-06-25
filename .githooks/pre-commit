@@ -1,0 +1,16 @@
+#!/bin/sh
+# Block direct commits on main — all day-to-day work happens on dev.
+branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null) || exit 0
+
+if [ "$branch" = "main" ] && [ "${ALLOW_MAIN_COMMIT:-}" != "1" ]; then
+  echo ""
+  echo "Blocked: commits on 'main' are not allowed."
+  echo "  git checkout dev"
+  echo ""
+  echo "Merge to main via pull request when ready for release."
+  echo "Emergency override: ALLOW_MAIN_COMMIT=1 git commit ..."
+  echo ""
+  exit 1
+fi
+
+exit 0

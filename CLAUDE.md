@@ -33,6 +33,27 @@ Retail SaaS platform targeting Bangladeshi small/medium retailers. Monorepo:
 
 ---
 
+## Git Branch Policy
+
+**All day-to-day development happens on `dev`.** `main` is the release/production branch.
+
+| Branch | Purpose |
+|--------|---------|
+| `dev` | Default branch — feature work, fixes, experiments |
+| `main` | Production-ready code — merge from `dev` via pull request only |
+
+**Workflow:**
+1. `git checkout dev` before starting work
+2. Commit and push to `dev`
+3. Open a PR `dev` → `main` when ready to release
+
+**Enforcement (local):** `.githooks/` blocks commits on `main` and direct pushes to `main`.
+Hooks install automatically via `npm install` (`prepare` script). Manual setup: `bash scripts/setup-git-hooks.sh`.
+
+Emergency override (use sparingly): `ALLOW_MAIN_COMMIT=1` / `ALLOW_MAIN_PUSH=1`.
+
+---
+
 ## Key Conventions
 
 - All backend modules live in `apps/backend/src/<module>/`
