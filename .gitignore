@@ -8,6 +8,7 @@ coverage
 playwright-report/
 playwright-results.json
 test-results/
+apps/frontend/e2e/screenshots/
 e2e-report.html
 
 # Next.js
@@ -49,3 +50,4 @@ next-env.d.ts
 .vscode/
 
 /src/generated/prisma
+.getaibd/
