@@ -24,7 +24,7 @@ test.describe('Critical launch path', () => {
         await expect(page).toHaveURL(/dashboard\/onboarding/, { timeout: 15_000 });
         await expect(page.getByText(/welcome to retailsaas|get your store/i).first()).toBeVisible();
 
-        await page.goto('/dashboard/billing');
+        await page.goto('/billing');
         await expect(page.getByText(/billing|subscription|plan/i).first()).toBeVisible({ timeout: 10_000 });
     });
 });

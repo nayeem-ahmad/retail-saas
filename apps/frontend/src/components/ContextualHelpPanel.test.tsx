@@ -11,7 +11,7 @@ const HELP = {
     title: 'Test quick guide',
     summary: 'Summary for testers.',
     steps: ['Step one', 'Step two'],
-    learnMoreHref: '/dashboard/help',
+    learnMoreHref: '/help',
 };
 
 describe('ContextualHelpPanel', () => {
@@ -24,7 +24,7 @@ describe('ContextualHelpPanel', () => {
         expect(screen.getByText('Test quick guide')).toBeInTheDocument();
         expect(screen.getByText('Summary for testers.')).toBeInTheDocument();
         expect(screen.getByText('Step one')).toBeInTheDocument();
-        expect(screen.getByRole('link', { name: /more in help center/i })).toHaveAttribute('href', '/dashboard/help');
+        expect(screen.getByRole('link', { name: /more in help center/i })).toHaveAttribute('href', '/help');
     });
 
     it('dismisses and can be restored', () => {

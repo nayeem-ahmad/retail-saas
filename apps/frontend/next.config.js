@@ -1,4 +1,5 @@
 import { withSentryConfig } from '@sentry/nextjs';
+import { legacyRouteRedirects } from './src/lib/route-redirects.js';
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:4000';
 
@@ -7,6 +8,9 @@ const nextConfig = {
   output: 'standalone',
   eslint: {
     ignoreDuringBuilds: true,
+  },
+  async redirects() {
+    return [...legacyRouteRedirects];
   },
   async rewrites() {
     return [

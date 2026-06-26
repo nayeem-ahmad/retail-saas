@@ -11,6 +11,7 @@
     "test": "jest",
     "test:cov": "jest --coverage",
     "test:e2e": "playwright test",
+    "test:e2e:core": "playwright test core-modules.spec.ts",
     "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
@@ -29,6 +30,7 @@
     "qrcode": "^1.5.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-easy-crop": "^6.0.2",
     "tailwind-merge": "^3.0.1",
     "xlsx": "^0.18.5",
     "zustand": "^5.0.3"

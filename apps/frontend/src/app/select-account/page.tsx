@@ -34,7 +34,7 @@ function SelectAccountContent() {
                         router.replace(shopRedirect);
                     } else if (isPlatformAdmin) {
                         applyPlatformAdminContext();
-                        router.replace('/dashboard/admin');
+                        router.replace('/admin');
                     } else {
                         router.replace('/dashboard');
                     }
@@ -52,7 +52,7 @@ function SelectAccountContent() {
 
     const chooseAdmin = () => {
         applyPlatformAdminContext();
-        router.replace('/dashboard/admin');
+        router.replace('/admin');
     };
 
     const chooseTenant = (tenant: any) => {

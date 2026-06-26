@@ -1,4 +1,22 @@
 export const crmHrMessages = {
+    hr: {
+        hub: {
+            moduleLabel: "HR মডিউল",
+            title: "কর্মী ও বেতন",
+            subtitle: "কর্মী, সংগঠন, উপস্থিতি ও বেতন — এক জায়গা থেকে।",
+            dailyOperations: "দৈনিক কার্যক্রম",
+            organization: "সংগঠন",
+            operations: "কার্যক্রম",
+            links: {
+                employees: { title: "কর্মী", description: "কর্মী প্রোফাইল ও চাকরির বিবরণ।" },
+                departments: { title: "বিভাগ", description: "কোম্পানির বিভাগ।" },
+                designations: { title: "পদবি", description: "চাকরির শিরোনাম ও ভূমিকা।" },
+                attendance: { title: "উপস্থিতি", description: "দৈনিক চেক-ইন ও চেক-আউট।" },
+                leaves: { title: "ছুটি", description: "ছুটির অনুরোধ ও অনুমোদন।" },
+                salaryPayments: { title: "বেতন প্রদান", description: "মাসিক বেতন রেকর্ড ও পর্যালোচনা।" },
+            },
+        },
+    },
         crmTasks: {
             title: "CRM কাজ",
             subtitle: "এক কিউতে ফলো-আপ, আদায় ও গ্রাহক রিমাইন্ডার",

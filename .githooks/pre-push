@@ -1,0 +1,22 @@
+#!/bin/sh
+# Block direct pushes to main — release through PRs from dev.
+if [ "${ALLOW_MAIN_PUSH:-}" = "1" ]; then
+  exit 0
+fi
+
+while read local_ref local_sha remote_ref remote_sha; do
+  case "$remote_ref" in
+    refs/heads/main)
+      echo ""
+      echo "Blocked: direct push to 'main' is not allowed."
+      echo "  git push origin dev"
+      echo ""
+      echo "Open a pull request: dev → main"
+      echo "Emergency override: ALLOW_MAIN_PUSH=1 git push origin main"
+      echo ""
+      exit 1
+      ;;
+  esac
+done
+
+exit 0

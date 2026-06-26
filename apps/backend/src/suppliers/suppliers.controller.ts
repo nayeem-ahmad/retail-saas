@@ -3,7 +3,14 @@ import { PaginationDto } from '../common/pagination.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { TenantInterceptor } from '../database/tenant.interceptor';
 import { Tenant, TenantContext } from '../database/tenant.decorator';
-import { CreateSupplierDto, RecordSupplierCreditPaymentDto, UpdateSupplierDto } from './supplier.dto';
+import {
+    CreateSupplierDto,
+    ListSupplierCreditPaymentsQueryDto,
+    RecordSupplierCreditPaymentDto,
+    SupplierCreditLedgerQueryDto,
+    UpdateSupplierCreditPaymentDto,
+    UpdateSupplierDto,
+} from './supplier.dto';
 import { SuppliersService } from './suppliers.service';
 
 @Controller('suppliers')
@@ -22,15 +29,50 @@ export class SuppliersController {
         return this.suppliersService.findAll(tenant.tenantId, query.page, query.limit);
     }
 
+    @Get('credit/payments')
+    listCreditPayments(
+        @Tenant() tenant: TenantContext,
+        @Query() query: ListSupplierCreditPaymentsQueryDto,
+    ) {
+        return this.suppliersService.listCreditPayments(tenant.tenantId, query);
+    }
+
+    @Get('credit/payments/:paymentId')
+    getCreditPayment(
+        @Tenant() tenant: TenantContext,
+        @Param('paymentId') paymentId: string,
+    ) {
+        return this.suppliersService.getCreditPayment(tenant.tenantId, paymentId);
+    }
+
+    @Patch('credit/payments/:paymentId')
+    updateCreditPayment(
+        @Tenant() tenant: TenantContext,
+        @Param('paymentId') paymentId: string,
+        @Body() dto: UpdateSupplierCreditPaymentDto,
+    ) {
+        return this.suppliersService.updateCreditPayment(tenant.tenantId, paymentId, dto);
+    }
+
+    @Delete('credit/payments/:paymentId')
+    deleteCreditPayment(
+        @Tenant() tenant: TenantContext,
+        @Param('paymentId') paymentId: string,
+    ) {
+        return this.suppliersService.deleteCreditPayment(tenant.tenantId, paymentId);
+    }
+
     @Get(':id/credit')
     getCreditLedger(
         @Tenant() tenant: TenantContext,
         @Param('id') id: string,
-        @Query() query: PaginationDto,
+        @Query() query: SupplierCreditLedgerQueryDto,
     ) {
         return this.suppliersService.getCreditLedger(tenant.tenantId, id, {
             page: query.page,
             limit: query.limit,
+            from: query.from,
+            to: query.to,
         });
     }
 

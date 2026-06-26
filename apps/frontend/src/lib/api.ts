@@ -718,17 +718,56 @@ export const api = {
     updateBrand: (id: string, data: any) => fetchWithAuth(`/brands/${id}`, { method: 'PATCH', body: JSON.stringify(data), headers: { 'Content-Type': 'application/json' } }),
     deleteBrand: (id: string) => fetchWithAuth(`/brands/${id}`, { method: 'DELETE' }),
     getSuppliers: () => fetchWithAuth('/suppliers?limit=100').then((r: any) => r?.items ?? r),
-    getSupplierCreditLedger: (id: string, params?: { page?: number; limit?: number }) => {
+    getSupplierCreditLedger: (id: string, params?: { page?: number; limit?: number; from?: string; to?: string }) => {
         const query = new URLSearchParams();
         if (params?.page) query.set('page', String(params.page));
         if (params?.limit) query.set('limit', String(params.limit));
-        return fetchWithAuth(`/suppliers/${id}/credit${query.toString() ? `?${query.toString()}` : ''}`);
+        if (params?.from) query.set('from', params.from);
+        if (params?.to) query.set('to', params.to);
+        return fetchWithAuth(`/suppliers/${id}/credit${query.toString() ? `?${query.toString()}` : ''}`).then(
+            (r: { transactions?: unknown[]; items?: unknown[] } | unknown[]) => {
+                if (Array.isArray(r)) {
+                    return { transactions: r, opening_balance: 0, closing_balance: 0, due_balance: 0 };
+                }
+                const transactions = r?.transactions ?? r?.items ?? [];
+                return { ...r, transactions: Array.isArray(transactions) ? transactions : [] };
+            },
+        );
     },
-    recordSupplierCreditPayment: (id: string, data: { amount: number; notes?: string }) => fetchWithAuth(`/suppliers/${id}/credit/payment`, {
-        method: 'POST',
-        body: JSON.stringify(data),
-        headers: { 'Content-Type': 'application/json' },
-    }),
+    recordSupplierCreditPayment: (id: string, data: { amount: number; direction?: 'pay' | 'receive'; notes?: string }) =>
+        fetchWithAuth(`/suppliers/${id}/credit/payment`, {
+            method: 'POST',
+            body: JSON.stringify(data),
+            headers: { 'Content-Type': 'application/json' },
+        }),
+    getSupplierCreditPayments: (params?: {
+        page?: number;
+        limit?: number;
+        from?: string;
+        to?: string;
+        supplierId?: string;
+        search?: string;
+    }) => {
+        const query = new URLSearchParams();
+        if (params?.page) query.set('page', String(params.page));
+        if (params?.limit) query.set('limit', String(params.limit));
+        if (params?.from) query.set('from', params.from);
+        if (params?.to) query.set('to', params.to);
+        if (params?.supplierId) query.set('supplierId', params.supplierId);
+        if (params?.search) query.set('search', params.search);
+        return fetchWithAuth(`/suppliers/credit/payments${query.toString() ? `?${query.toString()}` : ''}`).then(
+            (r: { items?: unknown[] } | unknown[]) => (Array.isArray(r) ? r : (r?.items ?? [])),
+        );
+    },
+    getSupplierCreditPayment: (paymentId: string) => fetchWithAuth(`/suppliers/credit/payments/${paymentId}`),
+    updateSupplierCreditPayment: (paymentId: string, data: { amount?: number; direction?: 'pay' | 'receive'; notes?: string }) =>
+        fetchWithAuth(`/suppliers/credit/payments/${paymentId}`, {
+            method: 'PATCH',
+            body: JSON.stringify(data),
+            headers: { 'Content-Type': 'application/json' },
+        }),
+    deleteSupplierCreditPayment: (paymentId: string) =>
+        fetchWithAuth(`/suppliers/credit/payments/${paymentId}`, { method: 'DELETE' }),
     createSupplier: (data: any) => fetchWithAuth('/suppliers', {
         method: 'POST',
         body: JSON.stringify(data),
@@ -1515,6 +1554,11 @@ export const api = {
         body: JSON.stringify(data),
         headers: { 'Content-Type': 'application/json' },
     }),
+    updateProfileAvatar: (formData: FormData) =>
+        fetchWithAuth('/auth/me/avatar', {
+            method: 'PATCH',
+            body: formData,
+        }),
     searchProductsByQuantity: (query: string, limit?: number) => {
         const q = new URLSearchParams();
         q.set('q', query);

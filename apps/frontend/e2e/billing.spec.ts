@@ -1,4 +1,5 @@
-import { test, expect, Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
+import { applyE2ESession, fetchE2ESession, type E2ESession } from './helpers/auth';
 
 /**
  * E2E: Billing critical path
@@ -6,27 +7,19 @@ import { test, expect, Page } from '@playwright/test';
  * Covers: navigate to billing → view current plan → view available plans → initiate upgrade.
  */
 
-async function loginIfNeeded(page: Page) {
-    const email = process.env.E2E_TEST_EMAIL || 'test@example.com';
-    const password = process.env.E2E_TEST_PASSWORD || 'TestPassword123!';
-
-    await page.goto('/login', { waitUntil: 'domcontentloaded' });
-    // If already authenticated, the app redirects away from /login
-    if (!page.url().includes('/login')) return;
-
-    await page.getByLabel(/email/i).fill(email);
-    await page.getByLabel(/password/i).fill(password);
-    await page.getByRole('button', { name: /sign in/i }).click();
-    await page.waitForURL(/dashboard/, { timeout: 30_000 });
-}
-
 test.describe('Billing', { tag: '@readonly' }, () => {
+    let session: E2ESession;
+
+    test.beforeAll(async () => {
+        session = await fetchE2ESession();
+    });
+
     test.beforeEach(async ({ page }) => {
-        await loginIfNeeded(page);
+        await applyE2ESession(page, session);
     });
 
     test('billing page loads and displays subscription status', async ({ page }) => {
-        await page.goto('/dashboard/billing');
+        await page.goto('/billing');
         await expect(page).toHaveURL(/billing/);
 
         // Expect either a plan name or a loading indicator that resolves
@@ -36,7 +29,7 @@ test.describe('Billing', { tag: '@readonly' }, () => {
     });
 
     test('billing page shows available upgrade plans', async ({ page }) => {
-        await page.goto('/dashboard/billing');
+        await page.goto('/billing');
 
         // Plans section should list at least one plan option
         await expect(
@@ -45,7 +38,7 @@ test.describe('Billing', { tag: '@readonly' }, () => {
     });
 
     test('clicking upgrade plan shows a checkout or confirmation dialog', async ({ page }) => {
-        await page.goto('/dashboard/billing');
+        await page.goto('/billing');
 
         // Find any upgrade/select plan button
         const upgradeBtn = page.getByRole('button', { name: /upgrade|select|get started|choose/i }).first();
@@ -65,14 +58,14 @@ test.describe('Billing', { tag: '@readonly' }, () => {
         await page.context().clearCookies();
         await page.evaluate(() => localStorage.clear());
 
-        await page.goto('/dashboard/billing');
+        await page.goto('/billing');
         // Billing data is protected server-side (the APIs return 401). Without a
         // session the subscription-management controls must not render.
         await expect(page.getByRole('button', { name: /cancel subscription/i })).toHaveCount(0);
     });
 
     test('cancel subscription button is present for active subscribers', async ({ page }) => {
-        await page.goto('/dashboard/billing');
+        await page.goto('/billing');
 
         const cancelBtn = page.getByRole('button', { name: /cancel|downgrade/i });
         // Only verify if the button exists — its presence depends on subscription state
