@@ -19,7 +19,7 @@ test.describe('Billing', { tag: '@readonly' }, () => {
     });
 
     test('billing page loads and displays subscription status', async ({ page }) => {
-        await page.goto('/dashboard/billing');
+        await page.goto('/billing');
         await expect(page).toHaveURL(/billing/);
 
         // Expect either a plan name or a loading indicator that resolves
@@ -29,7 +29,7 @@ test.describe('Billing', { tag: '@readonly' }, () => {
     });
 
     test('billing page shows available upgrade plans', async ({ page }) => {
-        await page.goto('/dashboard/billing');
+        await page.goto('/billing');
 
         // Plans section should list at least one plan option
         await expect(
@@ -38,7 +38,7 @@ test.describe('Billing', { tag: '@readonly' }, () => {
     });
 
     test('clicking upgrade plan shows a checkout or confirmation dialog', async ({ page }) => {
-        await page.goto('/dashboard/billing');
+        await page.goto('/billing');
 
         // Find any upgrade/select plan button
         const upgradeBtn = page.getByRole('button', { name: /upgrade|select|get started|choose/i }).first();
@@ -58,14 +58,14 @@ test.describe('Billing', { tag: '@readonly' }, () => {
         await page.context().clearCookies();
         await page.evaluate(() => localStorage.clear());
 
-        await page.goto('/dashboard/billing');
+        await page.goto('/billing');
         // Billing data is protected server-side (the APIs return 401). Without a
         // session the subscription-management controls must not render.
         await expect(page.getByRole('button', { name: /cancel subscription/i })).toHaveCount(0);
     });
 
     test('cancel subscription button is present for active subscribers', async ({ page }) => {
-        await page.goto('/dashboard/billing');
+        await page.goto('/billing');
 
         const cancelBtn = page.getByRole('button', { name: /cancel|downgrade/i });
         // Only verify if the button exists — its presence depends on subscription state

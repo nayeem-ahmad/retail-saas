@@ -25,12 +25,12 @@ export default function FrequentQuickLinks() {
     const copy = t.dashboardHome;
 
     const links: QuickLink[] = [
-        { key: 'sales-entry', href: '/dashboard/sales/new', label: copy.quickLinks.salesEntry, imageUrl: QUICK_LINK_IMAGES['sales-entry'] },
-        { key: 'sales', href: '/dashboard/sales', label: copy.quickLinks.sales, imageUrl: QUICK_LINK_IMAGES.sales },
-        { key: 'customer-payment', href: '/dashboard/sales/customer-payments', label: copy.quickLinks.customerPayment, imageUrl: QUICK_LINK_IMAGES['customer-payment'] },
-        { key: 'supplier-payment', href: '/dashboard/purchases/supplier-payments', label: copy.quickLinks.supplierPayment, imageUrl: QUICK_LINK_IMAGES['supplier-payment'] },
-        { key: 'customer-ledger', href: '/dashboard/sales/customer-ledger', label: copy.quickLinks.customerLedger, imageUrl: QUICK_LINK_IMAGES['customer-ledger'] },
-        { key: 'expense-entry', href: '/dashboard/expenses?new=1', label: copy.quickLinks.expenseEntry, imageUrl: QUICK_LINK_IMAGES['expense-entry'] },
+        { key: 'sales-entry', href: '/sales/new', label: copy.quickLinks.salesEntry, imageUrl: QUICK_LINK_IMAGES['sales-entry'] },
+        { key: 'sales', href: '/sales', label: copy.quickLinks.sales, imageUrl: QUICK_LINK_IMAGES.sales },
+        { key: 'customer-payment', href: '/sales/customer-payments', label: copy.quickLinks.customerPayment, imageUrl: QUICK_LINK_IMAGES['customer-payment'] },
+        { key: 'supplier-payment', href: '/purchases/supplier-payments', label: copy.quickLinks.supplierPayment, imageUrl: QUICK_LINK_IMAGES['supplier-payment'] },
+        { key: 'customer-ledger', href: '/sales/customer-ledger', label: copy.quickLinks.customerLedger, imageUrl: QUICK_LINK_IMAGES['customer-ledger'] },
+        { key: 'expense-entry', href: '/accounting/expenses?new=1', label: copy.quickLinks.expenseEntry, imageUrl: QUICK_LINK_IMAGES['expense-entry'] },
     ];
 
     return (

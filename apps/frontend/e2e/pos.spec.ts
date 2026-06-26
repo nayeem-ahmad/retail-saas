@@ -21,7 +21,7 @@ test.describe('POS — Point of Sale', () => {
     });
 
     test('POS page loads with product search and cart', { tag: '@readonly' }, async ({ page }) => {
-        await page.goto('/dashboard/pos');
+        await page.goto('/sales/pos');
         await expect(page).toHaveURL(/pos/);
 
         // Expect a product search input or product listing
@@ -32,7 +32,7 @@ test.describe('POS — Point of Sale', () => {
     });
 
     test('can search for a product and add it to the cart', async ({ page }) => {
-        await page.goto('/dashboard/pos');
+        await page.goto('/sales/pos');
 
         const searchInput = page.getByPlaceholder(/search product|scan barcode|search/i);
         if (await searchInput.isVisible({ timeout: 5_000 }).catch(() => false)) {
@@ -49,7 +49,7 @@ test.describe('POS — Point of Sale', () => {
     });
 
     test('cart shows line items and a checkout/complete-sale button', { tag: '@readonly' }, async ({ page }) => {
-        await page.goto('/dashboard/pos');
+        await page.goto('/sales/pos');
 
         // If there are products in the cart already (or after adding), expect checkout button
         const checkoutBtn = page.getByRole('button', { name: /complete sale|checkout|pay now/i });
@@ -62,7 +62,7 @@ test.describe('POS — Point of Sale', () => {
     });
 
     test('completing a sale shows a confirmation or receipt', async ({ page }) => {
-        await page.goto('/dashboard/pos');
+        await page.goto('/sales/pos');
 
         // Only attempt to complete a sale if there are products in the system
         const addBtn = page.getByRole('button', { name: /add to cart|add/i }).first();
@@ -81,7 +81,7 @@ test.describe('POS — Point of Sale', () => {
     });
 
     test('POS sale does not crash when amount paid is less than total', async ({ page }) => {
-        await page.goto('/dashboard/pos');
+        await page.goto('/sales/pos');
         // This test verifies that the UI prevents submission with invalid amounts
         const addBtn = page.getByRole('button', { name: /add to cart|add/i }).first();
         if (await addBtn.isVisible({ timeout: 5_000 }).catch(() => false)) {

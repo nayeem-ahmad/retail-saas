@@ -17,7 +17,7 @@ export const COA_HELP: ContextualHelpContent = {
         'Assign each posting account a category: cash, bank, or general — this drives payment and reconciliation flows.',
         'Keep account codes short and consistent; they appear on vouchers, exports, and posting rules.',
     ],
-    learnMoreHref: '/dashboard/help',
+    learnMoreHref: '/help',
 };
 
 export const COA_FIELD_HELP = {
@@ -40,7 +40,7 @@ export const POSTING_RULES_HELP: ContextualHelpContent = {
         'Deactivate a rule instead of deleting it if you need to pause automatic postings temporarily.',
         'After changing rules, test with a small sale or purchase and verify the journal voucher.',
     ],
-    learnMoreHref: '/dashboard/help',
+    learnMoreHref: '/help',
 };
 
 export const POSTING_RULES_FIELD_HELP = {
@@ -63,7 +63,7 @@ export const STOCK_TAKES_HELP: ContextualHelpContent = {
         'Large variances move the session to Review — a manager approves before posting.',
         'Posting applies adjustments to inventory and may trigger accounting entries via posting rules.',
     ],
-    learnMoreHref: '/dashboard/help',
+    learnMoreHref: '/help',
 };
 
 export const STOCK_TAKES_FIELD_HELP = {
@@ -86,5 +86,5 @@ export const STOCK_TAKE_DETAIL_HELP: ContextualHelpContent = {
         'Move to Review when counting is complete; large variances require approval.',
         'Post Session only after review — this updates live inventory balances.',
     ],
-    learnMoreHref: '/dashboard/help',
+    learnMoreHref: '/help',
 };

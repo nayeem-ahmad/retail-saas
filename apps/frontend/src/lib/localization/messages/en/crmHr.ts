@@ -1,4 +1,22 @@
 export const crmHrMessages = {
+    hr: {
+        hub: {
+            moduleLabel: 'HR Module',
+            title: 'People & Payroll',
+            subtitle: 'Manage employees, organization structure, attendance, and salary payments.',
+            dailyOperations: 'Daily Operations',
+            organization: 'Organization',
+            operations: 'Operations',
+            links: {
+                employees: { title: 'Employees', description: 'Employee profiles, roles, and employment details.' },
+                departments: { title: 'Departments', description: 'Company departments for organizing staff.' },
+                designations: { title: 'Designations', description: 'Job titles and role classifications.' },
+                attendance: { title: 'Attendance', description: 'Track daily check-in and check-out records.' },
+                leaves: { title: 'Leaves', description: 'Leave requests, approvals, and balances.' },
+                salaryPayments: { title: 'Salary Payments', description: 'Record and review monthly salary disbursements.' },
+            },
+        },
+    },
     "crmTasks": {
         "title": "CRM Tasks",
         "subtitle": "Follow-ups, collections, and customer reminders in one queue",

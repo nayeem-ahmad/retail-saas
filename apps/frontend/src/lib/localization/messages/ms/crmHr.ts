@@ -1,4 +1,22 @@
 export const crmHrMessages = {
+    hr: {
+        hub: {
+            moduleLabel: 'Modul HR',
+            title: 'Sumber Manusia & Gaji',
+            subtitle: 'Urus pekerja, struktur organisasi, kehadiran, dan gaji.',
+            dailyOperations: 'Operasi Harian',
+            organization: 'Organisasi',
+            operations: 'Operasi',
+            links: {
+                employees: { title: 'Pekerja', description: 'Profil pekerja dan butiran pekerjaan.' },
+                departments: { title: 'Jabatan', description: 'Jabatan syarikat untuk mengatur kakitangan.' },
+                designations: { title: 'Jawatan', description: 'Gelaran jawatan dan klasifikasi peranan.' },
+                attendance: { title: 'Kehadiran', description: 'Rekod daftar masuk dan keluar harian.' },
+                leaves: { title: 'Cuti', description: 'Permohonan, kelulusan, dan baki cuti.' },
+                salaryPayments: { title: 'Bayaran Gaji', description: 'Rekod dan semak gaji bulanan.' },
+            },
+        },
+    },
     crmTasks: {
         title: "Tugas CRM",
         subtitle: "Susulan, kutipan, dan peringatan pelanggan dalam satu barisan",

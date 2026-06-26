@@ -1,5 +1,6 @@
 import { api } from './api';
 import { syncLocalePreferenceFromSession } from './localization/preference';
+import { routes } from './routes';
 
 /**
  * A "login context" is one of the workspaces a signed-in identity can act as:
@@ -28,6 +29,10 @@ export function getLoginContexts(me: any): LoginContexts {
 
 /** Activate the Platform Admin console (no shop/tenant scope). */
 export function applyPlatformAdminContext() {
+    const currentTenantId = localStorage.getItem('tenant_id');
+    if (currentTenantId) {
+        localStorage.setItem('last_tenant_id', currentTenantId);
+    }
     localStorage.setItem('active_context', 'platform-admin');
     localStorage.removeItem('tenant_id');
     localStorage.removeItem('store_id');
@@ -38,6 +43,7 @@ export function applyPlatformAdminContext() {
 export function applyTenantContext(tenant: any) {
     localStorage.removeItem('active_context');
     localStorage.setItem('tenant_id', tenant.id);
+    localStorage.setItem('last_tenant_id', tenant.id);
     if (tenant.stores && tenant.stores.length > 0) {
         localStorage.setItem('store_id', tenant.stores[0].id);
     } else {
@@ -54,6 +60,7 @@ export function applyTenantContext(tenant: any) {
 export function clearActiveContext() {
     localStorage.removeItem('active_context');
     localStorage.removeItem('tenant_id');
+    localStorage.removeItem('last_tenant_id');
     localStorage.removeItem('store_id');
     localStorage.removeItem('subscription_plan_code');
 }
@@ -88,26 +95,49 @@ export async function storeAuthResponse(res: any): Promise<StoreAuthResult> {
     // Exactly one shop → enter it directly.
     if (tenants.length === 1) {
         applyTenantContext(tenants[0]);
-        return { redirectTo: '/dashboard' };
+        return { redirectTo: routes.home };
     }
 
     // Platform admin with no shop of their own → straight to the admin console.
     if (isPlatformAdmin) {
         applyPlatformAdminContext();
-        return { redirectTo: '/dashboard/admin' };
+        return { redirectTo: routes.admin.root };
     }
 
     // No workspace yet (brand-new account) → dashboard handles onboarding.
     clearActiveContext();
-    return { redirectTo: '/dashboard' };
+    return { redirectTo: routes.home };
 }
 
 export function clearAuthSession() {
     localStorage.removeItem('access_token');
     localStorage.removeItem('tenant_id');
+    localStorage.removeItem('last_tenant_id');
     localStorage.removeItem('store_id');
     localStorage.removeItem('subscription_plan_code');
     localStorage.removeItem('demo_session');
     localStorage.removeItem('onboarding_complete');
     localStorage.removeItem('active_context');
+}
+
+/** True when the path belongs to a shop workspace (not the platform admin console). */
+export function isShopWorkspacePath(pathname: string) {
+    if (pathname.startsWith(routes.admin.root)) return false;
+    const shopPrefixes = [
+        routes.home,
+        routes.onboarding,
+        '/sales',
+        '/purchases',
+        '/accounting',
+        '/inventory',
+        '/storefront',
+        '/hr',
+        '/settings',
+        '/billing',
+        '/team',
+        '/sms-credits',
+        '/ai-credits',
+        '/support',
+    ];
+    return shopPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
 }

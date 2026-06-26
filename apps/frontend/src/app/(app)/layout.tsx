@@ -1,0 +1,341 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import { ArrowLeft, Menu, Zap, X } from 'lucide-react';
+import NotificationBell from '@/components/NotificationBell';
+import Sidebar from '@/components/Sidebar';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
+import DemoSandboxBanner from '@/components/DemoSandboxBanner';
+import FeedbackWidget from '@/components/FeedbackWidget';
+import ServiceWorkerRegistrar from '@/components/ServiceWorkerRegistrar';
+import { BrandingProvider } from '@/lib/branding';
+import { api } from '@/lib/api';
+import { useI18n } from '@/lib/i18n';
+import { applyTenantContext, isShopWorkspacePath } from '@/lib/auth-session';
+import { syncLocalePreferenceFromSession } from '@/lib/localization/preference';
+import { routes } from '@/lib/routes';
+
+const ACCOUNTING_PLAN_CODES = new Set(['ACCOUNTING', 'STANDARD', 'PREMIUM']);
+
+type DashboardLayoutProps = Readonly<{ children: React.ReactNode }>;
+
+export default function DashboardLayout({ children }: DashboardLayoutProps) {
+    const { t } = useI18n();
+    const pathname = usePathname();
+    const router = useRouter();
+    const [user, setUser] = useState<any>(null);
+    const [hasResolvedUser, setHasResolvedUser] = useState(false);
+    const [activeStoreId, setActiveStoreId] = useState<string>('');
+    const [showOnboardingBanner, setShowOnboardingBanner] = useState(false);
+    const [showDemoBanner, setShowDemoBanner] = useState(false);
+    const [showEmailVerificationBanner, setShowEmailVerificationBanner] = useState(false);
+    const [resendingVerification, setResendingVerification] = useState(false);
+    const [mobileNavOpen, setMobileNavOpen] = useState(false);
+    const [workspaceEpoch, setWorkspaceEpoch] = useState(0);
+
+    useEffect(() => {
+        api.getMe().then((me) => {
+            syncLocalePreferenceFromSession(me, { overwrite: false });
+            setUser(me);
+            setShowEmailVerificationBanner(!me?.email_verified);
+            const isDemo = Boolean(me?.is_demo) || localStorage.getItem('demo_session') === '1';
+            setShowDemoBanner(isDemo && localStorage.getItem('demo_banner_dismissed') !== '1');
+            if (me?.is_demo) {
+                localStorage.setItem('demo_session', '1');
+            }
+        }).catch(() => null)
+            .finally(() => setHasResolvedUser(true));
+    }, []);
+
+    const isDashboardHome = pathname === routes.home;
+    // workspaceEpoch bumps after we restore a shop context from localStorage.
+    void workspaceEpoch;
+    const activeContext = globalThis.window === undefined ? null : localStorage.getItem('active_context');
+    const activeTenantId = globalThis.window === undefined ? null : localStorage.getItem('tenant_id');
+    // Platform admins choose between the admin console and any shop they belong
+    // to. In admin-console mode we never resolve a shop/tenant so the dashboard
+    // shows only platform-admin options.
+    const inPlatformAdminMode = Boolean(user?.is_platform_admin) && activeContext === 'platform-admin';
+    const tenantCount = user?.tenants?.length || 0;
+    const contextCount = (user?.is_platform_admin ? 1 : 0) + tenantCount;
+    const canSwitchAccount = contextCount > 1;
+    const activeTenant = inPlatformAdminMode
+        ? null
+        : user?.tenants?.find((tenant: any) => tenant.id === activeTenantId) || user?.tenants?.[0];
+
+    useEffect(() => {
+        if (inPlatformAdminMode) return;
+        const done = localStorage.getItem('onboarding_complete');
+        if (!done && pathname === routes.home) setShowOnboardingBanner(true);
+    }, [pathname, inPlatformAdminMode]);
+
+    useEffect(() => {
+        if (!hasResolvedUser) return;
+        // In admin-console mode the generic shop dashboard doesn't apply — send
+        // platform admins to their console instead of shop onboarding.
+        if (inPlatformAdminMode) {
+            if (pathname === routes.home) router.replace(routes.admin.root);
+            return;
+        }
+        const done = localStorage.getItem('onboarding_complete');
+        if (done) return;
+        if (pathname === routes.home) {
+            router.replace(routes.onboarding);
+        }
+    }, [hasResolvedUser, pathname, router, inPlatformAdminMode]);
+
+    const tenantStores = activeTenant?.stores || [];
+    const primaryRole = activeTenant?.role;
+    const activePlanCode = activeTenant?.subscription?.plan?.code || null;
+    const planFeatures = (activeTenant?.subscription?.plan?.features_json || {}) as Record<string, unknown>;
+    const hasPaidPlan = activePlanCode && activePlanCode !== 'FREE';
+    const hasAccountingEntitlement =
+        Boolean(planFeatures.premiumAccounting)
+        || (activePlanCode ? ACCOUNTING_PLAN_CODES.has(activePlanCode) : false);
+    const hasInventoryReportEntitlement = Boolean(planFeatures.premiumInventoryReports) || activePlanCode === 'STANDARD' || activePlanCode === 'PREMIUM';
+    const isPlatformAdmin = inPlatformAdminMode;
+    const canManageBilling = primaryRole === 'OWNER' || primaryRole === 'MANAGER';
+    const canManageTeam = primaryRole === 'OWNER' || primaryRole === 'MANAGER';
+    const canViewAudit = canManageTeam;
+    const canAccessAccounting =
+        (primaryRole === 'OWNER' || primaryRole === 'MANAGER' || primaryRole === 'ACCOUNTANT')
+        && hasPaidPlan
+        && hasAccountingEntitlement;
+    const canAccessInventoryReports = Boolean(hasInventoryReportEntitlement);
+
+    // Platform admins can land on shop URLs after refresh while still in admin-console
+    // context (active_context=platform-admin). Restore the last shop workspace automatically.
+    useEffect(() => {
+        if (!hasResolvedUser || !user) return;
+        if (localStorage.getItem('active_context') !== 'platform-admin') return;
+        if (!isShopWorkspacePath(pathname)) return;
+
+        const tenants = user.tenants ?? [];
+        if (tenants.length === 0) return;
+
+        const rememberedTenantId = localStorage.getItem('last_tenant_id') || localStorage.getItem('tenant_id');
+        const tenant = tenants.find((entry: { id: string }) => entry.id === rememberedTenantId) || tenants[0];
+        applyTenantContext(tenant);
+        setWorkspaceEpoch((epoch) => epoch + 1);
+    }, [hasResolvedUser, pathname, user]);
+
+    useEffect(() => {
+        if (!activeTenant) return;
+
+        const savedStoreId = localStorage.getItem('store_id');
+        const hasSavedStore = tenantStores.some((store: any) => store.id === savedStoreId);
+        const resolvedStoreId = hasSavedStore ? savedStoreId : tenantStores[0]?.id;
+
+        if (resolvedStoreId) {
+            setActiveStoreId(resolvedStoreId);
+            if (resolvedStoreId !== savedStoreId) {
+                localStorage.setItem('store_id', resolvedStoreId);
+            }
+        }
+    }, [activeTenant, tenantStores]);
+
+    useEffect(() => {
+        if (!hasResolvedUser) {
+            return;
+        }
+
+        if (!canAccessAccounting && pathname.startsWith(routes.accounting.root)) {
+            router.replace(routes.home);
+        }
+        if (!canAccessInventoryReports && pathname.startsWith(`${routes.inventory.root}/reports`)) {
+            router.replace(routes.inventory.products);
+        }
+        if (!isPlatformAdmin && pathname.startsWith(routes.admin.root)) {
+            router.replace(routes.home);
+        }
+        if (!canManageTeam && pathname.startsWith(routes.team)) {
+            router.replace(routes.home);
+        }
+        if (!canManageTeam && pathname.startsWith(routes.settings.team)) {
+            router.replace(routes.settings.root);
+        }
+        if (!canViewAudit && pathname.startsWith(routes.settings.auditLogs)) {
+            router.replace(routes.settings.root);
+        }
+        if (!canAccessAccounting && pathname.startsWith(routes.accounting.expenses)) {
+            router.replace(routes.home);
+        }
+    }, [canAccessAccounting, canAccessInventoryReports, canManageTeam, canViewAudit, hasResolvedUser, isPlatformAdmin, pathname, router]);
+
+    // Build a human-readable page title from the path
+    const pageTitle = (() => {
+        const segments = pathname.split('/').filter(Boolean);
+        if (segments.length <= 1) return t.dashboardLayout.defaultPageTitle;
+        const last = segments.at(-1);
+        if (!last) return t.dashboardLayout.defaultPageTitle;
+        // If it looks like a UUID / id segment, step up one
+        const isId = /^[0-9a-f-]{8,}$/i.test(last);
+        const label = isId ? (segments.at(-2) ?? last) : last;
+        return label
+            .split('-')
+            .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+            .join(' ');
+    })();
+
+    const handleStoreChange = (storeId: string) => {
+        setActiveStoreId(storeId);
+        localStorage.setItem('store_id', storeId);
+        router.refresh();
+    };
+
+    return (
+        <BrandingProvider>
+        <div className="flex h-screen bg-[#f9fafb] font-sans text-[#111827]">
+            <Sidebar
+                canAccessAccounting={canAccessAccounting}
+                canAccessInventoryReports={canAccessInventoryReports}
+                canAccessAdmin={isPlatformAdmin}
+                canManageBilling={canManageBilling}
+                canManageTeam={canManageTeam}
+                platformAdminMode={inPlatformAdminMode}
+                canSwitchAccount={canSwitchAccount}
+                activePlanCode={activePlanCode}
+                isOpen={mobileNavOpen}
+                onClose={() => setMobileNavOpen(false)}
+            />
+
+            <div className="flex-1 flex flex-col overflow-hidden">
+                {/* Top header */}
+                <header className="h-14 bg-white border-b border-gray-100 flex items-center justify-between px-3 md:px-6 flex-shrink-0">
+                    <div className="flex items-center space-x-2 md:space-x-3 min-w-0">
+                        {/* Hamburger — mobile only */}
+                        <button
+                            className="md:hidden p-1.5 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors flex-shrink-0"
+                            onClick={() => setMobileNavOpen(true)}
+                            aria-label="Open navigation"
+                        >
+                            <Menu className="w-5 h-5" />
+                        </button>
+                        {isDashboardHome ? null : (
+                            <button
+                                onClick={() => router.back()}
+                                className="flex items-center space-x-1.5 text-gray-500 hover:text-gray-900 transition-colors group flex-shrink-0"
+                            >
+                                <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+                                <span className="text-sm font-semibold hidden sm:block">{t.common.back}</span>
+                            </button>
+                        )}
+                        {!isDashboardHome && (
+                            <span className="text-gray-300 text-sm select-none hidden sm:block">·</span>
+                        )}
+                        <span className="text-sm font-bold text-gray-700 tracking-tight truncate">{pageTitle}</span>
+                    </div>
+
+                    <div className="flex items-center space-x-2 md:space-x-4 flex-shrink-0">
+                        <LanguageSwitcher />
+                        {tenantStores.length > 0 ? (
+                            <div className="flex items-center gap-1.5 rounded-xl border border-gray-200 bg-gray-50 px-2 py-1">
+                                <span className="hidden sm:inline text-[10px] font-black uppercase tracking-widest text-gray-500">{t.dashboardLayout.branchLabel}</span>
+                                <select
+                                    value={activeStoreId}
+                                    onChange={(e) => handleStoreChange(e.target.value)}
+                                    className="bg-transparent text-xs font-semibold text-gray-700 outline-none max-w-[100px] sm:max-w-none"
+                                    aria-label="Select branch"
+                                >
+                                    {tenantStores.map((store: any) => (
+                                        <option key={store.id} value={store.id}>
+                                            {store.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        ) : null}
+                        <NotificationBell />
+                        <div className="h-8 w-px bg-gray-200 hidden sm:block" />
+                        <div className="flex items-center space-x-2 md:space-x-3">
+                            <div className="text-right hidden sm:block">
+                                <p className="text-sm font-semibold tracking-tight leading-none">{user?.name || '—'}</p>
+                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">
+                                    {inPlatformAdminMode ? 'Platform Admin' : (activeTenant?.role || t.dashboardLayout.userFallbackRole)}
+                                </p>
+                            </div>
+                            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-700 text-sm font-black border border-blue-200 cursor-pointer hover:scale-105 transition-transform flex-shrink-0">
+                                {user?.name?.split(' ').map((n: string) => n[0]).join('') || '??'}
+                            </div>
+                        </div>
+                    </div>
+                </header>
+
+                {showDemoBanner && (
+                    <DemoSandboxBanner
+                        onDismiss={() => {
+                            localStorage.setItem('demo_banner_dismissed', '1');
+                            setShowDemoBanner(false);
+                        }}
+                    />
+                )}
+
+                {showEmailVerificationBanner && (
+                    <div className="bg-amber-500 text-white px-6 py-2.5 flex items-center justify-between gap-4 flex-shrink-0">
+                        <div className="text-sm font-medium">
+                            Verify your email to secure your account and receive billing alerts.
+                        </div>
+                        <div className="flex items-center gap-3 flex-shrink-0">
+                            <button
+                                disabled={resendingVerification}
+                                onClick={async () => {
+                                    setResendingVerification(true);
+                                    try {
+                                        await api.resendVerificationEmail();
+                                    } finally {
+                                        setResendingVerification(false);
+                                    }
+                                }}
+                                className="text-xs font-bold bg-white text-amber-700 px-3 py-1 rounded-lg hover:bg-amber-50 transition-colors disabled:opacity-60"
+                            >
+                                {resendingVerification ? 'Sending…' : 'Resend email'}
+                            </button>
+                            <button
+                                onClick={() => setShowEmailVerificationBanner(false)}
+                                className="text-amber-100 hover:text-white transition-colors"
+                                aria-label="Dismiss"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Onboarding banner */}
+                {showOnboardingBanner && (
+                    <div className="bg-blue-600 text-white px-6 py-2.5 flex items-center justify-between gap-4 flex-shrink-0">
+                        <div className="flex items-center gap-2 text-sm font-medium">
+                            <Zap className="w-4 h-4 flex-shrink-0" />
+                            <span>{t.dashboardLayout.onboardingMessage}</span>
+                        </div>
+                        <div className="flex items-center gap-3 flex-shrink-0">
+                            <button
+                                onClick={() => router.push(routes.onboarding)}
+                                className="text-xs font-bold bg-white text-blue-600 px-3 py-1 rounded-lg hover:bg-blue-50 transition-colors"
+                            >
+                                {t.dashboardLayout.startSetup}
+                            </button>
+                            <button
+                                onClick={() => { localStorage.setItem('onboarding_complete', '1'); setShowOnboardingBanner(false); }}
+                                className="text-blue-200 hover:text-white transition-colors"
+                                aria-label="Dismiss"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Page content */}
+                <main className="flex-1 overflow-hidden">
+                    {children}
+                </main>
+            </div>
+
+            <FeedbackWidget />
+            <ServiceWorkerRegistrar />
+        </div>
+        </BrandingProvider>
+    );
+}

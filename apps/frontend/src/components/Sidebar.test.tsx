@@ -10,7 +10,7 @@ jest.mock('next/link', () => {
 });
 
 jest.mock('next/navigation', () => ({
-    usePathname: () => '/dashboard/accounting',
+    usePathname: () => '/accounting',
 }));
 
 jest.mock('lucide-react', () => {
@@ -107,10 +107,12 @@ describe('Sidebar — Story 30.1', () => {
     it('shows platform admin and billing items when enabled', () => {
         render(<Sidebar canAccessAccounting canAccessAdmin canManageBilling canAccessInventoryReports activePlanCode="STANDARD" />);
 
-        expect(screen.getByText('Billing')).toBeInTheDocument();
         expect(screen.getByText('Platform Admin')).toBeInTheDocument();
         expect(screen.getByText('Settings')).toBeInTheDocument();
         expect(screen.getByText('STANDARD')).toBeInTheDocument();
+
+        fireEvent.click(screen.getByText('Settings'));
+        expect(screen.getByText('Billing')).toBeInTheDocument();
 
         // Open Sales group
         fireEvent.click(screen.getByText('Sales'));
@@ -119,7 +121,7 @@ describe('Sidebar — Story 30.1', () => {
         // Open Purchase group
         fireEvent.click(screen.getByText('Purchase'));
         expect(screen.getByText('Purchase Reports')).toBeInTheDocument();
-        expect(screen.getByText('Purchase Setup')).toBeInTheDocument();
+        expect(screen.getByText('Payables')).toBeInTheDocument();
 
         // Open Inventory group
         fireEvent.click(screen.getByText('Inventory'));
@@ -136,13 +138,13 @@ describe('Sidebar — Story 30.1', () => {
         // Open Purchase group
         fireEvent.click(screen.getByText('Purchase'));
         expect(screen.queryByText('Purchase Reports')).not.toBeInTheDocument();
-        expect(screen.getByText('Purchase Setup')).toBeInTheDocument();
+        expect(screen.getByText('Payables')).toBeInTheDocument();
 
         // Open Inventory group
         fireEvent.click(screen.getByText('Inventory'));
+        fireEvent.click(screen.getByText('Inventory Reports'));
         expect(screen.queryByText('Reorder Report')).not.toBeInTheDocument();
         expect(screen.queryByText('Shrinkage Report')).not.toBeInTheDocument();
-        expect(screen.getByText('Inventory Reports')).toBeInTheDocument();
         expect(screen.getByText('Stock Ledger')).toBeInTheDocument();
     });
 });

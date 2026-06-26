@@ -8,14 +8,20 @@ COPY package.json package-lock.json* ./
 COPY apps/backend/package.json ./apps/backend/
 COPY packages/database/package.json ./packages/database/
 COPY packages/shared-types/package.json ./packages/shared-types/
+RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
 RUN npm config set fetch-retries 5 \
  && npm config set fetch-retry-mintimeout 20000 \
  && npm config set fetch-retry-maxtimeout 120000 \
- && npm ci --include=optional --no-audit
+ && npm ci --include=optional --no-audit --ignore-scripts \
+ && npm rebuild bcrypt --build-from-source \
+ && node -e "require('bcrypt'); console.log('bcrypt native binding OK')"
 
 # Builder stage
 FROM deps AS builder
 COPY . .
+# Rebuild bcrypt after full copy — ensures the linux/amd64 binding is present in runner node_modules.
+RUN npm rebuild bcrypt --build-from-source \
+ && node -e "require('bcrypt'); console.log('bcrypt native binding OK (builder)')"
 # Build the shared package first
 RUN npm run build --workspace=@retail-saas/shared-types || true
 # Generate Prisma client

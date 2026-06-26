@@ -1,69 +1,9 @@
 import { test, expect, Page, ConsoleMessage } from '@playwright/test';
 import { E2E_BASE_URL, applyE2ESession, fetchE2ESession, type E2ESession } from './helpers/auth';
+import { NAV_ROUTES } from './helpers/nav-routes';
 
 const BASE = E2E_BASE_URL;
-
-// All sidebar routes extracted from Sidebar.tsx
-const ROUTES = [
-    { path: '/dashboard',                              label: 'Dashboard' },
-    { path: '/dashboard/pos',                          label: 'POS' },
-    { path: '/dashboard/sales',                        label: 'Sales' },
-    { path: '/dashboard/returns',                      label: 'Sales Returns' },
-    { path: '/dashboard/orders',                       label: 'Sales Orders' },
-    { path: '/dashboard/quotes',                       label: 'Sales Quotations' },
-    { path: '/dashboard/warranty-claims',              label: 'Warranty Claims' },
-    { path: '/dashboard/cashier-sessions',             label: 'Cashier Sessions' },
-    { path: '/dashboard/loyalty',                      label: 'Loyalty Points' },
-    { path: '/dashboard/delivery',                     label: 'Delivery' },
-    { path: '/dashboard/purchases',                    label: 'Purchases' },
-    { path: '/dashboard/purchase-orders',              label: 'Purchase Orders' },
-    { path: '/dashboard/purchase-quotations',          label: 'Purchase Quotations' },
-    { path: '/dashboard/purchase-returns',             label: 'Purchase Returns' },
-    { path: '/dashboard/suppliers',                    label: 'Suppliers' },
-    { path: '/dashboard/purchases/reports/summary',    label: 'Purchase Summary' },
-    { path: '/dashboard/purchases/reports/by-product',  label: 'Purchases by Product' },
-    { path: '/dashboard/purchases/reports/by-supplier', label: 'Purchases by Supplier' },
-    { path: '/dashboard/accounting',                   label: 'Accounting Overview' },
-    { path: '/dashboard/accounting/vouchers',          label: 'Voucher Entry' },
-    { path: '/dashboard/accounting/journal',           label: 'Journal' },
-    { path: '/dashboard/accounting/ledger',            label: 'Accounting Ledger' },
-    { path: '/dashboard/accounting/reconciliation',    label: 'Posting Exceptions' },
-    { path: '/dashboard/expenses',                     label: 'Expenses' },
-    { path: '/dashboard/expenses/categories',          label: 'Expense Categories' },
-    { path: '/dashboard/expenses/reports',             label: 'Expense Reports' },
-    { path: '/dashboard/inventory',                    label: 'Inventory Products' },
-    { path: '/dashboard/inventory/transfers',          label: 'Transfers' },
-    { path: '/dashboard/inventory/shrinkage',          label: 'Shrinkage' },
-    { path: '/dashboard/inventory/stock-takes',        label: 'Stock Takes' },
-    { path: '/dashboard/inventory/ledger',             label: 'Stock Ledger' },
-    { path: '/dashboard/inventory/labels',             label: 'Print Labels' },
-    { path: '/dashboard/sales/reports/summary',        label: 'Sales Summary' },
-    { path: '/dashboard/sales/reports/products',       label: 'Sales by Product' },
-    { path: '/dashboard/reports/consolidated',         label: 'Consolidated Report' },
-    { path: '/dashboard/inventory/reports/reorder',    label: 'Reorder Report' },
-    { path: '/dashboard/inventory/reports/shrinkage',  label: 'Shrinkage Report' },
-    { path: '/dashboard/inventory/reports/valuation',  label: 'Valuation Report' },
-    { path: '/dashboard/storefront',                   label: 'Storefront Orders' },
-    { path: '/dashboard/storefront/settings',          label: 'Storefront Settings' },
-    { path: '/dashboard/billing',                      label: 'Billing' },
-    { path: '/dashboard/settings',                     label: 'Settings' },
-    { path: '/dashboard/admin/tenants',                label: 'Platform Admin Tenants' },
-    { path: '/dashboard/customers',                    label: 'Customers' },
-    { path: '/dashboard/customer-groups',              label: 'Customer Groups' },
-    { path: '/dashboard/territories',                  label: 'Territories' },
-    { path: '/dashboard/inventory/categories',         label: 'Categories' },
-    { path: '/dashboard/inventory/settings',           label: 'Inventory Settings' },
-    { path: '/dashboard/accounting/coa',               label: 'Chart of Accounts' },
-    { path: '/dashboard/accounting/posting-rules',     label: 'Posting Rules' },
-    { path: '/dashboard/settings/branding',            label: 'Branding' },
-    { path: '/dashboard/settings/tax',                 label: 'Tax / VAT' },
-    { path: '/dashboard/settings/audit-logs',          label: 'Audit Logs' },
-    { path: '/dashboard/settings/loyalty',             label: 'Loyalty Program Settings' },
-    { path: '/dashboard/settings/sms',                 label: 'SMS Notifications' },
-    { path: '/dashboard/settings/reports',             label: 'Report Emails' },
-    { path: '/dashboard/settings/discount-codes',      label: 'Discount Codes' },
-    { path: '/dashboard/help',                         label: 'Help' },
-];
+const ROUTES = NAV_ROUTES;
 
 // Errors that indicate a real problem (not just warnings)
 const FATAL_PATTERNS = [

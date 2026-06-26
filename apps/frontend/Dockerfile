@@ -12,7 +12,8 @@ RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt
 RUN npm config set fetch-retries 5 \
  && npm config set fetch-retry-mintimeout 20000 \
  && npm config set fetch-retry-maxtimeout 120000 \
- && npm ci --include=optional --no-audit
+ && npm ci --include=optional --no-audit --ignore-scripts \
+ && npm rebuild bcrypt --build-from-source
 
 # Builder stage
 FROM deps AS builder
