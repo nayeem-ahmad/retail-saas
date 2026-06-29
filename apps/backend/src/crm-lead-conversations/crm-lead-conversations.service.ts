@@ -14,6 +14,15 @@ export class CrmLeadConversationsService {
         });
         if (!lead) throw new NotFoundException('Lead not found');
 
+        const leadUpdate: Record<string, unknown> = { last_contacted_at: new Date() };
+        if (dto.next_step !== undefined) leadUpdate.next_step = dto.next_step;
+        if (dto.next_step_date !== undefined) {
+            leadUpdate.next_step_date = dto.next_step_date ? new Date(dto.next_step_date) : null;
+        }
+        if (dto.next_step_assigned_to !== undefined) {
+            leadUpdate.next_step_assigned_to = dto.next_step_assigned_to;
+        }
+
         const [conversation] = await this.db.$transaction([
             this.db.leadConversation.create({
                 data: {
@@ -30,7 +39,7 @@ export class CrmLeadConversationsService {
             }),
             this.db.lead.update({
                 where: { id: dto.lead_id },
-                data: { last_contacted_at: new Date() },
+                data: leadUpdate,
             }),
         ]);
 

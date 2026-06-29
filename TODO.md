@@ -318,6 +318,7 @@ Track all work here. Check off items as they're completed. Add new items as they
 
 ## COMPLETED
 
+- [x] Lead conversation log — ONLINE_MEETING type + next-step fields on log (updates lead next_step/date/assignee); shared NextStepFields component — done 2026-06-29
 - [x] Fix lead form crash on new/edit — team members API returns `userId` flat, not `member.user.id` — done 2026-06-29
 - [x] Fix CRM lead create errors + list actions — `fetchWithAuth` parses `error.message` envelope; DTO empty-string transforms; client email validation; leads list View/Edit/Delete actions + edit modal; delete on detail page — done 2026-06-29
 - [x] Expand Lead fields — `phone`→`mobile`, `notes`→`remarks`; added category, priority, social URLs, next-step fields + assignee; migration `20260628140000_expand_lead_fields`; backend DTOs/filters; leads list + detail edit form (`LeadFormFields`); CRM tasks `lead.mobile`; i18n en/bn/ms — done 2026-06-29

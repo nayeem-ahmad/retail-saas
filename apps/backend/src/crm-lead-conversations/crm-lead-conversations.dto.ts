@@ -1,4 +1,8 @@
-import { IsString, IsOptional, IsEnum, IsUUID, IsIn } from 'class-validator';
+import { Transform } from 'class-transformer';
+import { IsString, IsOptional, IsEnum, IsUUID, IsIn, IsDateString } from 'class-validator';
+
+const emptyToUndefined = ({ value }: { value: unknown }) =>
+    value === '' || value === null ? undefined : value;
 
 export enum LeadConversationType {
     CALL = 'CALL',
@@ -6,6 +10,7 @@ export enum LeadConversationType {
     WHATSAPP = 'WHATSAPP',
     EMAIL = 'EMAIL',
     VISIT = 'VISIT',
+    ONLINE_MEETING = 'ONLINE_MEETING',
     NOTE = 'NOTE',
 }
 
@@ -30,6 +35,21 @@ export class CreateLeadConversationDto {
     @IsOptional()
     @IsString()
     store_id?: string;
+
+    @IsOptional()
+    @Transform(emptyToUndefined)
+    @IsString()
+    next_step?: string;
+
+    @IsOptional()
+    @Transform(emptyToUndefined)
+    @IsDateString()
+    next_step_date?: string;
+
+    @IsOptional()
+    @Transform(emptyToUndefined)
+    @IsUUID()
+    next_step_assigned_to?: string;
 }
 
 export class UpdateLeadConversationDto {

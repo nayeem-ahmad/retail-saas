@@ -13,16 +13,34 @@ import { useI18n } from '@/lib/i18n';
 import { routes } from '@/lib/routes';
 import {
     LeadFormFields,
+    LEAD_CONVERSATION_TYPES,
+    NextStepFields,
+    emptyNextStep,
     leadFormToPayload,
     leadToFormState,
+    nextStepFromLead,
+    nextStepToPayload,
     validateLeadForm,
     type LeadFormState,
+    type NextStepState,
 } from '../lead-form-fields';
 
-const CONVERSATION_TYPES = ['CALL', 'SMS', 'WHATSAPP', 'EMAIL', 'VISIT', 'NOTE'] as const;
 const typeIcons: Record<string, string> = {
-    CALL: '📞', SMS: '💬', WHATSAPP: '🟢', EMAIL: '📧', VISIT: '🏪', NOTE: '📝',
+    CALL: '📞', SMS: '💬', WHATSAPP: '🟢', EMAIL: '📧', VISIT: '🏪', ONLINE_MEETING: '💻', NOTE: '📝',
 };
+
+type NewConversationState = {
+    type: string;
+    summary: string;
+    outcome: string;
+} & NextStepState;
+
+const emptyConversation = (): NewConversationState => ({
+    type: 'CALL',
+    summary: '',
+    outcome: '',
+    ...emptyNextStep(),
+});
 
 const priorityColors: Record<string, string> = {
     LOW: 'bg-slate-50 text-slate-600',
@@ -42,7 +60,7 @@ export default function LeadDetailPage() {
     const [conversations, setConversations] = useState<any[]>([]);
     const [conversationsLoading, setConversationsLoading] = useState(false);
     const [showConvForm, setShowConvForm] = useState(false);
-    const [newConv, setNewConv] = useState({ type: 'CALL', summary: '', outcome: '' });
+    const [newConv, setNewConv] = useState<NewConversationState>(emptyConversation);
     const [savingConv, setSavingConv] = useState(false);
     const [converting, setConverting] = useState(false);
     const [showTaskForm, setShowTaskForm] = useState(false);
@@ -81,14 +99,32 @@ export default function LeadDetailPage() {
         api.getTeamMembers().then((data) => setTeamMembers(Array.isArray(data) ? data : [])).catch(() => null);
     }, []);
 
+    const openConversationForm = () => {
+        setNewConv({
+            ...emptyConversation(),
+            ...nextStepFromLead(lead ?? {}),
+        });
+        setShowConvForm(true);
+    };
+
     const saveConversation = async () => {
         if (!newConv.summary.trim()) return;
         setSavingConv(true);
         try {
-            await api.createLeadConversation({ ...newConv, lead_id: id });
-            setNewConv({ type: 'CALL', summary: '', outcome: '' });
+            const payload: Record<string, string> = {
+                lead_id: id as string,
+                type: newConv.type,
+                summary: newConv.summary.trim(),
+                ...nextStepToPayload(newConv),
+            };
+            const outcome = newConv.outcome.trim();
+            if (outcome) payload.outcome = outcome;
+            await api.createLeadConversation(payload);
+            setNewConv(emptyConversation());
             setShowConvForm(false);
             await Promise.all([loadConversations(), loadLead()]);
+        } catch (err: unknown) {
+            alert(err instanceof Error ? err.message : m.detail.logConversation);
         } finally {
             setSavingConv(false);
         }
@@ -134,7 +170,11 @@ export default function LeadDetailPage() {
                 purpose: draftPurpose,
                 customerContext: { name: lead.name, phone: lead.mobile ?? lead.phone, type: 'lead' },
             });
-            setNewConv((prev) => ({ ...prev, summary: draft?.message ?? draft?.text ?? draft?.draft ?? '' }));
+            setNewConv((prev) => ({
+                ...prev,
+                summary: draft?.message ?? draft?.text ?? draft?.draft ?? '',
+                ...nextStepFromLead(lead),
+            }));
             setShowConvForm(true);
         } finally {
             setDraftingMessage(false);
@@ -326,7 +366,7 @@ export default function LeadDetailPage() {
                             AI Draft
                         </button>
                         <button onClick={() => setShowTaskForm(!showTaskForm)} className="px-3 py-1.5 text-xs border rounded-lg hover:bg-gray-50">{m.detail.createTask}</button>
-                        <button onClick={() => setShowConvForm(!showConvForm)} className="flex items-center gap-1 px-3 py-1.5 text-xs bg-violet-600 text-white rounded-lg">
+                        <button onClick={() => (showConvForm ? setShowConvForm(false) : openConversationForm())} className="flex items-center gap-1 px-3 py-1.5 text-xs bg-violet-600 text-white rounded-lg">
                             <Plus className="w-3.5 h-3.5" /> {m.detail.logConversation}
                         </button>
                     </div>
@@ -346,7 +386,7 @@ export default function LeadDetailPage() {
                 <div className="bg-white border rounded-xl p-4 mb-4 space-y-3">
                     <div className="flex gap-2">
                         <select value={draftChannel} onChange={(e) => setDraftChannel(e.target.value)} className="border rounded-lg px-2 py-1 text-xs">
-                            {CONVERSATION_TYPES.map((type) => <option key={type} value={type}>{type}</option>)}
+                            {LEAD_CONVERSATION_TYPES.map((type) => <option key={type} value={type}>{type}</option>)}
                         </select>
                         <select value={draftPurpose} onChange={(e) => setDraftPurpose(e.target.value)} className="border rounded-lg px-2 py-1 text-xs">
                             <option value="follow_up">Follow up</option>
@@ -354,12 +394,19 @@ export default function LeadDetailPage() {
                         </select>
                     </div>
                     <select value={newConv.type} onChange={(e) => setNewConv({ ...newConv, type: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm">
-                        {CONVERSATION_TYPES.map((type) => (
+                        {LEAD_CONVERSATION_TYPES.map((type) => (
                             <option key={type} value={type}>{(convTypes as Record<string, string>)[type] ?? type}</option>
                         ))}
                     </select>
-                    <textarea value={newConv.summary} onChange={(e) => setNewConv({ ...newConv, summary: e.target.value })} placeholder="Summary" className="w-full border rounded-lg px-3 py-2 text-sm" rows={3} />
-                    <input value={newConv.outcome} onChange={(e) => setNewConv({ ...newConv, outcome: e.target.value })} placeholder="Outcome (optional)" className="w-full border rounded-lg px-3 py-2 text-sm" />
+                    <textarea value={newConv.summary} onChange={(e) => setNewConv({ ...newConv, summary: e.target.value })} placeholder={m.detail.summaryPlaceholder} className="w-full border rounded-lg px-3 py-2 text-sm" rows={3} />
+                    <input value={newConv.outcome} onChange={(e) => setNewConv({ ...newConv, outcome: e.target.value })} placeholder={m.detail.outcomePlaceholder} className="w-full border rounded-lg px-3 py-2 text-sm" />
+                    <div className="grid gap-3 sm:grid-cols-2 border-t border-gray-100 pt-3">
+                        <NextStepFields
+                            state={newConv}
+                            onChange={(next) => setNewConv({ ...newConv, ...next })}
+                            teamMembers={teamMembers}
+                        />
+                    </div>
                     <button onClick={saveConversation} disabled={savingConv} className="px-4 py-2 bg-violet-600 text-white text-sm rounded-lg disabled:opacity-50">{m.detail.logConversation}</button>
                 </div>
             )}

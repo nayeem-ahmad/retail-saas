@@ -109,6 +109,9 @@ export const crmHrMessages = {
                 saveLead: 'Simpan Perubahan',
                 saved: 'Prospek dikemas kini',
                 saveFailed: 'Gagal mengemas kini prospek',
+                summaryPlaceholder: 'Ringkasan',
+                outcomePlaceholder: 'Hasil (pilihan)',
+                updateNextStep: 'Kemas kini langkah seterusnya pada prospek',
             },
             customers: {
                 title: 'Pelanggan',
@@ -123,6 +126,7 @@ export const crmHrMessages = {
                 WHATSAPP: 'WhatsApp',
                 EMAIL: 'E-mel',
                 VISIT: 'Lawatan',
+                ONLINE_MEETING: 'Mesyuarat Dalam Talian',
                 NOTE: 'Nota',
             },
         },

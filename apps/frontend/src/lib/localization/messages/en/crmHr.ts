@@ -109,6 +109,9 @@ export const crmHrMessages = {
                 saveLead: 'Save Changes',
                 saved: 'Lead updated',
                 saveFailed: 'Failed to update lead',
+                summaryPlaceholder: 'Summary',
+                outcomePlaceholder: 'Outcome (optional)',
+                updateNextStep: 'Update next step on lead',
             },
             customers: {
                 title: 'Customers',
@@ -123,6 +126,7 @@ export const crmHrMessages = {
                 WHATSAPP: 'WhatsApp',
                 EMAIL: 'Email',
                 VISIT: 'Visit',
+                ONLINE_MEETING: 'Online Meeting',
                 NOTE: 'Note',
             },
         },

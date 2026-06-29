@@ -6,6 +6,39 @@ export const LEAD_STATUSES = ['NEW', 'CONTACTED', 'QUALIFIED', 'LOST', 'CONVERTE
 export const LEAD_SOURCES = ['WALK_IN', 'PHONE', 'FACEBOOK', 'REFERRAL', 'WEBSITE', 'OTHER'] as const;
 export const LEAD_CATEGORIES = ['RETAIL', 'WHOLESALE', 'CORPORATE', 'INDIVIDUAL', 'PARTNER', 'OTHER'] as const;
 export const LEAD_PRIORITIES = ['LOW', 'MEDIUM', 'HIGH', 'URGENT'] as const;
+export const LEAD_CONVERSATION_TYPES = ['CALL', 'SMS', 'WHATSAPP', 'EMAIL', 'VISIT', 'ONLINE_MEETING', 'NOTE'] as const;
+
+export type NextStepState = {
+    next_step: string;
+    next_step_date: string;
+    next_step_assigned_to: string;
+};
+
+export const emptyNextStep = (): NextStepState => ({
+    next_step: '',
+    next_step_date: '',
+    next_step_assigned_to: '',
+});
+
+export function nextStepFromLead(lead: Record<string, unknown>): NextStepState {
+    const nextStepDate = lead.next_step_date as string | null | undefined;
+    return {
+        next_step: String(lead.next_step ?? ''),
+        next_step_date: nextStepDate ? nextStepDate.slice(0, 16) : '',
+        next_step_assigned_to: String(lead.next_step_assigned_to ?? ''),
+    };
+}
+
+export function nextStepToPayload(state: NextStepState): Record<string, string> {
+    const payload: Record<string, string> = {};
+    const step = state.next_step.trim();
+    if (step) payload.next_step = step;
+    if (state.next_step_date) {
+        payload.next_step_date = new Date(state.next_step_date).toISOString();
+    }
+    if (state.next_step_assigned_to) payload.next_step_assigned_to = state.next_step_assigned_to;
+    return payload;
+}
 
 export type LeadFormState = {
     name: string;
@@ -200,20 +233,45 @@ export function LeadFormFields({ form, onChange, teamMembers = [], showStatus = 
                 <label className={labelClass}>{m.fields.websiteUrl}</label>
                 <input value={form.website_url} onChange={(e) => set('website_url', e.target.value)} className={inputClass} placeholder="https://..." />
             </div>
-            <div className="sm:col-span-2 border-t border-gray-100 pt-3 mt-1">
-                <p className="text-xs font-black uppercase tracking-widest text-gray-400 mb-2">{m.fields.nextStepSection}</p>
-            </div>
+            <NextStepFields
+                state={{ next_step: form.next_step, next_step_date: form.next_step_date, next_step_assigned_to: form.next_step_assigned_to }}
+                onChange={(next) => onChange({ ...form, ...next })}
+                teamMembers={teamMembers}
+            />
+        </div>
+    );
+}
+
+type NextStepFieldsProps = {
+    state: NextStepState;
+    onChange: (state: NextStepState) => void;
+    teamMembers?: TeamMember[];
+    showSectionHeader?: boolean;
+};
+
+export function NextStepFields({ state, onChange, teamMembers = [], showSectionHeader = true }: NextStepFieldsProps) {
+    const { t } = useI18n();
+    const m = t.crm.leads;
+    const set = (key: keyof NextStepState, value: string) => onChange({ ...state, [key]: value });
+
+    return (
+        <>
+            {showSectionHeader && (
+                <div className="sm:col-span-2 border-t border-gray-100 pt-3 mt-1">
+                    <p className="text-xs font-black uppercase tracking-widest text-gray-400 mb-2">{m.fields.nextStepSection}</p>
+                </div>
+            )}
             <div className="sm:col-span-2">
                 <label className={labelClass}>{m.fields.nextStep}</label>
-                <input value={form.next_step} onChange={(e) => set('next_step', e.target.value)} className={inputClass} />
+                <input value={state.next_step} onChange={(e) => set('next_step', e.target.value)} className={inputClass} />
             </div>
             <div>
                 <label className={labelClass}>{m.fields.nextStepDate}</label>
-                <input type="datetime-local" value={form.next_step_date} onChange={(e) => set('next_step_date', e.target.value)} className={inputClass} />
+                <input type="datetime-local" value={state.next_step_date} onChange={(e) => set('next_step_date', e.target.value)} className={inputClass} />
             </div>
             <div>
                 <label className={labelClass}>{m.fields.nextStepAssignedTo}</label>
-                <select value={form.next_step_assigned_to} onChange={(e) => set('next_step_assigned_to', e.target.value)} className={inputClass}>
+                <select value={state.next_step_assigned_to} onChange={(e) => set('next_step_assigned_to', e.target.value)} className={inputClass}>
                     <option value="">{m.fields.unassigned}</option>
                     {teamMembers.map((member) => {
                         const id = teamMemberId(member);
@@ -226,6 +284,6 @@ export function LeadFormFields({ form, onChange, teamMembers = [], showStatus = 
                     })}
                 </select>
             </div>
-        </div>
+        </>
     );
 }
