@@ -70,15 +70,20 @@ if [ -z "$ERP71_DB_USER" ] || [ -z "$ERP71_DB_PASSWORD" ] || [ -z "$ERP71_DB_NAM
   exit 1
 fi
 
-echo "==> Ensuring Postgres role and database exist"
-docker exec retail-saas-db-1 psql -U postgres -d postgres -tc \
+PG_SUPERUSER="$(grep -E '^POSTGRES_USER=' "$PRIMARY_ENV" | tail -1 | cut -d= -f2-)"
+if [ -z "$PG_SUPERUSER" ]; then
+  PG_SUPERUSER=postgres
+fi
+
+echo "==> Ensuring Postgres role and database exist (superuser: ${PG_SUPERUSER})"
+docker exec retail-saas-db-1 psql -U "$PG_SUPERUSER" -d postgres -tc \
   "SELECT 1 FROM pg_roles WHERE rolname = '${ERP71_DB_USER}'" | grep -q 1 \
-  || docker exec retail-saas-db-1 psql -U postgres -d postgres -c \
+  || docker exec retail-saas-db-1 psql -U "$PG_SUPERUSER" -d postgres -c \
   "CREATE ROLE ${ERP71_DB_USER} WITH LOGIN PASSWORD '${ERP71_DB_PASSWORD}';"
 
-docker exec retail-saas-db-1 psql -U postgres -d postgres -tc \
+docker exec retail-saas-db-1 psql -U "$PG_SUPERUSER" -d postgres -tc \
   "SELECT 1 FROM pg_database WHERE datname = '${ERP71_DB_NAME}'" | grep -q 1 \
-  || docker exec retail-saas-db-1 psql -U postgres -d postgres -c \
+  || docker exec retail-saas-db-1 psql -U "$PG_SUPERUSER" -d postgres -c \
   "CREATE DATABASE ${ERP71_DB_NAME} OWNER ${ERP71_DB_USER};"
 
 echo "==> Building and starting erp71 stack"
