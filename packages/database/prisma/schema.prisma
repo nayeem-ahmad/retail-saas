@@ -1280,7 +1280,7 @@ model LeadConversation {
   tenant_id   String
   store_id    String?
   lead_id     String
-  type        String   // CALL | SMS | WHATSAPP | EMAIL | VISIT | NOTE
+  type        String   // CALL | SMS | WHATSAPP | EMAIL | VISIT | ONLINE_MEETING | NOTE
   direction   String   @default("OUTBOUND")
   summary     String
   outcome     String?

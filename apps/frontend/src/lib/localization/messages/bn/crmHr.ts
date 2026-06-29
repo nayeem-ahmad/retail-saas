@@ -109,6 +109,9 @@ export const crmHrMessages = {
                 saveLead: "পরিবর্তন সংরক্ষণ",
                 saved: "লিড আপডেট হয়েছে",
                 saveFailed: "লিড আপডেট ব্যর্থ",
+                summaryPlaceholder: "সারাংশ",
+                outcomePlaceholder: "ফলাফল (ঐচ্ছিক)",
+                updateNextStep: "লিডের পরবর্তী পদক্ষেপ আপডেট করুন",
             },
             customers: {
                 title: "গ্রাহক",
@@ -123,6 +126,7 @@ export const crmHrMessages = {
                 WHATSAPP: "WhatsApp",
                 EMAIL: "ইমেইল",
                 VISIT: "ভিজিট",
+                ONLINE_MEETING: "অনলাইন মিটিং",
                 NOTE: "নোট",
             },
         },
