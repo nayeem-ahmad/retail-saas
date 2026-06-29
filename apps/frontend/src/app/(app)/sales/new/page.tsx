@@ -16,6 +16,7 @@ import PaymentSection from './components/PaymentSection';
 import SalesHeader from './components/SalesHeader';
 import { useNewSaleCart } from '@/lib/hooks/useNewSaleCart';
 import { printSalesInvoice, PAPER_SIZES, type PaperSize } from '@/lib/sales-invoice-printer';
+import { toast } from '@/lib/toast';
 
 export default function NewSalePage() {
     const { t } = useI18n();
@@ -166,8 +167,12 @@ export default function NewSalePage() {
         }
 
         const messages = buildVoiceEntryMessages(result, added);
-        if (messages.length > 0) {
-            alert(messages.join('\n'));
+        for (const message of messages) {
+            if (message.startsWith('Could not find')) {
+                toast.info(message);
+            } else {
+                toast.success(message);
+            }
         }
     };
 
@@ -201,7 +206,7 @@ export default function NewSalePage() {
 
         const validation = validateCheckout();
         if (!validation.valid) {
-            alert(validation.errors.join('\n'));
+            toast.error(validation.errors.join('\n'));
             return;
         }
 
@@ -234,14 +239,14 @@ export default function NewSalePage() {
 
             // Clear cart and show success
             clearCart();
-            alert(`Sale created successfully!\nSale #: ${response.serial_number}`);
+            toast.success(`Sale created successfully!\nSale #: ${response.serial_number}`);
 
             // Optionally redirect to sales list or new sale
             // router.push('/sales');
         } catch (error: any) {
             const errorMsg = error.message || 'Failed to create sale';
             console.error('Sale creation error:', error);
-            alert(errorMsg);
+            toast.error(errorMsg);
         } finally {
             setSubmitting(false);
         }

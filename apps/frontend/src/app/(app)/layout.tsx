@@ -9,6 +9,7 @@ import Sidebar from '@/components/Sidebar';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import DemoSandboxBanner from '@/components/DemoSandboxBanner';
 import FeedbackWidget from '@/components/FeedbackWidget';
+import Toaster from '@/components/Toaster';
 import ServiceWorkerRegistrar from '@/components/ServiceWorkerRegistrar';
 import { BrandingProvider } from '@/lib/branding';
 import { api } from '@/lib/api';
@@ -337,6 +338,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 </main>
             </div>
 
+            <Toaster />
             <FeedbackWidget />
             <ServiceWorkerRegistrar />
         </div>
