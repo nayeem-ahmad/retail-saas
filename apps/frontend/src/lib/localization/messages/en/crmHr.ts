@@ -3,13 +3,13 @@ export const crmHrMessages = {
         hub: {
             moduleLabel: 'CRM Module',
             title: 'Customer Relationships',
-            subtitle: 'Manage leads, follow-ups, campaigns, and customer outreach.',
+            subtitle: 'Manage leads, conversations, and customer relationships.',
             pipeline: 'Pipeline',
             relationships: 'Relationships',
             premiumRequired: 'Lead management is available on the Premium plan.',
             upgradeCta: 'Upgrade to Premium',
             links: {
-                leads: { title: 'Leads', description: 'Track prospects before they become customers.' },
+                leads: { title: 'Leads', description: 'Track prospects, log conversations, and plan next steps.' },
                 customers: { title: 'Customers', description: 'Browse customers and open their relationship profile.' },
                 crmTasks: { title: 'Tasks & Follow-ups', description: 'Follow-up tasks linked to customers or leads.' },
                 crmCampaigns: { title: 'Campaigns', description: 'Plan and send outbound sales campaigns.' },
@@ -17,7 +17,12 @@ export const crmHrMessages = {
         },
         leads: {
             title: 'Leads',
-            subtitle: 'Prospects and pre-sale pipeline',
+            subtitle: 'Prospects, conversations, and next steps in one place',
+            workspace: {
+                loading: 'Loading lead...',
+                notFound: 'Lead not found',
+                outcome: 'Outcome',
+            },
             newLead: 'New Lead',
             emptyMessage: 'No leads yet',
             searchPlaceholder: 'Search by name or phone...',

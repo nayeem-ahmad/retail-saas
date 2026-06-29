@@ -26,8 +26,6 @@ export const NAV_ROUTES: { path: string; label: string }[] = [
     { path: '/crm', label: 'CRM Overview' },
     { path: '/crm/customers', label: 'CRM Customers' },
     { path: '/crm/leads', label: 'CRM Leads' },
-    { path: '/crm/tasks', label: 'CRM Tasks' },
-    { path: '/crm/campaigns', label: 'CRM Campaigns' },
     { path: '/sales/loyalty', label: 'Loyalty Points' },
     { path: '/sales/reports/summary', label: 'Sales Summary' },
     { path: '/sales/reports/products', label: 'Sales by Product' },

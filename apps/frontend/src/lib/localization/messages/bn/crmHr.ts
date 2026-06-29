@@ -3,13 +3,13 @@ export const crmHrMessages = {
         hub: {
             moduleLabel: "CRM মডিউল",
             title: "গ্রাহক সম্পর্ক",
-            subtitle: "লিড, ফলো-আপ, ক্যাম্পেইন ও গ্রাহক যোগাযোগ পরিচালনা।",
+            subtitle: "লিড, কথোপকথন ও গ্রাহক সম্পর্ক পরিচালনা।",
             pipeline: "পাইপলাইন",
             relationships: "সম্পর্ক",
             premiumRequired: "লিড ম্যানেজমেন্ট Premium প্ল্যানে উপলব্ধ।",
             upgradeCta: "Premium-এ আপগ্রেড করুন",
             links: {
-                leads: { title: "লিড", description: "গ্রাহক হওয়ার আগে সম্ভাব্য ক্রেতা ট্র্যাক করুন।" },
+                leads: { title: "লিড", description: "সম্ভাব্য ক্রেতা ট্র্যাক করুন, কথোপকথন লগ করুন ও পরবর্তী পদক্ষেপ পরিকল্পনা করুন।" },
                 customers: { title: "গ্রাহক", description: "গ্রাহক ব্রাউজ করুন ও প্রোফাইল খুলুন।" },
                 crmTasks: { title: "টাস্ক ও ফলো-আপ", description: "গ্রাহক বা লিড-লিঙ্কড ফলো-আপ টাস্ক।" },
                 crmCampaigns: { title: "ক্যাম্পেইন", description: "আউটবাউন্ড বিক্রয় ক্যাম্পেইন পরিচালনা।" },
@@ -17,7 +17,12 @@ export const crmHrMessages = {
         },
         leads: {
             title: "লিড",
-            subtitle: "সম্ভাব্য ক্রেতা ও প্রি-সেল পাইপলাইন",
+            subtitle: "সম্ভাব্য ক্রেতা, কথোপকথন ও পরবর্তী পদক্ষেপ এক জায়গায়",
+            workspace: {
+                loading: "লিড লোড হচ্ছে...",
+                notFound: "লিড পাওয়া যায়নি",
+                outcome: "ফলাফল",
+            },
             newLead: "নতুন লিড",
             emptyMessage: "কোনো লিড নেই",
             searchPlaceholder: "নাম বা ফোন দিয়ে খুঁজুন...",
