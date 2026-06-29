@@ -1,12 +1,11 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { UserPlus, Plus, RefreshCw, Search, Eye, Pencil, Trash2 } from 'lucide-react';
-import Link from 'next/link';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { UserPlus, Plus, RefreshCw, Search, Eye, Trash2 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { formatDate } from '@/lib/format';
 import { useI18n } from '@/lib/i18n';
-import { routes } from '@/lib/routes';
 import { createColumnHelper, type ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table';
 import {
@@ -16,10 +15,9 @@ import {
     LeadFormFields,
     emptyLeadForm,
     leadFormToPayload,
-    leadToFormState,
     validateLeadForm,
-    type LeadFormState,
 } from './lead-form-fields';
+import { LeadWorkspaceDialog } from './lead-workspace-dialog';
 
 interface Lead {
     id: string;
@@ -44,20 +42,21 @@ const priorityColors: Record<string, string> = {
     URGENT: 'bg-rose-50 text-rose-700',
 };
 
-type ModalMode = 'create' | 'edit' | null;
-
 export default function LeadsPage() {
     const { t } = useI18n();
     const m = t.crm.leads;
     const c = t.common;
+    const searchParams = useSearchParams();
+    const router = useRouter();
+
     const [leads, setLeads] = useState<Lead[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState('');
     const [categoryFilter, setCategoryFilter] = useState('');
     const [priorityFilter, setPriorityFilter] = useState('');
-    const [modalMode, setModalMode] = useState<ModalMode>(null);
-    const [editingId, setEditingId] = useState<string | null>(null);
+    const [showCreateModal, setShowCreateModal] = useState(false);
+    const [workspaceLeadId, setWorkspaceLeadId] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
     const [form, setForm] = useState(emptyLeadForm());
     const [teamMembers, setTeamMembers] = useState<any[]>([]);
@@ -65,6 +64,21 @@ export default function LeadsPage() {
     useEffect(() => {
         api.getTeamMembers().then((data) => setTeamMembers(Array.isArray(data) ? data : [])).catch(() => null);
     }, []);
+
+    const openWorkspace = useCallback((leadId: string) => {
+        setWorkspaceLeadId(leadId);
+        router.replace(`/crm/leads?lead=${leadId}`, { scroll: false });
+    }, [router]);
+
+    const closeWorkspace = useCallback(() => {
+        setWorkspaceLeadId(null);
+        router.replace('/crm/leads', { scroll: false });
+    }, [router]);
+
+    useEffect(() => {
+        const leadParam = searchParams.get('lead');
+        if (leadParam) setWorkspaceLeadId(leadParam);
+    }, [searchParams]);
 
     const loadLeads = useCallback(async () => {
         setLoading(true);
@@ -86,33 +100,6 @@ export default function LeadsPage() {
 
     useEffect(() => { void loadLeads(); }, [loadLeads]);
 
-    const closeModal = () => {
-        setModalMode(null);
-        setEditingId(null);
-        setForm(emptyLeadForm());
-    };
-
-    const openCreate = () => {
-        setForm(emptyLeadForm());
-        setEditingId(null);
-        setModalMode('create');
-    };
-
-    const openEdit = useCallback(async (lead: Lead) => {
-        if (lead.status === 'CONVERTED') {
-            alert(m.cannotEditConverted);
-            return;
-        }
-        try {
-            const full = await api.getLead(lead.id);
-            setForm(leadToFormState(full));
-            setEditingId(lead.id);
-            setModalMode('edit');
-        } catch (err: unknown) {
-            alert(err instanceof Error ? err.message : m.detail.saveFailed);
-        }
-    }, [m]);
-
     const formErrorMessage = (code: string | null) => {
         if (!code) return null;
         if (code === 'INVALID_EMAIL') return m.validation?.invalidEmail ?? 'Please enter a valid email address.';
@@ -121,7 +108,7 @@ export default function LeadsPage() {
         return m.createFailed;
     };
 
-    const saveLead = async () => {
+    const createLead = async () => {
         const validationError = validateLeadForm(form);
         if (validationError) {
             alert(formErrorMessage(validationError));
@@ -129,16 +116,13 @@ export default function LeadsPage() {
         }
         setSaving(true);
         try {
-            const payload = leadFormToPayload(form);
-            if (modalMode === 'edit' && editingId) {
-                await api.updateLead(editingId, payload);
-            } else {
-                await api.createLead(payload);
-            }
-            closeModal();
+            const created = await api.createLead(leadFormToPayload(form));
+            setShowCreateModal(false);
+            setForm(emptyLeadForm());
             await loadLeads();
+            if (created?.id) openWorkspace(created.id);
         } catch (err: unknown) {
-            alert(err instanceof Error ? err.message : (modalMode === 'edit' ? m.detail.saveFailed : m.createFailed));
+            alert(err instanceof Error ? err.message : m.createFailed);
         } finally {
             setSaving(false);
         }
@@ -148,11 +132,12 @@ export default function LeadsPage() {
         if (!confirm(m.deleteConfirm)) return;
         try {
             await api.deleteLead(lead.id);
+            if (workspaceLeadId === lead.id) closeWorkspace();
             await loadLeads();
         } catch (err: unknown) {
             alert(err instanceof Error ? err.message : m.deleteFailed);
         }
-    }, [m, loadLeads]);
+    }, [m, loadLeads, workspaceLeadId, closeWorkspace]);
 
     const statusLabel = (status: string) => (m.statuses as Record<string, string>)[status] ?? status;
     const categoryLabel = (category: string) => (m.categories as Record<string, string>)[category] ?? category;
@@ -162,9 +147,13 @@ export default function LeadsPage() {
         columnHelper.accessor('name', {
             header: m.columns.name,
             cell: (info) => (
-                <Link href={routes.crm.leadDetail(info.row.original.id)} className="font-semibold text-gray-900 hover:text-violet-600">
+                <button
+                    type="button"
+                    onClick={() => openWorkspace(info.row.original.id)}
+                    className="font-semibold text-gray-900 hover:text-violet-600 text-left"
+                >
                     {info.getValue()}
-                </Link>
+                </button>
             ),
         }),
         columnHelper.accessor('mobile', { header: m.fields.mobile }),
@@ -205,26 +194,16 @@ export default function LeadsPage() {
             header: c.actions,
             cell: (info) => {
                 const lead = info.row.original;
-                const isConverted = lead.status === 'CONVERTED';
                 return (
                     <div className="flex items-center justify-end gap-1">
-                        <Link
-                            href={routes.crm.leadDetail(lead.id)}
+                        <button
+                            type="button"
+                            onClick={() => openWorkspace(lead.id)}
                             className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors"
                             title={c.view}
                         >
                             <Eye className="w-4 h-4" />
-                        </Link>
-                        {!isConverted && (
-                            <button
-                                type="button"
-                                onClick={() => void openEdit(lead)}
-                                className="p-1.5 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
-                                title={c.edit}
-                            >
-                                <Pencil className="w-4 h-4" />
-                            </button>
-                        )}
+                        </button>
                         <button
                             type="button"
                             onClick={() => void deleteLead(lead)}
@@ -239,9 +218,9 @@ export default function LeadsPage() {
             enableSorting: false,
             enableColumnFilter: false,
             enableResizing: false,
-            size: 110,
+            size: 90,
         }),
-    ], [m, c, statusLabel, categoryLabel, priorityLabel, openEdit, deleteLead]);
+    ], [m, c, statusLabel, categoryLabel, priorityLabel, openWorkspace, deleteLead]);
 
     return (
         <div className="p-6 w-full">
@@ -258,7 +237,7 @@ export default function LeadsPage() {
                         <RefreshCw className="w-4 h-4" />
                     </button>
                     <button
-                        onClick={openCreate}
+                        onClick={() => setShowCreateModal(true)}
                         className="flex items-center gap-2 px-4 py-2 bg-violet-600 text-white rounded-lg text-sm font-semibold hover:bg-violet-700"
                     >
                         <Plus className="w-4 h-4" /> {m.newLead}
@@ -282,7 +261,7 @@ export default function LeadsPage() {
                 </select>
                 <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className="border border-gray-200 rounded-lg px-3 py-2 text-sm">
                     <option value="">{m.allCategories}</option>
-                    {LEAD_CATEGORIES.map((c) => <option key={c} value={c}>{categoryLabel(c)}</option>)}
+                    {LEAD_CATEGORIES.map((cat) => <option key={cat} value={cat}>{categoryLabel(cat)}</option>)}
                 </select>
                 <select value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)} className="border border-gray-200 rounded-lg px-3 py-2 text-sm">
                     <option value="">{m.allPriorities}</option>
@@ -299,26 +278,29 @@ export default function LeadsPage() {
                 emptyMessage={m.emptyMessage}
             />
 
-            {modalMode && (
+            {showCreateModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 overflow-y-auto">
                     <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl p-6 space-y-4 my-8">
-                        <h2 className="text-lg font-bold">
-                            {modalMode === 'edit' ? m.detail.editLead : m.newLead}
-                        </h2>
-                        <LeadFormFields
-                            form={form}
-                            onChange={setForm}
-                            teamMembers={teamMembers}
-                            showStatus={modalMode === 'edit'}
-                        />
+                        <h2 className="text-lg font-bold">{m.newLead}</h2>
+                        <LeadFormFields form={form} onChange={setForm} teamMembers={teamMembers} showStatus={false} />
                         <div className="flex justify-end gap-2 pt-2">
-                            <button onClick={closeModal} className="px-4 py-2 text-sm border rounded-lg">{c.cancel}</button>
-                            <button onClick={saveLead} disabled={saving} className="px-4 py-2 text-sm bg-violet-600 text-white rounded-lg disabled:opacity-50">
-                                {saving ? '...' : (modalMode === 'edit' ? m.detail.saveLead : m.newLead)}
+                            <button onClick={() => setShowCreateModal(false)} className="px-4 py-2 text-sm border rounded-lg">{c.cancel}</button>
+                            <button onClick={createLead} disabled={saving} className="px-4 py-2 text-sm bg-violet-600 text-white rounded-lg disabled:opacity-50">
+                                {saving ? '...' : m.newLead}
                             </button>
                         </div>
                     </div>
                 </div>
+            )}
+
+            {workspaceLeadId && (
+                <LeadWorkspaceDialog
+                    leadId={workspaceLeadId}
+                    onClose={closeWorkspace}
+                    onChanged={loadLeads}
+                    onDeleted={loadLeads}
+                    teamMembers={teamMembers}
+                />
             )}
         </div>
     );

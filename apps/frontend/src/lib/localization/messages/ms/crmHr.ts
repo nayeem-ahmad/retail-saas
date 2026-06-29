@@ -3,13 +3,13 @@ export const crmHrMessages = {
         hub: {
             moduleLabel: 'Modul CRM',
             title: 'Hubungan Pelanggan',
-            subtitle: 'Urus prospek, susulan, kempen, dan komunikasi pelanggan.',
+            subtitle: 'Urus prospek, perbualan, dan hubungan pelanggan.',
             pipeline: 'Saluran',
             relationships: 'Hubungan',
             premiumRequired: 'Pengurusan prospek tersedia pada pelan Premium.',
             upgradeCta: 'Naik taraf ke Premium',
             links: {
-                leads: { title: 'Prospek', description: 'Jejaki bakal pelanggan sebelum mereka membeli.' },
+                leads: { title: 'Prospek', description: 'Jejaki prospek, log perbualan, dan rancang langkah seterusnya.' },
                 customers: { title: 'Pelanggan', description: 'Semak pelanggan dan buka profil hubungan.' },
                 crmTasks: { title: 'Tugas & Susulan', description: 'Tugas susulan untuk pelanggan atau prospek.' },
                 crmCampaigns: { title: 'Kempen', description: 'Rancang dan hantar kempen jualan.' },
@@ -17,7 +17,12 @@ export const crmHrMessages = {
         },
         leads: {
             title: 'Prospek',
-            subtitle: 'Bakal pelanggan dan saluran pra-jualan',
+            subtitle: 'Prospek, perbualan, dan langkah seterusnya dalam satu tempat',
+            workspace: {
+                loading: 'Memuatkan prospek...',
+                notFound: 'Prospek tidak dijumpai',
+                outcome: 'Hasil',
+            },
             newLead: 'Prospek Baharu',
             emptyMessage: 'Tiada prospek lagi',
             searchPlaceholder: 'Cari mengikut nama atau telefon...',

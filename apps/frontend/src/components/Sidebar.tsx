@@ -344,8 +344,6 @@ function buildModules(t: ReturnType<typeof useI18n>['t']): NavModule[] {
             { href: routes.crm.root, icon: LayoutDashboard, label: t.sidebar.items.overview, exact: true },
             { href: routes.crm.leads, icon: UserPlus, label: t.sidebar.items.crmLeads, premiumOnly: true },
             { href: routes.crm.customers, icon: Users, label: t.sidebar.items.crmCustomers },
-            { href: routes.crm.tasks, icon: CheckSquare, label: t.sidebar.items.crmTasks },
-            { href: routes.crm.campaigns, icon: Megaphone, label: t.sidebar.items.crmCampaigns },
         ],
     },
     {

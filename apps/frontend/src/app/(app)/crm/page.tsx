@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { CheckSquare, Megaphone, UserPlus, Users } from 'lucide-react';
+import { UserPlus, Users } from 'lucide-react';
 import ModuleHub, { type HubSectionConfig } from '@/components/ModuleHub';
 import { useI18n } from '@/lib/i18n';
 import { routes } from '@/lib/routes';
@@ -33,8 +33,6 @@ export default function CrmHubPage() {
             sectionKey: 'relationships',
             links: [
                 { href: routes.crm.customers, key: 'customers', icon: Users, accent: 'bg-blue-50 text-blue-700 border-blue-100' },
-                { href: routes.crm.tasks, key: 'crmTasks', icon: CheckSquare, accent: 'bg-teal-50 text-teal-700 border-teal-100' },
-                { href: routes.crm.campaigns, key: 'crmCampaigns', icon: Megaphone, accent: 'bg-fuchsia-50 text-fuchsia-700 border-fuchsia-100' },
             ],
         });
         return result;
