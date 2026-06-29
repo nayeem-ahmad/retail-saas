@@ -18,10 +18,20 @@ export class NarrateReportDto {
 }
 
 export class ParseVoiceSaleDto {
-    @ApiProperty({ description: 'Speech-to-text transcript of the sale order' })
+    @ApiPropertyOptional({ description: 'Speech-to-text transcript of the sale order' })
     @IsString()
-    @IsNotEmpty()
-    transcript: string;
+    @IsOptional()
+    transcript?: string;
+
+    @ApiPropertyOptional({ description: 'Base64-encoded audio recording (no data-URI prefix)' })
+    @IsString()
+    @IsOptional()
+    audioBase64?: string;
+
+    @ApiPropertyOptional({ description: 'Audio format: webm, wav, mp3, ogg, etc.' })
+    @IsString()
+    @IsOptional()
+    audioFormat?: string;
 
     @ApiPropertyOptional({ description: 'Optional locale for parsing (en or bn)' })
     @IsString()

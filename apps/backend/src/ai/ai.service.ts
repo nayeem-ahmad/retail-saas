@@ -7,6 +7,8 @@ import { AI_CREDITS_PER_PLAN, AI_TOKENS_PER_CREDIT, SubscriptionPlanCode } from 
 
 const OPENROUTER_BASE_URL = process.env.OPENROUTER_BASE_URL ?? 'https://openrouter.ai/api/v1';
 const DEFAULT_MODEL = 'anthropic/claude-haiku-4.5';
+const WHISPER_MODEL = 'openai/whisper-large-v3';
+const MAX_AUDIO_BASE64_LENGTH = 4 * 1024 * 1024;
 
 /** Legacy Anthropic direct model IDs stored before OpenRouter migration */
 const MODEL_ALIASES: Record<string, string> = {
@@ -154,9 +156,17 @@ export class AiService {
     async parseVoiceSale(tenantId: string, dto: ParseVoiceSaleDto) {
         await this.enforceCredits(tenantId);
 
-        const transcript = dto.transcript.trim();
+        let transcript = dto.transcript?.trim() ?? '';
+        if (!transcript && dto.audioBase64) {
+            transcript = await this.transcribeAudio(
+                tenantId,
+                dto.audioBase64,
+                dto.audioFormat ?? 'webm',
+                dto.locale,
+            );
+        }
         if (!transcript) {
-            throw new BadRequestException('Transcript is empty.');
+            throw new BadRequestException('Provide a transcript or audio recording.');
         }
 
         const model = await this.getDefaultModel();
@@ -252,6 +262,91 @@ Rules:
 
         const response = await this.complete(tenantId, 'message_drafter', model, systemPrompt, userMessage);
         return { draft: response };
+    }
+
+    private async transcribeAudio(
+        tenantId: string,
+        audioBase64: string,
+        format: string,
+        locale?: string,
+    ): Promise<string> {
+        if (audioBase64.length > MAX_AUDIO_BASE64_LENGTH) {
+            throw new BadRequestException('Audio recording is too long. Keep it under 30 seconds.');
+        }
+
+        const apiKey = await this.getApiKey();
+        if (!apiKey) {
+            throw new InternalServerErrorException('AI service is not configured. Set an OpenRouter API key.');
+        }
+
+        const referer = process.env.FRONTEND_URL ?? 'https://retailsaas.app';
+        const title = process.env.OPENROUTER_APP_NAME ?? 'RetailSaaS';
+
+        const body: Record<string, unknown> = {
+            model: WHISPER_MODEL,
+            input_audio: { data: audioBase64, format },
+        };
+        if (locale === 'bn') body.language = 'bn';
+        else if (locale === 'en') body.language = 'en';
+
+        let response: Response;
+        try {
+            response = await fetch(`${OPENROUTER_BASE_URL}/audio/transcriptions`, {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${apiKey}`,
+                    'Content-Type': 'application/json',
+                    'HTTP-Referer': referer,
+                    'X-OpenRouter-Title': title,
+                },
+                body: JSON.stringify(body),
+            });
+        } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : String(err);
+            throw new InternalServerErrorException(`Transcription error: ${msg}`);
+        }
+
+        const result = (await response.json()) as {
+            text?: string;
+            error?: { message?: string };
+            usage?: {
+                seconds?: number;
+                total_tokens?: number;
+                input_tokens?: number;
+                output_tokens?: number;
+                cost?: number;
+            };
+        };
+
+        if (!response.ok) {
+            const msg = result.error?.message ?? `Transcription failed (${response.status})`;
+            throw new InternalServerErrorException(msg);
+        }
+
+        const text = result.text?.trim() ?? '';
+        if (!text) {
+            throw new BadRequestException('Could not transcribe audio. Please speak clearly and try again.');
+        }
+
+        const usage = result.usage ?? {};
+        const totalTokens = usage.total_tokens ?? 0;
+        const creditsUsed = totalTokens > 0
+            ? totalTokens / AI_TOKENS_PER_CREDIT
+            : Math.max((usage.seconds ?? 5) / 60, 0.05);
+
+        await this.db.aiUsageLog.create({
+            data: {
+                tenant_id: tenantId,
+                feature: 'voice_sale_transcription',
+                model: WHISPER_MODEL,
+                input_tokens: usage.input_tokens ?? 0,
+                output_tokens: usage.output_tokens ?? 0,
+                cost_usd: usage.cost ?? 0,
+                credits_used: creditsUsed,
+            },
+        });
+
+        return text;
     }
 
     private extractJson<T>(raw: string): T {

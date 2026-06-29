@@ -5,25 +5,6 @@ import { Loader2, Mic, MicOff } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 
-interface SpeechRecognitionEvent extends Event {
-    results: SpeechRecognitionResultList;
-    resultIndex: number;
-}
-
-type SpeechRecognitionInstance = {
-    continuous: boolean;
-    interimResults: boolean;
-    lang: string;
-    start: () => void;
-    stop: () => void;
-    abort: () => void;
-    onresult: ((event: SpeechRecognitionEvent) => void) | null;
-    onerror: ((event: Event & { error: string }) => void) | null;
-    onend: (() => void) | null;
-};
-
-type SpeechRecognitionConstructor = new () => SpeechRecognitionInstance;
-
 export interface VoiceSaleProduct {
     id: string;
     name: string;
@@ -50,49 +31,101 @@ interface VoiceSaleInputProps {
     onResult: (result: VoiceSaleResult) => void;
 }
 
-function getSpeechRecognitionCtor(): SpeechRecognitionConstructor | null {
-    if (typeof window === 'undefined') return null;
-    const w = window as Window & {
-        SpeechRecognition?: SpeechRecognitionConstructor;
-        webkitSpeechRecognition?: SpeechRecognitionConstructor;
-    };
-    return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
+const MAX_RECORDING_MS = 30_000;
+
+function pickRecorderMimeType(): string {
+    const candidates = [
+        'audio/webm;codecs=opus',
+        'audio/webm',
+        'audio/ogg;codecs=opus',
+        'audio/mp4',
+    ];
+    for (const type of candidates) {
+        if (typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported(type)) {
+            return type;
+        }
+    }
+    return 'audio/webm';
+}
+
+function mimeToFormat(mimeType: string): string {
+    if (mimeType.includes('ogg')) return 'ogg';
+    if (mimeType.includes('mp4')) return 'm4a';
+    if (mimeType.includes('wav')) return 'wav';
+    return 'webm';
+}
+
+function blobToBase64(blob: Blob): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            const result = reader.result;
+            if (typeof result !== 'string') {
+                reject(new Error('Failed to read audio'));
+                return;
+            }
+            const comma = result.indexOf(',');
+            resolve(comma >= 0 ? result.slice(comma + 1) : result);
+        };
+        reader.onerror = () => reject(reader.error ?? new Error('Failed to read audio'));
+        reader.readAsDataURL(blob);
+    });
 }
 
 export default function VoiceSaleInput({ onResult }: VoiceSaleInputProps) {
     const { locale } = useI18n();
     const [supported, setSupported] = useState(false);
-    const [listening, setListening] = useState(false);
+    const [recording, setRecording] = useState(false);
     const [processing, setProcessing] = useState(false);
-    const [transcript, setTranscript] = useState('');
+    const [status, setStatus] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
-    const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
-    const finalTranscriptRef = useRef('');
+    const recorderRef = useRef<MediaRecorder | null>(null);
+    const streamRef = useRef<MediaStream | null>(null);
+    const chunksRef = useRef<BlobPart[]>([]);
+    const mimeTypeRef = useRef('audio/webm');
+    const stopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
-        setSupported(!!getSpeechRecognitionCtor());
+        setSupported(
+            typeof window !== 'undefined'
+            && !!navigator.mediaDevices?.getUserMedia
+            && typeof MediaRecorder !== 'undefined',
+        );
     }, []);
 
-    const stopRecognition = useCallback(() => {
-        recognitionRef.current?.stop();
-        recognitionRef.current = null;
-        setListening(false);
+    const cleanupStream = useCallback(() => {
+        if (stopTimerRef.current) {
+            clearTimeout(stopTimerRef.current);
+            stopTimerRef.current = null;
+        }
+        streamRef.current?.getTracks().forEach((track) => track.stop());
+        streamRef.current = null;
+        recorderRef.current = null;
     }, []);
 
-    const processTranscript = useCallback(async (text: string) => {
-        const trimmed = text.trim();
-        if (!trimmed) {
-            setError('No speech detected. Try again.');
+    useEffect(() => () => cleanupStream(), [cleanupStream]);
+
+    const processAudio = useCallback(async (blob: Blob) => {
+        if (blob.size < 1000) {
+            setError('Recording too short. Hold the button and speak your items.');
             return;
         }
 
         setProcessing(true);
         setError(null);
+        setStatus('Transcribing…');
+
         try {
+            const audioBase64 = await blobToBase64(blob);
             const result = (await api.aiParseVoiceSale({
-                transcript: trimmed,
+                audioBase64,
+                audioFormat: mimeToFormat(mimeTypeRef.current),
                 locale: locale === 'bn' ? 'bn' : 'en',
             })) as VoiceSaleResult;
+
+            if (result.transcript) {
+                setStatus(`"${result.transcript}"`);
+            }
 
             if (result.items.length === 0) {
                 setError('Could not understand any products. Try speaking more clearly.');
@@ -100,72 +133,84 @@ export default function VoiceSaleInput({ onResult }: VoiceSaleInputProps) {
             }
 
             onResult(result);
-            setTranscript('');
-            finalTranscriptRef.current = '';
+            setStatus(null);
         } catch (err: unknown) {
             const message = err instanceof Error ? err.message : 'Failed to parse voice sale';
             setError(message);
+            setStatus(null);
         } finally {
             setProcessing(false);
         }
     }, [locale, onResult]);
 
-    const startListening = useCallback(() => {
-        const Ctor = getSpeechRecognitionCtor();
-        if (!Ctor) {
-            setError('Voice input is not supported in this browser. Try Chrome or Edge.');
+    const stopRecording = useCallback(() => {
+        const recorder = recorderRef.current;
+        if (!recorder || recorder.state === 'inactive') {
+            setRecording(false);
+            cleanupStream();
             return;
         }
+        recorder.stop();
+        setRecording(false);
+        setStatus('Processing…');
+    }, [cleanupStream]);
 
+    const startRecording = useCallback(async () => {
         setError(null);
-        setTranscript('');
-        finalTranscriptRef.current = '';
+        setStatus(null);
+        chunksRef.current = [];
 
-        const recognition = new Ctor();
-        recognition.continuous = true;
-        recognition.interimResults = true;
-        recognition.lang = locale === 'bn' ? 'bn-BD' : 'en-US';
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            streamRef.current = stream;
 
-        recognition.onresult = (event: SpeechRecognitionEvent) => {
-            let interim = '';
-            for (let i = event.resultIndex; i < event.results.length; i++) {
-                const chunk = event.results[i][0]?.transcript ?? '';
-                if (event.results[i].isFinal) {
-                    finalTranscriptRef.current += `${chunk} `;
-                } else {
-                    interim += chunk;
+            const mimeType = pickRecorderMimeType();
+            mimeTypeRef.current = mimeType;
+            const recorder = new MediaRecorder(stream, { mimeType });
+            recorderRef.current = recorder;
+
+            recorder.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    chunksRef.current.push(event.data);
                 }
+            };
+
+            recorder.onerror = () => {
+                setError('Recording failed. Please try again.');
+                setRecording(false);
+                cleanupStream();
+            };
+
+            recorder.onstop = () => {
+                const blob = new Blob(chunksRef.current, { type: mimeTypeRef.current });
+                cleanupStream();
+                void processAudio(blob);
+            };
+
+            recorder.start(250);
+            setRecording(true);
+            setStatus('Recording… speak your items, then tap Stop');
+
+            stopTimerRef.current = setTimeout(() => {
+                stopRecording();
+            }, MAX_RECORDING_MS);
+        } catch (err: unknown) {
+            cleanupStream();
+            if (err instanceof DOMException && err.name === 'NotAllowedError') {
+                setError('Microphone permission denied. Allow mic access in your browser settings.');
+            } else {
+                setError('Could not access microphone. Check browser permissions.');
             }
-            setTranscript(`${finalTranscriptRef.current}${interim}`.trim());
-        };
+        }
+    }, [cleanupStream, processAudio, stopRecording]);
 
-        recognition.onerror = (event) => {
-            if (event.error !== 'aborted' && event.error !== 'no-speech') {
-                setError(`Microphone error: ${event.error}`);
-            }
-            setListening(false);
-        };
-
-        recognition.onend = () => {
-            setListening(false);
-            recognitionRef.current = null;
-        };
-
-        recognitionRef.current = recognition;
-        recognition.start();
-        setListening(true);
-    }, [locale]);
-
-    const handleToggle = async () => {
+    const handleToggle = () => {
         if (processing) return;
-
-        if (listening) {
-            stopRecognition();
-            await processTranscript(transcript || finalTranscriptRef.current);
+        if (recording) {
+            stopRecording();
             return;
         }
-
-        startListening();
+        void startRecording();
     };
 
     if (!supported) {
@@ -179,33 +224,33 @@ export default function VoiceSaleInput({ onResult }: VoiceSaleInputProps) {
                     type="button"
                     onClick={handleToggle}
                     disabled={processing}
-                    title={listening ? 'Stop and add items' : 'Speak sale items'}
+                    title={recording ? 'Stop and add items' : 'Record sale items by voice'}
                     className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded border text-sm font-medium transition-colors disabled:opacity-50 ${
-                        listening
+                        recording
                             ? 'bg-red-50 border-red-300 text-red-700 hover:bg-red-100'
                             : 'bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100'
                     }`}
                 >
                     {processing ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : listening ? (
+                    ) : recording ? (
                         <MicOff className="w-4 h-4" />
                     ) : (
                         <Mic className="w-4 h-4" />
                     )}
-                    <span>{processing ? 'Parsing…' : listening ? 'Stop' : 'Voice'}</span>
+                    <span>{processing ? 'Parsing…' : recording ? 'Stop' : 'Voice'}</span>
                 </button>
-                {listening && (
-                    <span className="text-xs text-red-600 animate-pulse">Listening…</span>
+                {recording && (
+                    <span className="text-xs text-red-600 animate-pulse">Recording…</span>
                 )}
             </div>
 
-            {(transcript || error) && (
+            {(status || error) && (
                 <div className="text-xs text-gray-600 bg-gray-50 border rounded px-2 py-1.5 max-w-md">
                     {error ? (
                         <span className="text-red-600">{error}</span>
                     ) : (
-                        <span className="italic">&ldquo;{transcript}&rdquo;</span>
+                        <span className="italic">{status}</span>
                     )}
                 </div>
             )}
