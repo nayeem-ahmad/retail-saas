@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Loader2, Mic, MicOff } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
@@ -29,6 +29,8 @@ export interface VoiceSaleResult {
 
 interface VoiceSaleInputProps {
     onResult: (result: VoiceSaleResult) => void;
+    inline?: boolean;
+    children?: ReactNode;
 }
 
 const MAX_RECORDING_MS = 30_000;
@@ -72,7 +74,7 @@ function blobToBase64(blob: Blob): Promise<string> {
     });
 }
 
-export default function VoiceSaleInput({ onResult }: VoiceSaleInputProps) {
+export default function VoiceSaleInput({ onResult, inline, children }: VoiceSaleInputProps) {
     const { locale } = useI18n();
     const [supported, setSupported] = useState(false);
     const [recording, setRecording] = useState(false);
@@ -217,43 +219,63 @@ export default function VoiceSaleInput({ onResult }: VoiceSaleInputProps) {
         return null;
     }
 
+    const voiceButton = (
+        <button
+            type="button"
+            onClick={handleToggle}
+            disabled={processing}
+            title={recording ? 'Stop and add items' : 'Record sale items by voice'}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded border text-sm font-medium transition-colors disabled:opacity-50 flex-shrink-0 ${
+                recording
+                    ? 'bg-red-50 border-red-300 text-red-700 hover:bg-red-100'
+                    : 'bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100'
+            }`}
+        >
+            {processing ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+            ) : recording ? (
+                <MicOff className="w-4 h-4" />
+            ) : (
+                <Mic className="w-4 h-4" />
+            )}
+            <span className="hidden sm:inline">{processing ? 'Parsing…' : recording ? 'Stop' : 'Voice'}</span>
+        </button>
+    );
+
+    const statusLine = (status || error) ? (
+        <div className="text-xs text-gray-600 bg-gray-50 border rounded px-2 py-1.5">
+            {error ? (
+                <span className="text-red-600">{error}</span>
+            ) : (
+                <span className="italic">{status}</span>
+            )}
+        </div>
+    ) : null;
+
+    if (inline) {
+        return (
+            <div className="flex flex-col gap-1 flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                    <div className="flex-1 min-w-0">{children}</div>
+                    {voiceButton}
+                </div>
+                {recording && (
+                    <span className="text-[11px] text-red-600 animate-pulse px-0.5">Recording…</span>
+                )}
+                {statusLine}
+            </div>
+        );
+    }
+
     return (
         <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2">
-                <button
-                    type="button"
-                    onClick={handleToggle}
-                    disabled={processing}
-                    title={recording ? 'Stop and add items' : 'Record sale items by voice'}
-                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded border text-sm font-medium transition-colors disabled:opacity-50 ${
-                        recording
-                            ? 'bg-red-50 border-red-300 text-red-700 hover:bg-red-100'
-                            : 'bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100'
-                    }`}
-                >
-                    {processing ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : recording ? (
-                        <MicOff className="w-4 h-4" />
-                    ) : (
-                        <Mic className="w-4 h-4" />
-                    )}
-                    <span>{processing ? 'Parsing…' : recording ? 'Stop' : 'Voice'}</span>
-                </button>
+                {voiceButton}
                 {recording && (
                     <span className="text-xs text-red-600 animate-pulse">Recording…</span>
                 )}
             </div>
-
-            {(status || error) && (
-                <div className="text-xs text-gray-600 bg-gray-50 border rounded px-2 py-1.5 max-w-md">
-                    {error ? (
-                        <span className="text-red-600">{error}</span>
-                    ) : (
-                        <span className="italic">{status}</span>
-                    )}
-                </div>
-            )}
+            {statusLine}
         </div>
     );
 }

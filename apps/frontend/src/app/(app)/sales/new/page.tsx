@@ -284,9 +284,10 @@ export default function NewSalePage() {
                         <div className="sm:w-72 flex-shrink-0">
                             <CustomerSelection customer={customer} setCustomer={setCustomer} />
                         </div>
-                        <div className="flex-1 min-w-0 flex flex-col gap-1.5">
-                            <ProductSearch onProductSelect={(product) => handleAddItem(product)} />
-                            <VoiceSaleInput onResult={handleVoiceSale} />
+                        <div className="flex-1 min-w-0">
+                            <VoiceSaleInput onResult={handleVoiceSale} inline>
+                                <ProductSearch onProductSelect={(product) => handleAddItem(product)} />
+                            </VoiceSaleInput>
                         </div>
                     </div>
 
