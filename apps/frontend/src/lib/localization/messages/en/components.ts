@@ -1,6 +1,6 @@
 export const componentsMessages = {
     marketingNav: {
-        brand: 'RetailSaaS',
+        brand: 'ERP71',
         features: 'Features',
         pricing: 'Pricing',
         reviews: 'Reviews',
@@ -9,7 +9,7 @@ export const componentsMessages = {
         startFreeTrial: 'Start free trial',
     },
     marketingFooter: {
-        brand: 'RetailSaaS',
+        brand: 'ERP71',
         terms: 'Terms of Service',
         privacy: 'Privacy Policy',
         refund: 'Refund Policy',
@@ -18,7 +18,7 @@ export const componentsMessages = {
         status: 'Status',
         signIn: 'Sign in',
         signUp: 'Sign up',
-        copyright: '© {year} RetailSaaS. All rights reserved.',
+        copyright: '© {year} ERP71. All rights reserved.',
     },
     notificationBell: {
         ariaLabel: 'Notifications',

@@ -3,7 +3,7 @@ import { DatabaseService } from '../database/database.service';
 import { PlatformSettingsService } from '../platform-settings/platform-settings.service';
 import { ProductsService } from '../products/products.service';
 import { NarrateReportDto, DraftMessageDto, ParseVoiceEntryDto, VoiceEntryType } from './ai.dto';
-import { AI_CREDITS_PER_PLAN, AI_TOKENS_PER_CREDIT, SubscriptionPlanCode } from '@retail-saas/shared-types';
+import { AI_CREDITS_PER_PLAN, AI_TOKENS_PER_CREDIT, SubscriptionPlanCode } from '@erp71/shared-types';
 
 const OPENROUTER_BASE_URL = process.env.OPENROUTER_BASE_URL ?? 'https://openrouter.ai/api/v1';
 const DEFAULT_MODEL = 'anthropic/claude-haiku-4.5';
@@ -309,8 +309,8 @@ Rules:
             throw new InternalServerErrorException('AI service is not configured. Set an OpenRouter API key.');
         }
 
-        const referer = process.env.FRONTEND_URL ?? 'https://retailsaas.app';
-        const title = process.env.OPENROUTER_APP_NAME ?? 'RetailSaaS';
+        const referer = process.env.FRONTEND_URL ?? 'https://erp71.com';
+        const title = process.env.OPENROUTER_APP_NAME ?? 'ERP71';
 
         const body: Record<string, unknown> = {
             model: WHISPER_MODEL,
@@ -467,8 +467,8 @@ Rules:
         userMessage: string,
         maxTokens: number,
     ): Promise<{ text: string; usage: OpenRouterUsage }> {
-        const referer = process.env.FRONTEND_URL ?? 'https://retailsaas.app';
-        const title = process.env.OPENROUTER_APP_NAME ?? 'RetailSaaS';
+        const referer = process.env.FRONTEND_URL ?? 'https://erp71.com';
+        const title = process.env.OPENROUTER_APP_NAME ?? 'ERP71';
 
         let response: Response;
         try {

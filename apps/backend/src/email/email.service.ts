@@ -27,7 +27,7 @@ export class EmailService {
             port: parseInt(smtpPort ?? process.env.SMTP_PORT ?? '587', 10),
             user: smtpUser ?? process.env.SMTP_USER ?? null,
             pass: smtpPass ?? process.env.SMTP_PASS ?? null,
-            from: emailFrom ?? process.env.EMAIL_FROM ?? 'noreply@retailsaas.app',
+            from: emailFrom ?? process.env.EMAIL_FROM ?? 'noreply@erp71.com',
             frontendUrl: frontendUrl ?? process.env.FRONTEND_URL ?? 'http://localhost:3000',
         };
     }
@@ -36,7 +36,7 @@ export class EmailService {
         const { frontendUrl } = await this.getTransportConfig();
         await this.send({
             to,
-            subject: 'Welcome to RetailSaaS',
+            subject: 'Welcome to ERP71',
             html: `<h2>Welcome, ${name || to}!</h2>
 <p>Your account is ready. <a href="${frontendUrl}/login">Sign in</a> to get started.</p>`,
         });
@@ -73,9 +73,9 @@ export class EmailService {
         const link = `${frontendUrl}/accept-invitation?token=${token}`;
         await this.send({
             to,
-            subject: `You've been invited to join ${tenantName} on RetailSaaS`,
+            subject: `You've been invited to join ${tenantName} on ERP71`,
             html: `<h2>You're invited!</h2>
-<p><strong>${inviterName}</strong> has invited you to join <strong>${tenantName}</strong> on RetailSaaS.</p>
+<p><strong>${inviterName}</strong> has invited you to join <strong>${tenantName}</strong> on ERP71.</p>
 <p><a href="${link}">Accept Invitation</a></p>
 <p>This invitation expires in 7 days.</p>`,
         });
@@ -85,7 +85,7 @@ export class EmailService {
         const { frontendUrl } = await this.getTransportConfig();
         await this.send({
             to,
-            subject: `Your RetailSaaS subscription expires in ${daysLeft} day${daysLeft === 1 ? '' : 's'}`,
+            subject: `Your ERP71 subscription expires in ${daysLeft} day${daysLeft === 1 ? '' : 's'}`,
             html: `<h2>Subscription Expiry Notice</h2>
 <p>Your subscription for <strong>${tenantName}</strong> expires on <strong>${expiresAt.toDateString()}</strong> (${daysLeft} day${daysLeft === 1 ? '' : 's'} remaining).</p>
 <p><a href="${frontendUrl}/dashboard/billing">Renew Now</a></p>`,
@@ -113,7 +113,7 @@ export class EmailService {
     async sendBillingInvoice(to: string, tenantName: string, amount: number, currency: string, invoiceUrl?: string): Promise<void> {
         await this.send({
             to,
-            subject: `Invoice for ${tenantName} — RetailSaaS`,
+            subject: `Invoice for ${tenantName} — ERP71`,
             html: `<h2>Invoice</h2>
 <p>A payment of <strong>${currency} ${amount.toFixed(2)}</strong> has been processed for <strong>${tenantName}</strong>.</p>
 ${invoiceUrl ? `<p><a href="${invoiceUrl}">View Invoice</a></p>` : ''}`,
@@ -156,7 +156,7 @@ ${invoiceUrl ? `<p><a href="${invoiceUrl}">View Invoice</a></p>` : ''}`,
     async sendContactForm(from: string, name: string, subject: string, message: string): Promise<void> {
         const supportEmail = await this.platformSettings.getRawValue('general', 'support_email')
             ?? process.env.SUPPORT_EMAIL
-            ?? 'support@retailsaas.app';
+            ?? 'support@erp71.com';
         this.send({
             to: supportEmail,
             subject: `[Contact] ${subject}`,

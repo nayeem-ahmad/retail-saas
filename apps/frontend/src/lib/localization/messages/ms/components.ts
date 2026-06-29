@@ -1,6 +1,6 @@
 export const componentsMessages = {
         marketingNav: {
-            brand: 'RetailSaaS',
+            brand: 'ERP71',
             features: 'Ciri',
             pricing: 'Harga',
             reviews: 'Ulasan',
@@ -9,7 +9,7 @@ export const componentsMessages = {
             startFreeTrial: 'Mulakan percubaan percuma',
         },
         marketingFooter: {
-            brand: 'RetailSaaS',
+            brand: 'ERP71',
             terms: 'Terma Perkhidmatan',
             privacy: 'Dasar Privasi',
             refund: 'Dasar Bayaran Balik',
@@ -18,7 +18,7 @@ export const componentsMessages = {
             status: 'Status',
             signIn: 'Log masuk',
             signUp: 'Daftar',
-            copyright: '© {year} RetailSaaS. Hak cipta terpelihara.',
+            copyright: '© {year} ERP71. Hak cipta terpelihara.',
         },
         notificationBell: {
             ariaLabel: 'Notifikasi',

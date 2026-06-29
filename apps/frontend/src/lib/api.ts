@@ -1,4 +1,4 @@
-const DEFAULT_PROD_API_BASE = 'https://retail-saas-backend.onrender.com';
+const DEFAULT_PROD_API_BASE = 'https://erp71-backend.onrender.com';
 // In dev (remote container) use a relative path so browser calls go to the
 // Next.js dev server which proxies them to the backend via next.config rewrites.
 // In production keep the explicit backend URL.

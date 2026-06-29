@@ -20,7 +20,7 @@ const DEFAULTS: EmailSettings = {
     smtp_port: '587',
     smtp_user: '',
     smtp_pass: '',
-    email_from: 'noreply@retailsaas.app',
+    email_from: 'noreply@erp71.com',
     frontend_url: 'http://localhost:3000',
 };
 
@@ -201,7 +201,7 @@ export default function PlatformEmailSettingsPage() {
                                 type="email"
                                 value={settings.email_from}
                                 onChange={(e) => set('email_from', e.target.value)}
-                                placeholder="noreply@retailsaas.app"
+                                placeholder="noreply@erp71.com"
                                 className={inputCls}
                             />
                         </Field>
@@ -211,7 +211,7 @@ export default function PlatformEmailSettingsPage() {
                                 type="url"
                                 value={settings.frontend_url}
                                 onChange={(e) => set('frontend_url', e.target.value)}
-                                placeholder="https://app.retailsaas.com"
+                                placeholder="https://app.erp71.com"
                                 className={inputCls}
                             />
                         </Field>

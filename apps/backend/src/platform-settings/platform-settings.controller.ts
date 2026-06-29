@@ -46,7 +46,7 @@ export class PlatformSettingsController {
 
     @Post('sms/test')
     async testSms(@Body() dto: TestSmsDto) {
-        await this.smsService.sendSms(dto.phone, 'Test message from RetailSaaS. Your SMS gateway is configured correctly.');
+        await this.smsService.sendSms(dto.phone, 'Test message from ERP71. Your SMS gateway is configured correctly.');
         return { message: 'Test SMS dispatched' };
     }
 

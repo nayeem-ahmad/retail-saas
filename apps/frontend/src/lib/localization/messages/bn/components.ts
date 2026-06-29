@@ -1,6 +1,6 @@
 export const componentsMessages = {
         marketingNav: {
-            brand: "RetailSaaS",
+            brand: "ERP71",
             features: "ফিচার",
             pricing: "মূল্য",
             reviews: "রিভিউ",
@@ -9,7 +9,7 @@ export const componentsMessages = {
             startFreeTrial: "ফ্রি ট্রায়াল শুরু করুন",
         },
         marketingFooter: {
-            brand: "RetailSaaS",
+            brand: "ERP71",
             terms: "সেবার শর্তাবলী",
             privacy: "গোপনীয়তা নীতি",
             refund: "রিফান্ড নীতি",
@@ -18,7 +18,7 @@ export const componentsMessages = {
             status: "স্ট্যাটাস",
             signIn: "সাইন ইন",
             signUp: "সাইন আপ",
-            copyright: "© {year} RetailSaaS. সর্বস্বত্ব সংরক্ষিত।",
+            copyright: "© {year} ERP71. সর্বস্বত্ব সংরক্ষিত।",
         },
         notificationBell: {
             ariaLabel: "নোটিফিকেশন",
