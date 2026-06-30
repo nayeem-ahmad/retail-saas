@@ -294,7 +294,7 @@ Track all work here. Check off items as they're completed. Add new items as they
 - [x] Wire `aiDraftMessage` into the CRM interactions tab — "AI Draft" panel with channel/purpose selector, pre-fills interaction form — done 2026-06-13
 - [x] Platform admin AI settings page at `/dashboard/admin/platform-settings/ai` — Anthropic key (encrypted), model selector, "Test connection", pricing table — done 2026-06-13
 - [x] Voice entry across modules — shared `VoiceEntryInput` + `POST /ai/parse-voice-entry` wired into New Sale, purchases, sales/purchase orders & quotes, sales return, purchase return — done 2026-06-29
-- [x] Global voice navigation — floating mic FAB (`VoiceNavWidget`, bottom-left glow/pulse) + phrase→route matcher (`voice-nav.ts`, 23 targets incl. dashboard quick links & entry UIs); Web Speech API, en/bn/ms i18n; `?new=1` on `/purchases/list` for purchase entry — done 2026-06-30
+- [x] Global voice navigation — header mic + help (`VoiceNavWidget` in app top bar) + phrase→route matcher (`voice-nav.ts`, 23 targets); Web Speech API, en/bn/ms i18n; `?new=1` on `/purchases/list` — done 2026-06-30
 - [ ] Fine-tune voice sales entry — better Bangla recognition, customer/payment parsing, unmatched-product UX
 - [ ] Expand voice navigation aliases — more NAV_ROUTES pages, Bangla speech recognition quality, optional LLM fallback for ambiguous phrases
 
@@ -322,7 +322,7 @@ Track all work here. Check off items as they're completed. Add new items as they
 
 ## COMPLETED
 
-- [x] Global voice navigation — floating mic FAB (`VoiceNavWidget`) on bottom-left with glow/pulse animation; say phrases like "sales entry" to navigate to entry UIs; 23 route targets, en/bn/ms i18n — done 2026-06-30
+- [x] Global voice navigation — header mic + help icons in app top bar; say phrases like "sales entry" to navigate to entry UIs — done 2026-06-30
 - [x] Fix onboarding store setup scroll — `/dashboard/onboarding` uses `h-full overflow-y-auto` inside app layout so create-store form and skip link are reachable on short/mobile viewports — done 2026-06-29
 - [x] Rename platform retail-saas → erp71 — npm scope `@erp71/*`, branding (UI/emails/seed), `render.yaml` + ops scripts, consolidated duplicate erp71 stack (`docker-compose.erp71.yml`/`deploy-erp71.sh` removed), `scripts/migrate-vps-rename.sh` for VPS cutover — done 2026-06-29
 - [x] erp71.com VPS deployment — `docker-compose.erp71.yml` + `scripts/deploy-erp71.sh` for a second isolated instance (own DB `erp71`, `erp71` compose project, shared Postgres + hermes Caddy blocks for `app.`/`api.erp71.com`) — superseded by full platform rename — done 2026-06-29
