@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Mic, MicOff, X } from 'lucide-react';
+import { HelpCircle, Mic, MicOff, X } from 'lucide-react';
 import { useI18n, formatMessage } from '@/lib/i18n';
 import { toast } from '@/lib/toast';
 import {
@@ -28,10 +28,30 @@ export default function VoiceNavWidget() {
     const recognitionRef = useRef<BrowserSpeechRecognition | null>(null);
     const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const handledRef = useRef(false);
+    const rootRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         setSupported(getSpeechRecognitionCtor() !== null);
     }, []);
+
+    useEffect(() => {
+        if (!hintOpen) return;
+        const onKey = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') setHintOpen(false);
+        };
+        const onPointer = (e: MouseEvent) => {
+            if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
+                setHintOpen(false);
+            }
+        };
+        window.addEventListener('keydown', onKey);
+        const id = setTimeout(() => document.addEventListener('mousedown', onPointer), 0);
+        return () => {
+            window.removeEventListener('keydown', onKey);
+            clearTimeout(id);
+            document.removeEventListener('mousedown', onPointer);
+        };
+    }, [hintOpen]);
 
     const clearListenTimeout = useCallback(() => {
         if (timeoutRef.current) {
@@ -89,6 +109,7 @@ export default function VoiceNavWidget() {
         heardRef.current = null;
         setHeard(null);
         clearListenTimeout();
+        setHintOpen(false);
 
         const recognition = new Ctor();
         recognitionRef.current = recognition;
@@ -158,34 +179,26 @@ export default function VoiceNavWidget() {
     const hintTargets = getVoiceNavHintIds();
 
     return (
-        <div className="flex flex-col items-end gap-2">
+        <div ref={rootRef} className="relative flex items-center gap-0.5">
+            <style>{`
+                @keyframes voiceHeaderGlow {
+                    0%, 100% { box-shadow: 0 0 0 0 rgba(147, 51, 234, 0.4); }
+                    50% { box-shadow: 0 0 0 4px rgba(147, 51, 234, 0); }
+                }
+                @keyframes voiceHeaderPulse {
+                    0%, 100% { transform: scale(1); }
+                    50% { transform: scale(1.08); }
+                }
+            `}</style>
+
             {hintOpen && (
-                <div className="w-72 rounded-2xl border border-gray-200 bg-white p-4 shadow-2xl animate-slide-up">
-                    <style>{`
-                        @keyframes slideUp {
-                            from { opacity: 0; transform: translateY(12px); }
-                            to   { opacity: 1; transform: translateY(0); }
-                        }
-                        @keyframes voiceGlow {
-                            0%, 100% { box-shadow: 0 0 0 0 rgba(147, 51, 234, 0.35), 0 4px 14px rgba(147, 51, 234, 0.2); }
-                            50% { box-shadow: 0 0 0 10px rgba(147, 51, 234, 0), 0 4px 18px rgba(147, 51, 234, 0.35); }
-                        }
-                        @keyframes voicePulse {
-                            0%, 100% { transform: scale(1); }
-                            50% { transform: scale(1.06); }
-                        }
-                        @keyframes recordRing {
-                            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); }
-                            70% { box-shadow: 0 0 0 12px rgba(239, 68, 68, 0); }
-                            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
-                        }
-                    `}</style>
+                <div className="absolute right-0 top-full z-50 mt-2 w-72 rounded-2xl border border-gray-200 bg-white p-4 shadow-xl">
                     <div className="mb-2 flex items-center justify-between">
                         <p className="text-sm font-bold text-gray-800">{m.hintTitle}</p>
                         <button
                             type="button"
                             onClick={() => setHintOpen(false)}
-                            className="text-gray-400 transition-colors hover:text-gray-600"
+                            className="rounded-lg p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
                             aria-label={m.closeAria}
                         >
                             <X className="h-4 w-4" />
@@ -205,47 +218,44 @@ export default function VoiceNavWidget() {
                 </div>
             )}
 
-            {listening && heard && (
-                <div className="max-w-72 rounded-xl border border-purple-200 bg-purple-50 px-3 py-2 text-xs italic text-purple-800 shadow-sm">
-                    {formatMessage(m.heard, { phrase: heard })}
-                </div>
-            )}
+            <button
+                type="button"
+                onClick={() => setHintOpen((open) => !open)}
+                className={`rounded-lg p-2 transition-colors ${
+                    hintOpen
+                        ? 'bg-purple-50 text-purple-700'
+                        : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600'
+                }`}
+                aria-label={m.hintAria}
+                title={m.hintTitle}
+            >
+                <HelpCircle className="h-4 w-4" />
+            </button>
 
-            <div className="flex items-center gap-2">
-                <button
-                    type="button"
-                    onClick={() => setHintOpen((open) => !open)}
-                    className="rounded-full border border-gray-200 bg-white px-2.5 py-1 text-[10px] font-semibold text-gray-500 shadow-sm transition-colors hover:border-gray-300 hover:text-gray-700"
-                    aria-label={m.hintAria}
-                >
-                    ?
-                </button>
-
-                <button
-                    type="button"
-                    onClick={handleMicClick}
-                    disabled={!supported}
-                    className={`relative flex h-12 w-12 items-center justify-center rounded-full border-2 shadow-md transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 ${
-                        listening
-                            ? 'border-red-400 bg-red-50 text-red-600'
-                            : 'border-purple-400 bg-purple-50 text-purple-700 hover:border-purple-500 hover:bg-purple-100'
-                    }`}
-                    style={{
-                        animation: supported && !listening
-                            ? 'voiceGlow 2.4s ease-in-out infinite'
-                            : listening
-                                ? 'recordRing 1.4s ease-out infinite, voicePulse 1.2s ease-in-out infinite'
-                                : undefined,
-                    }}
-                    aria-label={listening ? m.stopAria : m.startAria}
-                    title={!supported ? m.unsupported : listening ? m.listeningTitle : m.startTitle}
-                >
-                    {listening ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
-                    {listening && (
-                        <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full bg-red-500 ring-2 ring-white" />
-                    )}
-                </button>
-            </div>
+            <button
+                type="button"
+                onClick={handleMicClick}
+                disabled={!supported}
+                className={`relative rounded-lg p-2 transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+                    listening
+                        ? 'bg-red-50 text-red-600'
+                        : 'text-purple-600 hover:bg-purple-50 hover:text-purple-700'
+                }`}
+                style={{
+                    animation: supported && listening
+                        ? 'voiceHeaderPulse 1.2s ease-in-out infinite'
+                        : supported && !listening
+                            ? 'voiceHeaderGlow 2.4s ease-in-out infinite'
+                            : undefined,
+                }}
+                aria-label={listening ? m.stopAria : m.startAria}
+                title={!supported ? m.unsupported : listening ? m.listeningTitle : m.startTitle}
+            >
+                {listening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                {listening && (
+                    <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white" />
+                )}
+            </button>
         </div>
     );
 }

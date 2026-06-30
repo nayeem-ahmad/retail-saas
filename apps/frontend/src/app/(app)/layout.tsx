@@ -9,6 +9,7 @@ import Sidebar from '@/components/Sidebar';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import DemoSandboxBanner from '@/components/DemoSandboxBanner';
 import FloatingAssistDock from '@/components/FloatingAssistDock';
+import VoiceNavWidget from '@/components/VoiceNavWidget';
 import Toaster from '@/components/Toaster';
 import ServiceWorkerRegistrar from '@/components/ServiceWorkerRegistrar';
 import { BrandingProvider } from '@/lib/branding';
@@ -234,6 +235,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                     </div>
 
                     <div className="flex items-center space-x-2 md:space-x-4 flex-shrink-0">
+                        <VoiceNavWidget />
+                        <div className="h-8 w-px bg-gray-200 hidden sm:block" />
                         <LanguageSwitcher />
                         {tenantStores.length > 0 ? (
                             <div className="flex items-center gap-1.5 rounded-xl border border-gray-200 bg-gray-50 px-2 py-1">
