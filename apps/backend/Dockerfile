@@ -41,7 +41,10 @@ COPY --from=builder /app/apps/backend/package.json ./apps/backend/
 COPY --from=builder /app/apps/backend/dist ./apps/backend/dist
 COPY --from=builder /app/apps/backend/scripts ./apps/backend/scripts
 COPY --from=builder /app/packages/database ./packages/database
-COPY --from=builder /app/packages/shared-types ./packages/shared-types
+# Ship compiled shared-types only — tsx seed must not resolve raw .ts sources
+# (export * from './navigation' fails under ESM when index.ts is picked over dist/).
+COPY --from=builder /app/packages/shared-types/package.json ./packages/shared-types/
+COPY --from=builder /app/packages/shared-types/dist ./packages/shared-types/dist
 
 EXPOSE 4000
 ENV PORT=4000
