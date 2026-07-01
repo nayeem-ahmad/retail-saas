@@ -545,5 +545,6 @@ Track all work here. Check off items as they're completed. Add new items as they
 - [x] Sidebar logo bar height aligned with app header; removed redundant "Workspace" subtitle below business name — done 2026-07-01
 - [x] Dashboard page header — breadcrumb moved to right; title and subtitle stay on left — done 2026-07-01
 - [x] Shared PageHeader + PageBreadcrumb across all module pages (sales, purchases, inventory, HR, CRM, accounting, settings, admin, billing, etc.) — done 2026-07-01
+- [x] Deploy PageHeader/breadcrumb UI to production — pushed `00e3b0f` to dev/main, VPS erp71 stack rebuilt at app.erp71.com — done 2026-07-01
 
 
