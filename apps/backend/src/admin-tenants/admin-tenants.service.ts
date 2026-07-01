@@ -12,10 +12,13 @@ import {
     ListAdminTenantsQueryDto,
     ListAdminUsersQueryDto,
     SuspendTenantDto,
+    DeleteTenantDto,
     UpdateAdminTenantSubscriptionDto,
     UpdateAdminTenantLocalizationDto,
     CreateAdminTenantDto,
 } from './admin-tenants.dto';
+
+const ACTIVE_TENANT_FILTER = { deleted_at: null } as const;
 
 @Injectable()
 export class AdminTenantsService {
@@ -29,6 +32,7 @@ export class AdminTenantsService {
 
     async listTenants(query: ListAdminTenantsQueryDto) {
         const tenants = await this.db.tenant.findMany({
+            where: ACTIVE_TENANT_FILTER,
             include: {
                 owner: {
                     select: {
@@ -78,8 +82,8 @@ export class AdminTenantsService {
     }
 
     async getTenant(tenantId: string) {
-        const tenant = await this.db.tenant.findUnique({
-            where: { id: tenantId },
+        const tenant = await this.db.tenant.findFirst({
+            where: { id: tenantId, ...ACTIVE_TENANT_FILTER },
             include: {
                 owner: {
                     select: {
@@ -122,6 +126,14 @@ export class AdminTenantsService {
     }
 
     async updateSubscription(tenantId: string, dto: UpdateAdminTenantSubscriptionDto) {
+        const tenant = await this.db.tenant.findFirst({
+            where: { id: tenantId, ...ACTIVE_TENANT_FILTER },
+            select: { id: true },
+        });
+        if (!tenant) {
+            throw new NotFoundException('Tenant not found');
+        }
+
         const existing = await this.db.tenantSubscription.findUnique({
             where: { tenant_id: tenantId },
             include: { plan: true },
@@ -152,7 +164,9 @@ export class AdminTenantsService {
         dto: UpdateAdminTenantLocalizationDto,
         adminUserId: string,
     ) {
-        const tenant = await this.db.tenant.findUnique({ where: { id: tenantId } });
+        const tenant = await this.db.tenant.findFirst({
+            where: { id: tenantId, ...ACTIVE_TENANT_FILTER },
+        });
         if (!tenant) {
             throw new NotFoundException('Tenant not found');
         }
@@ -196,6 +210,14 @@ export class AdminTenantsService {
     }
 
     async suspendTenant(tenantId: string, dto: SuspendTenantDto, adminUserId: string) {
+        const tenant = await this.db.tenant.findFirst({
+            where: { id: tenantId, ...ACTIVE_TENANT_FILTER },
+            select: { id: true },
+        });
+        if (!tenant) {
+            throw new NotFoundException('Tenant not found');
+        }
+
         const existing = await this.db.tenantSubscription.findUnique({
             where: { tenant_id: tenantId },
         });
@@ -217,8 +239,8 @@ export class AdminTenantsService {
     }
 
     async impersonateTenant(tenantId: string, adminUserId: string) {
-        const tenant = await this.db.tenant.findUnique({
-            where: { id: tenantId },
+        const tenant = await this.db.tenant.findFirst({
+            where: { id: tenantId, ...ACTIVE_TENANT_FILTER },
             include: {
                 owner: {
                     select: { id: true, email: true, token_version: true },
@@ -251,6 +273,49 @@ export class AdminTenantsService {
             impersonated_user: { id: tenant.owner.id, email: tenant.owner.email },
             tenant: { id: tenant.id, name: tenant.name },
         };
+    }
+
+    async deleteTenant(tenantId: string, dto: DeleteTenantDto, adminUserId: string) {
+        const tenant = await this.db.tenant.findFirst({
+            where: { id: tenantId, ...ACTIVE_TENANT_FILTER },
+            select: { id: true, name: true, storefront_slug: true },
+        });
+
+        if (!tenant) {
+            throw new NotFoundException('Tenant not found');
+        }
+
+        const deletedAt = new Date();
+
+        await this.db.$transaction(async (tx: any) => {
+            await tx.tenant.update({
+                where: { id: tenantId },
+                data: {
+                    deleted_at: deletedAt,
+                    storefront_slug: null,
+                    storefront_enabled: false,
+                },
+            });
+
+            const subscription = await tx.tenantSubscription.findUnique({
+                where: { tenant_id: tenantId },
+            });
+
+            if (subscription && subscription.status !== 'CANCELLED') {
+                await tx.tenantSubscription.update({
+                    where: { tenant_id: tenantId },
+                    data: { status: 'CANCELLED' },
+                });
+            }
+        });
+
+        await this.auditService.log('tenant.delete', 'Tenant', { userId: adminUserId }, tenantId, {
+            reason: dto.reason ?? null,
+            tenant_name: tenant.name,
+            previous_storefront_slug: tenant.storefront_slug,
+        });
+
+        return { success: true, deleted_at: deletedAt };
     }
 
     async lookupUserByEmail(email: string) {
@@ -384,24 +449,26 @@ export class AdminTenantsService {
     }
 
     async getMetrics() {
+        const monthStart = (() => {
+            const d = new Date();
+            d.setDate(1);
+            d.setHours(0, 0, 0, 0);
+            return d;
+        })();
+
         const [totalTenants, totalUsers, subscriptionCounts, newTenantsThisMonth] =
             await Promise.all([
-                this.db.tenant.count(),
+                this.db.tenant.count({ where: ACTIVE_TENANT_FILTER }),
                 this.db.user.count(),
                 this.db.tenantSubscription.groupBy({
                     by: ['status'],
+                    where: { tenant: ACTIVE_TENANT_FILTER },
                     _count: { status: true },
                 }),
                 this.db.tenant.count({
                     where: {
-                        created_at: {
-                            gte: (() => {
-                                const d = new Date();
-                                d.setDate(1);
-                                d.setHours(0, 0, 0, 0);
-                                return d;
-                            })(),
-                        },
+                        ...ACTIVE_TENANT_FILTER,
+                        created_at: { gte: monthStart },
                     },
                 }),
             ]);
@@ -447,7 +514,13 @@ export class AdminTenantsService {
                     is_platform_admin: true,
                     email_verified_at: true,
                     created_at: true,
-                    _count: { select: { tenantMembers: true } },
+                    _count: {
+                        select: {
+                            tenantMembers: {
+                                where: { tenant: ACTIVE_TENANT_FILTER },
+                            },
+                        },
+                    },
                 },
                 orderBy: { created_at: 'desc' },
                 skip,

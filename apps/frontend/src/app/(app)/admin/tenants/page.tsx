@@ -2,7 +2,7 @@
 
 import { useI18n, formatMessage } from '@/lib/i18n';
 import { useEffect, useMemo, useState } from 'react';
-import { Building2, CheckCircle, Loader2, LogIn, Plus, Search, ShieldCheck, Users, UserX } from 'lucide-react';
+import { Building2, CheckCircle, Loader2, LogIn, Plus, Search, ShieldCheck, Trash2, Users, UserX } from 'lucide-react';
 import PageHeader from '@/components/ui/compact/PageHeader';
 import { api } from '@/lib/api';
 import { formatDate } from '@/lib/format';
@@ -54,6 +54,7 @@ export default function AdminTenantsPage() {
     const [isSaving, setIsSaving] = useState(false);
     const [isSavingLocalization, setIsSavingLocalization] = useState(false);
     const [isSuspending, setIsSuspending] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
     const [isImpersonating, setIsImpersonating] = useState(false);
 
     const mc = m.createModal;
@@ -293,6 +294,38 @@ export default function AdminTenantsPage() {
         }
     };
 
+    const deleteTenant = async () => {
+        if (!selectedTenant) return;
+        if (!window.confirm(formatMessage(m.deleteConfirm, { name: selectedTenant.name }))) return;
+
+        setIsDeleting(true);
+        setError('');
+        try {
+            await api.deleteAdminTenant(selectedTenant.id, 'Deleted by platform admin');
+            showToast(formatMessage(m.deletedToast, { name: selectedTenant.name }));
+
+            const rows = await api.getAdminTenants({
+                search: search || undefined,
+                planCode: planCode || undefined,
+                status: status || undefined,
+            });
+            setTenants(rows);
+
+            const nextSelectedId = rows[0]?.id || '';
+            setSelectedTenantId(nextSelectedId);
+            if (nextSelectedId) {
+                const detail = await api.getAdminTenant(nextSelectedId);
+                setSelectedTenant(detail);
+            } else {
+                setSelectedTenant(null);
+            }
+        } catch (err: any) {
+            setError(err.message || m.deleteFailed);
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
     const impersonate = async () => {
         if (!selectedTenant) return;
 
@@ -452,6 +485,15 @@ export default function AdminTenantsPage() {
                                     >
                                         {isSuspending ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserX className="w-4 h-4" />}
                                         {selectedTenant.subscription?.status === 'CANCELLED' ? m.alreadySuspended : m.suspendTenant}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={deleteTenant}
+                                        disabled={isDeleting}
+                                        className="inline-flex items-center gap-2 rounded-2xl bg-red-600 px-4 py-2.5 text-sm font-black text-white transition hover:bg-red-700 disabled:opacity-60"
+                                    >
+                                        {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                                        {m.deleteTenant}
                                     </button>
                                 </div>
 

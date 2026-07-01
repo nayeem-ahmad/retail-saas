@@ -28,7 +28,7 @@ describe('TenantInterceptor', () => {
 
     beforeEach(() => {
         db = {
-            tenantUser: { findUnique: jest.fn(), findMany: jest.fn() },
+            tenantUser: { findFirst: jest.fn(), findMany: jest.fn() },
             userStoreAccess: { findUnique: jest.fn(), findMany: jest.fn() },
         };
         interceptor = new TenantInterceptor(db);
@@ -44,7 +44,7 @@ describe('TenantInterceptor', () => {
 
     it('sets tenantId and userRole from header', async () => {
         const { ctx, req } = makeContext({ userId: 'user-1', tenantIdHeader: 'tenant-1' });
-        db.tenantUser.findUnique.mockResolvedValue({ tenant_id: 'tenant-1', role: 'MANAGER' });
+        db.tenantUser.findFirst.mockResolvedValue({ tenant_id: 'tenant-1', role: 'MANAGER' });
         db.userStoreAccess.findMany.mockResolvedValue([]);
         await interceptor.intercept(ctx, next);
         expect(req.tenantId).toBe('tenant-1');
@@ -53,7 +53,7 @@ describe('TenantInterceptor', () => {
 
     it('throws UnauthorizedException for invalid tenant', async () => {
         const { ctx } = makeContext({ userId: 'user-1', tenantIdHeader: 'bad-tenant' });
-        db.tenantUser.findUnique.mockResolvedValue(null);
+        db.tenantUser.findFirst.mockResolvedValue(null);
         await expect(interceptor.intercept(ctx, next)).rejects.toThrow(UnauthorizedException);
     });
 
@@ -76,7 +76,7 @@ describe('TenantInterceptor', () => {
 
     it('validates store access for non-OWNER', async () => {
         const { ctx, req } = makeContext({ userId: 'user-1', tenantIdHeader: 'tenant-1', storeIdHeader: 'store-1' });
-        db.tenantUser.findUnique.mockResolvedValue({ tenant_id: 'tenant-1', role: 'CASHIER' });
+        db.tenantUser.findFirst.mockResolvedValue({ tenant_id: 'tenant-1', role: 'CASHIER' });
         db.userStoreAccess.findUnique.mockResolvedValue({ store_id: 'store-1', access_level: 'STORE_ONLY' });
         await interceptor.intercept(ctx, next);
         expect(req.storeId).toBe('store-1');
@@ -84,14 +84,14 @@ describe('TenantInterceptor', () => {
 
     it('throws ForbiddenException when non-OWNER accesses unauthorized store', async () => {
         const { ctx } = makeContext({ userId: 'user-1', tenantIdHeader: 'tenant-1', storeIdHeader: 'store-forbidden' });
-        db.tenantUser.findUnique.mockResolvedValue({ tenant_id: 'tenant-1', role: 'CASHIER' });
+        db.tenantUser.findFirst.mockResolvedValue({ tenant_id: 'tenant-1', role: 'CASHIER' });
         db.userStoreAccess.findUnique.mockResolvedValue(null);
         await expect(interceptor.intercept(ctx, next)).rejects.toThrow(ForbiddenException);
     });
 
     it('bypasses store access check for OWNER', async () => {
         const { ctx, req } = makeContext({ userId: 'user-1', tenantIdHeader: 'tenant-1', storeIdHeader: 'any-store' });
-        db.tenantUser.findUnique.mockResolvedValue({ tenant_id: 'tenant-1', role: 'OWNER' });
+        db.tenantUser.findFirst.mockResolvedValue({ tenant_id: 'tenant-1', role: 'OWNER' });
         await interceptor.intercept(ctx, next);
         expect(req.storeId).toBe('any-store');
         expect(db.userStoreAccess.findUnique).not.toHaveBeenCalled();
@@ -99,7 +99,7 @@ describe('TenantInterceptor', () => {
 
     it('auto-resolves storeId when user has exactly one store access', async () => {
         const { ctx, req } = makeContext({ userId: 'user-1', tenantIdHeader: 'tenant-1' });
-        db.tenantUser.findUnique.mockResolvedValue({ tenant_id: 'tenant-1', role: 'CASHIER' });
+        db.tenantUser.findFirst.mockResolvedValue({ tenant_id: 'tenant-1', role: 'CASHIER' });
         db.userStoreAccess.findMany.mockResolvedValue([{ store_id: 'store-1' }]);
         await interceptor.intercept(ctx, next);
         expect(req.storeId).toBe('store-1');

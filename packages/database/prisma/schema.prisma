@@ -296,6 +296,7 @@ model Tenant {
   vat_registration_no  String?                      // NBR VAT registration number
   business_tin         String?                      // Tax Identification Number
   business_type        String?  // e.g. SURGICAL_MEDICAL, PHARMACY, GROCERY, COMPUTER_HARDWARE
+  deleted_at           DateTime?
 
   loyalty_points_enabled Boolean  @default(false)
   loyalty_earn_rate      Decimal? @db.Decimal(8, 4)  // points per BDT (e.g. 1.0 = 1 point per ৳1)
@@ -400,6 +401,8 @@ model Tenant {
   aiUsageLogs       AiUsageLog[]
   paymentMethods    PaymentMethod[]
   salesSettings     SalesSettings?
+
+  @@index([deleted_at])
 }
 
 model PaymentMethod {

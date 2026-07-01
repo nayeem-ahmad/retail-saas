@@ -1085,6 +1085,11 @@ export const api = {
     impersonateTenant: (tenantId: string) => fetchWithAuth(`/admin/tenants/${tenantId}/impersonate`, {
         method: 'POST',
     }),
+    deleteAdminTenant: (tenantId: string, reason?: string) => fetchWithAuth(`/admin/tenants/${tenantId}`, {
+        method: 'DELETE',
+        body: JSON.stringify({ reason }),
+        headers: { 'Content-Type': 'application/json' },
+    }),
     createAdminTenant: (data: {
         ownerMode: 'new' | 'existing';
         ownerEmail?: string;

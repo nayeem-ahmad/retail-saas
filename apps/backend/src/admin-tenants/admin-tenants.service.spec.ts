@@ -61,9 +61,11 @@ describe('AdminTenantsService', () => {
     db = {
       tenant: {
         findUnique: jest.fn(),
+        findFirst: jest.fn(),
         findMany: jest.fn(),
         count: jest.fn(),
         create: jest.fn(),
+        update: jest.fn(),
       },
       tenantUser: { create: jest.fn() },
       store: { create: jest.fn() },
@@ -131,6 +133,9 @@ describe('AdminTenantsService', () => {
       expect(result).toHaveLength(1);
       expect(result[0].id).toBe('t-1');
       expect(result[0].name).toBe('Test Store');
+      expect(db.tenant.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { deleted_at: null } }),
+      );
     });
 
     it('filters tenants by search term (name)', async () => {
@@ -253,19 +258,19 @@ describe('AdminTenantsService', () => {
 
   describe('getTenant', () => {
     it('returns a mapped tenant by ID', async () => {
-      db.tenant.findUnique.mockResolvedValue(makeTenant());
+      db.tenant.findFirst.mockResolvedValue(makeTenant());
 
       const result = await service.getTenant('t-1');
 
       expect(result.id).toBe('t-1');
       expect(result.name).toBe('Test Store');
-      expect(db.tenant.findUnique).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { id: 't-1' } }),
+      expect(db.tenant.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: 't-1', deleted_at: null } }),
       );
     });
 
     it('throws NotFoundException when tenant does not exist', async () => {
-      db.tenant.findUnique.mockResolvedValue(null);
+      db.tenant.findFirst.mockResolvedValue(null);
 
       const result = service.getTenant('nonexistent');
       await expect(result).rejects.toThrow(NotFoundException);
@@ -273,7 +278,7 @@ describe('AdminTenantsService', () => {
     });
 
     it('includes store address in the response', async () => {
-      db.tenant.findUnique.mockResolvedValue(makeTenant());
+      db.tenant.findFirst.mockResolvedValue(makeTenant());
 
       const result = await service.getTenant('t-1');
 
@@ -287,6 +292,7 @@ describe('AdminTenantsService', () => {
 
   describe('updateSubscription', () => {
     it('updates subscription using billingService.applySubscriptionChange', async () => {
+      db.tenant.findFirst.mockResolvedValue({ id: 't-1' });
       const existing = {
         tenant_id: 't-1',
         status: 'ACTIVE',
@@ -313,6 +319,7 @@ describe('AdminTenantsService', () => {
     });
 
     it('uses existing plan code when planCode is not provided', async () => {
+      db.tenant.findFirst.mockResolvedValue({ id: 't-1' });
       const existing = {
         tenant_id: 't-1',
         status: 'ACTIVE',
@@ -335,6 +342,7 @@ describe('AdminTenantsService', () => {
     });
 
     it('throws NotFoundException when no subscription and no planCode provided', async () => {
+      db.tenant.findFirst.mockResolvedValue({ id: 't-1' });
       db.tenantSubscription.findUnique.mockResolvedValue(null);
 
       const result = service.updateSubscription('t-1', {});
@@ -343,6 +351,7 @@ describe('AdminTenantsService', () => {
     });
 
     it('creates new subscription when none exists but planCode is provided', async () => {
+      db.tenant.findFirst.mockResolvedValue({ id: 't-1' });
       db.tenantSubscription.findUnique.mockResolvedValue(null);
       billingService.applySubscriptionChange.mockResolvedValue({ success: true });
 
@@ -361,6 +370,7 @@ describe('AdminTenantsService', () => {
 
   describe('suspendTenant', () => {
     it('suspends tenant by setting subscription to CANCELLED', async () => {
+      db.tenant.findFirst.mockResolvedValue({ id: 't-1' });
       db.tenantSubscription.findUnique.mockResolvedValue({ tenant_id: 't-1', status: 'ACTIVE' });
       db.tenantSubscription.update.mockResolvedValue({ tenant_id: 't-1', status: 'CANCELLED' });
 
@@ -375,6 +385,7 @@ describe('AdminTenantsService', () => {
     });
 
     it('logs the suspension via auditService', async () => {
+      db.tenant.findFirst.mockResolvedValue({ id: 't-1' });
       db.tenantSubscription.findUnique.mockResolvedValue({ tenant_id: 't-1', status: 'ACTIVE' });
       db.tenantSubscription.update.mockResolvedValue({ tenant_id: 't-1', status: 'CANCELLED' });
 
@@ -390,6 +401,7 @@ describe('AdminTenantsService', () => {
     });
 
     it('throws NotFoundException when tenant has no subscription', async () => {
+      db.tenant.findFirst.mockResolvedValue({ id: 't-1' });
       db.tenantSubscription.findUnique.mockResolvedValue(null);
 
       const result = service.suspendTenant('t-1', {}, 'admin-1');
@@ -398,6 +410,7 @@ describe('AdminTenantsService', () => {
     });
 
     it('returns null reason when no reason provided', async () => {
+      db.tenant.findFirst.mockResolvedValue({ id: 't-1' });
       db.tenantSubscription.findUnique.mockResolvedValue({ tenant_id: 't-1', status: 'ACTIVE' });
       db.tenantSubscription.update.mockResolvedValue({ tenant_id: 't-1', status: 'CANCELLED' });
 
@@ -418,7 +431,7 @@ describe('AdminTenantsService', () => {
         name: 'Test Store',
         owner: { id: 'u-owner', email: 'owner@test.com', token_version: 1 },
       };
-      db.tenant.findUnique.mockResolvedValue(tenant);
+      db.tenant.findFirst.mockResolvedValue(tenant);
       jwtService.sign.mockReturnValue('impersonation-token');
 
       const result = await service.impersonateTenant('t-1', 'admin-1');
@@ -437,7 +450,7 @@ describe('AdminTenantsService', () => {
         name: 'Test Store',
         owner: { id: 'u-owner', email: 'owner@test.com', token_version: 2 },
       };
-      db.tenant.findUnique.mockResolvedValue(tenant);
+      db.tenant.findFirst.mockResolvedValue(tenant);
 
       await service.impersonateTenant('t-1', 'admin-1');
 
@@ -459,7 +472,7 @@ describe('AdminTenantsService', () => {
         name: 'Test Store',
         owner: { id: 'u-owner', email: 'owner@test.com', token_version: 1 },
       };
-      db.tenant.findUnique.mockResolvedValue(tenant);
+      db.tenant.findFirst.mockResolvedValue(tenant);
 
       await service.impersonateTenant('t-1', 'admin-1');
 
@@ -476,11 +489,62 @@ describe('AdminTenantsService', () => {
     });
 
     it('throws NotFoundException when tenant does not exist', async () => {
-      db.tenant.findUnique.mockResolvedValue(null);
+      db.tenant.findFirst.mockResolvedValue(null);
 
       const result = service.impersonateTenant('nonexistent', 'admin-1');
       await expect(result).rejects.toThrow(NotFoundException);
       await expect(result).rejects.toThrow('Tenant not found');
+    });
+  });
+
+  /* ------------------------------------------------------------------ */
+  /*  deleteTenant                                                        */
+  /* ------------------------------------------------------------------ */
+
+  describe('deleteTenant', () => {
+    it('soft-deletes tenant, clears storefront slug, and cancels subscription', async () => {
+      db.tenant.findFirst.mockResolvedValue({
+        id: 't-1',
+        name: 'Test Store',
+        storefront_slug: 'test-store',
+      });
+      db.tenant.update.mockResolvedValue({ id: 't-1' });
+      db.tenantSubscription.findUnique.mockResolvedValue({ tenant_id: 't-1', status: 'ACTIVE' });
+      db.tenantSubscription.update.mockResolvedValue({ tenant_id: 't-1', status: 'CANCELLED' });
+
+      const result = await service.deleteTenant('t-1', { reason: 'Cleanup' }, 'admin-1');
+
+      expect(result.success).toBe(true);
+      expect(result.deleted_at).toBeInstanceOf(Date);
+      expect(db.tenant.update).toHaveBeenCalledWith({
+        where: { id: 't-1' },
+        data: {
+          deleted_at: expect.any(Date),
+          storefront_slug: null,
+          storefront_enabled: false,
+        },
+      });
+      expect(db.tenantSubscription.update).toHaveBeenCalledWith({
+        where: { tenant_id: 't-1' },
+        data: { status: 'CANCELLED' },
+      });
+      expect(auditService.log).toHaveBeenCalledWith(
+        'tenant.delete',
+        'Tenant',
+        { userId: 'admin-1' },
+        't-1',
+        expect.objectContaining({
+          reason: 'Cleanup',
+          tenant_name: 'Test Store',
+          previous_storefront_slug: 'test-store',
+        }),
+      );
+    });
+
+    it('throws NotFoundException when tenant does not exist or is already deleted', async () => {
+      db.tenant.findFirst.mockResolvedValue(null);
+
+      await expect(service.deleteTenant('missing', {}, 'admin-1')).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -756,7 +820,7 @@ describe('AdminTenantsService', () => {
       db.tenantSubscription.create.mockResolvedValue({});
       db.userStoreAccess.create.mockResolvedValue({});
       db.userStorePermission.createMany.mockResolvedValue({ count: 10 });
-      db.tenant.findUnique.mockResolvedValue(makeTenant({ id: 't-new', name: 'Acme Ltd' }));
+      db.tenant.findFirst.mockResolvedValue(makeTenant({ id: 't-new', name: 'Acme Ltd' }));
     });
 
     describe('ownerMode = new', () => {

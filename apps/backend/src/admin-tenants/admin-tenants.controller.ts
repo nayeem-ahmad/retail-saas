@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, Request, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Request, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PlatformAdminGuard } from '../auth/platform-admin.guard';
 import { AdminTenantsService } from './admin-tenants.service';
@@ -7,6 +7,7 @@ import {
     UpdateAdminTenantSubscriptionDto,
     UpdateAdminTenantLocalizationDto,
     SuspendTenantDto,
+    DeleteTenantDto,
     CreateAdminTenantDto,
 } from './admin-tenants.dto';
 
@@ -65,5 +66,14 @@ export class AdminTenantsController {
         @Request() req: any,
     ) {
         return this.adminTenantsService.impersonateTenant(tenantId, req.user.userId);
+    }
+
+    @Delete(':tenantId')
+    deleteTenant(
+        @Param('tenantId') tenantId: string,
+        @Body() dto: DeleteTenantDto,
+        @Request() req: any,
+    ) {
+        return this.adminTenantsService.deleteTenant(tenantId, dto, req.user.userId);
     }
 }

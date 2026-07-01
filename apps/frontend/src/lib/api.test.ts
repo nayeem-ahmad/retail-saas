@@ -2451,6 +2451,17 @@ describe('api.impersonateTenant', () => {
     });
 });
 
+describe('api.deleteAdminTenant', () => {
+    it('deletes /admin/tenants/:tenantId', async () => {
+        mockOk({ data: {} });
+        await api.deleteAdminTenant('t1', 'Cleanup');
+        expect(lastOpts().method).toBe('DELETE');
+        expect(lastUrl()).toContain('/admin/tenants/t1');
+        const body = JSON.parse(lastOpts().body as string);
+        expect(body.reason).toBe('Cleanup');
+    });
+});
+
 describe('api.getAdminMetrics', () => {
     it('fetches /admin/metrics', async () => {
         mockOk({ data: {} });

@@ -531,7 +531,7 @@ export class StorefrontService {
 
     private async findEnabledTenant(slug: string) {
         const tenant = await this.db.tenant.findFirst({
-            where: { storefront_slug: slug, storefront_enabled: true },
+            where: { storefront_slug: slug, storefront_enabled: true, deleted_at: null },
             select: {
                 id: true,
                 name: true,

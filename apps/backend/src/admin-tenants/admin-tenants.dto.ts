@@ -28,6 +28,10 @@ export class SuspendTenantDto {
     @IsOptional() @IsString() reason?: string;
 }
 
+export class DeleteTenantDto {
+    @IsOptional() @IsString() reason?: string;
+}
+
 export class ListAdminUsersQueryDto {
     @IsOptional() @IsString() search?: string;
     @IsOptional() @Type(() => Number) @IsInt() @Min(1) page?: number;

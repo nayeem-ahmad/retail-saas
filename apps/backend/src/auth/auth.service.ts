@@ -216,6 +216,7 @@ export class AuthService {
             where: { id: userId },
             include: {
                 tenantMembers: {
+                    where: { tenant: { deleted_at: null } },
                     include: {
                         tenant: {
                             include: {
@@ -263,6 +264,7 @@ export class AuthService {
             where: { id: userId },
             include: {
                 tenantMembers: {
+                    where: { tenant: { deleted_at: null } },
                     include: {
                         tenant: {
                             include: {

@@ -29,12 +29,11 @@ export class TenantInterceptor implements NestInterceptor {
         let resolvedTenantId: string;
 
         if (tenantId) {
-            const membership = await this.db.tenantUser.findUnique({
+            const membership = await this.db.tenantUser.findFirst({
                 where: {
-                    tenant_id_user_id: {
-                        tenant_id: tenantId as string,
-                        user_id: userId,
-                    },
+                    tenant_id: tenantId as string,
+                    user_id: userId,
+                    tenant: { deleted_at: null },
                 },
                 select: { tenant_id: true, role: true },
             });
@@ -47,7 +46,7 @@ export class TenantInterceptor implements NestInterceptor {
             request.userRole = membership.role;
         } else {
             const memberships = await this.db.tenantUser.findMany({
-                where: { user_id: userId },
+                where: { user_id: userId, tenant: { deleted_at: null } },
                 select: { tenant_id: true, role: true },
                 take: 2,
             });
