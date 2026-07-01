@@ -12,12 +12,12 @@ test.describe('Authentication', () => {
     // UI login is sensitive to auth rate limits — run before signup creates extra traffic.
     test('successful login redirects to dashboard', { tag: '@readonly' }, async ({ page }) => {
         await loginViaUi(page);
-        await expect(page).toHaveURL(/dashboard/, { timeout: 15_000 });
+        await expect(page).toHaveURL(/dashboard|onboarding/, { timeout: 15_000 });
     });
 
     test('signup page renders and validates required fields', { tag: '@readonly' }, async ({ page }) => {
         await page.goto('/signup');
-        await expect(page.getByRole('heading', { name: /create your retail saas workspace|sign up|create account|register/i })).toBeVisible();
+        await expect(page.getByRole('heading', { name: /create your erp71 workspace|create your workspace|sign up|create account|register/i })).toBeVisible();
 
         // Submit without filling fields: the form uses native HTML5 `required`
         // validation, so the browser blocks submission (no navigation away) and

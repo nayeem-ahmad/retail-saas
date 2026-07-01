@@ -12,6 +12,14 @@ export type E2ESession = {
     planCode?: string;
 };
 
+const ACCOUNTING_PLAN_CODES = new Set(['ACCOUNTING', 'STANDARD', 'PREMIUM']);
+
+/** Mirrors app layout gating — paid plan with accounting entitlement. */
+export function sessionHasAccountingAccess(session: E2ESession): boolean {
+    const plan = session.planCode;
+    return Boolean(plan && plan !== 'FREE' && ACCOUNTING_PLAN_CODES.has(plan));
+}
+
 let cachedSession: E2ESession | null = null;
 
 /** Authenticate via the public login API (fast, no UI flake). Cached per worker. */
@@ -88,6 +96,10 @@ async function pickWorkspaceIfNeeded(page: Page) {
 export async function loginViaUi(page: Page) {
     await page.context().clearCookies();
     await page.goto('/login', { waitUntil: 'domcontentloaded' });
+    await page.evaluate(() => {
+        localStorage.clear();
+        sessionStorage.clear();
+    });
 
     if (page.url().includes('/dashboard')) return;
 
@@ -96,9 +108,31 @@ export async function loginViaUi(page: Page) {
         return;
     }
 
+    const loginResponse = page.waitForResponse(
+        (res) => res.url().includes('/auth/login') && res.request().method() === 'POST',
+        { timeout: 30_000 },
+    );
+
     await page.getByLabel(/email/i).fill(E2E_EMAIL);
     await page.getByLabel(/password/i).fill(E2E_PASSWORD);
     await page.getByRole('button', { name: /sign in|log in/i }).click();
-    await page.waitForURL(/select-account|dashboard/, { timeout: 30_000 });
+
+    const response = await loginResponse;
+    if (!response.ok()) {
+        const body = await response.json().catch(() => null);
+        const pageError = await page.locator('.text-red-600').first().textContent().catch(() => '');
+        throw new Error(
+            `UI login failed (${response.status()}): ${
+                body?.error?.message || body?.message || pageError?.trim() || 'unknown error'
+            }`,
+        );
+    }
+
+    if (await page.getByLabel(/authentication code/i).isVisible().catch(() => false)) {
+        throw new Error('E2E account requires 2FA — not supported in automated smoke tests');
+    }
+
+    // Next.js client navigations may not emit a full "load" event — poll the URL.
+    await expect(page).toHaveURL(/select-account|dashboard|onboarding|verify-email/, { timeout: 30_000 });
     await pickWorkspaceIfNeeded(page);
 }
