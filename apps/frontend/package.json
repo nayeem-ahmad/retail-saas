@@ -12,6 +12,7 @@
     "test:cov": "jest --coverage",
     "test:e2e": "playwright test",
     "test:e2e:core": "playwright test core-modules.spec.ts",
+    "test:e2e:accounting": "playwright test -c playwright.accounting.config.ts",
     "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {

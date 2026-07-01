@@ -47,7 +47,19 @@ export default function BankReconciliationPage() {
 
     const loadReport = async (id: string) => {
         const data = await api.getBankReconciliationReport(id);
-        setReport(data);
+        const summary = data.summary ?? data;
+        const matched = (data.matched_entries ?? []).map((e: StatementEntry) => ({ ...e, is_matched: true }));
+        const unmatched = (data.unmatched_entries ?? []).map((e: StatementEntry) => ({ ...e, is_matched: false }));
+        const legacyEntries = Array.isArray(data.entries) ? data.entries : [];
+        setReport({
+            reconciliation: data.reconciliation,
+            book_balance: summary.book_balance ?? data.book_balance ?? 0,
+            statement_balance: summary.statement_balance ?? data.statement_balance ?? 0,
+            difference: summary.difference ?? data.difference ?? 0,
+            matched_count: summary.matched_entries ?? data.matched_count ?? matched.length,
+            unmatched_count: summary.unmatched_entries ?? data.unmatched_count ?? unmatched.length,
+            entries: legacyEntries.length > 0 ? legacyEntries : [...matched, ...unmatched],
+        });
     };
 
     const handleSetup = async () => {

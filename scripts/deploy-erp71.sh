@@ -23,7 +23,10 @@ git fetch origin "$BRANCH"
 git checkout "$BRANCH"
 git pull --ff-only origin "$BRANCH"
 
-if [ ! -f "$ENV_FILE" ]; then
+if [ -f "$ENV_FILE" ]; then
+  echo "==> Syncing erp71.com URLs in $ENV_FILE"
+  bash "$REPO_ROOT/scripts/sync-erp71-env-urls.sh" "$ENV_FILE"
+elif [ ! -f "$ENV_FILE" ]; then
   if [ ! -f "$PRIMARY_ENV" ]; then
     echo "ERROR: neither $ENV_FILE nor $PRIMARY_ENV exists — create $ENV_FILE first." >&2
     exit 1

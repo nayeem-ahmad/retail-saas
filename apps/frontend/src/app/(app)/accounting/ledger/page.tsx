@@ -200,7 +200,7 @@ function AccountingLedgerPageContent() {
             columnHelper.accessor('voucher_number', {
                 header: t.journal.columns.voucherNumber,
                 cell: (info) => (
-                    <Link href={`/accounting/journal/${info.row.original.voucher_id}`} className="text-sm font-black text-blue-600 hover:text-blue-800">
+                    <Link href={`/accounting/vouchers/${info.row.original.voucher_id}`} className="text-sm font-black text-blue-600 hover:text-blue-800">
                         {info.getValue()}
                     </Link>
                 ),
@@ -211,10 +211,10 @@ function AccountingLedgerPageContent() {
                 cell: (info) => <span className="text-xs font-black uppercase tracking-widest text-violet-700">{info.getValue().replaceAll('_', ' ')}</span>,
                 size: 150,
             }),
-            columnHelper.accessor((row) => row.narration || row.description || '{t.accountingShared.noNarration}', {
+            columnHelper.accessor((row) => row.narration || row.description, {
                 id: 'narration',
                 header: t.accountingShared.narration,
-                cell: (info) => <span className="text-sm text-gray-600">{info.getValue()}</span>,
+                cell: (info) => <span className="text-sm text-gray-600">{info.getValue() || t.accountingShared.noNarration}</span>,
                 size: 320,
             }),
             columnHelper.accessor('debit_amount', {
@@ -238,7 +238,7 @@ function AccountingLedgerPageContent() {
                 size: 150,
             }),
         ],
-        [],
+        [t, locale],
     );
 
     const handleResetFilters = () => {
@@ -375,7 +375,7 @@ function AccountingLedgerPageContent() {
                                 </p>
                             </div>
                             {ledger ? (
-                                <Link href={ledger.data[0] ? `/accounting/journal/${ledger.data[0].voucher_id}` : '/accounting/journal'} className="inline-flex items-center rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-black text-gray-700 hover:bg-gray-100">
+                                <Link href={ledger.data[0] ? `/accounting/vouchers/${ledger.data[0].voucher_id}` : '/accounting/vouchers'} className="inline-flex items-center rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-black text-gray-700 hover:bg-gray-100">
                                     <ReceiptText className="mr-2 h-4 w-4" />
                                     {ledger.data[0] ? 'Open latest voucher detail' : 'Open journal'}
                                 </Link>

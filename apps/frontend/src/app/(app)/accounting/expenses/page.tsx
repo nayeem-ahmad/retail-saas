@@ -70,7 +70,13 @@ function ExpensesPageContent() {
                 }),
                 api.getExpenseCategories(),
             ]);
-            setEntries(Array.isArray(entriesData?.items) ? entriesData.items : []);
+            setEntries(
+                Array.isArray(entriesData)
+                    ? entriesData
+                    : Array.isArray(entriesData?.items)
+                      ? entriesData.items
+                      : [],
+            );
             setCategories(Array.isArray(categoriesData) ? categoriesData : []);
         } catch (error) {
             console.error('Failed to load expenses', error);

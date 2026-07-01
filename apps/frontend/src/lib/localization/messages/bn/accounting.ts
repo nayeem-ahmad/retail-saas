@@ -106,10 +106,18 @@ export const accountingMessages = {
             financialReports: "আর্থিক রিপোর্ট",
             exportModalTitle: "{format} এক্সপোর্ট",
             exportModalDescription: "অন্তর্ভুক্ত করার জন্য ভাউচারের তারিখ পরিসর নির্বাচন করুন। সব এক্সপোর্ট করতে খালি রাখুন।",
+            hub: {
+                transactions: "লেনদেন ও তহবিল",
+                reconciliation: "রিকনসিলিয়েশন",
+            },
             links: {
                 coa: {
                     title: "হিসাব তালিকা",
                     description: "সম্পদ, দায়, ইকুইটি, আয় এবং খরচের হেডের হিসাব কাঠামো নির্ধারণ করুন।",
+                },
+                vouchersList: {
+                    title: "ভাউচার",
+                    description: "দেখুন, সম্পাদনা, মুছুন এবং প্রিন্ট সহ পোস্ট করা ভাউচার ব্রাউজ করুন।",
                 },
                 vouchers: {
                     title: "ভাউচার এন্ট্রি",
@@ -117,7 +125,7 @@ export const accountingMessages = {
                 },
                 journal: {
                     title: "জার্নাল",
-                    description: "ভাউচার পোস্টিং সক্রিয় হলে কালানুক্রমিক ভাউচার কার্যকলাপ পর্যালোচনা করুন।",
+                    description: "কম্প্যাক্ট কালানুক্রমিক ভাউচার ফিড, সর্বশেষ প্রথম।",
                 },
                 ledger: {
                     title: "লেজার",
@@ -202,6 +210,22 @@ export const accountingMessages = {
                 financialRatios: {
                     title: "আর্থিক অনুপাত",
                     description: "বর্তমান অনুপাত, মার্জিন, DSO, DPO — এক নজরে মূল কর্মক্ষমতা সূচক।",
+                },
+                expenses: {
+                    title: "ব্যয়",
+                    description: "ক্যাটাগরি ও পেমেন্ট পদ্ধতি অনুযায়ী দৈনিক ব্যবসায়িক ব্যয় রেকর্ড ও ট্র্যাক করুন।",
+                },
+                expenseCategories: {
+                    title: "ব্যয় ক্যাটাগরি",
+                    description: "রিপোর্টিং ও বাজেট ট্র্যাকিংয়ের জন্য ব্যয় ক্যাটাগরিতে সাজান।",
+                },
+                expenseReports: {
+                    title: "ব্যয় রিপোর্ট",
+                    description: "ব্যয় বিভাজন, মাসিক প্রবণতা এবং ব্যয়-থেকে-আয় অনুপাত।",
+                },
+                loans: {
+                    title: "ঋণ",
+                    description: "ঋণ নেওয়া বা দেওয়া ট্র্যাক করুন — পরিশোধ সময়সূচি ও বকেয়া ব্যালেন্স সহ।",
                 },
             },
             reports: {
@@ -403,6 +427,7 @@ export const accountingMessages = {
         journal: {
             title: "জার্নাল",
             subtitle: "Chronological voucher activity",
+            compactSubtitle: "সর্বশেষ ভাউচার প্রথম — বিস্তারিত দেখতে সারিতে ট্যাপ করুন।",
             allVoucherTypes: "সব ভাউচার ধরন",
             columns: {
                 voucherNumber: "Voucher #",
@@ -439,6 +464,23 @@ export const accountingMessages = {
         },
         vouchers: {
             title: "ভাউচার এন্ট্রি",
+            list: {
+                title: "ভাউচার",
+                actions: "কার্যক্রম",
+                newVoucher: "নতুন ভাউচার",
+                editVoucher: "ভাউচার সম্পাদনা",
+                saveChanges: "পরিবর্তন সংরক্ষণ",
+                emptyMessage: "নির্বাচিত ফিল্টারের জন্য কোনো ভাউচার পাওয়া যায়নি",
+                searchPlaceholder: "ভাউচার নং, রেফারেন্স বা ধরন দিয়ে অনুসন্ধান...",
+                deleteConfirm: "ভাউচার {voucherNumber} মুছবেন?",
+                deleteSuccess: "ভাউচার মুছে ফেলা হয়েছে।",
+                deleteFailed: "ভাউচার মুছতে ব্যর্থ।",
+                systemVoucherLocked: "সিস্টেম-পোস্ট করা ভাউচার সম্পাদনা বা মুছা যাবে না।",
+                print: "ভাউচার প্রিন্ট",
+                printTitle: "অ্যাকাউন্টিং ভাউচার",
+                printFooter: "কম্পিউটার-উৎপাদিত ভাউচার",
+                printFailed: "ভাউচার প্রিন্ট করতে ব্যর্থ।",
+            },
             loading: "Loading vouchers...",
             loadAccountsFailed: "Failed to load account options.",
             previewFailed: "Failed to load voucher number preview.",

@@ -1,3 +1,5 @@
+import { readFile } from 'node:fs/promises';
+import path from 'node:path';
 import { expect, type Page } from '@playwright/test';
 import { E2E_API_URL, E2E_BASE_URL } from './auth';
 
@@ -11,6 +13,56 @@ export type DemoSession = {
 
 let cachedDemoSession: DemoSession | null = null;
 
+const DEMO_SESSION_CACHE_TTL_MS = 30 * 60 * 1000;
+
+type CachedDemoSessionFile = DemoSession & { fetchedAt?: number };
+
+function demoSessionCachePath() {
+    return (
+        process.env.E2E_DEMO_SESSION_FILE
+        ?? path.join(process.cwd(), 'e2e', '.cache', 'demo-session.json')
+    );
+}
+
+async function readDemoSessionCache(allowStale = false): Promise<DemoSession | null> {
+    try {
+        const raw = await readFile(demoSessionCachePath(), 'utf8');
+        const parsed = JSON.parse(raw) as CachedDemoSessionFile;
+        if (!parsed.accessToken || !parsed.tenantId || !parsed.storeId) return null;
+        if (
+            !allowStale
+            && parsed.fetchedAt
+            && Date.now() - parsed.fetchedAt > DEMO_SESSION_CACHE_TTL_MS
+        ) {
+            return null;
+        }
+        return {
+            accessToken: parsed.accessToken,
+            tenantId: parsed.tenantId,
+            storeId: parsed.storeId,
+            planCode: parsed.planCode,
+            email: parsed.email,
+        };
+    } catch {
+        return null;
+    }
+}
+
+async function sleep(ms: number) {
+    await new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function fetchWithThrottleRetry(url: string, init?: RequestInit, attempts = 10): Promise<Response> {
+    let lastRes: Response | null = null;
+    for (let i = 0; i < attempts; i++) {
+        const res = await fetch(url, init);
+        if (res.status !== 429) return res;
+        lastRes = res;
+        await sleep(Math.min((i + 1) * 2000, 15_000));
+    }
+    return lastRes!;
+}
+
 /**
  * Authenticate via POST /auth/demo (Demo Store tenant with STANDARD plan +
  * seeded products, customers, suppliers, and accounting).
@@ -18,12 +70,26 @@ let cachedDemoSession: DemoSession | null = null;
 export async function fetchDemoSession(force = false): Promise<DemoSession> {
     if (!force && cachedDemoSession) return cachedDemoSession;
 
-    const res = await fetch(`${E2E_API_URL}/api/v1/auth/demo`, { method: 'POST' });
+    if (!force) {
+        const fromFile = await readDemoSessionCache();
+        if (fromFile) {
+            cachedDemoSession = fromFile;
+            return fromFile;
+        }
+    }
+
+    const res = await fetchWithThrottleRetry(`${E2E_API_URL}/api/v1/auth/demo`, { method: 'POST' });
     if (!res.ok) {
+        const stale = await readDemoSessionCache(true);
+        if (stale) {
+            cachedDemoSession = stale;
+            return stale;
+        }
         const body = await res.text();
         throw new Error(
             `Demo login failed (${res.status}). Seed the demo account first ` +
-                `(npm run db:seed in packages/database). Response: ${body}`,
+                `(npm run db:seed in packages/database). For local E2E, run backend with ` +
+                `THROTTLE_LIMIT=100000. Response: ${body}`,
         );
     }
 
@@ -54,6 +120,7 @@ export async function applyDemoSession(page: Page, session: DemoSession) {
             localStorage.setItem('store_id', storeId);
             localStorage.removeItem('active_context');
             localStorage.setItem('demo_session', '1');
+            localStorage.setItem('onboarding_complete', '1');
             if (planCode) {
                 localStorage.setItem('subscription_plan_code', planCode);
             }
@@ -80,7 +147,7 @@ export function authHeaders(session: DemoSession): Record<string, string> {
 
 /** Quick sanity check that the demo tenant has catalog data. */
 export async function assertDemoCatalogReady(session: DemoSession) {
-    const res = await fetch(`${E2E_API_URL}/api/v1/products?limit=5`, {
+    const res = await fetchWithThrottleRetry(`${E2E_API_URL}/api/v1/products?limit=5`, {
         headers: authHeaders(session),
     });
     expect(res.ok).toBeTruthy();

@@ -271,6 +271,7 @@ export const coreMessages = {
                 suppliers: "সরবরাহকারী",
                 overview: "সারসংক্ষেপ",
                 voucherEntry: "ভাউচার এন্ট্রি",
+                vouchersList: "ভাউচার",
                 journal: "জার্নাল",
                 ledger: "লেজার",
                 postingExceptions: "পোস্টিং এক্সসেপশন",

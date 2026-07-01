@@ -51,7 +51,8 @@ export const NAV_ROUTES: { path: string; label: string }[] = [
 
     // Accounting — sidebar + hub
     { path: '/accounting', label: 'Accounting Overview' },
-    { path: '/accounting/vouchers', label: 'Voucher Entry' },
+    { path: '/accounting/vouchers/new', label: 'Voucher Entry' },
+    { path: '/accounting/vouchers', label: 'Vouchers' },
     { path: '/accounting/journal', label: 'Journal' },
     { path: '/accounting/ledger', label: 'Accounting Ledger' },
     { path: '/accounting/reconciliation', label: 'Posting Exceptions' },

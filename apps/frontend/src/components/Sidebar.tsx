@@ -54,8 +54,18 @@ import {
     Sparkles,
     Layers,
     BadgeCheck,
+    Building2,
+    Cpu,
+    GitMerge,
+    Lock,
+    RefreshCw,
+    Scale,
+    Target,
+    Upload,
+    Waves,
     type LucideIcon,
 } from 'lucide-react';
+import { buildAccountingSidebarChildren } from '@/lib/accounting-nav';
 import { useBranding } from '@/lib/branding';
 import { useI18n } from '@/lib/i18n';
 import { routes } from '@/lib/routes';
@@ -268,37 +278,7 @@ function buildModules(t: ReturnType<typeof useI18n>['t']): NavModule[] {
         key: 'accounting',
         icon: Calculator,
         label: t.sidebar.modules.accounting,
-        children: [
-            { href: routes.accounting.root, icon: LayoutDashboard, label: t.sidebar.items.overview, exact: true },
-            { href: routes.accounting.vouchers, icon: FileText, label: t.sidebar.items.voucherEntry },
-            { href: routes.accounting.journal, icon: ClipboardList, label: t.sidebar.items.journal },
-            { href: routes.accounting.ledger, icon: ClipboardList, label: t.sidebar.items.ledger },
-            { href: routes.accounting.reconciliation, icon: AlertTriangle, label: t.sidebar.items.postingExceptions },
-            { href: routes.accounting.expenses, icon: Receipt, label: t.sidebar.items.expenses },
-            { href: routes.accounting.loans, icon: HandCoins, label: t.sidebar.items.loans },
-            {
-                type: 'subgroup',
-                key: 'reports',
-                icon: BarChart3,
-                label: t.sidebar.sections.accountingReports,
-                children: [
-                    { href: routes.accounting.reports.pl, icon: TrendingUp, label: t.sidebar.items.profitAndLoss },
-                    { href: routes.accounting.reports.balanceSheet, icon: LayoutDashboard, label: t.sidebar.items.balanceSheet },
-                    { href: routes.accounting.reports.cashbook, icon: BookOpen, label: t.sidebar.items.cashbook },
-                    { href: routes.accounting.reports.bankbook, icon: Landmark, label: t.sidebar.items.bankbook },
-                ],
-            },
-            {
-                type: 'subgroup',
-                key: 'setup',
-                icon: Settings,
-                label: t.sidebar.sections.accountingSetup,
-                children: [
-                    { href: routes.accounting.coa, icon: FolderTree, label: t.sidebar.items.chartOfAccounts },
-                    { href: routes.accounting.postingRules, icon: Settings, label: t.sidebar.items.postingRules },
-                ],
-            },
-        ],
+        children: buildAccountingSidebarChildren(t) as NavChild[],
     },
     {
         key: 'inventory',
@@ -476,7 +456,7 @@ export default function Sidebar({
                 };
             }
 
-            if (['sales', 'purchase', 'inventory'].includes(module.key)) {
+            if (['sales', 'purchase', 'inventory', 'accounting'].includes(module.key)) {
                 return {
                     ...module,
                     children: filterModuleNavChildren(module.children, canAccessInventoryReports, canAccessPremiumCrm),

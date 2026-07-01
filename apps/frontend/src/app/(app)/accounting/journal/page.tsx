@@ -1,36 +1,26 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, ChevronLeft, ChevronRight, ClipboardList, Filter } from 'lucide-react';
-import { createColumnHelper, type ColumnDef } from '@tanstack/react-table';
+import { ChevronLeft, ChevronRight, ClipboardList } from 'lucide-react';
 import { VoucherType } from '@erp71/shared-types';
-import { DataTable } from '@/components/data-table';
 import { api } from '@/lib/api';
 import { formatBDT, formatDate } from '@/lib/format';
-import { useI18n, formatMessage } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 
-type VoucherRow = {
+type JournalEntry = {
     id: string;
     voucher_number: string;
     voucher_type: VoucherType;
     description?: string | null;
-    reference_number?: string | null;
     date: string;
     total_amount: number;
 };
 
 type VoucherListResponse = {
-    data: VoucherRow[];
-    meta: {
-        page: number;
-        limit: number;
-        total: number;
-        totalPages: number;
-    };
+    data: JournalEntry[];
+    meta: { page: number; limit: number; total: number; totalPages: number };
 };
-
-const columnHelper = createColumnHelper<VoucherRow>();
 
 const voucherTypeOptions = [
     { value: '', label: 'All voucher types' },
@@ -46,7 +36,7 @@ export default function AccountingJournalPage() {
     const { t, locale } = useI18n();
     const [response, setResponse] = useState<VoucherListResponse>({
         data: [],
-        meta: { page: 1, limit: 20, total: 0, totalPages: 1 },
+        meta: { page: 1, limit: 30, total: 0, totalPages: 1 },
     });
     const [loading, setLoading] = useState(true);
     const [voucherType, setVoucherType] = useState('');
@@ -66,146 +56,116 @@ export default function AccountingJournalPage() {
                 from: from || undefined,
                 to: to || undefined,
                 page,
-                limit: 20,
+                limit: 30,
             });
             setResponse(data);
         } catch (error) {
-            console.error('Failed to load journal vouchers', error);
-            setResponse({
-                data: [],
-                meta: { page: 1, limit: 20, total: 0, totalPages: 1 },
-            });
+            console.error('Failed to load journal', error);
+            setResponse({ data: [], meta: { page: 1, limit: 30, total: 0, totalPages: 1 } });
         } finally {
             setLoading(false);
         }
     };
 
-    const columns: ColumnDef<VoucherRow, any>[] = useMemo(
-        () => [
-            columnHelper.accessor('voucher_number', {
-                header: t.journal.columns.voucherNumber,
-                cell: (info) => <span className="text-sm font-black text-gray-900">{info.getValue()}</span>,
-                size: 140,
-            }),
-            columnHelper.accessor('date', {
-                header: t.accountingShared.date,
-                cell: (info) => {
-                    return <span className="text-sm font-bold text-gray-700">{formatDate(info.getValue(), locale)}</span>;
-                },
-                size: 120,
-            }),
-            columnHelper.accessor('voucher_type', {
-                header: t.accountingShared.type,
-                cell: (info) => <span className="text-xs font-black uppercase tracking-widest text-sky-700">{info.getValue().replaceAll('_', ' ')}</span>,
-                size: 150,
-            }),
-            columnHelper.accessor('description', {
-                header: t.accountingShared.description,
-                cell: (info) => <span className="text-sm text-gray-600">{info.getValue() || '{t.accountingShared.noNarration}'}</span>,
-                size: 320,
-            }),
-            columnHelper.accessor('total_amount', {
-                header: t.accountingShared.amount,
-                cell: (info) => <span className="text-sm font-black text-emerald-600">{formatBDT(Number(info.getValue() || 0), { locale })}</span>,
-                size: 120,
-            }),
-            columnHelper.display({
-                id: 'actions',
-                header: t.accountingShared.detail,
-                cell: (info) => (
-                    <Link href={`/accounting/journal/${info.row.original.id}`} className="text-sm font-black text-blue-600 hover:text-blue-800">
-                        Open
-                    </Link>
-                ),
-                size: 90,
-            }),
-        ],
-        [],
-    );
-
     return (
-        <div className="overflow-y-auto h-full bg-[#f3f4f6] p-6 font-sans text-gray-900">
-            <div className="w-full space-y-6">
-                <Link href="/accounting" className="inline-flex items-center text-sm font-bold text-gray-500 hover:text-gray-900 transition-colors">
-                    <ArrowLeft className="w-4 h-4 mr-2" />
-                    Back to Accounting
-                </Link>
-
-                <section className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
-                    <div className="flex items-start gap-4">
-                        <div className="rounded-2xl border border-sky-100 bg-sky-50 p-3 text-sky-700">
-                            <ClipboardList className="h-6 w-6" />
-                        </div>
-                        <div>
-                            <p className="text-xs font-black uppercase tracking-[0.24em] text-gray-400">{t.journal.detail.story}</p>
-                            <h1 className="text-2xl font-black tracking-tight">Journal Viewer</h1>
-                            <p className="mt-2 max-w-3xl text-sm text-gray-500">
-                                Review vouchers in newest-first order, filter by type and date, and drill into a single voucher for full debit and credit detail.
-                            </p>
-                        </div>
-                    </div>
-                </section>
-
-                <section className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm space-y-5">
-                    <div className="flex items-center gap-3">
-                        <Filter className="h-5 w-5 text-gray-900" />
-                        <h2 className="text-lg font-black tracking-tight">{t.journal.title}</h2>
-                    </div>
-
-                    <div className="grid gap-4 md:grid-cols-4">
-                        <label className="block text-xs font-black uppercase tracking-[0.24em] text-gray-400">
-                            <span>{t.accountingShared.type}</span>
-                            <select aria-label={t.journal.voucherTypeAria} value={voucherType} onChange={(event) => { setVoucherType(event.target.value); setPage(1); }} className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-900">
-                                {voucherTypeOptions.map((option) => <option key={option.label} value={option.value}>{option.label}</option>)}
-                            </select>
-                        </label>
-                        <label className="block text-xs font-black uppercase tracking-[0.24em] text-gray-400">
-                            <span>{t.accountingShared.from}</span>
-                            <input aria-label={t.journal.fromDateAria} type="date" value={from} onChange={(event) => { setFrom(event.target.value); setPage(1); }} className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-900" />
-                        </label>
-                        <label className="block text-xs font-black uppercase tracking-[0.24em] text-gray-400">
-                            <span>{t.accountingShared.to}</span>
-                            <input aria-label={t.journal.toDateAria} type="date" value={to} onChange={(event) => { setTo(event.target.value); setPage(1); }} className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-900" />
-                        </label>
-                        <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
-                            <p className="text-xs font-black uppercase tracking-[0.24em] text-gray-400">{t.journal.title}</p>
-                            <p className="mt-2 text-2xl font-black tracking-tight text-gray-900">{response.meta.total}</p>
-                            <p className="mt-1 text-sm text-gray-500">Page {response.meta.page} of {response.meta.totalPages}</p>
-                        </div>
-                    </div>
-
-                    <DataTable<VoucherRow>
-                        tableId="accounting-journal"
-                        columns={columns}
-                        data={response.data}
-                        title={t.journal.accountingJournal}
-                        isLoading={loading}
-                        emptyMessage={t.journal.emptyMessage}
-                        emptyIcon={<ClipboardList className="w-16 h-16 text-gray-200" />}
-                        searchPlaceholder={t.journal.searchPlaceholder}
+        <div className="flex flex-col h-full overflow-y-auto bg-gray-50 text-sm">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2 border-b bg-white flex-shrink-0">
+                <div className="flex items-center gap-2">
+                    <Link href="/accounting" className="text-gray-400 hover:text-gray-700">
+                        <ChevronLeft className="w-5 h-5" />
+                    </Link>
+                    <h1 className="text-base font-bold text-gray-900">{t.journal.title}</h1>
+                </div>
+                <div className="h-5 w-px bg-gray-200 hidden sm:block" />
+                <p className="text-xs text-gray-500">{t.journal.compactSubtitle}</p>
+                <div className="flex flex-wrap items-center gap-2 text-xs ml-auto">
+                    <select
+                        aria-label={t.journal.voucherTypeAria}
+                        value={voucherType}
+                        onChange={(e) => { setVoucherType(e.target.value); setPage(1); }}
+                        className="px-1.5 py-0.5 border rounded text-xs"
+                    >
+                        {voucherTypeOptions.map((option) => (
+                            <option key={option.label} value={option.value}>{option.label}</option>
+                        ))}
+                    </select>
+                    <input
+                        aria-label={t.journal.fromDateAria}
+                        type="date"
+                        value={from}
+                        onChange={(e) => { setFrom(e.target.value); setPage(1); }}
+                        className="px-1.5 py-0.5 border rounded text-xs"
                     />
+                    <span className="text-gray-400">–</span>
+                    <input
+                        aria-label={t.journal.toDateAria}
+                        type="date"
+                        value={to}
+                        onChange={(e) => { setTo(e.target.value); setPage(1); }}
+                        className="px-1.5 py-0.5 border rounded text-xs"
+                    />
+                </div>
+            </div>
 
-                    <div className="flex items-center justify-end gap-3">
-                        <button
-                            type="button"
-                            onClick={() => setPage((current) => Math.max(1, current - 1))}
-                            disabled={response.meta.page <= 1}
-                            className="inline-flex items-center rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-black text-gray-700 disabled:opacity-40"
-                        >
-                            <ChevronLeft className="mr-1 h-4 w-4" />
-                            Previous
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setPage((current) => Math.min(response.meta.totalPages, current + 1))}
-                            disabled={response.meta.page >= response.meta.totalPages}
-                            className="inline-flex items-center rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-black text-gray-700 disabled:opacity-40"
-                        >
-                            Next
-                            <ChevronRight className="ml-1 h-4 w-4" />
-                        </button>
-                    </div>
-                </section>
+            <div className="flex-1 p-3">
+                <div className="bg-white rounded border overflow-hidden">
+                    {loading ? (
+                        <div className="p-8 text-center text-xs text-gray-400">{t.accountingShared.loading}</div>
+                    ) : response.data.length === 0 ? (
+                        <div className="p-8 text-center">
+                            <ClipboardList className="w-12 h-12 text-gray-200 mx-auto mb-2" />
+                            <p className="text-xs font-bold uppercase tracking-widest text-gray-400">{t.journal.emptyMessage}</p>
+                        </div>
+                    ) : (
+                        <div className="divide-y divide-gray-50">
+                            {response.data.map((entry) => (
+                                <Link
+                                    key={entry.id}
+                                    href={`/accounting/vouchers/${entry.id}`}
+                                    className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-gray-50/80 transition-colors"
+                                >
+                                    <div className="min-w-0 flex-1">
+                                        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                                            <span className="text-sm font-black text-gray-900">{entry.voucher_number}</span>
+                                            <span className="text-[10px] font-bold uppercase tracking-wider text-sky-700">
+                                                {entry.voucher_type.replaceAll('_', ' ')}
+                                            </span>
+                                            <span className="text-xs text-gray-400">{formatDate(entry.date, locale)}</span>
+                                        </div>
+                                        <p className="text-xs text-gray-500 truncate mt-0.5">
+                                            {entry.description || t.accountingShared.noNarration}
+                                        </p>
+                                    </div>
+                                    <span className="text-sm font-black text-emerald-600 whitespace-nowrap">
+                                        {formatBDT(Number(entry.total_amount || 0), { locale })}
+                                    </span>
+                                </Link>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 px-4 py-2 border-t bg-white flex-shrink-0">
+                <button
+                    type="button"
+                    onClick={() => setPage((current) => Math.max(1, current - 1))}
+                    disabled={response.meta.page <= 1}
+                    className="inline-flex items-center px-3 py-1.5 border rounded text-xs font-medium disabled:opacity-40"
+                >
+                    <ChevronLeft className="mr-1 h-3.5 w-3.5" />
+                    {t.common.prevPage}
+                </button>
+                <span className="text-xs text-gray-500">{response.meta.page} / {response.meta.totalPages}</span>
+                <button
+                    type="button"
+                    onClick={() => setPage((current) => Math.min(response.meta.totalPages, current + 1))}
+                    disabled={response.meta.page >= response.meta.totalPages}
+                    className="inline-flex items-center px-3 py-1.5 border rounded text-xs font-medium disabled:opacity-40"
+                >
+                    {t.common.nextPage}
+                    <ChevronRight className="ml-1 h-3.5 w-3.5" />
+                </button>
             </div>
         </div>
     );

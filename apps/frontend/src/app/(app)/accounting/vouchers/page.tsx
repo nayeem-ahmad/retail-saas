@@ -1,38 +1,38 @@
-"use client";
+'use client';
 
-import { Suspense, useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, CircleCheck, FileText, Plus, Scale, Trash2 } from 'lucide-react';
-import { HelpTooltip } from '@/components/HelpTooltip';
-import { AccountCategory, VoucherType } from '@erp71/shared-types';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { ChevronLeft, ChevronRight, Eye, FileText, Pencil, Plus, Printer, Trash2 } from 'lucide-react';
+import { createColumnHelper, type ColumnDef } from '@tanstack/react-table';
+import { VoucherType } from '@erp71/shared-types';
+import { DataTable } from '@/components/data-table';
 import { api } from '@/lib/api';
-import { formatBDT } from '@/lib/format';
-import { useI18n, formatMessage } from '@/lib/i18n';
-
-type VoucherAccount = {
-    id: string;
-    name: string;
-    code?: string | null;
-    category: AccountCategory;
-    type: string;
-    group?: { name: string };
-};
+import { useBranding } from '@/lib/branding';
+import { formatBDT, formatDate } from '@/lib/format';
+import { useI18n } from '@/lib/i18n';
+import { printVoucher } from '@/lib/voucher-printer';
+import { toast } from '@/lib/toast';
 
 type VoucherRow = {
     id: string;
-    accountId: string;
-    debitAmount: string;
-    creditAmount: string;
-    comment: string;
+    voucher_number: string;
+    voucher_type: VoucherType;
+    reference_number?: string | null;
+    date: string;
+    total_amount: number;
+    source?: { module: string | null; type: string | null; id: string | null };
 };
 
-type VoucherSummary = {
-    id: string;
-    voucherNumber: string;
+type VoucherListResponse = {
+    data: VoucherRow[];
+    meta: { page: number; limit: number; total: number; totalPages: number };
 };
+
+const columnHelper = createColumnHelper<VoucherRow>();
 
 const voucherTypeOptions = [
+    { value: '', label: 'All voucher types' },
     { value: VoucherType.CASH_PAYMENT, label: 'Cash Payment' },
     { value: VoucherType.CASH_RECEIVE, label: 'Cash Receive' },
     { value: VoucherType.BANK_PAYMENT, label: 'Bank Payment' },
@@ -41,592 +41,290 @@ const voucherTypeOptions = [
     { value: VoucherType.JOURNAL, label: 'Journal Voucher' },
 ];
 
-const voucherTypeHelpers: Record<VoucherType, string> = {
-    [VoucherType.CASH_PAYMENT]: 'Use the first row for the cash account being paid out. Counter rows can target expense, liability, or other ledger accounts.',
-    [VoucherType.CASH_RECEIVE]: 'Use the first row for the cash account receiving funds. Counter rows can target revenue, receivables, or other ledgers.',
-    [VoucherType.BANK_PAYMENT]: 'Use the first row for the bank or wallet account being paid out. Counter rows can target expenses or liabilities.',
-    [VoucherType.BANK_RECEIVE]: 'Use the first row for the bank or wallet account receiving funds. Counter rows can target revenue or receivables.',
-    [VoucherType.FUND_TRANSFER]: 'All rows are limited to cash and bank accounts so internal transfers remain isolated from other ledgers.',
-    [VoucherType.JOURNAL]: 'Journal vouchers stay flexible and can mix any tenant-owned accounts as long as the entry balances.',
-};
-
-let rowCounter = 0;
-
-function createEmptyRow(): VoucherRow {
-    rowCounter += 1;
-    return {
-        id: `voucher-row-${rowCounter}`,
-        accountId: '',
-        debitAmount: '',
-        creditAmount: '',
-        comment: '',
-    };
-}
-
-function VoucherLoadingFallback() {
+function VouchersListLoading() {
     const { t } = useI18n();
-    return <div className="p-6 text-sm text-gray-500">{t.vouchers.loading}</div>;
+    return <div className="p-4 text-sm text-gray-500">{t.vouchers.loading}</div>;
 }
 
-export default function AccountingVouchersPage() {
+export default function AccountingVouchersListPage() {
     return (
-        <Suspense fallback={<VoucherLoadingFallback />}>
-            <AccountingVouchersPageContent />
+        <Suspense fallback={<VouchersListLoading />}>
+            <AccountingVouchersListPageContent />
         </Suspense>
     );
 }
 
-function AccountingVouchersPageContent() {
+function AccountingVouchersListPageContent() {
     const { t, locale } = useI18n();
+    const { businessName } = useBranding();
     const router = useRouter();
     const searchParams = useSearchParams();
-    const [voucherType, setVoucherType] = useState<VoucherType>(VoucherType.CASH_PAYMENT);
-    const [voucherNumber, setVoucherNumber] = useState('');
-    const [voucherDate, setVoucherDate] = useState(() => new Date().toISOString().slice(0, 10));
-    const [description, setDescription] = useState('');
-    const [referenceNumber, setReferenceNumber] = useState('');
-    const [accounts, setAccounts] = useState<VoucherAccount[]>([]);
-    const [rows, setRows] = useState<VoucherRow[]>([createEmptyRow(), createEmptyRow()]);
-    const [isLoadingPreview, setIsLoadingPreview] = useState(true);
-    const [isLoadingAccounts, setIsLoadingAccounts] = useState(true);
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [previewError, setPreviewError] = useState('');
-    const [loadError, setLoadError] = useState('');
-    const [submitError, setSubmitError] = useState('');
-    const [createdVoucher, setCreatedVoucher] = useState<VoucherSummary | null>(null);
+    const [response, setResponse] = useState<VoucherListResponse>({
+        data: [],
+        meta: { page: 1, limit: 20, total: 0, totalPages: 1 },
+    });
+    const [loading, setLoading] = useState(true);
+    const [voucherType, setVoucherType] = useState('');
+    const [from, setFrom] = useState('');
+    const [to, setTo] = useState('');
+    const [page, setPage] = useState(1);
 
-    const createdVoucherId = searchParams.get('created');
     const createdVoucherNumber = searchParams.get('voucher');
 
-    useEffect(() => {
-        if (createdVoucherId && createdVoucherNumber) {
-            setCreatedVoucher({ id: createdVoucherId, voucherNumber: createdVoucherNumber });
+    const loadVouchers = useCallback(async () => {
+        setLoading(true);
+        try {
+            const data = await api.getVouchers({
+                voucherType: voucherType || undefined,
+                from: from || undefined,
+                to: to || undefined,
+                page,
+                limit: 20,
+            });
+            setResponse(data);
+        } catch (error) {
+            console.error('Failed to load vouchers', error);
+            setResponse({ data: [], meta: { page: 1, limit: 20, total: 0, totalPages: 1 } });
+        } finally {
+            setLoading(false);
         }
-    }, [createdVoucherId, createdVoucherNumber]);
+    }, [voucherType, from, to, page]);
 
     useEffect(() => {
-        let active = true;
-
-        const loadAccounts = async () => {
-            setIsLoadingAccounts(true);
-            setLoadError('');
-
-            try {
-                const data = await api.getAccounts();
-                if (!active) {
-                    return;
-                }
-
-                setAccounts(data);
-            } catch (error) {
-                if (!active) {
-                    return;
-                }
-
-                setLoadError(error instanceof Error ? error.message : 'Failed to load account options.');
-            } finally {
-                if (active) {
-                    setIsLoadingAccounts(false);
-                }
-            }
-        };
-
-        loadAccounts();
-
-        return () => {
-            active = false;
-        };
-    }, []);
+        void loadVouchers();
+    }, [loadVouchers]);
 
     useEffect(() => {
-        let active = true;
+        if (createdVoucherNumber) {
+            toast.success(t.vouchers.voucherCreated.replace('{voucherNumber}', createdVoucherNumber));
+            router.replace('/accounting/vouchers');
+        }
+    }, [createdVoucherNumber, router, t.vouchers.voucherCreated]);
 
-        const loadPreview = async () => {
-            setIsLoadingPreview(true);
-            setPreviewError('');
+    const handlePrint = useCallback(async (voucher: VoucherRow) => {
+        try {
+            const detail = await api.getVoucher(voucher.id);
+            printVoucher({
+                businessName,
+                voucherNumber: detail.voucher_number,
+                voucherType: detail.voucher_type,
+                date: formatDate(detail.date, locale),
+                referenceNumber: detail.reference_number,
+                description: detail.description,
+                totalAmount: Number(detail.total_amount || voucher.total_amount || 0),
+                lines: (detail.details ?? []).map((line: any) => ({
+                    accountName: line.account?.name ?? '—',
+                    accountCode: line.account?.code,
+                    debit: Number(line.debit_amount || 0),
+                    credit: Number(line.credit_amount || 0),
+                    comment: line.comment,
+                })),
+                labels: {
+                    title: t.vouchers.list.printTitle,
+                    voucherNumber: t.journal.columns.voucherNumber,
+                    date: t.accountingShared.date,
+                    type: t.accountingShared.type,
+                    reference: t.accountingShared.reference,
+                    narration: t.accountingShared.narration,
+                    account: t.accountingShared.account,
+                    debit: t.accountingShared.debit,
+                    credit: t.accountingShared.credit,
+                    total: t.accountingShared.amount,
+                    footer: t.vouchers.list.printFooter,
+                },
+            });
+        } catch {
+            toast.error(t.vouchers.list.printFailed);
+        }
+    }, [businessName, locale, t]);
 
-            try {
-                const data = await api.getVoucherNumberPreview(voucherType);
-                if (!active) {
-                    return;
-                }
-
-                setVoucherNumber(data.voucherNumber);
-            } catch (error) {
-                if (!active) {
-                    return;
-                }
-
-                setPreviewError(error instanceof Error ? error.message : 'Failed to load voucher number preview.');
-                setVoucherNumber('');
-            } finally {
-                if (active) {
-                    setIsLoadingPreview(false);
-                }
-            }
-        };
-
-        loadPreview();
-
-        return () => {
-            active = false;
-        };
-    }, [voucherType]);
-
-    useEffect(() => {
-        setRows((currentRows) => currentRows.map((row, index) => {
-            const nextOptions = getAccountOptionsForRow(accounts, voucherType, index);
-            if (row.accountId && !nextOptions.some((account) => account.id === row.accountId)) {
-                return {
-                    ...row,
-                    accountId: '',
-                };
-            }
-
-            return row;
-        }));
-    }, [accounts, voucherType]);
-
-    const debitTotal = rows.reduce((sum, row) => sum + parseAmount(row.debitAmount), 0);
-    const creditTotal = rows.reduce((sum, row) => sum + parseAmount(row.creditAmount), 0);
-    const isBalanced = Math.abs(debitTotal - creditTotal) < 0.0001 && debitTotal > 0;
-    const rowErrors = rows.map((row, index) => getRowError(row, accounts, voucherType, index));
-    const hasRowErrors = rowErrors.some(Boolean);
-    const canSubmit = !isLoadingPreview && !isLoadingAccounts && !isSubmitting && !hasRowErrors && isBalanced;
-
-    const handleVoucherTypeChange = (nextType: VoucherType) => {
-        setVoucherType(nextType);
-        setCreatedVoucher(null);
-        setSubmitError('');
-    };
-
-    const updateRow = (rowId: string, field: keyof VoucherRow, value: string) => {
-        setRows((currentRows) => currentRows.map((row) => {
-            if (row.id !== rowId) {
-                return row;
-            }
-
-            if (field === 'debitAmount') {
-                return {
-                    ...row,
-                    debitAmount: value,
-                    creditAmount: parseAmount(value) > 0 ? '' : row.creditAmount,
-                };
-            }
-
-            if (field === 'creditAmount') {
-                return {
-                    ...row,
-                    creditAmount: value,
-                    debitAmount: parseAmount(value) > 0 ? '' : row.debitAmount,
-                };
-            }
-
-            return {
-                ...row,
-                [field]: value,
-            };
-        }));
-    };
-
-    const addRow = () => {
-        setRows((currentRows) => [...currentRows, createEmptyRow()]);
-    };
-
-    const removeRow = (rowId: string) => {
-        setRows((currentRows) => {
-            if (currentRows.length <= 2) {
-                return currentRows;
-            }
-
-            return currentRows.filter((row) => row.id !== rowId);
-        });
-    };
-
-    const resetForm = () => {
-        setDescription('');
-        setReferenceNumber('');
-        setVoucherDate(new Date().toISOString().slice(0, 10));
-        setRows([createEmptyRow(), createEmptyRow()]);
-    };
-
-    const handleSubmit = async (event: React.FormEvent) => {
-        event.preventDefault();
-        if (!canSubmit) {
+    const handleDelete = useCallback(async (voucher: VoucherRow) => {
+        if (voucher.source?.module) {
+            toast.info(t.vouchers.list.systemVoucherLocked);
             return;
         }
-
-        setIsSubmitting(true);
-        setSubmitError('');
-
-        try {
-            const result = await api.createVoucher({
-                voucherType,
-                date: voucherDate,
-                description: description || undefined,
-                referenceNumber: referenceNumber || undefined,
-                details: rows.map((row) => ({
-                    accountId: row.accountId,
-                    debitAmount: parseAmount(row.debitAmount),
-                    creditAmount: parseAmount(row.creditAmount),
-                    comment: row.comment || undefined,
-                })),
-            });
-
-            setCreatedVoucher({ id: result.id, voucherNumber: result.voucher_number });
-            resetForm();
-            router.replace(`/accounting/vouchers?created=${encodeURIComponent(result.id)}&voucher=${encodeURIComponent(result.voucher_number)}`);
-
-            try {
-                const preview = await api.getVoucherNumberPreview(voucherType);
-                setVoucherNumber(preview.voucherNumber);
-            } catch {
-                setVoucherNumber('');
-            }
-        } catch (error) {
-            setSubmitError(error instanceof Error ? error.message : 'Failed to save voucher.');
-        } finally {
-            setIsSubmitting(false);
+        if (!window.confirm(t.vouchers.list.deleteConfirm.replace('{voucherNumber}', voucher.voucher_number))) {
+            return;
         }
-    };
+        try {
+            await api.deleteVoucher(voucher.id);
+            toast.success(t.vouchers.list.deleteSuccess);
+            void loadVouchers();
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : t.vouchers.list.deleteFailed);
+        }
+    }, [loadVouchers, t]);
 
-    return (
-        <div className="overflow-y-auto h-full bg-[#f3f4f6] p-6 font-sans text-gray-900">
-            <div className="w-full space-y-6">
-                <Link href="/accounting" className="inline-flex items-center text-sm font-bold text-gray-500 hover:text-gray-900 transition-colors">
-                    <ArrowLeft className="w-4 h-4 mr-2" />
-                    Back to Accounting
-                </Link>
-
-                <section className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
-                    <div className="flex items-start gap-4">
-                        <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-3 text-emerald-700">
-                            <FileText className="h-6 w-6" />
-                        </div>
-                        <div className="space-y-2">
-                            <p className="text-xs font-black uppercase tracking-[0.24em] text-gray-400">Story 30.5</p>
-                            <h1 className="text-2xl font-black tracking-tight inline-flex items-center gap-2">{t.vouchers.workbenchTitle} <HelpTooltip text={t.vouchers.workbenchHelp} /></h1>
-                            <p className="text-sm text-gray-500 max-w-2xl">
-                                Build balanced multi-line vouchers with live debit and credit totals, account-aware row controls, and server-issued numbering.
-                            </p>
-                        </div>
-                    </div>
-                </section>
-
-                {createdVoucher ? (
-                    <section className="rounded-3xl border border-emerald-200 bg-emerald-50 p-6 shadow-sm">
-                        <div className="flex items-start gap-3">
-                            <CircleCheck className="mt-0.5 h-5 w-5 text-emerald-700" />
-                            <div>
-                                <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-700">Journal confirmation</p>
-                                <h2 className="mt-1 text-lg font-black tracking-tight text-emerald-950">Voucher {createdVoucher.voucherNumber} saved successfully</h2>
-                                <p className="mt-2 text-sm text-emerald-900">
-                                    The voucher was posted and the sequence was committed. You can enter the next voucher immediately.
-                                </p>
-                            </div>
-                        </div>
-                    </section>
-                ) : null}
-
-                <form className="grid gap-6 xl:grid-cols-[1.7fr,0.9fr]" onSubmit={handleSubmit}>
-                    <section className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm space-y-6">
-                        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                            <label className="block text-xs font-bold uppercase tracking-[0.24em] text-gray-400">
-                                <span>Voucher type</span>
-                                <select
-                                    id="voucher-type-select"
-                                    aria-label={t.vouchers.voucherTypeAria}
-                                    value={voucherType}
-                                    onChange={(event) => handleVoucherTypeChange(event.target.value as VoucherType)}
-                                    className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-900 outline-none transition focus:border-gray-400"
-                                >
-                                    {voucherTypeOptions.map((option) => (
-                                        <option key={option.value} value={option.value}>
-                                            {option.label}
-                                        </option>
-                                    ))}
-                                </select>
-                            </label>
-
-                            <label className="block text-xs font-bold uppercase tracking-[0.24em] text-gray-400">
-                                <span>Voucher date</span>
-                                <input
-                                    aria-label={t.vouchers.voucherDateAria}
-                                    type="date"
-                                    value={voucherDate}
-                                    onChange={(event) => setVoucherDate(event.target.value)}
-                                    className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-900 outline-none transition focus:border-gray-400"
-                                />
-                            </label>
-
-                            <label className="block text-xs font-bold uppercase tracking-[0.24em] text-gray-400">
-                                <span>Reference number</span>
-                                <input
-                                    aria-label={t.vouchers.referenceAria}
-                                    value={referenceNumber}
-                                    onChange={(event) => setReferenceNumber(event.target.value)}
-                                    placeholder="CP-REF-01"
-                                    className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-900 outline-none transition focus:border-gray-400"
-                                />
-                            </label>
-
-                            <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
-                                <p className="text-xs font-black uppercase tracking-[0.24em] text-gray-400">Next generated number</p>
-                                <p className="mt-2 text-2xl font-black tracking-tight text-gray-900">
-                                    {isLoadingPreview ? 'Loading...' : voucherNumber || 'Unavailable'}
-                                </p>
-                                {previewError ? <p className="mt-2 text-sm font-bold text-red-600">{previewError}</p> : null}
-                            </div>
-                        </div>
-
-                        <label className="block text-xs font-bold uppercase tracking-[0.24em] text-gray-400">
-                            <span>Description</span>
-                            <textarea
-                                aria-label={t.vouchers.descriptionAria}
-                                value={description}
-                                onChange={(event) => setDescription(event.target.value)}
-                                rows={3}
-                                placeholder="{t.vouchers.narrationPlaceholder}"
-                                className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-900 outline-none transition focus:border-gray-400"
-                            />
-                        </label>
-
-                        <div className="rounded-2xl border border-sky-100 bg-sky-50 p-4 text-sm text-sky-900">
-                            <p className="text-xs font-black uppercase tracking-[0.24em] text-sky-700">Voucher-type guidance</p>
-                            <p className="mt-2">{voucherTypeHelpers[voucherType]}</p>
-                        </div>
-
-                        <div className="space-y-4">
-                            <div className="flex items-center justify-between gap-4">
-                                <div>
-                                    <h2 className="text-lg font-black tracking-tight">Voucher rows</h2>
-                                    <p className="text-sm text-gray-500">Each row must choose one account and one side only.</p>
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={addRow}
-                                    className="inline-flex items-center rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-black text-white shadow-lg shadow-blue-200"
-                                >
-                                    <Plus className="mr-2 h-4 w-4" />
-                                    Add Row
-                                </button>
-                            </div>
-
-                            {isLoadingAccounts ? <div className="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-bold text-gray-500">Loading accounts...</div> : null}
-                            {loadError ? <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-600">{loadError}</div> : null}
-
-                            <div className="space-y-3">
-                                {rows.map((row, index) => {
-                                    const options = getAccountOptionsForRow(accounts, voucherType, index);
-                                    const error = rowErrors[index];
-                                    return (
-                                        <div key={row.id} className="rounded-3xl border border-gray-200 bg-gray-50 p-4">
-                                            <div className="grid gap-3 xl:grid-cols-[1.4fr,0.7fr,0.7fr,1fr,auto] xl:items-start">
-                                                <label className="block text-[11px] font-black uppercase tracking-[0.24em] text-gray-400">
-                                                    <span>{getRowLabel(voucherType, index)}</span>
-                                                    <select
-                                                        aria-label={`Account row ${index + 1}`}
-                                                        value={row.accountId}
-                                                        onChange={(event) => updateRow(row.id, 'accountId', event.target.value)}
-                                                        className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-900"
-                                                    >
-                                                        <option value="">Select account</option>
-                                                        {options.map((account) => (
-                                                            <option key={account.id} value={account.id}>
-                                                                {account.name} {account.code ? `(${account.code})` : ''}
-                                                            </option>
-                                                        ))}
-                                                    </select>
-                                                    <span className="mt-2 block text-[11px] normal-case tracking-normal text-gray-500">
-                                                        {getRowHint(voucherType, index)}
-                                                    </span>
-                                                </label>
-
-                                                <label className="block text-[11px] font-black uppercase tracking-[0.24em] text-gray-400">
-                                                    <span>Debit</span>
-                                                    <input
-                                                        aria-label={`Debit row ${index + 1}`}
-                                                        type="number"
-                                                        min="0"
-                                                        step="0.01"
-                                                        value={row.debitAmount}
-                                                        onChange={(event) => updateRow(row.id, 'debitAmount', event.target.value)}
-                                                        className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-900"
-                                                        placeholder="0.00"
-                                                    />
-                                                </label>
-
-                                                <label className="block text-[11px] font-black uppercase tracking-[0.24em] text-gray-400">
-                                                    <span>Credit</span>
-                                                    <input
-                                                        aria-label={`Credit row ${index + 1}`}
-                                                        type="number"
-                                                        min="0"
-                                                        step="0.01"
-                                                        value={row.creditAmount}
-                                                        onChange={(event) => updateRow(row.id, 'creditAmount', event.target.value)}
-                                                        className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-900"
-                                                        placeholder="0.00"
-                                                    />
-                                                </label>
-
-                                                <label className="block text-[11px] font-black uppercase tracking-[0.24em] text-gray-400">
-                                                    <span>Comment</span>
-                                                    <input
-                                                        aria-label={`Comment row ${index + 1}`}
-                                                        value={row.comment}
-                                                        onChange={(event) => updateRow(row.id, 'comment', event.target.value)}
-                                                        className="mt-2 w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-900"
-                                                        placeholder={t.vouchers.optionalRowNote}
-                                                    />
-                                                </label>
-
-                                                <button
-                                                    type="button"
-                                                    aria-label={`Remove row ${index + 1}`}
-                                                    onClick={() => removeRow(row.id)}
-                                                    disabled={rows.length <= 2}
-                                                    className="inline-flex items-center justify-center rounded-2xl border border-gray-200 bg-white px-3 py-3 text-gray-500 transition hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40"
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </button>
-                                            </div>
-                                            {error ? <p className="mt-3 text-sm font-bold text-red-600">{error}</p> : null}
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    </section>
-
-                    <section className="space-y-4">
-                        <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
-                            <div className="flex items-center gap-3">
-                                <Scale className="h-5 w-5 text-gray-900" />
-                                <h2 className="text-lg font-black tracking-tight">Balance status</h2>
-                            </div>
-                            <div className="mt-5 grid gap-3">
-                                <BalanceStat label={t.accountingShared.debitTotal} value={debitTotal} tone="debit" locale={locale} />
-                                <BalanceStat label={t.accountingShared.creditTotal} value={creditTotal} tone="credit" locale={locale} />
-                                <div className={`rounded-2xl border px-4 py-4 ${isBalanced ? 'border-emerald-200 bg-emerald-50 text-emerald-900' : 'border-red-200 bg-red-50 text-red-900'}`}>
-                                    <p className="text-xs font-black uppercase tracking-[0.24em]">Balance</p>
-                                    <p className="mt-2 text-2xl font-black tracking-tight">
-                                        {formatBDT(Math.abs(debitTotal - creditTotal))}
-                                    </p>
-                                    <p className="mt-2 text-sm font-medium">
-                                        {isBalanced ? 'Voucher is balanced and ready for submission.' : 'Voucher must balance before it can be saved.'}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm space-y-4">
-                            <p className="text-xs font-black uppercase tracking-[0.24em] text-gray-400">Submission guardrails</p>
-                            <ul className="space-y-2 text-sm text-gray-600 list-disc pl-5">
-                                <li>At least two rows are required.</li>
-                                <li>Every row must select one tenant-owned account.</li>
-                                <li>Each row must contain either debit or credit, not both.</li>
-                                <li>Cash, bank, and fund-transfer types apply category restrictions automatically.</li>
-                            </ul>
-                            {submitError ? <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-600">{submitError}</div> : null}
-                            <button
-                                type="submit"
-                                disabled={!canSubmit}
-                                className="w-full rounded-2xl bg-gray-900 px-4 py-3 text-sm font-black text-white transition disabled:cursor-not-allowed disabled:bg-gray-300"
+    const columns: ColumnDef<VoucherRow, any>[] = useMemo(
+        () => [
+            columnHelper.accessor('voucher_number', {
+                header: t.journal.columns.voucherNumber,
+                cell: (info) => <span className="text-sm font-black text-gray-900">{info.getValue()}</span>,
+                size: 130,
+            }),
+            columnHelper.accessor('date', {
+                header: t.accountingShared.date,
+                cell: (info) => <span className="text-sm text-gray-700">{formatDate(info.getValue(), locale)}</span>,
+                size: 110,
+            }),
+            columnHelper.accessor('voucher_type', {
+                header: t.accountingShared.type,
+                cell: (info) => (
+                    <span className="text-xs font-bold uppercase tracking-wide text-sky-700">
+                        {info.getValue().replaceAll('_', ' ')}
+                    </span>
+                ),
+                size: 130,
+            }),
+            columnHelper.accessor('reference_number', {
+                header: t.accountingShared.reference,
+                cell: (info) => <span className="text-sm text-gray-600">{info.getValue() || '—'}</span>,
+                size: 120,
+            }),
+            columnHelper.accessor('total_amount', {
+                header: t.accountingShared.amount,
+                cell: (info) => (
+                    <span className="text-sm font-black text-emerald-600">
+                        {formatBDT(Number(info.getValue() || 0), { locale })}
+                    </span>
+                ),
+                size: 110,
+            }),
+            columnHelper.display({
+                id: 'actions',
+                header: t.vouchers.list.actions,
+                cell: ({ row }) => {
+                    const voucher = row.original;
+                    const isSystem = Boolean(voucher.source?.module);
+                    return (
+                        <div className="flex items-center gap-0.5">
+                            <Link
+                                href={`/accounting/vouchers/${voucher.id}`}
+                                className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50"
+                                title={t.common.view}
                             >
-                                {isSubmitting ? 'Saving Voucher...' : 'Save Voucher'}
+                                <Eye className="w-4 h-4" />
+                            </Link>
+                            <Link
+                                href={isSystem ? '#' : `/accounting/vouchers/new?edit=${voucher.id}`}
+                                onClick={isSystem ? (e) => { e.preventDefault(); toast.info(t.vouchers.list.systemVoucherLocked); } : undefined}
+                                className={`p-1.5 rounded-lg ${isSystem ? 'text-gray-300 cursor-not-allowed' : 'text-amber-600 hover:bg-amber-50'}`}
+                                title={t.common.edit}
+                            >
+                                <Pencil className="w-4 h-4" />
+                            </Link>
+                            <button
+                                type="button"
+                                onClick={() => void handlePrint(voucher)}
+                                className="p-1.5 rounded-lg text-purple-600 hover:bg-purple-50"
+                                title={t.vouchers.list.print}
+                            >
+                                <Printer className="w-4 h-4" />
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => void handleDelete(voucher)}
+                                disabled={isSystem}
+                                className="p-1.5 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-rose-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                                title={t.common.delete}
+                            >
+                                <Trash2 className="w-4 h-4" />
                             </button>
                         </div>
-                    </section>
-                </form>
-            </div>
-        </div>
+                    );
+                },
+                enableSorting: false,
+                size: 140,
+            }),
+        ],
+        [handleDelete, handlePrint, locale, t],
     );
-}
-
-function parseAmount(value: string) {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : 0;
-}
-
-function getAllowedCategories(voucherType: VoucherType, rowIndex: number): AccountCategory[] | null {
-    if (voucherType === VoucherType.FUND_TRANSFER) {
-        return [AccountCategory.CASH, AccountCategory.BANK];
-    }
-
-    if ((voucherType === VoucherType.CASH_PAYMENT || voucherType === VoucherType.CASH_RECEIVE) && rowIndex === 0) {
-        return [AccountCategory.CASH];
-    }
-
-    if ((voucherType === VoucherType.BANK_PAYMENT || voucherType === VoucherType.BANK_RECEIVE) && rowIndex === 0) {
-        return [AccountCategory.BANK];
-    }
-
-    return null;
-}
-
-function getAccountOptionsForRow(accounts: VoucherAccount[], voucherType: VoucherType, rowIndex: number) {
-    const allowedCategories = getAllowedCategories(voucherType, rowIndex);
-    return allowedCategories ? accounts.filter((account) => allowedCategories.includes(account.category)) : accounts;
-}
-
-function getRowLabel(voucherType: VoucherType, rowIndex: number) {
-    if (rowIndex === 0) {
-        if (voucherType === VoucherType.CASH_PAYMENT || voucherType === VoucherType.CASH_RECEIVE) {
-            return 'Cash account row';
-        }
-        if (voucherType === VoucherType.BANK_PAYMENT || voucherType === VoucherType.BANK_RECEIVE) {
-            return 'Bank account row';
-        }
-    }
-
-    if (voucherType === VoucherType.FUND_TRANSFER) {
-        return 'Transfer leg';
-    }
-
-    return `Voucher row ${rowIndex + 1}`;
-}
-
-function getRowHint(voucherType: VoucherType, rowIndex: number) {
-    const allowedCategories = getAllowedCategories(voucherType, rowIndex);
-    if (!allowedCategories) {
-        return 'Any tenant-owned account can be used in this row.';
-    }
-
-    return `Allowed categories: ${allowedCategories.join(', ')}.`;
-}
-
-function getRowError(row: VoucherRow, accounts: VoucherAccount[], voucherType: VoucherType, rowIndex: number) {
-    if (!row.accountId) {
-        return 'Select an account for this row.';
-    }
-
-    const options = getAccountOptionsForRow(accounts, voucherType, rowIndex);
-    if (options.length > 0 && !options.some((account) => account.id === row.accountId)) {
-        return 'The selected account does not match the current voucher-type rules.';
-    }
-
-    const debit = parseAmount(row.debitAmount);
-    const credit = parseAmount(row.creditAmount);
-    const hasDebit = debit > 0;
-    const hasCredit = credit > 0;
-
-    if ((hasDebit && hasCredit) || (!hasDebit && !hasCredit)) {
-        return 'Enter a debit or a credit amount, but not both.';
-    }
-
-    return '';
-}
-
-function BalanceStat({ label, value, tone, locale }: { label: string; value: number; tone: 'debit' | 'credit'; locale: string }) {
-    const classes = tone === 'debit'
-        ? 'border-amber-200 bg-amber-50 text-amber-900'
-        : 'border-sky-200 bg-sky-50 text-sky-900';
 
     return (
-        <div className={`rounded-2xl border px-4 py-4 ${classes}`}>
-            <p className="text-xs font-black uppercase tracking-[0.24em]">{label}</p>
-            <p className="mt-2 text-2xl font-black tracking-tight">{formatBDT(value, { locale })}</p>
+        <div className="flex flex-col h-full overflow-y-auto bg-gray-50 text-sm">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2 border-b bg-white flex-shrink-0">
+                <div className="flex items-center gap-2">
+                    <Link href="/accounting" className="text-gray-400 hover:text-gray-700">
+                        <ChevronLeft className="w-5 h-5" />
+                    </Link>
+                    <h1 className="text-base font-bold text-gray-900">{t.vouchers.list.title}</h1>
+                </div>
+                <div className="h-5 w-px bg-gray-200 hidden sm:block" />
+                <div className="flex flex-wrap items-center gap-2 text-xs">
+                    <select
+                        aria-label={t.journal.voucherTypeAria}
+                        value={voucherType}
+                        onChange={(e) => { setVoucherType(e.target.value); setPage(1); }}
+                        className="px-1.5 py-0.5 border rounded text-xs"
+                    >
+                        {voucherTypeOptions.map((option) => (
+                            <option key={option.label} value={option.value}>{option.label}</option>
+                        ))}
+                    </select>
+                    <input
+                        aria-label={t.journal.fromDateAria}
+                        type="date"
+                        value={from}
+                        onChange={(e) => { setFrom(e.target.value); setPage(1); }}
+                        className="px-1.5 py-0.5 border rounded text-xs"
+                    />
+                    <span className="text-gray-400">–</span>
+                    <input
+                        aria-label={t.journal.toDateAria}
+                        type="date"
+                        value={to}
+                        onChange={(e) => { setTo(e.target.value); setPage(1); }}
+                        className="px-1.5 py-0.5 border rounded text-xs"
+                    />
+                    <span className="text-gray-500">{response.meta.total} total</span>
+                </div>
+                <div className="ml-auto">
+                    <Link
+                        href="/accounting/vouchers/new"
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-blue-600 text-white rounded text-xs font-medium hover:bg-blue-700"
+                    >
+                        <Plus className="w-3.5 h-3.5" />
+                        {t.vouchers.list.newVoucher}
+                    </Link>
+                </div>
+            </div>
+
+            <div className="flex-1 p-3 min-h-0">
+                <DataTable<VoucherRow>
+                    tableId="accounting-vouchers-list"
+                    columns={columns}
+                    data={response.data}
+                    title={t.vouchers.list.title}
+                    isLoading={loading}
+                    emptyMessage={t.vouchers.list.emptyMessage}
+                    emptyIcon={<FileText className="w-16 h-16 text-gray-200" />}
+                    searchPlaceholder={t.vouchers.list.searchPlaceholder}
+                />
+            </div>
+
+            <div className="flex items-center justify-end gap-2 px-4 py-2 border-t bg-white flex-shrink-0">
+                <button
+                    type="button"
+                    onClick={() => setPage((current) => Math.max(1, current - 1))}
+                    disabled={response.meta.page <= 1}
+                    className="inline-flex items-center px-3 py-1.5 border rounded text-xs font-medium disabled:opacity-40"
+                >
+                    <ChevronLeft className="mr-1 h-3.5 w-3.5" />
+                    {t.common.prevPage}
+                </button>
+                <span className="text-xs text-gray-500">
+                    {response.meta.page} / {response.meta.totalPages}
+                </span>
+                <button
+                    type="button"
+                    onClick={() => setPage((current) => Math.min(response.meta.totalPages, current + 1))}
+                    disabled={response.meta.page >= response.meta.totalPages}
+                    className="inline-flex items-center px-3 py-1.5 border rounded text-xs font-medium disabled:opacity-40"
+                >
+                    {t.common.nextPage}
+                    <ChevronRight className="ml-1 h-3.5 w-3.5" />
+                </button>
+            </div>
         </div>
     );
 }

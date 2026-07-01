@@ -75,6 +75,9 @@ export async function fetchWithAuth(endpoint: string, options: RequestInit = {})
     if (storeId) {
         headers.set('x-store-id', storeId);
     }
+    if (options.body && !headers.has('Content-Type')) {
+        headers.set('Content-Type', 'application/json');
+    }
 
     const response = await fetch(`${API_BASE}${endpoint}`, {
         ...options,
@@ -638,6 +641,14 @@ export const api = {
         method: 'POST',
         body: JSON.stringify(data),
         headers: { 'Content-Type': 'application/json' },
+    }),
+    updateVoucher: (id: string, data: any) => fetchWithAuth(`/accounting/vouchers/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+    }),
+    deleteVoucher: (id: string) => fetchWithAuth(`/accounting/vouchers/${id}`, {
+        method: 'DELETE',
     }),
     getPostingRules: (params?: { eventType?: string; isActive?: boolean }) => {
         const query = new URLSearchParams();
@@ -1480,7 +1491,7 @@ export const api = {
         if (params?.from) q.set('from', params.from);
         if (params?.to) q.set('to', params.to);
         if (params?.categoryId) q.set('categoryId', params.categoryId);
-        return fetchWithAuth(`/expenses/entries?${q}`);
+        return fetchWithAuth(`/expenses/entries?${q}`).then((r: any) => (Array.isArray(r) ? r : r?.items ?? []));
     },
     createExpenseEntry: (data: any) => fetchWithAuth('/expenses/entries', {
         method: 'POST',
@@ -1508,7 +1519,7 @@ export const api = {
         if (params?.status) q.set('status', params.status);
         if (params?.storeId) q.set('storeId', params.storeId);
         if (params?.search) q.set('search', params.search);
-        return fetchWithAuth(`/loans?${q}`);
+        return fetchWithAuth(`/loans?${q}`).then((r: any) => (Array.isArray(r) ? r : r?.items ?? []));
     },
     getLoanSummary: () => fetchWithAuth('/loans/summary'),
     getLoan: (id: string) => fetchWithAuth(`/loans/${id}`),

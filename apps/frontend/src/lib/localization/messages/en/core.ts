@@ -271,6 +271,7 @@ export const coreMessages = {
             suppliers: 'Suppliers',
             overview: 'Overview',
             voucherEntry: 'Voucher Entry',
+            vouchersList: 'Vouchers',
             journal: 'Journal',
             ledger: 'Ledger',
             postingExceptions: 'Posting Exceptions',

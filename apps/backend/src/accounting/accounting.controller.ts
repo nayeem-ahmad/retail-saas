@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Header, Param, Patch, Post, Query, Res, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Header, Param, Patch, Post, Query, Res, UseGuards, UseInterceptors } from '@nestjs/common';
 import { Response } from 'express';
 import { AccountingService } from './accounting.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -150,6 +150,16 @@ export class AccountingController {
     @Post('vouchers')
     createVoucher(@Tenant() tenant: TenantContext, @Body() dto: CreateVoucherDto) {
         return this.accountingService.createVoucher(tenant.tenantId, dto, 1, tenant.userId);
+    }
+
+    @Patch('vouchers/:id')
+    updateVoucher(@Tenant() tenant: TenantContext, @Param('id') id: string, @Body() dto: CreateVoucherDto) {
+        return this.accountingService.updateVoucher(tenant.tenantId, id, dto, tenant.userId);
+    }
+
+    @Delete('vouchers/:id')
+    deleteVoucher(@Tenant() tenant: TenantContext, @Param('id') id: string) {
+        return this.accountingService.deleteVoucher(tenant.tenantId, id, tenant.userId);
     }
 
     @Get('dashboard/kpis')
