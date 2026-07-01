@@ -261,7 +261,7 @@ Track all work here. Check off items as they're completed. Add new items as they
 ### Support
 - [x] Set up support chat between platform admin and shop owners — bidirectional thread-based chat with 10s polling; SupportThread/SupportMessage Prisma models; backend SupportModule (shop owner + admin controllers); shop owner page at /dashboard/support; admin page at /dashboard/admin/support; en/bn/ms i18n — done 2026-06-16
 - [ ] Set up support email or ticket system before first paying customer
-- [ ] Status page (statuspage.io or similar)
+- [x] Status page — platform-admin `/status` with live dependency checks, cron jobs, and link to full system-health dashboard; public marketing links removed — done 2026-07-01
 - [ ] In-app feedback mechanism
 - [ ] Basic documentation / help center (Notion, GitBook, or Docs)
 
@@ -340,6 +340,7 @@ Track all work here. Check off items as they're completed. Add new items as they
 
 ## COMPLETED
 
+- [x] Platform-admin `/status` page — moved from public marketing page to authenticated `(app)/status`; route guard (login redirect + platform-admin check); rich health panel (dependencies, cron jobs, probe latency, last errors); help/admin links updated; SLA copy no longer promises public status — done 2026-07-01
 - [x] Accounting overview cleanup — removed subtitle, Epic 30 badge, and top-bar export; hub sections match sidebar (daily, transactions, reconciliation, reports, setup); ledger export moved under Accounting Setup — done 2026-07-01
 - [x] Compact UI trial — accounting module only: `CompactUiProvider` layout, `AccountingPageShell`/`CompactSection`/`CompactStat`/`CompactLinkGrid`, DataTable `density` via context (tighter cells/toolbar/pagination), compact sidebar (w-52) + header (h-11) on `/accounting/*`; all 30+ accounting pages migrated; 62 accounting tests green — done 2026-07-01
 - [x] Global voice navigation — header mic + help icons in app top bar; say phrases like "sales entry" to navigate to entry UIs — done 2026-06-30

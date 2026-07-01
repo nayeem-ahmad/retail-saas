@@ -190,6 +190,7 @@ export const routes = {
     billing: '/billing',
     team: '/team',
     help: '/help',
+    status: '/status',
     support: '/support',
     smsCredits: '/sms-credits',
     aiCredits: '/ai-credits',

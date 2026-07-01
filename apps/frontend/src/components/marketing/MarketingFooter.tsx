@@ -17,7 +17,6 @@ export default function MarketingFooter() {
                     <Link href="/refund" className="hover:text-gray-700 transition-colors">{m.refund}</Link>
                     <Link href="/sla" className="hover:text-gray-700 transition-colors">{m.sla}</Link>
                     <Link href="/contact" className="hover:text-gray-700 transition-colors">{m.contact}</Link>
-                    <Link href="/status" className="hover:text-gray-700 transition-colors">{m.status}</Link>
                     <Link href="/login" className="hover:text-gray-700 transition-colors">{m.signIn}</Link>
                     <Link href="/signup" className="hover:text-gray-700 transition-colors">{m.signUp}</Link>
                 </div>

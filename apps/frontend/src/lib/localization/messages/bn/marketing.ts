@@ -280,6 +280,8 @@ export const marketingMessages = {
                 notAvailable: "N/A",
             },
             backToHome: "Back to home",
+            adminOnly: "শুধুমাত্র প্ল্যাটফর্ম অ্যাডমিনদের জন্য।",
+            openFullDashboard: "সম্পূর্ণ সিস্টেম হেলথ ড্যাশবোর্ড খুলুন",
         },
         globalError: {
             title: "Something went wrong",

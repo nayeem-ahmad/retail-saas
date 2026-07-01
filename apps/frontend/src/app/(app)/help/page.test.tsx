@@ -1,6 +1,12 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import HelpPage from './page';
+
+jest.mock('@/lib/api', () => ({
+    api: {
+        getMe: jest.fn().mockResolvedValue({ is_platform_admin: false, tenants: [] }),
+    },
+}));
 
 jest.mock('next/navigation', () => ({
     useRouter: () => ({ push: jest.fn() }),
@@ -16,11 +22,18 @@ describe('HelpPage', () => {
         expect(screen.getByText('Frequently asked questions and guides')).toBeInTheDocument();
     });
 
-    it('renders quick link cards', () => {
+    it('renders quick link cards for all users', () => {
         render(<HelpPage />);
         expect(screen.getByText('Email Support')).toBeInTheDocument();
         expect(screen.getByText('Contact Us')).toBeInTheDocument();
-        expect(screen.getByText('System Status')).toBeInTheDocument();
+        expect(screen.queryByText('System Status')).not.toBeInTheDocument();
+    });
+
+    it('shows the status quick link for platform admins', async () => {
+        const { api } = jest.requireMock('@/lib/api');
+        api.getMe.mockResolvedValueOnce({ is_platform_admin: true, tenants: [] });
+        render(<HelpPage />);
+        await waitFor(() => expect(screen.getByText('System Status')).toBeInTheDocument());
     });
 
     it('renders all FAQ section titles', () => {

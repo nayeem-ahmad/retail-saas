@@ -12,7 +12,7 @@ export const helpMessages = {
         },
         status: {
             title: "Status Sistem",
-            subtitle: "Semak masa operasi",
+            subtitle: "Pentadbir platform — papan pemuka kesihatan langsung",
         },
     },
     footerPrefix: "Tidak jumpa apa yang anda cari?",

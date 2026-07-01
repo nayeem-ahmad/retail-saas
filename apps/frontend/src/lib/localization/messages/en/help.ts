@@ -12,7 +12,7 @@ export const helpMessages = {
         },
         status: {
             title: 'System Status',
-            subtitle: 'Check uptime',
+            subtitle: 'Platform admin — live health dashboard',
         },
     },
     footerPrefix: 'Can\'t find what you\'re looking for?',
