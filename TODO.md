@@ -548,5 +548,6 @@ Track all work here. Check off items as they're completed. Add new items as they
 - [x] Deploy PageHeader/breadcrumb UI to production — pushed `00e3b0f` to dev/main, VPS erp71 stack rebuilt at app.erp71.com — done 2026-07-01
 - [x] Fix header voice navigation start failure — mic permission preflight via `getUserMedia`, secure-context check, language fallback chain (bn/ms → en-US), abort stale recognition instances, specific error toasts (network/mic/insecure) — done 2026-07-01
 - [x] Marketing page SME positioning — broadened copy from retail-only to all Bangladeshi SMEs (en/bn/ms); hero dashboard preview URL `app.erp71.com/dashboard`; subtle animated hero background (floating gradient orbs + grid mask) — done 2026-07-01
+- [x] Deploy SME marketing page — pushed `c4e0973` to dev/main; VPS `/opt/retail-saas` `scripts/deploy.sh main` rebuilt `erp71` stack; smoke checks green at `api.erp71.com` / `app.erp71.com` — done 2026-07-01
 
 
