@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { MessageSquare, Mail, CreditCard, Settings, ChevronRight, Sparkles } from 'lucide-react';
+import { MessageSquare, Mail, CreditCard, Settings, ChevronRight, Sparkles, LayoutList } from 'lucide-react';
 import PageHeader from '@/components/ui/compact/PageHeader';
 import { useI18n } from '@/lib/i18n';
 import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
@@ -50,6 +50,14 @@ export default function PlatformSettingsIndexPage() {
             description: 'OpenRouter API key and default model for AI-powered features across all tenants.',
             color: 'text-purple-600',
             bg: 'bg-purple-50',
+        },
+        {
+            href: '/admin/platform-settings/navigation',
+            icon: LayoutList,
+            label: m.sections.navigation.label,
+            description: m.sections.navigation.description,
+            color: 'text-sky-600',
+            bg: 'bg-sky-50',
         },
     ];
 

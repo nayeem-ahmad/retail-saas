@@ -4,102 +4,28 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-    LayoutDashboard,
-    ShoppingCart,
-    Package,
-    Boxes,
-    Users,
-    FileText,
-    ClipboardList,
-    ArrowLeftRight,
-    Undo2,
-    TrendingUp,
-    Clock,
-    Settings,
-
     ChevronLeft,
     ChevronRight,
     ChevronDown,
-    ShoppingBag,
-    Truck,
-    Calculator,
-    FolderTree,
-    MapPin,
-    ClipboardCheck,
-    AlertTriangle,
-    BookOpen,
-    ShieldCheck,
-    CreditCard,
-    Crown,
-    BarChart3,
-    Globe,
-    Palette,
-    Factory,
-    Cog,
-    Receipt,
-    HandCoins,
-    Wallet,
-    HelpCircle,
-    Gift,
-    Tag,
-    MessageSquare,
-    UserCog,
-    CalendarOff,
-    Banknote,
-    Landmark,
-    FileSearch,
-    CheckSquare,
-    Megaphone,
-    UserPlus,
-    Sparkles,
-    Layers,
-    BadgeCheck,
-    Building2,
-    Cpu,
-    GitMerge,
-    Lock,
-    RefreshCw,
-    Scale,
-    Target,
-    Upload,
-    Waves,
+    Package,
     X,
     type LucideIcon,
 } from 'lucide-react';
 import { useIsMdUp } from '@/hooks/useMediaQuery';
-import { buildAccountingSidebarChildren } from '@/lib/accounting-nav';
+import { useNavLayouts } from '@/contexts/NavLayoutContext';
 import { useBranding } from '@/lib/branding';
 import { useI18n } from '@/lib/i18n';
+import { buildNavModulesFromLayout, type ResolvedNavChild, type ResolvedNavModule } from '@/lib/nav-resolver';
 import { routes } from '@/lib/routes';
 
 /* ------------------------------------------------------------------ */
 /*  Navigation structure                                               */
 /* ------------------------------------------------------------------ */
 
-interface NavLink {
-    href: string;
-    icon: LucideIcon;
-    label: string;
-    /** If true, renders as a non-clickable section header */
-    section?: boolean;
-    advancedOnly?: boolean;
-    premiumOnly?: boolean;
-    /** If true, only exact path match counts as active (for module hub routes) */
-    exact?: boolean;
-}
+type NavChild = ResolvedNavChild;
+type NavModule = ResolvedNavModule;
 
-interface NavSubgroup {
-    type: 'subgroup';
-    key: string;
-    icon: LucideIcon;
-    label: string;
-    advancedOnly?: boolean;
-    children: NavLink[];
-}
-
-type NavChild = NavLink | NavSubgroup;
-
-function isNavSubgroup(child: NavChild): child is NavSubgroup {
+function isNavSubgroup(child: NavChild): child is Extract<NavChild, { type: 'subgroup' }> {
     return 'type' in child && child.type === 'subgroup';
 }
 
@@ -125,284 +51,9 @@ function filterModuleNavChildren(
         .filter((child): child is NavChild => child !== null);
 }
 
-interface NavModule {
-    key: string;
-    icon: LucideIcon;
-    label: string;
-    /** Single page (no children) — acts as a direct link */
-    href?: string;
-    children?: NavChild[];
-    /** Show a "coming soon" badge instead of children */
-    soon?: boolean;
-}
-
-function buildModules(t: ReturnType<typeof useI18n>['t']): NavModule[] {
-    return [
-    {
-        key: 'dashboard',
-        icon: LayoutDashboard,
-        label: t.sidebar.modules.dashboard,
-        href: routes.home,
-    },
-    {
-        key: 'sales',
-        icon: ShoppingBag,
-        label: t.sidebar.modules.sales,
-        children: [
-            { href: routes.sales.root, icon: LayoutDashboard, label: t.sidebar.items.overview, exact: true },
-            { href: routes.sales.pos, icon: ShoppingCart, label: t.sidebar.items.pos },
-            { href: routes.sales.list, icon: TrendingUp, label: t.sidebar.items.allSales },
-            { href: routes.sales.new, icon: FileText, label: t.sidebar.items.newSalesEntry },
-            { href: routes.sales.cashierSessions, icon: Clock, label: t.sidebar.items.cashierSessions },
-            {
-                type: 'subgroup',
-                key: 'receivables',
-                icon: Wallet,
-                label: t.sales.hub.receivables,
-                children: [
-                    { href: routes.sales.customerPayments, icon: Wallet, label: t.sidebar.items.customerPayment },
-                    { href: routes.sales.customerLedger, icon: BookOpen, label: t.sidebar.items.customerLedger },
-                    { href: routes.sales.customerDueAging, icon: Clock, label: t.sidebar.items.dueAging },
-                ],
-            },
-            {
-                type: 'subgroup',
-                key: 'order-flow',
-                icon: ClipboardList,
-                label: t.sales.hub.orderFlow,
-                children: [
-                    { href: routes.sales.quotes, icon: FileText, label: t.sidebar.items.salesQuotations },
-                    { href: routes.sales.orders, icon: ClipboardList, label: t.sidebar.items.salesOrders },
-                    { href: routes.sales.delivery, icon: MapPin, label: t.sidebar.items.delivery },
-                    { href: routes.sales.returns, icon: ArrowLeftRight, label: t.sidebar.items.salesReturns },
-                    { href: routes.sales.warrantyClaims, icon: ShieldCheck, label: t.sidebar.items.warrantyClaims },
-                ],
-            },
-            {
-                type: 'subgroup',
-                key: 'storefront',
-                icon: Globe,
-                label: t.sidebar.modules.storefront,
-                children: [
-                    { href: routes.storefront.root, icon: ShoppingBag, label: t.sidebar.items.storefrontOrders, exact: true },
-                    { href: routes.storefront.settings, icon: Settings, label: t.sidebar.items.storefrontSettings },
-                ],
-            },
-            {
-                type: 'subgroup',
-                key: 'customers',
-                icon: Users,
-                label: t.sales.hub.customersCrm,
-                children: [
-                    { href: routes.sales.customers, icon: Users, label: t.sidebar.items.customers },
-                    { href: routes.sales.loyalty, icon: Gift, label: t.sidebar.items.loyaltyPoints },
-                ],
-            },
-            {
-                type: 'subgroup',
-                key: 'reports',
-                icon: BarChart3,
-                label: t.sales.hub.reports,
-                advancedOnly: true,
-                children: [
-                    { href: routes.sales.reports.summary, icon: TrendingUp, label: t.sidebar.items.salesSummary, advancedOnly: true },
-                    { href: routes.sales.reports.products, icon: Package, label: t.sidebar.items.salesByProduct, advancedOnly: true },
-                    { href: routes.sales.reports.consolidated, icon: BarChart3, label: t.sidebar.items.consolidated, advancedOnly: true },
-                    { href: routes.sales.reports.branchReport, icon: BarChart3, label: t.sidebar.items.branchReport, advancedOnly: true },
-                ],
-            },
-            {
-                type: 'subgroup',
-                key: 'setup',
-                icon: Settings,
-                label: t.sales.hub.setup,
-                children: [
-                    { href: routes.sales.customerGroups, icon: FolderTree, label: t.sidebar.items.customerGroups },
-                    { href: routes.sales.priceLists, icon: Tag, label: t.sidebar.items.priceLists },
-                    { href: routes.sales.territories, icon: MapPin, label: t.sidebar.items.territories },
-                    { href: routes.settings.sales, icon: Cog, label: t.sidebar.items.salesSettings },
-                ],
-            },
-        ],
-    },
-    {
-        key: 'purchase',
-        icon: Truck,
-        label: t.sidebar.modules.purchase,
-        children: [
-            { href: routes.purchases.root, icon: LayoutDashboard, label: t.sidebar.items.overview, exact: true },
-            { href: routes.purchases.list, icon: ClipboardList, label: t.sidebar.items.purchases },
-            {
-                type: 'subgroup',
-                key: 'payables',
-                icon: Wallet,
-                label: t.purchases.hub.payables,
-                children: [
-                    { href: routes.purchases.supplierPayments, icon: Wallet, label: t.sidebar.items.supplierPayment },
-                    { href: routes.purchases.supplierLedger, icon: BookOpen, label: t.sidebar.items.supplierLedger },
-                ],
-            },
-            {
-                type: 'subgroup',
-                key: 'order-flow',
-                icon: ClipboardList,
-                label: t.purchases.hub.orderFlow,
-                children: [
-                    { href: routes.purchases.orders, icon: FileText, label: t.sidebar.items.purchaseOrders },
-                    { href: routes.purchases.quotations, icon: FileSearch, label: t.sidebar.items.purchaseQuotations },
-                    { href: routes.purchases.returns, icon: Undo2, label: t.sidebar.items.purchaseReturns },
-                ],
-            },
-            {
-                type: 'subgroup',
-                key: 'reports',
-                icon: BarChart3,
-                label: t.purchases.hub.reports,
-                advancedOnly: true,
-                children: [
-                    { href: routes.purchases.reports.summary, icon: TrendingUp, label: t.sidebar.items.purchaseSummary, advancedOnly: true },
-                    { href: routes.purchases.reports.byProduct, icon: Package, label: t.sidebar.items.purchasesByProduct, advancedOnly: true },
-                    { href: routes.purchases.reports.bySupplier, icon: Truck, label: t.sidebar.items.purchasesBySupplier, advancedOnly: true },
-                ],
-            },
-            {
-                type: 'subgroup',
-                key: 'setup',
-                icon: Settings,
-                label: t.purchases.hub.setup,
-                children: [
-                    { href: routes.purchases.suppliers, icon: Truck, label: t.sidebar.items.suppliers },
-                ],
-            },
-        ],
-    },
-    {
-        key: 'accounting',
-        icon: Calculator,
-        label: t.sidebar.modules.accounting,
-        children: buildAccountingSidebarChildren(t) as NavChild[],
-    },
-    {
-        key: 'inventory',
-        icon: Package,
-        label: t.sidebar.modules.inventory,
-        children: [
-            { href: routes.inventory.root, icon: LayoutDashboard, label: t.sidebar.items.overview, exact: true },
-            { href: routes.inventory.products, icon: Package, label: t.sidebar.items.products },
-            { href: routes.inventory.transfers, icon: Boxes, label: t.sidebar.items.transfers },
-            { href: routes.inventory.stockTakes, icon: ClipboardCheck, label: t.sidebar.items.stockTakes },
-            { href: routes.inventory.shrinkage, icon: AlertTriangle, label: t.sidebar.items.shrinkage },
-            { href: routes.inventory.labels, icon: Tag, label: t.sidebar.items.printLabels },
-            {
-                type: 'subgroup',
-                key: 'reports',
-                icon: BarChart3,
-                label: t.inventory.hub.reports,
-                children: [
-                    { href: routes.inventory.ledger, icon: BookOpen, label: t.sidebar.items.stockLedger },
-                    { href: routes.inventory.reports.reorder, icon: TrendingUp, label: t.sidebar.items.reorderReport, advancedOnly: true },
-                    { href: routes.inventory.reports.shrinkage, icon: AlertTriangle, label: t.sidebar.items.shrinkageReport, advancedOnly: true },
-                    { href: routes.inventory.reports.valuation, icon: Calculator, label: t.sidebar.items.valuation, advancedOnly: true },
-                ],
-            },
-            {
-                type: 'subgroup',
-                key: 'setup',
-                icon: Settings,
-                label: t.inventory.hub.setup,
-                children: [
-                    { href: routes.inventory.brands, icon: Tag, label: t.sidebar.items.brands },
-                    { href: routes.inventory.categories, icon: FolderTree, label: t.sidebar.items.categories },
-                    { href: routes.inventory.settings, icon: Settings, label: t.sidebar.items.inventorySettings },
-                ],
-            },
-        ],
-    },
-    {
-        key: 'crm',
-        icon: Users,
-        label: t.sidebar.modules.crm,
-        children: [
-            { href: routes.crm.root, icon: LayoutDashboard, label: t.sidebar.items.overview, exact: true },
-            { href: routes.crm.leads, icon: UserPlus, label: t.sidebar.items.crmLeads, premiumOnly: true },
-            { href: routes.crm.customers, icon: Users, label: t.sidebar.items.crmCustomers },
-        ],
-    },
-    {
-        key: 'hr',
-        icon: UserCog,
-        label: t.sidebar.modules.hr,
-        children: [
-            { href: routes.hr.root, icon: LayoutDashboard, label: t.sidebar.items.overview, exact: true },
-            { href: routes.hr.employees, icon: Users, label: t.sidebar.items.employees },
-            {
-                type: 'subgroup',
-                key: 'organization',
-                icon: Layers,
-                label: t.hr.hub.organization,
-                children: [
-                    { href: routes.hr.departments, icon: Layers, label: t.sidebar.items.departments },
-                    { href: routes.hr.designations, icon: BadgeCheck, label: t.sidebar.items.designations },
-                ],
-            },
-            {
-                type: 'subgroup',
-                key: 'operations',
-                icon: Clock,
-                label: t.hr.hub.operations,
-                children: [
-                    { href: routes.hr.attendance, icon: Clock, label: t.sidebar.items.attendance },
-                    { href: routes.hr.leaves, icon: CalendarOff, label: t.sidebar.items.leaves },
-                    { href: routes.hr.salaryPayments, icon: Banknote, label: t.sidebar.items.salaryPayments },
-                ],
-            },
-        ],
-    },
-    {
-        key: 'account-settings',
-        icon: Settings,
-        label: t.sidebar.modules.accountSettings,
-        children: [
-            { href: routes.settings.root, icon: LayoutDashboard, label: t.sidebar.items.overview, exact: true },
-            { href: routes.billing, icon: CreditCard, label: t.sidebar.modules.billing },
-            { href: routes.team, icon: UserCog, label: t.sidebar.items.teamPermissions },
-            { href: routes.smsCredits, icon: MessageSquare, label: t.sidebar.items.smsCredits },
-            { href: routes.aiCredits, icon: Sparkles, label: t.sidebar.items.aiCredits },
-        ],
-    },
-    {
-        key: 'support',
-        icon: MessageSquare,
-        label: t.sidebar.items.support,
-        href: routes.support,
-    },
-    {
-        key: 'admin',
-        icon: ShieldCheck,
-        label: t.sidebar.modules.admin,
-        children: [
-            { href: routes.admin.root, icon: LayoutDashboard, label: t.sidebar.items.overview },
-            { href: routes.admin.tenants, icon: Crown, label: t.sidebar.items.tenants },
-            { href: routes.admin.users, icon: Users, label: t.sidebar.items.users },
-            { href: routes.admin.feedback, icon: MessageSquare, label: t.sidebar.items.feedback },
-            { href: routes.admin.support, icon: MessageSquare, label: t.sidebar.items.adminSupport },
-        ],
-    },
-    {
-        key: 'help',
-        icon: HelpCircle,
-        label: t.sidebar.modules.help,
-        href: routes.help,
-    },
-];
-}
-
 /* ------------------------------------------------------------------ */
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
-
-/** Modules visible when acting as the Platform Admin (no shop/tenant scope). */
-const PLATFORM_ADMIN_MODULES = new Set(['admin']);
 
 const SIDEBAR_COLLAPSED_WIDTH = 64;
 const SIDEBAR_MIN_WIDTH = 176;
@@ -450,58 +101,63 @@ export default function Sidebar({
     const isMdUp = useIsMdUp();
     const { logoUrl, businessName, primaryColor } = useBranding();
     const { t } = useI18n();
+    const { tenantLayout, platformAdminLayout } = useNavLayouts();
     const defaultWidth = compactNav ? SIDEBAR_DEFAULT_WIDTH.compact : SIDEBAR_DEFAULT_WIDTH.normal;
     const [collapsed, setCollapsed] = useState(false);
     const [width, setWidth] = useState<number>(defaultWidth);
     const [isResizing, setIsResizing] = useState(false);
     const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
-    const modules = useMemo(() => buildModules(t)
-        .filter((module) => {
-            // Platform-admin console: shop owner/user options are hidden entirely.
-            if (platformAdminMode) {
+    const modules = useMemo(() => {
+        const sourceLayout = platformAdminMode ? platformAdminLayout : tenantLayout;
+        return buildNavModulesFromLayout(sourceLayout, t as Record<string, unknown>)
+            .filter((module) => {
+                if (platformAdminMode) {
+                    if (module.key === 'help') return helpEnabled;
+                    return module.key === 'admin' || module.key === 'help';
+                }
+                if (module.key === 'accounting') return canAccessAccounting;
+                if (module.key === 'admin') return canAccessAdmin;
                 if (module.key === 'help') return helpEnabled;
-                return PLATFORM_ADMIN_MODULES.has(module.key);
-            }
-            if (module.key === 'accounting') return canAccessAccounting;
-            if (module.key === 'admin') return canAccessAdmin;
-            if (module.key === 'help') return helpEnabled;
-            if (module.key === 'support') return supportEnabled;
-            return true;
-        })
-        .map((module) => {
-            if (!module.children) return module;
+                if (module.key === 'support') return supportEnabled;
+                return true;
+            })
+            .map((module) => {
+                if (!module.children) return module;
 
-            if (module.key === 'account-settings') {
-                return {
-                    ...module,
-                    children: module.children.filter((child) => {
-                        if (isNavSubgroup(child)) return true;
-                        if (child.href === routes.billing) return canManageBilling;
-                        if (child.href === routes.team) return canManageTeam;
-                        return true;
-                    }),
-                };
-            }
+                if (module.key === 'account-settings') {
+                    return {
+                        ...module,
+                        children: module.children.filter((child) => {
+                            if (isNavSubgroup(child)) return true;
+                            if (child.href === routes.billing) return canManageBilling;
+                            if (child.href === routes.team) return canManageTeam;
+                            return true;
+                        }),
+                    };
+                }
 
-            if (['sales', 'purchase', 'inventory', 'accounting'].includes(module.key)) {
-                return {
-                    ...module,
-                    children: filterModuleNavChildren(module.children, canAccessInventoryReports, canAccessPremiumCrm),
-                };
-            }
+                if (['sales', 'purchase', 'inventory', 'accounting'].includes(module.key)) {
+                    return {
+                        ...module,
+                        children: filterModuleNavChildren(module.children, canAccessInventoryReports, canAccessPremiumCrm),
+                    };
+                }
 
-            if (module.key === 'crm') {
-                return {
-                    ...module,
-                    children: filterModuleNavChildren(module.children, true, canAccessPremiumCrm),
-                };
-            }
+                if (module.key === 'crm') {
+                    return {
+                        ...module,
+                        children: filterModuleNavChildren(module.children, true, canAccessPremiumCrm),
+                    };
+                }
 
-            return module;
-        })
-        .filter((module) => !module.children || module.children.length > 0), [
-        t,
+                return module;
+            })
+            .filter((module) => !module.children || module.children.length > 0);
+    }, [
         platformAdminMode,
+        platformAdminLayout,
+        tenantLayout,
+        t,
         canAccessAccounting,
         canAccessInventoryReports,
         canAccessPremiumCrm,

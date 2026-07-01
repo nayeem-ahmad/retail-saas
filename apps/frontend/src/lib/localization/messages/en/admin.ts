@@ -169,7 +169,25 @@ export const adminMessages = {
                     label: 'General',
                     description: 'Platform name, support email, maintenance mode, and tenant feature toggles.',
                 },
+                navigation: {
+                    label: 'Navigation',
+                    description: 'Reorder modules, submenus, and links for all tenants.',
+                },
             },
+        },
+        navigation: {
+            title: 'Navigation Layout',
+            description: 'Control sidebar organization platform-wide. Hide items or change order — routes and permissions stay enforced in code.',
+            notice: 'You can reorder and hide registered menu items only. New pages must still be added by developers in the navigation registry.',
+            scopes: {
+                tenant: 'Tenant Sidebar',
+                platformAdmin: 'Platform Admin Console',
+            },
+            usingDefaults: 'Using built-in default layout',
+            usingCustom: 'Using saved custom layout',
+            resetToDefaults: 'Reset to defaults',
+            resetSuccess: 'Navigation layout reset to defaults.',
+            resetFailed: 'Failed to reset navigation layout.',
         },
         common: {
             loading: 'Loading…',

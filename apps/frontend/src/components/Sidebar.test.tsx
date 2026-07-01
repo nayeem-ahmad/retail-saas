@@ -101,6 +101,20 @@ jest.mock('@/hooks/useMediaQuery', () => ({
     useIsMdUp: () => true,
 }));
 
+jest.mock('@/contexts/NavLayoutContext', () => {
+    const {
+        DEFAULT_PLATFORM_ADMIN_NAV_LAYOUT,
+        DEFAULT_TENANT_NAV_LAYOUT,
+    } = require('@erp71/shared-types');
+
+    return {
+        useNavLayouts: () => ({
+            tenantLayout: DEFAULT_TENANT_NAV_LAYOUT,
+            platformAdminLayout: DEFAULT_PLATFORM_ADMIN_NAV_LAYOUT,
+        }),
+    };
+});
+
 describe('Sidebar — Story 30.1', () => {
     beforeEach(() => {
         localStorage.clear();

@@ -1225,6 +1225,19 @@ export const api = {
         }),
     removeMember: (userId: string) => fetchWithAuth(`/team/members/${userId}`, { method: 'DELETE' }),
     getMe: () => fetchWithAuth('/auth/me'),
+    getNavLayout: (scope: 'tenant' | 'platform_admin') =>
+        fetchWithAuth(`/navigation/layout?scope=${scope}`),
+    getAdminNavLayout: (scope: 'tenant' | 'platform_admin') =>
+        fetchWithAuth(`/admin/navigation/layout/${scope}`),
+    getAdminNavRegistry: () => fetchWithAuth('/admin/navigation/registry'),
+    saveAdminNavLayout: (scope: 'tenant' | 'platform_admin', layout: unknown[]) =>
+        fetchWithAuth(`/admin/navigation/layout/${scope}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ layout }),
+        }),
+    resetAdminNavLayout: (scope: 'tenant' | 'platform_admin') =>
+        fetchWithAuth(`/admin/navigation/layout/${scope}/reset`, { method: 'POST' }),
     updateProfile: (data: { name?: string; preferred_locale?: 'en' | 'bn' | 'ms' }) => fetchWithAuth('/auth/me', {
         method: 'PATCH',
         body: JSON.stringify(data),

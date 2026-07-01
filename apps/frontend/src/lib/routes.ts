@@ -187,6 +187,7 @@ export const routes = {
             sms: '/admin/platform-settings/sms',
             payments: '/admin/platform-settings/payments',
             ai: '/admin/platform-settings/ai',
+            navigation: '/admin/platform-settings/navigation',
         },
     },
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { Menu, Zap, X } from 'lucide-react';
 import NotificationBell from '@/components/NotificationBell';
@@ -16,7 +16,14 @@ import ServiceWorkerRegistrar from '@/components/ServiceWorkerRegistrar';
 import { CompactUiProvider } from '@/contexts/CompactUiContext';
 import { PlatformFeaturesProvider } from '@/contexts/PlatformFeaturesContext';
 import { TenantLocaleProvider } from '@/contexts/TenantLocaleContext';
-import { DEFAULT_PLATFORM_FEATURES, type PlatformFeatures } from '@erp71/shared-types';
+import {
+    DEFAULT_PLATFORM_ADMIN_NAV_LAYOUT,
+    DEFAULT_PLATFORM_FEATURES,
+    DEFAULT_TENANT_NAV_LAYOUT,
+    type NavLayoutNode,
+    type PlatformFeatures,
+} from '@erp71/shared-types';
+import { NavLayoutProvider } from '@/contexts/NavLayoutContext';
 import TenantLocaleSync from '@/components/TenantLocaleSync';
 import { BrandingProvider } from '@/lib/branding';
 import { formatPlanDisplayName } from '@/lib/plan-display';
@@ -46,6 +53,28 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     const [mobileNavOpen, setMobileNavOpen] = useState(false);
     const [workspaceEpoch, setWorkspaceEpoch] = useState(0);
     const [platformFeatures, setPlatformFeatures] = useState<PlatformFeatures>(DEFAULT_PLATFORM_FEATURES);
+    const [tenantNavLayout, setTenantNavLayout] = useState<NavLayoutNode[]>(DEFAULT_TENANT_NAV_LAYOUT);
+    const [platformAdminNavLayout, setPlatformAdminNavLayout] = useState<NavLayoutNode[]>(DEFAULT_PLATFORM_ADMIN_NAV_LAYOUT);
+
+    const refreshNavLayouts = useCallback(() => {
+        Promise.all([
+            api.getNavLayout('tenant'),
+            api.getNavLayout('platform_admin'),
+        ]).then(([tenant, platformAdmin]) => {
+            if (tenant?.layout?.length) setTenantNavLayout(tenant.layout);
+            if (platformAdmin?.layout?.length) setPlatformAdminNavLayout(platformAdmin.layout);
+        }).catch(() => null);
+    }, []);
+
+    useEffect(() => {
+        refreshNavLayouts();
+    }, [refreshNavLayouts]);
+
+    useEffect(() => {
+        const onNavLayoutUpdated = () => refreshNavLayouts();
+        window.addEventListener('erp71:nav-layout-updated', onNavLayoutUpdated);
+        return () => window.removeEventListener('erp71:nav-layout-updated', onNavLayoutUpdated);
+    }, [refreshNavLayouts]);
 
     useEffect(() => {
         api.getMe().then((me) => {
@@ -233,6 +262,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
     return (
         <BrandingProvider>
+        <NavLayoutProvider
+            tenantLayout={tenantNavLayout}
+            platformAdminLayout={platformAdminNavLayout}
+        >
         <PlatformFeaturesProvider features={platformFeatures}>
         <TenantLocaleProvider tenant={tenantLocaleConfig}>
         <TenantLocaleSync tenant={tenantLocaleConfig} />
@@ -397,6 +430,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         </div>
         </TenantLocaleProvider>
         </PlatformFeaturesProvider>
+        </NavLayoutProvider>
         </BrandingProvider>
     );
 }

@@ -558,5 +558,6 @@ Track all work here. Check off items as they're completed. Add new items as they
 - [x] Platform admin feature toggles — Feedback, Support, Help, and Voice On/Off switches in General platform settings (all off by default); `platform_features` on `/auth/me`; frontend hides nav/widgets/panels and backend gates feedback/support/voice APIs — done 2026-07-02
 - [x] Fix CI E2E job seed step — `.github/workflows/deploy.yaml` still referenced renamed workspace `@retail/database`; updated to `@erp71/database` so subscription plans seed before Playwright global-setup signup — done 2026-07-02
 - [x] Fix CI frontend failures after platform feature toggles — Sidebar resizable width state typed as `number` (fixes Next.js build type error); COA page test wraps `PlatformFeaturesProvider` with `help: true` — done 2026-07-02
+- [x] Dynamic platform-wide navigation layout — nav registry + default layout in `@erp71/shared-types`; persisted in `platform_settings` (`navigation` group); `GET /navigation/layout` + admin PUT/reset APIs; Sidebar resolves tree from layout; platform-admin editor at `/admin/platform-settings/navigation` (reorder, hide, tenant + platform-admin scopes); live refresh via `erp71:nav-layout-updated` event — done 2026-07-02
 
 

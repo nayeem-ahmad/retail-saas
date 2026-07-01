@@ -56,6 +56,10 @@ const SETTINGS_SCHEMA: Record<string, Record<string, SettingMeta>> = {
         help_enabled:     { isSecret: false, default: 'false' },
         voice_enabled:    { isSecret: false, default: 'false' },
     },
+    navigation: {
+        tenant_layout: { isSecret: false },
+        platform_admin_layout: { isSecret: false },
+    },
 };
 
 export const VALID_GROUPS = Object.keys(SETTINGS_SCHEMA);

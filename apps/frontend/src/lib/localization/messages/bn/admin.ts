@@ -169,7 +169,25 @@ export const adminMessages = {
                         label: "General",
                         description: "Platform name, support email, and maintenance mode.",
                     },
+                    navigation: {
+                        label: "Navigation",
+                        description: "Reorder modules, submenus, and links for all tenants.",
+                    },
                 },
+            },
+            navigation: {
+                title: "Navigation Layout",
+                description: "Control sidebar organization platform-wide.",
+                notice: "You can reorder and hide registered menu items only.",
+                scopes: {
+                    tenant: "Tenant Sidebar",
+                    platformAdmin: "Platform Admin Console",
+                },
+                usingDefaults: "Using built-in default layout",
+                usingCustom: "Using saved custom layout",
+                resetToDefaults: "Reset to defaults",
+                resetSuccess: "Navigation layout reset to defaults.",
+                resetFailed: "Failed to reset navigation layout.",
             },
             common: {
                 loading: "Loading…",
