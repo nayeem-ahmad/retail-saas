@@ -39,7 +39,7 @@ describe('LoyaltySettingsPage', () => {
         });
         render(<LoyaltySettingsPage />);
         await waitFor(() => {
-            expect(screen.getByText('Loyalty Program')).toBeInTheDocument();
+            expect(screen.getByRole('heading', { name: 'Loyalty Program' })).toBeInTheDocument();
         });
     });
 

@@ -13,11 +13,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { api } from '@/lib/api';
 import { formatBDT, formatDate } from '@/lib/format';
 import { formatMessage, useI18n } from '@/lib/i18n';
-import DashboardBreadcrumb from '@/components/dashboard/DashboardBreadcrumb';
 import FrequentQuickLinks from '@/components/dashboard/FrequentQuickLinks';
 import { FinancialKpiTile, StatKpiTile } from '@/components/dashboard/KpiTile';
+import PageHeader from '@/components/ui/compact/PageHeader';
 import PageShell from '@/components/ui/compact/PageShell';
 import { compactDensity } from '@/lib/ui/compact-density';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 
 type FinancialKpis = {
     cash_inflow: number;
@@ -217,13 +218,16 @@ export default function DashboardPage() {
     return (
         <PageShell maxWidth="wide">
             <div className="space-y-3">
-                <DashboardBreadcrumb />
-                <div>
-                    <h1 className={compactDensity.pageTitle}>{copy.businessMonitor}</h1>
-                    <p className={`${compactDensity.pageSubtitle} mt-0.5`}>
-                        {formatMessage(copy.tenantSubtitle, { tenant: tenantName })}
-                    </p>
-                </div>
+                <PageHeader
+                    title={copy.businessMonitor}
+                    subtitle={formatMessage(copy.tenantSubtitle, { tenant: tenantName })}
+                    breadcrumbs={modulePageBreadcrumbs(
+                        copy.breadcrumbHome,
+                        copy.businessMonitor,
+                        copy.businessMonitor,
+                        'dashboard',
+                    )}
+                />
                 <FrequentQuickLinks />
             </div>
 

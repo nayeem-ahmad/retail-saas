@@ -4,7 +4,9 @@ import { useMemo } from 'react';
 import AccountingLedgerExport from '@/components/accounting/AccountingLedgerExport';
 import { CompactLinkGrid } from '@/components/accounting/compact';
 import AccountingPageShell from '@/components/accounting/compact/AccountingPageShell';
+import PageHeader from '@/components/ui/compact/PageHeader';
 import { compactDensity } from '@/lib/ui/compact-density';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 import {
     ACCOUNTING_DAILY_LINKS,
     ACCOUNTING_RECONCILIATION_LINKS,
@@ -33,6 +35,16 @@ export default function AccountingPage() {
 
     return (
         <AccountingPageShell maxWidth="wide">
+            <PageHeader
+                title={t.accounting.title}
+                subtitle={t.accounting.subtitle}
+                breadcrumbs={modulePageBreadcrumbs(
+                    t.dashboardHome.breadcrumbHome,
+                    t.sidebar.modules.accounting,
+                    t.accounting.title,
+                    'accounting',
+                )}
+            />
             <CompactLinkGrid label={t.accounting.hub.dailyOperations} links={dailyLinks} />
             <CompactLinkGrid label={t.accounting.hub.transactions} links={transactionLinks} />
             <CompactLinkGrid label={t.accounting.hub.reconciliation} links={reconciliationLinks} />

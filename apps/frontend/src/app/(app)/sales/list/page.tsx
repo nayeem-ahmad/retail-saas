@@ -9,6 +9,8 @@ import { createColumnHelper, type ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table';
 import { PostingBadge } from '@/components/PostingBadge';
 import { useI18n, formatMessage } from '@/lib/i18n';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 
 interface Sale {
     id: string;
@@ -210,30 +212,34 @@ export default function SalesPage() {
     return (
         <div className="overflow-y-auto h-full bg-[#f3f4f6] p-4 md:p-6 font-sans text-gray-900">
             <div className="w-full space-y-4">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                    <div>
-                        <h1 className="text-lg font-bold tracking-tight text-gray-950">{t.sales.list.title}</h1>
-                        <p className="text-xs text-gray-500 mt-0.5">
-                            {t.sales.list.subtitle}
-                        </p>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                        <Link
-                            href="/sales/new"
-                            className="bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center transition-all hover:-translate-y-0.5 active:translate-y-0"
-                        >
-                            <Plus className="w-4 h-4 mr-2" />
-                            New Sales Entry
-                        </Link>
-                        <Link
-                            href="/sales/pos"
-                            className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center shadow-lg shadow-blue-200 transition-all hover:-translate-y-0.5 active:translate-y-0"
-                        >
-                            <Plus className="w-4 h-4 mr-2" />
-                            {t.sales.newSale}
-                        </Link>
-                    </div>
-                </div>
+                <PageHeader
+                    title={t.sales.list.title}
+                    subtitle={t.sales.list.subtitle}
+                    breadcrumbs={modulePageBreadcrumbs(
+                        t.dashboardHome.breadcrumbHome,
+                        t.sidebar.modules.sales,
+                        t.sales.list.title,
+                        'sales',
+                    )}
+                    actions={
+                        <>
+                            <Link
+                                href="/sales/new"
+                                className="bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center transition-all hover:-translate-y-0.5 active:translate-y-0"
+                            >
+                                <Plus className="w-4 h-4 mr-2" />
+                                New Sales Entry
+                            </Link>
+                            <Link
+                                href="/sales/pos"
+                                className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center shadow-lg shadow-blue-200 transition-all hover:-translate-y-0.5 active:translate-y-0"
+                            >
+                                <Plus className="w-4 h-4 mr-2" />
+                                {t.sales.newSale}
+                            </Link>
+                        </>
+                    }
+                />
 
                 <DataTable<Sale>
                     tableId="sales"

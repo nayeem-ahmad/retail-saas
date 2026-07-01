@@ -15,6 +15,8 @@ import {
 import { fetchWithAuth } from '@/lib/api';
 import { formatDate } from '@/lib/format';
 import { useI18n, formatMessage } from '@/lib/i18n';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 
 type ToastState = { type: 'success' | 'error'; message: string } | null;
 
@@ -278,18 +280,23 @@ export default function LoyaltyPage() {
     return (
         <div className="h-full overflow-y-auto">
             <div className="max-w-5xl mx-auto px-6 py-8 space-y-6">
-                {/* Header */}
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center">
-                            <Gift className="w-5 h-5 text-purple-600" />
-                        </div>
-                        <div>
-                            <h1 className="text-2xl font-black text-gray-900 tracking-tight">{t.loyalty.title}</h1>
-                            <p className="text-sm text-gray-500">{t.loyalty.subtitle}</p>
-                        </div>
-                    </div>
-                </div>
+                <PageHeader
+                    title={
+                        <span className="inline-flex items-center gap-3">
+                            <span className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center">
+                                <Gift className="w-5 h-5 text-purple-600" />
+                            </span>
+                            {t.loyalty.title}
+                        </span>
+                    }
+                    subtitle={t.loyalty.subtitle}
+                    breadcrumbs={modulePageBreadcrumbs(
+                        t.dashboardHome.breadcrumbHome,
+                        t.sidebar.modules.sales,
+                        t.loyalty.title,
+                        'sales',
+                    )}
+                />
 
                 {/* Search */}
                 <div className="relative max-w-sm">

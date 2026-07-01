@@ -5,7 +5,9 @@ import Link from 'next/link';
 import { HelpCircle, ChevronDown, ChevronRight, Activity, BookOpen, MessageCircle } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
+import PageHeader from '@/components/ui/compact/PageHeader';
 import { routes } from '@/lib/routes';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 
 export default function HelpPage() {
     const { t } = useI18n();
@@ -53,13 +55,16 @@ export default function HelpPage() {
 
     return (
         <div className="p-6 max-w-3xl space-y-6">
-            <div className="flex items-center gap-3">
-                <HelpCircle className="h-7 w-7 text-blue-600" />
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900">{h.title}</h1>
-                    <p className="text-gray-500 text-sm">{h.description}</p>
-                </div>
-            </div>
+            <PageHeader
+                title={h.title}
+                subtitle={h.description}
+                breadcrumbs={modulePageBreadcrumbs(
+                    t.dashboardHome.breadcrumbHome,
+                    t.sidebar.modules.help,
+                    h.title,
+                    'help',
+                )}
+            />
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <a

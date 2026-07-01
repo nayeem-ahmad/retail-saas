@@ -4,6 +4,8 @@ import { useI18n, formatMessage } from '@/lib/i18n';
 import { useState, useEffect } from 'react';
 import { BarChart3, CheckCircle, Info, Loader2 } from 'lucide-react';
 import { fetchWithAuth } from '@/lib/api';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 
 type ReportSettings = {
     report_weekly_enabled: boolean;
@@ -103,10 +105,20 @@ export default function ReportSettingsPage() {
 
     return (
         <div className="p-6 max-w-2xl space-y-6">
-            <div className="flex items-center gap-2">
-                <BarChart3 className="h-6 w-6 text-gray-600" />
-                <h1 className="text-2xl font-bold text-gray-900">{m.title}</h1>
-            </div>
+            <PageHeader
+                title={(
+                    <span className="inline-flex items-center gap-2">
+                        <BarChart3 className="h-6 w-6 text-gray-600" />
+                        {m.title}
+                    </span>
+                )}
+                breadcrumbs={modulePageBreadcrumbs(
+                    t.dashboardHome.breadcrumbHome,
+                    t.sidebar.modules.accountSettings,
+                    m.title,
+                    'settings',
+                )}
+            />
 
             {/* Info box */}
             <div className="flex gap-3 bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">

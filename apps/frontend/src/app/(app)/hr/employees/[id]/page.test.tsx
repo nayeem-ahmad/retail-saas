@@ -90,7 +90,7 @@ describe('EmployeeDetailPage', () => {
     it('renders employee details after loading', async () => {
         render(<EmployeeDetailPage />);
         await waitFor(() => {
-            expect(screen.getByText('Jane Smith')).toBeInTheDocument();
+            expect(screen.getByRole('heading', { name: 'Jane Smith' })).toBeInTheDocument();
         });
         expect(screen.getAllByText('EMP-001').length).toBeGreaterThan(0);
     });

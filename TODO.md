@@ -542,5 +542,8 @@ Track all work here. Check off items as they're completed. Add new items as they
 - [x] Mobile responsiveness P2 fixes — ModalShell, DataTable scroll affordance, list header wrap, pricing mobile compare, shop filter drawer — done 2026-07-01
 - [x] Mobile responsiveness P3 fixes — Playwright mobile viewports, safe-area/touch tokens, sidebar drawer a11y (focus trap, swipe, aria-modal), body scroll lock, mobile E2E spec, header touch targets — done 2026-07-01
 - [x] Storefront mobile E2E — `nayeem-store` slug wired for hamburger nav, shop filter drawer, and add-to-cart checks in `mobile-responsive.spec.ts` — done 2026-07-01
+- [x] Sidebar logo bar height aligned with app header; removed redundant "Workspace" subtitle below business name — done 2026-07-01
+- [x] Dashboard page header — breadcrumb moved to right; title and subtitle stay on left — done 2026-07-01
+- [x] Shared PageHeader + PageBreadcrumb across all module pages (sales, purchases, inventory, HR, CRM, accounting, settings, admin, billing, etc.) — done 2026-07-01
 
 

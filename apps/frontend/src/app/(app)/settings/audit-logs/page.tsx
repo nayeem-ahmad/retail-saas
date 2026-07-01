@@ -2,12 +2,15 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Loader2, ScrollText } from 'lucide-react';
+import { Loader2, ScrollText } from 'lucide-react';
 import { createColumnHelper, type ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { formatDate } from '@/lib/format';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
+import { routes } from '@/lib/routes';
 
 interface AuditUser {
     id: string;
@@ -158,8 +161,7 @@ export default function AuditLogsPage() {
                     <ScrollText className="w-10 h-10 text-amber-600 mx-auto" />
                     <h1 className="text-xl font-black text-amber-900">{t.settings.audit.forbiddenTitle}</h1>
                     <p className="text-sm text-amber-800">{t.settings.audit.forbiddenDescription}</p>
-                    <Link href="/settings" className="inline-flex items-center gap-2 text-sm font-bold text-amber-900 hover:underline">
-                        <ArrowLeft className="w-4 h-4" />
+                    <Link href={routes.settings.root} className="inline-flex items-center gap-2 text-sm font-bold text-amber-900 hover:underline">
                         {t.common.back}
                     </Link>
                 </div>
@@ -170,21 +172,16 @@ export default function AuditLogsPage() {
     return (
         <div className="h-full overflow-y-auto bg-[#f3f4f6] p-6 font-sans text-gray-900">
             <div className="w-full space-y-4">
-                <div className="flex items-start justify-between gap-4">
-                    <div>
-                        <Link
-                            href="/settings"
-                            className="inline-flex items-center gap-1.5 text-xs font-bold text-gray-400 hover:text-gray-700 mb-3"
-                        >
-                            <ArrowLeft className="w-3.5 h-3.5" />
-                            {t.common.back}
-                        </Link>
-                        <h1 className="text-lg font-bold tracking-tight text-gray-950">{t.settings.audit.title}</h1>
-                        <p className="text-xs text-gray-500 mt-0.5">
-                            {t.settings.audit.description}
-                        </p>
-                    </div>
-                </div>
+                <PageHeader
+                    title={t.settings.audit.title}
+                    subtitle={t.settings.audit.description}
+                    breadcrumbs={modulePageBreadcrumbs(
+                        t.dashboardHome.breadcrumbHome,
+                        t.sidebar.modules.accountSettings,
+                        t.settings.audit.title,
+                        'settings',
+                    )}
+                />
 
                 <div className="rounded-2xl border border-gray-200 bg-white p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                     <label className="space-y-1">

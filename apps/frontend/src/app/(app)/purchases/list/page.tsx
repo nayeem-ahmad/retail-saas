@@ -10,6 +10,8 @@ import { api } from '@/lib/api';
 import { formatBDT, formatDate } from '@/lib/format';
 import CreatePurchaseModal from '../CreatePurchaseModal';
 import { PostingBadge } from '@/components/PostingBadge';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 import { useI18n, formatMessage } from '@/lib/i18n';
 
 interface PurchaseItem {
@@ -164,21 +166,25 @@ export default function PurchasesPage() {
     return (
         <div className="overflow-y-auto h-full bg-[#f3f4f6] p-4 md:p-6 font-sans text-gray-900">
             <div className="w-full space-y-4">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                    <div>
-                        <h1 className="text-lg font-bold tracking-tight text-gray-950">{t.purchases.title}</h1>
-                        <p className="text-xs text-gray-500 mt-0.5">
-                            {t.purchases.subtitle}
-                        </p>
-                    </div>
-                    <button
-                        onClick={() => setIsModalOpen(true)}
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center shadow-lg shadow-emerald-200 transition-all hover:-translate-y-0.5 active:translate-y-0"
-                    >
-                        <Plus className="w-4 h-4 mr-2" />
-                        {t.purchases.recordPurchase}
-                    </button>
-                </div>
+                <PageHeader
+                    title={t.purchases.title}
+                    subtitle={t.purchases.subtitle}
+                    breadcrumbs={modulePageBreadcrumbs(
+                        t.dashboardHome.breadcrumbHome,
+                        t.sidebar.modules.purchase,
+                        t.purchases.title,
+                        'purchases',
+                    )}
+                    actions={(
+                        <button
+                            onClick={() => setIsModalOpen(true)}
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center shadow-lg shadow-emerald-200 transition-all hover:-translate-y-0.5 active:translate-y-0"
+                        >
+                            <Plus className="w-4 h-4 mr-2" />
+                            {t.purchases.recordPurchase}
+                        </button>
+                    )}
+                />
 
                 <CreatePurchaseModal
                     isOpen={isModalOpen}

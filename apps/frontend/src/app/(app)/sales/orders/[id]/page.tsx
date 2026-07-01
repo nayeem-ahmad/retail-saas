@@ -1,11 +1,14 @@
 'use client';
 
 import { useState, useEffect, useRef, Suspense } from 'react';
-import { ArrowLeft, Package, DollarSign, Printer, Save, Pencil, X, Trash2, Search, PackageCheck } from 'lucide-react';
+import { Package, DollarSign, Printer, Save, Pencil, X, Trash2, Search, PackageCheck } from 'lucide-react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { api } from '@/lib/api';
 import { formatBDT, formatDate } from '@/lib/format';
 import { useI18n, formatMessage } from '@/lib/i18n';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { nestedPageBreadcrumbs } from '@/lib/page-breadcrumbs';
+import { routes } from '@/lib/routes';
 
 interface EditItem {
     productId: string;
@@ -264,26 +267,27 @@ function OrderDetailsPageContent() {
                     </div>
                 )}
 
-                {/* Header */}
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                        <button onClick={() => router.push('/sales/orders')} className="p-2 bg-white rounded-xl shadow-sm hover:shadow-md transition-all text-gray-400 hover:text-gray-900">
-                            <ArrowLeft className="w-5 h-5" />
-                        </button>
-                        <div>
-                            <h1 className="text-lg font-bold tracking-tight text-gray-950">{order.order_number}</h1>
-                            <div className="flex items-center space-x-3 mt-1">
-                                <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-gray-100 text-gray-800">
-                                    {t.shared.statuses.order[order.status as keyof typeof t.shared.statuses.order] ?? order.status}
-                                </span>
-                                <span className="text-xs font-bold text-gray-400">
-                                    {new Date(order.created_at).toLocaleString()}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                        {!isEditMode && (
+                <PageHeader
+                    title={order.order_number}
+                    subtitle={
+                        <span className="inline-flex items-center gap-3">
+                            <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-gray-100 text-gray-800">
+                                {t.shared.statuses.order[order.status as keyof typeof t.shared.statuses.order] ?? order.status}
+                            </span>
+                            <span className="text-xs font-bold text-gray-400">
+                                {new Date(order.created_at).toLocaleString()}
+                            </span>
+                        </span>
+                    }
+                    breadcrumbs={nestedPageBreadcrumbs(
+                        t.dashboardHome.breadcrumbHome,
+                        t.sidebar.modules.sales,
+                        'sales',
+                        [{ label: t.orders.title, href: routes.sales.orders }],
+                        order.order_number,
+                    )}
+                    actions={
+                        !isEditMode ? (
                             <>
                                 {canEdit && (
                                     <button
@@ -301,26 +305,26 @@ function OrderDetailsPageContent() {
                                     <Printer className="w-4 h-4" />
                                     <span>{t.common.print}</span>
                                 </button>
+                                {order.status === 'DRAFT' && (
+                                    <button onClick={() => handleUpdateStatus('CONFIRMED')} disabled={statusUpdating} className="bg-blue-600 text-white px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest shadow-md hover:bg-blue-700 transition-all">
+                                        {t.orders.detail.confirmOrder}
+                                    </button>
+                                )}
+                                {order.status === 'CONFIRMED' && (
+                                    <button onClick={() => handleUpdateStatus('PROCESSING')} disabled={statusUpdating} className="bg-amber-500 text-white px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest shadow-md hover:bg-amber-600 transition-all">
+                                        {t.orders.detail.startProcessing}
+                                    </button>
+                                )}
+                                {order.status === 'PROCESSING' && (
+                                    <button onClick={() => handleUpdateStatus('DELIVERED')} disabled={statusUpdating} className="bg-emerald-600 text-white px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest shadow-md flex items-center space-x-2 hover:bg-emerald-700 transition-all">
+                                        <PackageCheck className="w-4 h-4" />
+                                        <span>{t.orders.detail.markDelivered}</span>
+                                    </button>
+                                )}
                             </>
-                        )}
-                        {!isEditMode && order.status === 'DRAFT' && (
-                            <button onClick={() => handleUpdateStatus('CONFIRMED')} disabled={statusUpdating} className="bg-blue-600 text-white px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest shadow-md hover:bg-blue-700 transition-all">
-                                {t.orders.detail.confirmOrder}
-                            </button>
-                        )}
-                        {!isEditMode && order.status === 'CONFIRMED' && (
-                            <button onClick={() => handleUpdateStatus('PROCESSING')} disabled={statusUpdating} className="bg-amber-500 text-white px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest shadow-md hover:bg-amber-600 transition-all">
-                                {t.orders.detail.startProcessing}
-                            </button>
-                        )}
-                        {!isEditMode && order.status === 'PROCESSING' && (
-                            <button onClick={() => handleUpdateStatus('DELIVERED')} disabled={statusUpdating} className="bg-emerald-600 text-white px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest shadow-md flex items-center space-x-2 hover:bg-emerald-700 transition-all">
-                                <PackageCheck className="w-4 h-4" />
-                                <span>{t.orders.detail.markDelivered}</span>
-                            </button>
-                        )}
-                    </div>
-                </div>
+                        ) : null
+                    }
+                />
 
                 {/* Summary cards */}
                 <div className="grid grid-cols-4 gap-4">

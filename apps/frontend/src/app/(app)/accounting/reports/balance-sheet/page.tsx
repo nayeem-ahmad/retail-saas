@@ -7,6 +7,8 @@ import {
     AccountingToolbar,
     CompactSection,
 } from '@/components/accounting/compact';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 import { compactDensity } from '@/lib/ui/compact-density';
 import { api } from '@/lib/api';
 import { formatBDT } from '@/lib/format';
@@ -86,7 +88,17 @@ export default function BalanceSheetPage() {
 
     return (
         <AccountingPageShell maxWidth="narrow">
-            <AccountingToolbar subtitle="Assets, liabilities, and equity snapshot as of a date">
+            <PageHeader
+                title={t.accounting.reports.balanceSheet.title}
+                subtitle={t.accounting.reports.balanceSheet.subtitle}
+                breadcrumbs={modulePageBreadcrumbs(
+                    t.dashboardHome.breadcrumbHome,
+                    t.sidebar.modules.accounting,
+                    t.accounting.reports.balanceSheet.title,
+                    'accounting',
+                )}
+            />
+            <AccountingToolbar>
                 <div className={compactDensity.filterBar}>
                     <div className="flex flex-col gap-1">
                         <span className={compactDensity.formLabel}>As of Date</span>

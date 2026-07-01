@@ -1,10 +1,13 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Download, Printer } from 'lucide-react';
+import { useParams } from 'next/navigation';
+import { Download, Printer } from 'lucide-react';
 import { api } from '@/lib/api';
 import { formatBDT, formatDate } from '@/lib/format';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { nestedPageBreadcrumbs } from '@/lib/page-breadcrumbs';
+import { routes } from '@/lib/routes';
 import { useI18n } from '@/lib/i18n';
 
 function formatDateTime(dateStr: string, locale: string) {
@@ -16,7 +19,6 @@ function formatDateTime(dateStr: string, locale: string) {
 export default function PurchaseOrderInvoicePage() {
     const { t, locale } = useI18n();
     const params = useParams();
-    const router = useRouter();
     const ref = useRef<HTMLDivElement>(null);
     const [data, setData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
@@ -57,22 +59,38 @@ export default function PurchaseOrderInvoicePage() {
             `}</style>
 
             <div className="min-h-full bg-gray-100 p-4 sm:p-8">
-                <div className="no-print max-w-3xl mx-auto mb-4 flex items-center justify-between">
-                    <button onClick={() => router.push(`/purchases/orders/${po.id}`)}
-                        className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900">
-                        <ArrowLeft className="h-4 w-4" /> Back to PO
-                    </button>
-                    <div className="flex items-center gap-3">
-                        <button onClick={() => window.print()}
-                            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 shadow-sm">
-                            <Printer className="h-4 w-4" /> Print
-                        </button>
-                        <button onClick={() => window.print()}
-                            className="flex items-center gap-2 px-4 py-2 text-white rounded-lg text-sm font-medium shadow-sm"
-                            style={{ backgroundColor: primaryColor }}>
-                            <Download className="h-4 w-4" /> Download PDF
-                        </button>
-                    </div>
+                <div className="no-print max-w-3xl mx-auto mb-4">
+                    <PageHeader
+                        title={t.purchaseOrders.invoiceTitle}
+                        subtitle={po.po_number}
+                        breadcrumbs={nestedPageBreadcrumbs(
+                            t.dashboardHome.breadcrumbHome,
+                            t.sidebar.modules.purchase,
+                            'purchases',
+                            [
+                                { label: t.purchaseOrders.title, href: routes.purchases.orders },
+                                { label: po.po_number, href: routes.purchases.orderDetail(po.id) },
+                            ],
+                            t.purchaseOrders.invoiceTitle,
+                        )}
+                        actions={(
+                            <>
+                                <button
+                                    onClick={() => window.print()}
+                                    className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 shadow-sm"
+                                >
+                                    <Printer className="h-4 w-4" /> Print
+                                </button>
+                                <button
+                                    onClick={() => window.print()}
+                                    className="flex items-center gap-2 px-4 py-2 text-white rounded-lg text-sm font-medium shadow-sm"
+                                    style={{ backgroundColor: primaryColor }}
+                                >
+                                    <Download className="h-4 w-4" /> Download PDF
+                                </button>
+                            </>
+                        )}
+                    />
                 </div>
 
                 <div id="po-printable" ref={ref} className="max-w-3xl mx-auto bg-white shadow-xl rounded-2xl overflow-hidden">

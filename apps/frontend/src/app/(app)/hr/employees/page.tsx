@@ -9,6 +9,8 @@ import Link from 'next/link';
 import { createColumnHelper, type ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table';
 import { useI18n } from '@/lib/i18n';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 
 interface Employee {
     id: string;
@@ -151,21 +153,25 @@ export default function EmployeesPage() {
     return (
         <div className="overflow-y-auto h-full bg-[#f3f4f6] p-3 md:p-4 font-sans text-gray-900 text-[13px]">
             <div className="w-full space-y-4">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-lg font-bold tracking-tight text-gray-950">{t.employees.title}</h1>
-                        <p className="text-xs text-gray-500 mt-0.5">
-                            {t.employees.subtitle}
-                        </p>
-                    </div>
-                    <button
-                        onClick={() => setIsModalOpen(true)}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center shadow-lg shadow-blue-200 transition-all hover:-translate-y-0.5 active:translate-y-0"
-                    >
-                        <Plus className="w-4 h-4 mr-2" />
-                        {t.employees.newEmployee}
-                    </button>
-                </div>
+                <PageHeader
+                    title={t.employees.title}
+                    subtitle={t.employees.subtitle}
+                    breadcrumbs={modulePageBreadcrumbs(
+                        t.dashboardHome.breadcrumbHome,
+                        t.sidebar.modules.hr,
+                        t.employees.title,
+                        'hr',
+                    )}
+                    actions={(
+                        <button
+                            onClick={() => setIsModalOpen(true)}
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center shadow-lg shadow-blue-200 transition-all hover:-translate-y-0.5 active:translate-y-0"
+                        >
+                            <Plus className="w-4 h-4 mr-2" />
+                            {t.employees.newEmployee}
+                        </button>
+                    )}
+                />
 
                 <AddEmployeeModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onAdd={handleAdd} />
 

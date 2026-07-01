@@ -1,14 +1,14 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, ArrowLeft, CheckCircle, RefreshCw, XCircle } from 'lucide-react';
-import Link from 'next/link';
+import { AlertTriangle, CheckCircle, RefreshCw, XCircle } from 'lucide-react';
 import { createColumnHelper } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table';
 import {
     AccountingPageShell,
-    AccountingToolbar,
 } from '@/components/accounting/compact';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 import { api } from '@/lib/api';
 import { useI18n, formatMessage } from '@/lib/i18n';
 import { compactDensity } from '@/lib/ui/compact-density';
@@ -233,13 +233,15 @@ export default function PostingExceptionsPage() {
 
     return (
         <AccountingPageShell maxWidth="wide">
-            <Link href="/accounting" className="inline-flex items-center text-xs font-medium text-gray-400 hover:text-gray-700">
-                <ArrowLeft className="w-3.5 h-3.5 mr-1" />
-                Accounting
-            </Link>
-
-            <AccountingToolbar
-                subtitle="Monitor and replay failed or skipped accounting posting events."
+            <PageHeader
+                title={t.postingExceptions.title}
+                subtitle={t.postingExceptions.subtitle}
+                breadcrumbs={modulePageBreadcrumbs(
+                    t.dashboardHome.breadcrumbHome,
+                    t.sidebar.modules.accounting,
+                    t.postingExceptions.title,
+                    'accounting',
+                )}
                 actions={(
                     <>
                         <span className="text-xs text-gray-500">

@@ -10,6 +10,8 @@ import IssueReturnModal from './IssueReturnModal';
 import { PostingBadge } from '@/components/PostingBadge';
 import { formatBDT, formatDate } from '@/lib/format';
 import { useI18n, formatMessage } from '@/lib/i18n';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 
 interface SalesReturn {
     id: string;
@@ -241,21 +243,25 @@ export default function ReturnsPage() {
     return (
         <div className="overflow-y-auto h-full bg-[#f3f4f6] p-3 md:p-4 font-sans text-gray-900 text-[13px]">
             <div className="w-full space-y-4">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-lg font-bold tracking-tight text-gray-950">{t.returns.title}</h1>
-                        <p className="text-xs text-gray-500 mt-0.5">
-                            {t.returns.subtitle}
-                        </p>
-                    </div>
-                    <button
-                        onClick={() => setIsModalOpen(true)}
-                        className="bg-rose-600 hover:bg-rose-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center shadow-lg shadow-rose-200 transition-all hover:-translate-y-0.5 active:translate-y-0"
-                    >
-                        <Plus className="w-4 h-4 mr-2" />
-                        {t.returns.processReturn}
-                    </button>
-                </div>
+                <PageHeader
+                    title={t.returns.title}
+                    subtitle={t.returns.subtitle}
+                    breadcrumbs={modulePageBreadcrumbs(
+                        t.dashboardHome.breadcrumbHome,
+                        t.sidebar.modules.sales,
+                        t.returns.title,
+                        'sales',
+                    )}
+                    actions={
+                        <button
+                            onClick={() => setIsModalOpen(true)}
+                            className="bg-rose-600 hover:bg-rose-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center shadow-lg shadow-rose-200 transition-all hover:-translate-y-0.5 active:translate-y-0"
+                        >
+                            <Plus className="w-4 h-4 mr-2" />
+                            {t.returns.processReturn}
+                        </button>
+                    }
+                />
 
                 <IssueReturnModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSuccess={loadReturns} />
 

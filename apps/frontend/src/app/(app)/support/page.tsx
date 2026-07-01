@@ -2,7 +2,10 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { MessageSquare, Plus, Send, CheckCircle, Loader2, X } from 'lucide-react';
+import PageHeader from '@/components/ui/compact/PageHeader';
 import { api } from '@/lib/api';
+import { useI18n } from '@/lib/i18n';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 
 type Thread = {
     id: string;
@@ -23,6 +26,7 @@ type Message = {
 };
 
 export default function SupportPage() {
+    const { t } = useI18n();
     const [threads, setThreads] = useState<Thread[]>([]);
     const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
     const [messages, setMessages] = useState<Message[]>([]);
@@ -133,16 +137,24 @@ export default function SupportPage() {
             <div className="flex-1 flex overflow-hidden p-4 gap-4 min-h-0">
                 {/* Thread list */}
                 <div className="w-72 shrink-0 flex flex-col gap-3 overflow-hidden">
-                    <div className="flex items-center justify-between">
-                        <h1 className="text-lg font-black tracking-tight text-gray-900">Support</h1>
-                        <button
-                            type="button"
-                            onClick={() => setShowNewForm(true)}
-                            className="inline-flex items-center gap-1 rounded-full bg-indigo-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-indigo-700"
-                        >
-                            <Plus className="w-3 h-3" /> New
-                        </button>
-                    </div>
+                    <PageHeader
+                        title="Support"
+                        breadcrumbs={modulePageBreadcrumbs(
+                            t.dashboardHome.breadcrumbHome,
+                            'Support',
+                            'Support',
+                            'support',
+                        )}
+                        actions={(
+                            <button
+                                type="button"
+                                onClick={() => setShowNewForm(true)}
+                                className="inline-flex items-center gap-1 rounded-full bg-indigo-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-indigo-700"
+                            >
+                                <Plus className="w-3 h-3" /> New
+                            </button>
+                        )}
+                    />
 
                     {error && (
                         <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700">

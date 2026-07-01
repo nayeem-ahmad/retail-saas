@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { ShoppingBag, Loader2, CheckCircle, XCircle, ArrowLeft } from 'lucide-react';
+import { ShoppingBag, Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { api } from '@/lib/api';
-import Link from 'next/link';
+import { useI18n } from '@/lib/i18n';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 import type { PaperSize } from '@/lib/sales-invoice-printer';
 
 type ToastState = { type: 'success' | 'error'; message: string } | null;
@@ -44,6 +46,8 @@ const PAPER_SIZE_OPTIONS: { value: PaperSize; label: string }[] = [
 ];
 
 export default function SalesSettingsPage() {
+    const { t } = useI18n();
+    const pageTitle = 'Sales Settings';
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [toast, setToast] = useState<ToastState>(null);
@@ -86,27 +90,23 @@ export default function SalesSettingsPage() {
     return (
         <div className="h-full overflow-y-auto">
             <div className="max-w-2xl mx-auto px-6 py-8 space-y-6">
-                {/* Back link */}
-                <div className="flex items-center gap-3">
-                    <Link
-                        href="/settings"
-                        className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 transition-colors"
-                    >
-                        <ArrowLeft className="w-4 h-4" />
-                        Back to Settings
-                    </Link>
-                </div>
-
-                {/* Page title */}
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
-                        <ShoppingBag className="w-5 h-5 text-blue-600" />
-                    </div>
-                    <div>
-                        <h1 className="text-2xl font-black text-gray-900 tracking-tight">Sales Settings</h1>
-                        <p className="text-sm text-gray-500">Configure invoice printing and reference number format</p>
-                    </div>
-                </div>
+                <PageHeader
+                    title={(
+                        <span className="inline-flex items-center gap-3">
+                            <span className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
+                                <ShoppingBag className="w-5 h-5 text-blue-600" />
+                            </span>
+                            {pageTitle}
+                        </span>
+                    )}
+                    subtitle="Configure invoice printing and reference number format"
+                    breadcrumbs={modulePageBreadcrumbs(
+                        t.dashboardHome.breadcrumbHome,
+                        t.sidebar.modules.accountSettings,
+                        pageTitle,
+                        'settings',
+                    )}
+                />
 
                 {loading ? (
                     <div className="flex items-center gap-2 text-gray-400 text-sm">

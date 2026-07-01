@@ -9,6 +9,8 @@ import AddCustomerModal from './AddCustomerModal';
 import Link from 'next/link';
 import { createColumnHelper, type ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 
 interface Customer {
     id: string;
@@ -260,32 +262,36 @@ export default function CustomersPage() {
     return (
         <div className="overflow-y-auto h-full bg-[#f3f4f6] p-4 md:p-6 font-sans text-gray-900">
             <div className="w-full space-y-4">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                    <div>
-                        <h1 className="text-lg font-bold tracking-tight text-gray-950">{t.customers.title}</h1>
-                        <p className="text-xs text-gray-500 mt-0.5">
-                            {t.customers.subtitle}
-                        </p>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                        <button
-                            onClick={handleRunSegmentation}
-                            disabled={runningSegmentation}
-                            className="flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 transition-all disabled:opacity-50"
-                            title={t.customers.runSegmentationTitle}
-                        >
-                            <RefreshCw className={`w-4 h-4 mr-2 ${runningSegmentation ? 'animate-spin' : ''}`} />
-                            {runningSegmentation ? t.customers.running : t.customers.runSegmentation}
-                        </button>
-                        <button
-                            onClick={() => setIsModalOpen(true)}
-                            className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center shadow-lg shadow-blue-200 transition-all hover:-translate-y-0.5 active:translate-y-0"
-                        >
-                            <Plus className="w-4 h-4 mr-2" />
-                            {t.customers.newCustomer}
-                        </button>
-                    </div>
-                </div>
+                <PageHeader
+                    title={t.customers.title}
+                    subtitle={t.customers.subtitle}
+                    breadcrumbs={modulePageBreadcrumbs(
+                        t.dashboardHome.breadcrumbHome,
+                        t.sidebar.modules.sales,
+                        t.customers.title,
+                        'sales',
+                    )}
+                    actions={
+                        <>
+                            <button
+                                onClick={handleRunSegmentation}
+                                disabled={runningSegmentation}
+                                className="flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 transition-all disabled:opacity-50"
+                                title={t.customers.runSegmentationTitle}
+                            >
+                                <RefreshCw className={`w-4 h-4 mr-2 ${runningSegmentation ? 'animate-spin' : ''}`} />
+                                {runningSegmentation ? t.customers.running : t.customers.runSegmentation}
+                            </button>
+                            <button
+                                onClick={() => setIsModalOpen(true)}
+                                className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center shadow-lg shadow-blue-200 transition-all hover:-translate-y-0.5 active:translate-y-0"
+                            >
+                                <Plus className="w-4 h-4 mr-2" />
+                                {t.customers.newCustomer}
+                            </button>
+                        </>
+                    }
+                />
 
                 {segmentStats && segmentStats.total > 0 && (
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

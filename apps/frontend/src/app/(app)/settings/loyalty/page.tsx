@@ -2,9 +2,10 @@
 import { useI18n, formatMessage } from '@/lib/i18n';
 
 import { useEffect, useState, useCallback } from 'react';
-import { Gift, Loader2, CheckCircle, XCircle, ArrowLeft } from 'lucide-react';
+import { Gift, Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { fetchWithAuth } from '@/lib/api';
-import Link from 'next/link';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 
 type ToastState = { type: 'success' | 'error'; message: string } | null;
 
@@ -104,26 +105,23 @@ export default function LoyaltySettingsPage() {
     return (
         <div className="h-full overflow-y-auto">
             <div className="max-w-2xl mx-auto px-6 py-8 space-y-6">
-                {/* Header */}
-                <div className="flex items-center gap-3">
-                    <Link
-                        href="/settings"
-                        className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 transition-colors"
-                    >
-                        <ArrowLeft className="w-4 h-4" />
-                        {m.backToSettings}
-                    </Link>
-                </div>
-
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center">
-                        <Gift className="w-5 h-5 text-purple-600" />
-                    </div>
-                    <div>
-                        <h1 className="text-2xl font-black text-gray-900 tracking-tight">{m.title}</h1>
-                        <p className="text-sm text-gray-500">{m.description}</p>
-                    </div>
-                </div>
+                <PageHeader
+                    title={(
+                        <span className="inline-flex items-center gap-3">
+                            <span className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center">
+                                <Gift className="w-5 h-5 text-purple-600" />
+                            </span>
+                            {m.title}
+                        </span>
+                    )}
+                    subtitle={m.description}
+                    breadcrumbs={modulePageBreadcrumbs(
+                        t.dashboardHome.breadcrumbHome,
+                        t.sidebar.modules.accountSettings,
+                        m.title,
+                        'settings',
+                    )}
+                />
 
                 {loading ? (
                     <div className="flex items-center gap-2 text-gray-400 text-sm">

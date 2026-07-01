@@ -2,14 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
 import {
     AccountingPageShell,
-    AccountingToolbar,
     CompactSection,
     CompactStat,
 } from '@/components/accounting/compact';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { nestedPageBreadcrumbs } from '@/lib/page-breadcrumbs';
+import { routes } from '@/lib/routes';
 import { api } from '@/lib/api';
 import { formatBDT, formatDate } from '@/lib/format';
 import { useI18n, formatMessage } from '@/lib/i18n';
@@ -83,12 +83,17 @@ export default function VoucherDetailPage() {
 
     return (
         <AccountingPageShell maxWidth="wide">
-            <Link href="/accounting/vouchers" className="inline-flex items-center text-xs font-medium text-gray-500 hover:text-gray-900 transition-colors">
-                <ArrowLeft className="w-3.5 h-3.5 mr-1.5" />
-                Back to Vouchers
-            </Link>
-
-            <AccountingToolbar subtitle="Inspect the full debit and credit composition of a single posted voucher." />
+            <PageHeader
+                title={voucher?.voucher_number ?? t.journal.detail.voucherDetail}
+                subtitle="Inspect the full debit and credit composition of a single posted voucher."
+                breadcrumbs={nestedPageBreadcrumbs(
+                    t.dashboardHome.breadcrumbHome,
+                    t.sidebar.modules.accounting,
+                    'accounting',
+                    [{ label: t.vouchers.list.title, href: routes.accounting.vouchers }],
+                    voucher?.voucher_number ?? t.journal.detail.voucherDetail,
+                )}
+            />
 
             {loading ? <CompactSection className="text-sm text-gray-500">{t.journal.detail.loading}</CompactSection> : null}
             {error ? <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-600">{error}</div> : null}

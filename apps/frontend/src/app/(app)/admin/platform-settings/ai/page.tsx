@@ -1,9 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { Sparkles, ArrowLeft, Loader2, CheckCircle, XCircle, Zap } from 'lucide-react';
+import { Sparkles, Loader2, CheckCircle, XCircle, Zap } from 'lucide-react';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { nestedPageBreadcrumbs } from '@/lib/page-breadcrumbs';
+import { routes } from '@/lib/routes';
 import { fetchWithAuth } from '@/lib/api';
+import { useI18n } from '@/lib/i18n';
 
 type AiSettings = {
     api_key: string;
@@ -53,6 +56,7 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
 }
 
 export default function PlatformAiSettingsPage() {
+    const { t } = useI18n();
     const [settings, setSettings] = useState<AiSettings>(DEFAULTS);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -119,13 +123,16 @@ export default function PlatformAiSettingsPage() {
     return (
         <div className="overflow-y-auto h-full bg-[#f3f4f6] p-3 md:p-4 font-sans text-gray-900 text-[13px]">
             <div className="max-w-2xl mx-auto space-y-6">
-                <div className="flex items-center gap-3">
-                    <Link href="/admin/platform-settings" className="p-1.5 rounded-lg hover:bg-gray-200 transition-colors">
-                        <ArrowLeft className="w-4 h-4 text-gray-500" />
-                    </Link>
-                    <Sparkles className="w-5 h-5 text-purple-600" />
-                    <h1 className="text-xl font-black tracking-tight">AI Settings</h1>
-                </div>
+                <PageHeader
+                    title="AI Settings"
+                    breadcrumbs={nestedPageBreadcrumbs(
+                        t.dashboardHome.breadcrumbHome,
+                        t.sidebar.modules.admin,
+                        'admin',
+                        [{ label: t.admin.platformSettings.index.title, href: routes.admin.platformSettings.root }],
+                        'AI Settings',
+                    )}
+                />
 
                 <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
                     <strong>Platform-wide secret.</strong> This OpenRouter API key is used by all tenants for AI features. Keep it confidential. Get your key from{' '}

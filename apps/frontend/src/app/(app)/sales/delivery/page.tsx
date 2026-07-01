@@ -5,6 +5,8 @@ import { Truck, Plus, X, RefreshCw } from 'lucide-react';
 import { fetchWithAuth } from '@/lib/api';
 import { formatDate } from '@/lib/format';
 import { useI18n } from '@/lib/i18n';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 
 interface DeliveryOrder {
     id: string;
@@ -157,26 +159,36 @@ export default function DeliveryPage() {
 
     return (
         <div className="p-6 space-y-6">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                    <Truck className="h-6 w-6 text-gray-600" />
-                    <h1 className="text-2xl font-bold text-gray-900">Delivery Orders</h1>
-                    <span className="text-sm text-gray-500 ml-1">({total} total)</span>
-                </div>
-                <div className="flex gap-2">
-                    <button onClick={load} className="p-2 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100">
-                        <RefreshCw className="h-4 w-4" />
-                    </button>
-                    <button
-                        onClick={openCreate}
-                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
-                    >
-                        <Plus className="h-4 w-4" />
-                        New Delivery
-                    </button>
-                </div>
-            </div>
+            <PageHeader
+                title={
+                    <span className="inline-flex items-center gap-2">
+                        <Truck className="h-6 w-6 text-gray-600" />
+                        {t.delivery.title}
+                        <span className="text-sm text-gray-500 font-normal">({total} total)</span>
+                    </span>
+                }
+                subtitle={t.delivery.subtitle}
+                breadcrumbs={modulePageBreadcrumbs(
+                    t.dashboardHome.breadcrumbHome,
+                    t.sidebar.modules.sales,
+                    t.delivery.title,
+                    'sales',
+                )}
+                actions={
+                    <>
+                        <button onClick={load} className="p-2 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100">
+                            <RefreshCw className="h-4 w-4" />
+                        </button>
+                        <button
+                            onClick={openCreate}
+                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
+                        >
+                            <Plus className="h-4 w-4" />
+                            {t.delivery.newDelivery}
+                        </button>
+                    </>
+                }
+            />
 
             {/* Status filter tabs */}
             <div className="flex gap-1 border-b border-gray-200">

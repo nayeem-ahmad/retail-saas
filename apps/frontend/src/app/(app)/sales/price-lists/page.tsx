@@ -7,6 +7,8 @@ import { Plus, Tag, Pencil, Trash2, X } from 'lucide-react';
 import { createColumnHelper, type ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table';
 import { useI18n } from '@/lib/i18n';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 
 interface PriceList {
     id: string;
@@ -140,15 +142,22 @@ export default function PriceListsPage() {
     return (
         <div className="min-h-screen bg-gray-50/50 p-6 md:p-10">
             <div className="max-w-6xl mx-auto">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-                    <div>
-                        <h1 className="text-2xl font-black text-gray-900 tracking-tight">{t.priceLists.title}</h1>
-                        <p className="text-sm text-gray-500 font-medium mt-1">{t.priceLists.subtitle}</p>
-                    </div>
-                    <button onClick={() => { setEditingList(null); setIsFormOpen(true); }} className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center shadow-lg shadow-blue-200 transition-all hover:-translate-y-0.5 active:translate-y-0">
-                        <Plus className="w-4 h-4 mr-2" /> {t.priceLists.newList}
-                    </button>
-                </div>
+                <PageHeader
+                    className="mb-8"
+                    title={t.priceLists.title}
+                    subtitle={t.priceLists.subtitle}
+                    breadcrumbs={modulePageBreadcrumbs(
+                        t.dashboardHome.breadcrumbHome,
+                        t.sidebar.modules.sales,
+                        t.priceLists.title,
+                        'sales',
+                    )}
+                    actions={
+                        <button onClick={() => { setEditingList(null); setIsFormOpen(true); }} className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center shadow-lg shadow-blue-200 transition-all hover:-translate-y-0.5 active:translate-y-0">
+                            <Plus className="w-4 h-4 mr-2" /> {t.priceLists.newList}
+                        </button>
+                    }
+                />
 
                 {isFormOpen && (
                     <ListForm

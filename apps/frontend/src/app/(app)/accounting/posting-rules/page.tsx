@@ -1,14 +1,15 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, CheckCircle, Edit2, XCircle } from 'lucide-react';
-import Link from 'next/link';
+import { CheckCircle, Edit2, XCircle } from 'lucide-react';
 import { createColumnHelper } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table';
 import {
     AccountingPageShell,
     AccountingToolbar,
 } from '@/components/accounting/compact';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 import { ContextualHelpPanel } from '@/components/ContextualHelpPanel';
 import { HelpTooltip } from '@/components/HelpTooltip';
 import { POSTING_RULES_FIELD_HELP, POSTING_RULES_HELP } from '@/lib/help/contextual-help';
@@ -249,15 +250,17 @@ export default function PostingRulesPage() {
 
     return (
         <AccountingPageShell maxWidth="wide">
-            <Link href="/accounting" className="inline-flex items-center text-xs font-medium text-gray-400 hover:text-gray-700">
-                <ArrowLeft className="w-3.5 h-3.5 mr-1" />
-                Accounting
-            </Link>
-
-            <AccountingToolbar
-                help={POSTING_RULES_FIELD_HELP.page}
+            <PageHeader
+                title={t.postingRules.title}
                 subtitle="Configure how operational events automatically create accounting vouchers."
+                breadcrumbs={modulePageBreadcrumbs(
+                    t.dashboardHome.breadcrumbHome,
+                    t.sidebar.modules.accounting,
+                    t.postingRules.title,
+                    'accounting',
+                )}
             />
+            <AccountingToolbar help={POSTING_RULES_FIELD_HELP.page} />
 
             <ContextualHelpPanel {...POSTING_RULES_HELP} />
 

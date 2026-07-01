@@ -3,8 +3,10 @@
 import { useI18n, formatMessage } from '@/lib/i18n';
 import { useEffect, useMemo, useState } from 'react';
 import { Building2, CheckCircle, Loader2, LogIn, Plus, Search, ShieldCheck, Users, UserX } from 'lucide-react';
+import PageHeader from '@/components/ui/compact/PageHeader';
 import { api } from '@/lib/api';
 import { formatDate } from '@/lib/format';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 
 type PlanCode = 'FREE' | 'BASIC' | 'ACCOUNTING' | 'STANDARD' | 'PREMIUM';
 
@@ -313,21 +315,25 @@ export default function AdminTenantsPage() {
     return (
         <div className="overflow-y-auto h-full bg-[#f3f4f6] p-3 md:p-4 font-sans text-gray-900 text-[13px]">
             <div className="max-w-7xl mx-auto space-y-6">
-                <div className="flex items-start justify-between gap-4">
-                    <div>
-                        <h1 className="text-lg font-bold tracking-tight text-gray-950">{m.title}</h1>
-                        <p className="text-xs font-bold uppercase tracking-widest text-gray-500 mt-1">
-                            {m.subtitle}
-                        </p>
-                    </div>
-                    <button
-                        type="button"
-                        onClick={openCreateModal}
-                        className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-4 py-2.5 text-sm font-black text-white shadow-lg shadow-blue-200 hover:bg-blue-700 shrink-0"
-                    >
-                        <Plus className="w-4 h-4" /> {mc.trigger}
-                    </button>
-                </div>
+                <PageHeader
+                    title={m.title}
+                    subtitle={m.subtitle}
+                    breadcrumbs={modulePageBreadcrumbs(
+                        t.dashboardHome.breadcrumbHome,
+                        t.sidebar.modules.admin,
+                        m.title,
+                        'admin',
+                    )}
+                    actions={(
+                        <button
+                            type="button"
+                            onClick={openCreateModal}
+                            className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-4 py-2.5 text-sm font-black text-white shadow-lg shadow-blue-200 hover:bg-blue-700 shrink-0"
+                        >
+                            <Plus className="w-4 h-4" /> {mc.trigger}
+                        </button>
+                    )}
+                />
 
                 {toast && (
                     <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 flex items-center gap-2 text-sm font-semibold text-emerald-700">

@@ -3,10 +3,12 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, UserPlus } from 'lucide-react';
+import { UserPlus } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { routes } from '@/lib/routes';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { nestedPageBreadcrumbs } from '@/lib/page-breadcrumbs';
 import {
     LeadFormFields,
     emptyLeadForm,
@@ -59,18 +61,25 @@ export default function NewLeadPage() {
 
     return (
         <div className="overflow-y-auto h-full p-8 bg-[#f9fafb] space-y-6">
-            <Link href={routes.crm.leads} className="flex items-center text-sm font-bold text-gray-500 hover:text-gray-900 transition-colors w-fit">
-                <ArrowLeft className="w-4 h-4 mr-2" /> {m.workspace.back}
-            </Link>
+            <PageHeader
+                title={(
+                    <span className="inline-flex items-center gap-3">
+                        <span className="w-12 h-12 bg-violet-600 rounded-xl flex items-center justify-center text-white">
+                            <UserPlus className="w-6 h-6" />
+                        </span>
+                        {m.newLead}
+                    </span>
+                )}
+                breadcrumbs={nestedPageBreadcrumbs(
+                    t.dashboardHome.breadcrumbHome,
+                    t.sidebar.modules.crm,
+                    'crm',
+                    [{ label: m.title, href: routes.crm.leads }],
+                    m.newLead,
+                )}
+            />
 
             <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8 max-w-3xl">
-                <div className="flex items-center gap-3 mb-6">
-                    <div className="w-12 h-12 bg-violet-600 rounded-xl flex items-center justify-center text-white">
-                        <UserPlus className="w-6 h-6" />
-                    </div>
-                    <h1 className="text-lg font-bold tracking-tight text-gray-950 text-gray-900">{m.newLead}</h1>
-                </div>
-
                 <LeadFormFields form={form} onChange={setForm} teamMembers={teamMembers} showStatus={false} />
 
                 <div className="flex justify-end gap-2 pt-6 mt-6 border-t border-gray-100">

@@ -45,6 +45,7 @@ export default function CrmHubPage() {
 
     return (
         <ModuleHub
+            module="crm"
             moduleLabel={hub.moduleLabel}
             title={hub.title}
             subtitle={hub.subtitle}

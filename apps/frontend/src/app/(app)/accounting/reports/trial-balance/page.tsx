@@ -6,6 +6,8 @@ import {
     AccountingToolbar,
     CompactSection,
 } from '@/components/accounting/compact';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 import { compactDensity } from '@/lib/ui/compact-density';
 import { api } from '@/lib/api';
 import { formatBDT } from '@/lib/format';
@@ -59,7 +61,17 @@ export default function TrialBalancePage() {
 
     return (
         <AccountingPageShell maxWidth="full">
-            <AccountingToolbar subtitle="All accounts with debit and credit balances as of a date">
+            <PageHeader
+                title={t.accounting.reports.trialBalance.title}
+                subtitle={t.accounting.reports.trialBalance.subtitle}
+                breadcrumbs={modulePageBreadcrumbs(
+                    t.dashboardHome.breadcrumbHome,
+                    t.sidebar.modules.accounting,
+                    t.accounting.reports.trialBalance.title,
+                    'accounting',
+                )}
+            />
+            <AccountingToolbar>
                 <div className={compactDensity.filterBar}>
                     <div className="flex flex-col gap-1">
                         <span className={compactDensity.formLabel}>As Of Date</span>

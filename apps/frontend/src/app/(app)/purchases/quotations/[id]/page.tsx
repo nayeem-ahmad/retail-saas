@@ -2,9 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, ShoppingCart } from 'lucide-react';
+import { ShoppingCart } from 'lucide-react';
 import { api } from '@/lib/api';
 import { formatBDT, formatDate } from '@/lib/format';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { nestedPageBreadcrumbs } from '@/lib/page-breadcrumbs';
+import { routes } from '@/lib/routes';
 import { useI18n, formatMessage } from '@/lib/i18n';
 
 interface PurchaseQuotation {
@@ -120,20 +123,27 @@ export default function PurchaseQuotationDetailPage() {
     return (
         <div className="overflow-y-auto h-full bg-[#f3f4f6] p-3 md:p-4 font-sans text-gray-900 text-[13px]">
             <div className="max-w-[1000px] mx-auto space-y-6">
-                {/* Header */}
-                <div className="flex items-center justify-between">
-                    <button onClick={() => router.push('/purchases/quotations')}
-                        className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900">
-                        <ArrowLeft className="w-4 h-4" /> {t.purchaseQuotations.detail.back}
-                    </button>
-                    {rfq.status === 'ACCEPTED' && (
-                        <button onClick={handleConvert} disabled={updating}
-                            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-black uppercase tracking-widest shadow-md disabled:opacity-50 transition-all hover:-translate-y-0.5">
+                <PageHeader
+                    title={rfq.rfq_number}
+                    subtitle={`${t.purchaseOrders.detail.created} ${formatDate(rfq.created_at, locale)}`}
+                    breadcrumbs={nestedPageBreadcrumbs(
+                        t.dashboardHome.breadcrumbHome,
+                        t.sidebar.modules.purchase,
+                        'purchases',
+                        [{ label: t.purchaseQuotations.title, href: routes.purchases.quotations }],
+                        rfq.rfq_number,
+                    )}
+                    actions={rfq.status === 'ACCEPTED' ? (
+                        <button
+                            onClick={handleConvert}
+                            disabled={updating}
+                            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-black uppercase tracking-widest shadow-md disabled:opacity-50 transition-all hover:-translate-y-0.5"
+                        >
                             <ShoppingCart className="w-4 h-4" />
                             {t.purchaseQuotations.detail.convertToPo}
                         </button>
-                    )}
-                </div>
+                    ) : undefined}
+                />
 
                 {error && <div className="p-3 bg-red-50 text-red-600 rounded-xl text-sm font-bold">{error}</div>}
 
@@ -141,7 +151,7 @@ export default function PurchaseQuotationDetailPage() {
                 <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-4">
                     <div className="flex items-start justify-between">
                         <div>
-                            <h1 className="text-lg font-bold tracking-tight text-gray-950">{rfq.rfq_number}</h1>
+                            <h2 className="text-lg font-bold tracking-tight text-gray-950">{rfq.rfq_number}</h2>
                             <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mt-0.5">
                                 Created {formatDate(rfq.created_at, locale)}
                                 {rfq.valid_until ? ` · Valid until ${formatDate(rfq.valid_until, locale)}` : ''}

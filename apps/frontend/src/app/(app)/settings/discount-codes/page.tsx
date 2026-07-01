@@ -5,6 +5,8 @@ import { useState, useEffect } from 'react';
 import { Tag, Plus, Trash2, ToggleLeft, ToggleRight, CheckCircle, X } from 'lucide-react';
 import { api } from '@/lib/api';
 import { formatBDT } from '@/lib/format';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 
 interface DiscountCode {
     id: string;
@@ -108,19 +110,29 @@ export default function DiscountCodesPage() {
 
     return (
         <div className="p-6 max-w-4xl space-y-6">
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                    <Tag className="h-6 w-6 text-gray-600" />
-                    <h1 className="text-2xl font-bold text-gray-900">{m.title}</h1>
-                </div>
-                <button
-                    onClick={() => { setShowForm(true); setError(''); }}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
-                >
-                    <Plus className="h-4 w-4" />
-                    {m.newCode}
-                </button>
-            </div>
+            <PageHeader
+                title={(
+                    <span className="inline-flex items-center gap-2">
+                        <Tag className="h-6 w-6 text-gray-600" />
+                        {m.title}
+                    </span>
+                )}
+                breadcrumbs={modulePageBreadcrumbs(
+                    t.dashboardHome.breadcrumbHome,
+                    t.sidebar.modules.accountSettings,
+                    m.title,
+                    'settings',
+                )}
+                actions={(
+                    <button
+                        onClick={() => { setShowForm(true); setError(''); }}
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+                    >
+                        <Plus className="h-4 w-4" />
+                        {m.newCode}
+                    </button>
+                )}
+            />
 
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">
                 {m.infoBanner}

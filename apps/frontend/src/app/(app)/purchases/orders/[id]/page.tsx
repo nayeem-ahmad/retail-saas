@@ -1,11 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Printer } from 'lucide-react';
+import { useParams } from 'next/navigation';
+import { Printer } from 'lucide-react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
 import { formatBDT, formatDate } from '@/lib/format';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { nestedPageBreadcrumbs } from '@/lib/page-breadcrumbs';
+import { routes } from '@/lib/routes';
 import { useI18n, formatMessage } from '@/lib/i18n';
 
 interface PurchaseOrder {
@@ -49,7 +52,6 @@ const nextActions: Record<string, { label: string; next: string; color: string }
 export default function PurchaseOrderDetailPage() {
     const { t, locale } = useI18n();
     const params = useParams();
-    const router = useRouter();
     const [po, setPo] = useState<PurchaseOrder | null>(null);
     const [loading, setLoading] = useState(true);
     const [updating, setUpdating] = useState(false);
@@ -100,17 +102,25 @@ export default function PurchaseOrderDetailPage() {
     return (
         <div className="overflow-y-auto h-full bg-[#f3f4f6] p-3 md:p-4 font-sans text-gray-900 text-[13px]">
             <div className="max-w-[1000px] mx-auto space-y-6">
-                {/* Header */}
-                <div className="flex items-center justify-between">
-                    <button onClick={() => router.push('/purchases/orders')}
-                        className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900">
-                        <ArrowLeft className="w-4 h-4" /> {t.purchaseOrders.detail.back}
-                    </button>
-                    <Link href={`/purchases/orders/${po.id}/invoice`}
-                        className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 shadow-sm">
-                        <Printer className="w-4 h-4" /> Print PO
-                    </Link>
-                </div>
+                <PageHeader
+                    title={po.po_number}
+                    subtitle={`${t.purchaseOrders.detail.created} ${formatDate(po.created_at, locale)}`}
+                    breadcrumbs={nestedPageBreadcrumbs(
+                        t.dashboardHome.breadcrumbHome,
+                        t.sidebar.modules.purchase,
+                        'purchases',
+                        [{ label: t.purchaseOrders.title, href: routes.purchases.orders }],
+                        po.po_number,
+                    )}
+                    actions={(
+                        <Link
+                            href={routes.purchases.orderInvoice(po.id)}
+                            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 shadow-sm"
+                        >
+                            <Printer className="w-4 h-4" /> Print PO
+                        </Link>
+                    )}
+                />
 
                 {error && <div className="p-3 bg-red-50 text-red-600 rounded-xl text-sm font-bold">{error}</div>}
 
@@ -118,7 +128,7 @@ export default function PurchaseOrderDetailPage() {
                 <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-4">
                     <div className="flex items-start justify-between">
                         <div>
-                            <h1 className="text-lg font-bold tracking-tight text-gray-950">{po.po_number}</h1>
+                            <h2 className="text-lg font-bold tracking-tight text-gray-950">{po.po_number}</h2>
                             <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mt-0.5">
                                 Created {formatDate(po.created_at, locale)}
                                 {po.expected_date ? ` · Expected ${formatDate(po.expected_date, locale)}` : ''}

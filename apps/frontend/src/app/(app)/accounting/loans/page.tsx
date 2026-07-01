@@ -6,9 +6,10 @@ import { Loader2, Plus, Trash2, Wallet } from 'lucide-react';
 import { DataTable } from '@/components/data-table';
 import {
     AccountingPageShell,
-    AccountingToolbar,
     CompactStat,
 } from '@/components/accounting/compact';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { formatBDT, formatDate } from '@/lib/format';
@@ -322,8 +323,15 @@ export default function LoansPage() {
 
     return (
         <AccountingPageShell>
-            <AccountingToolbar
+            <PageHeader
+                title={t.loans.title}
                 subtitle={t.loans.subtitle}
+                breadcrumbs={modulePageBreadcrumbs(
+                    t.dashboardHome.breadcrumbHome,
+                    t.sidebar.modules.accounting,
+                    t.loans.title,
+                    'accounting',
+                )}
                 actions={(
                     <button type="button" onClick={openCreate} className={`${compactDensity.btnPrimary} bg-indigo-600 text-white hover:bg-indigo-700`}>
                         <Plus className="w-3.5 h-3.5" />

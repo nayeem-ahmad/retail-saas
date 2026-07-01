@@ -4,10 +4,11 @@ import { useEffect, useState } from 'react';
 import { CheckCircle, Circle } from 'lucide-react';
 import {
     AccountingPageShell,
-    AccountingToolbar,
     CompactSection,
     CompactStat,
 } from '@/components/accounting/compact';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 import { api } from '@/lib/api';
 import { formatBDT } from '@/lib/format';
 import { useI18n, formatMessage } from '@/lib/i18n';
@@ -127,7 +128,16 @@ export default function BankReconciliationPage() {
 
     return (
         <AccountingPageShell>
-            <AccountingToolbar subtitle="Match bank statement entries against bookkeeping records." />
+            <PageHeader
+                title={t.reconciliation.title}
+                subtitle={t.reconciliation.subtitle}
+                breadcrumbs={modulePageBreadcrumbs(
+                    t.dashboardHome.breadcrumbHome,
+                    t.sidebar.modules.accounting,
+                    t.reconciliation.title,
+                    'accounting',
+                )}
+            />
 
             <div className="flex items-center gap-2 text-xs">
                     {(['setup', 'import', 'match'] as const).map((s, i) => (

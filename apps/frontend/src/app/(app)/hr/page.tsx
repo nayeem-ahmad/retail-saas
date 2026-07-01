@@ -48,6 +48,7 @@ export default function HrHubPage() {
 
     return (
         <ModuleHub
+            module="hr"
             moduleLabel={hub.moduleLabel}
             title={hub.title}
             subtitle={hub.subtitle}

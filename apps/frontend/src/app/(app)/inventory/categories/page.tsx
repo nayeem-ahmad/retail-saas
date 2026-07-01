@@ -5,6 +5,8 @@ import { createColumnHelper, type ColumnDef } from '@tanstack/react-table';
 import { FolderTree, Plus, Tag, Trash2, Pencil, X } from 'lucide-react';
 import { DataTable } from '@/components/data-table';
 import { api } from '@/lib/api';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 import { useI18n } from '@/lib/i18n';
 import type { MessageDictionary } from '@/lib/localization/messages/types';
 
@@ -225,38 +227,42 @@ export default function InventoryCategoriesPage() {
     return (
         <div className="overflow-y-auto h-full bg-[#f3f4f6] p-3 md:p-4 font-sans text-gray-900 text-[13px]">
             <div className="w-full space-y-4">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-lg font-bold tracking-tight text-gray-950">{t.inventoryCategories.title}</h1>
-                        <p className="text-xs text-gray-500 mt-0.5">
-                            {t.inventoryCategories.subtitle}
-                        </p>
-                    </div>
-                    <div className="flex gap-3">
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setEditingSubgroup(null);
-                                setSubgroupFormOpen(true);
-                            }}
-                            className="bg-white border border-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center"
-                        >
-                            <Tag className="w-4 h-4 mr-2" />
-                            {t.inventoryCategories.newSubgroup}
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setEditingGroup(null);
-                                setGroupFormOpen(true);
-                            }}
-                            className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center shadow-lg shadow-blue-200"
-                        >
-                            <Plus className="w-4 h-4 mr-2" />
-                            {t.inventoryCategories.newGroup}
-                        </button>
-                    </div>
-                </div>
+                <PageHeader
+                    title={t.inventoryCategories.title}
+                    subtitle={t.inventoryCategories.subtitle}
+                    breadcrumbs={modulePageBreadcrumbs(
+                        t.dashboardHome.breadcrumbHome,
+                        t.sidebar.modules.inventory,
+                        t.inventoryCategories.title,
+                        'inventory',
+                    )}
+                    actions={(
+                        <div className="flex gap-3">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setEditingSubgroup(null);
+                                    setSubgroupFormOpen(true);
+                                }}
+                                className="bg-white border border-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center"
+                            >
+                                <Tag className="w-4 h-4 mr-2" />
+                                {t.inventoryCategories.newSubgroup}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setEditingGroup(null);
+                                    setGroupFormOpen(true);
+                                }}
+                                className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center shadow-lg shadow-blue-200"
+                            >
+                                <Plus className="w-4 h-4 mr-2" />
+                                {t.inventoryCategories.newGroup}
+                            </button>
+                        </div>
+                    )}
+                />
 
                 {groupFormOpen && (
                     <ProductGroupForm

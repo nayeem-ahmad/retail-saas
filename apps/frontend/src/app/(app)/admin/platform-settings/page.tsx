@@ -1,8 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { MessageSquare, Mail, CreditCard, Settings, ChevronRight, ShieldCheck, Sparkles } from 'lucide-react';
+import { MessageSquare, Mail, CreditCard, Settings, ChevronRight, Sparkles } from 'lucide-react';
+import PageHeader from '@/components/ui/compact/PageHeader';
 import { useI18n } from '@/lib/i18n';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 
 export default function PlatformSettingsIndexPage() {
     const { t } = useI18n();
@@ -54,14 +56,16 @@ export default function PlatformSettingsIndexPage() {
     return (
         <div className="overflow-y-auto h-full bg-[#f3f4f6] p-3 md:p-4 font-sans text-gray-900 text-[13px]">
             <div className="max-w-3xl mx-auto space-y-6">
-                <div>
-                    <div className="flex items-center gap-2 mb-1">
-                        <ShieldCheck className="w-4 h-4 text-indigo-600" />
-                        <p className="text-[10px] font-black uppercase tracking-widest text-indigo-600">{m.badge}</p>
-                    </div>
-                    <h1 className="text-lg font-bold tracking-tight text-gray-950">{m.title}</h1>
-                    <p className="mt-1 text-sm text-gray-500">{m.description}</p>
-                </div>
+                <PageHeader
+                    title={m.title}
+                    subtitle={m.description}
+                    breadcrumbs={modulePageBreadcrumbs(
+                        t.dashboardHome.breadcrumbHome,
+                        t.sidebar.modules.admin,
+                        m.title,
+                        'admin',
+                    )}
+                />
 
                 <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
                     <strong>{m.securityNotice}</strong> {m.securityBody}

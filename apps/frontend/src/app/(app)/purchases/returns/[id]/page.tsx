@@ -2,9 +2,12 @@
 
 import { useEffect, useState, Suspense } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, Pencil, Printer, Receipt, Save, Trash2, Undo2, X } from 'lucide-react';
+import { Pencil, Printer, Receipt, Save, Trash2, Undo2, X } from 'lucide-react';
 import { api } from '@/lib/api';
 import { formatBDT } from '@/lib/format';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { nestedPageBreadcrumbs } from '@/lib/page-breadcrumbs';
+import { routes } from '@/lib/routes';
 import { useI18n, formatMessage } from '@/lib/i18n';
 
 interface EditItem {
@@ -293,50 +296,43 @@ function PurchaseReturnDetailPageContent() {
                     </div>
                 )}
 
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                        <button
-                            onClick={() => router.push('/purchases/returns')}
-                            className="p-2 bg-white rounded-xl shadow-sm hover:shadow-md transition-all text-gray-400 hover:text-gray-900"
-                        >
-                            <ArrowLeft className="w-5 h-5" />
-                        </button>
-                        <div>
-                            <h1 className="text-lg font-bold tracking-tight text-gray-950">{purchaseReturn.return_number}</h1>
-                            <p className="text-xs text-gray-500 mt-0.5">
-                                {new Date(purchaseReturn.created_at).toLocaleString()}
-                            </p>
-                        </div>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                        {!isEditMode && (
-                            <>
-                                <button
-                                    onClick={() => router.push(`/purchases/returns/${purchaseReturn.id}?edit=true`)}
-                                    className="bg-white hover:bg-amber-50 text-gray-700 hover:text-amber-700 border border-gray-200 hover:border-amber-300 px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest shadow-sm flex items-center space-x-2 transition-all hover:-translate-y-0.5"
-                                >
-                                    <Pencil className="w-4 h-4" />
-                                    <span>{t.common.edit}</span>
-                                </button>
-                                <button
-                                    onClick={handlePrint}
-                                    className="bg-gray-900 hover:bg-blue-600 text-white px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest shadow-md flex items-center space-x-2 transition-all hover:-translate-y-0.5"
-                                >
-                                    <Printer className="w-4 h-4" />
-                                    <span>Print Preview</span>
-                                </button>
-                                <button
-                                    onClick={handleDelete}
-                                    disabled={deleting}
-                                    className="bg-white hover:bg-red-50 text-red-600 border border-red-200 hover:border-red-300 px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest shadow-sm flex items-center space-x-2 transition-all hover:-translate-y-0.5 disabled:opacity-50"
-                                >
-                                    <Trash2 className="w-4 h-4" />
-                                    <span>{deleting ? 'Deleting...' : 'Delete'}</span>
-                                </button>
-                            </>
-                        )}
-                    </div>
-                </div>
+                <PageHeader
+                    title={purchaseReturn.return_number}
+                    subtitle={new Date(purchaseReturn.created_at).toLocaleString()}
+                    breadcrumbs={nestedPageBreadcrumbs(
+                        t.dashboardHome.breadcrumbHome,
+                        t.sidebar.modules.purchase,
+                        'purchases',
+                        [{ label: t.purchaseReturns.title, href: routes.purchases.returns }],
+                        purchaseReturn.return_number,
+                    )}
+                    actions={!isEditMode ? (
+                        <>
+                            <button
+                                onClick={() => router.push(`/purchases/returns/${purchaseReturn.id}?edit=true`)}
+                                className="bg-white hover:bg-amber-50 text-gray-700 hover:text-amber-700 border border-gray-200 hover:border-amber-300 px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest shadow-sm flex items-center space-x-2 transition-all hover:-translate-y-0.5"
+                            >
+                                <Pencil className="w-4 h-4" />
+                                <span>{t.common.edit}</span>
+                            </button>
+                            <button
+                                onClick={handlePrint}
+                                className="bg-gray-900 hover:bg-blue-600 text-white px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest shadow-md flex items-center space-x-2 transition-all hover:-translate-y-0.5"
+                            >
+                                <Printer className="w-4 h-4" />
+                                <span>Print Preview</span>
+                            </button>
+                            <button
+                                onClick={handleDelete}
+                                disabled={deleting}
+                                className="bg-white hover:bg-red-50 text-red-600 border border-red-200 hover:border-red-300 px-5 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest shadow-sm flex items-center space-x-2 transition-all hover:-translate-y-0.5 disabled:opacity-50"
+                            >
+                                <Trash2 className="w-4 h-4" />
+                                <span>{deleting ? 'Deleting...' : 'Delete'}</span>
+                            </button>
+                        </>
+                    ) : undefined}
+                />
 
                 {isEditMode ? (
                     <div className="grid grid-cols-4 gap-4">

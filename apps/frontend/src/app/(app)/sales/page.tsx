@@ -124,6 +124,7 @@ export default function SalesHubPage() {
 
     return (
         <ModuleHub
+            module="sales"
             moduleLabel={hub.moduleLabel}
             title={hub.title}
             subtitle={hub.subtitle}

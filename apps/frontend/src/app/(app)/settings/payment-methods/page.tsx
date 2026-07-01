@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { CreditCard, Loader2, Plus, Edit2, Trash2, CheckCircle, XCircle, ArrowLeft, X } from 'lucide-react';
+import { CreditCard, Loader2, Plus, Edit2, Trash2, CheckCircle, XCircle, X } from 'lucide-react';
 import { api } from '@/lib/api';
-import Link from 'next/link';
+import { useI18n } from '@/lib/i18n';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 
 type ToastState = { type: 'success' | 'error'; message: string } | null;
 
@@ -172,6 +174,8 @@ function MethodForm({ initial, accounts, onSave, onCancel }: MethodFormProps) {
 }
 
 export default function PaymentMethodsSettingsPage() {
+    const { t } = useI18n();
+    const pageTitle = 'Payment Methods';
     const [methods, setMethods] = useState<PaymentMethod[]>([]);
     const [accounts, setAccounts] = useState<Account[]>([]);
     const [loading, setLoading] = useState(true);
@@ -241,36 +245,32 @@ export default function PaymentMethodsSettingsPage() {
     return (
         <div className="h-full overflow-y-auto">
             <div className="max-w-3xl mx-auto px-6 py-8 space-y-6">
-                {/* Back link */}
-                <div className="flex items-center gap-3">
-                    <Link
-                        href="/settings"
-                        className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 transition-colors"
-                    >
-                        <ArrowLeft className="w-4 h-4" />
-                        Back to Settings
-                    </Link>
-                </div>
-
-                {/* Page title */}
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center">
-                            <CreditCard className="w-5 h-5 text-indigo-600" />
-                        </div>
-                        <div>
-                            <h1 className="text-2xl font-black text-gray-900 tracking-tight">Payment Methods</h1>
-                            <p className="text-sm text-gray-500">Manage accepted payment methods for sales</p>
-                        </div>
-                    </div>
-                    <button
-                        onClick={() => { setShowCreate(true); setEditingId(null); }}
-                        className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-700 transition-colors shadow-sm"
-                    >
-                        <Plus className="w-4 h-4" />
-                        Add Method
-                    </button>
-                </div>
+                <PageHeader
+                    title={(
+                        <span className="inline-flex items-center gap-3">
+                            <span className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center">
+                                <CreditCard className="w-5 h-5 text-indigo-600" />
+                            </span>
+                            {pageTitle}
+                        </span>
+                    )}
+                    subtitle="Manage accepted payment methods for sales"
+                    breadcrumbs={modulePageBreadcrumbs(
+                        t.dashboardHome.breadcrumbHome,
+                        t.sidebar.modules.accountSettings,
+                        pageTitle,
+                        'settings',
+                    )}
+                    actions={(
+                        <button
+                            onClick={() => { setShowCreate(true); setEditingId(null); }}
+                            className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-700 transition-colors shadow-sm"
+                        >
+                            <Plus className="w-4 h-4" />
+                            Add Method
+                        </button>
+                    )}
+                />
 
                 {/* Create form */}
                 {showCreate && (

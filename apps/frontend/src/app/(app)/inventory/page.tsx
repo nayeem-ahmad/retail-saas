@@ -78,6 +78,7 @@ export default function InventoryHubPage() {
 
     return (
         <ModuleHub
+            module="inventory"
             moduleLabel={hub.moduleLabel}
             title={hub.title}
             subtitle={hub.subtitle}

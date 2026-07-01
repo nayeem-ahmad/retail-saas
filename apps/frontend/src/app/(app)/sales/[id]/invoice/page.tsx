@@ -1,8 +1,11 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Download, Printer } from 'lucide-react';
+import { useParams } from 'next/navigation';
+import { Download, Printer } from 'lucide-react';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { nestedPageBreadcrumbs } from '@/lib/page-breadcrumbs';
+import { routes } from '@/lib/routes';
 import { api } from '@/lib/api';
 import { useI18n, formatMessage } from '@/lib/i18n';
 import { formatBDT, formatDate } from '@/lib/format';
@@ -52,7 +55,6 @@ interface InvoiceData {
 export default function InvoicePage() {
     const { t, locale } = useI18n();
     const params = useParams();
-    const router = useRouter();
     const invoiceRef = useRef<HTMLDivElement>(null);
     const [data, setData] = useState<InvoiceData | null>(null);
     const [loading, setLoading] = useState(true);
@@ -131,32 +133,40 @@ export default function InvoicePage() {
             `}</style>
 
             <div className="min-h-full bg-gray-100 p-4 sm:p-8">
-                {/* Toolbar */}
-                <div className="no-print max-w-3xl mx-auto mb-4 flex items-center justify-between">
-                    <button
-                        onClick={() => router.push(`/sales/${sale.id}`)}
-                        className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
-                    >
-                        <ArrowLeft className="h-4 w-4" />
-                        {t.sales.invoice.backToSale}
-                    </button>
-                    <div className="flex items-center gap-3">
-                        <button
-                            onClick={handlePrint}
-                            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm"
-                        >
-                            <Printer className="h-4 w-4" />
-                            Print
-                        </button>
-                        <button
-                            onClick={handlePrint}
-                            className="flex items-center gap-2 px-4 py-2 text-white rounded-lg text-sm font-medium shadow-sm transition-colors"
-                            style={{ backgroundColor: primaryColor }}
-                        >
-                            <Download className="h-4 w-4" />
-                            {t.sales.invoice.downloadPdf}
-                        </button>
-                    </div>
+                <div className="no-print max-w-3xl mx-auto mb-4">
+                    <PageHeader
+                        title={t.sales.invoice.invoice}
+                        subtitle={sale.serial_number}
+                        breadcrumbs={nestedPageBreadcrumbs(
+                            t.dashboardHome.breadcrumbHome,
+                            t.sidebar.modules.sales,
+                            'sales',
+                            [
+                                { label: t.sales.list.title, href: routes.sales.list },
+                                { label: sale.serial_number, href: routes.sales.detail(sale.id) },
+                            ],
+                            t.sales.invoice.invoice,
+                        )}
+                        actions={
+                            <>
+                                <button
+                                    onClick={handlePrint}
+                                    className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm"
+                                >
+                                    <Printer className="h-4 w-4" />
+                                    Print
+                                </button>
+                                <button
+                                    onClick={handlePrint}
+                                    className="flex items-center gap-2 px-4 py-2 text-white rounded-lg text-sm font-medium shadow-sm transition-colors"
+                                    style={{ backgroundColor: primaryColor }}
+                                >
+                                    <Download className="h-4 w-4" />
+                                    {t.sales.invoice.downloadPdf}
+                                </button>
+                            </>
+                        }
+                    />
                 </div>
 
                 {/* Invoice Document */}

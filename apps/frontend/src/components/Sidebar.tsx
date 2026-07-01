@@ -683,8 +683,8 @@ export default function Sidebar({
                     }
                 }}
             >
-                {/* Logo */}
-                <div className={`flex items-center ${compactNav ? 'h-11' : 'h-14'} border-b border-gray-100 flex-shrink-0 ${collapsed ? 'justify-center px-0' : compactNav ? 'px-3 gap-2' : 'px-5 gap-3'}`}>
+                {/* Logo — height matches app header (layout.tsx) */}
+                <div className={`flex items-center ${compactNav ? 'min-h-[3.25rem]' : 'h-14'} border-b border-gray-100 flex-shrink-0 ${collapsed ? 'justify-center px-0' : compactNav ? 'px-3 gap-2' : 'px-5 gap-3'}`}>
                     <div className={`flex items-center min-w-0 ${collapsed ? '' : 'flex-1 space-x-3'}`}>
                         <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden" style={{ backgroundColor: primaryColor }}>
                             {logoUrl ? (
@@ -695,14 +695,9 @@ export default function Sidebar({
                             )}
                         </div>
                         {!collapsed && (
-                            <div className="min-w-0">
-                                <span className="text-lg font-bold tracking-tight whitespace-nowrap block">
-                                    {businessName || 'ERP71'}
-                                </span>
-                                <span className="text-[10px] font-medium text-gray-400 mt-0.5 block">
-                                    {t.sidebar.workspace}
-                                </span>
-                            </div>
+                            <span className="min-w-0 truncate text-[15px] font-extrabold text-gray-950 tracking-tight leading-tight">
+                                {businessName || 'ERP71'}
+                            </span>
                         )}
                     </div>
                     {onClose && isOpen ? (

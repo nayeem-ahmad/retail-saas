@@ -6,7 +6,9 @@ import { ArrowUpRight, BadgeCheck, CreditCard, Loader2, RotateCcw } from 'lucide
 import { api } from '@/lib/api';
 import { formatBDT, formatDate } from '@/lib/format';
 import { formatMessage, useI18n } from '@/lib/i18n';
+import PageHeader from '@/components/ui/compact/PageHeader';
 import { redirectTo } from '@/lib/browser';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 
 type PlanCode = 'FREE' | 'BASIC' | 'ACCOUNTING' | 'STANDARD' | 'PREMIUM';
 
@@ -175,12 +177,16 @@ function BillingPageContent() {
     return (
         <div className="overflow-y-auto h-full bg-[#f3f4f6] p-3 md:p-4 font-sans text-gray-900 text-[13px]">
             <div className="max-w-6xl mx-auto space-y-6">
-                <div className="flex flex-col gap-2">
-                    <h1 className="text-lg font-bold tracking-tight text-gray-950">{copy.title}</h1>
-                    <p className="text-xs font-bold uppercase tracking-widest text-gray-500">
-                        {formatMessage(copy.subtitle, { tenant: tenantLabel })}
-                    </p>
-                </div>
+                <PageHeader
+                    title={copy.title}
+                    subtitle={formatMessage(copy.subtitle, { tenant: tenantLabel })}
+                    breadcrumbs={modulePageBreadcrumbs(
+                        t.dashboardHome.breadcrumbHome,
+                        t.sidebar.modules.billing,
+                        copy.title,
+                        'billing',
+                    )}
+                />
 
                 {error && (
                     <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">

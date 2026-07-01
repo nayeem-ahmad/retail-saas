@@ -4,8 +4,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { createColumnHelper, type ColumnDef } from '@tanstack/react-table';
 import { Truck, Plus, Pencil, Trash2, X } from 'lucide-react';
 import { DataTable } from '@/components/data-table';
+import PageHeader from '@/components/ui/compact/PageHeader';
 import { api } from '@/lib/api';
 import { formatDate } from '@/lib/format';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 import { useI18n } from '@/lib/i18n';
 
 interface Supplier {
@@ -185,21 +187,25 @@ export default function SuppliersPage() {
     return (
         <div className="overflow-y-auto h-full bg-[#f3f4f6] p-3 md:p-4 font-sans text-gray-900 text-[13px]">
             <div className="w-full space-y-4">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-lg font-bold tracking-tight text-gray-950">{t.suppliers.title}</h1>
-                        <p className="text-xs text-gray-500 mt-0.5">
-                            {t.suppliers.subtitle}
-                        </p>
-                    </div>
-                    <button
-                        onClick={openCreate}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center shadow-lg shadow-blue-200 transition-all hover:-translate-y-0.5 active:translate-y-0"
-                    >
-                        <Plus className="w-4 h-4 mr-2" />
-                        {t.suppliers.newSupplier}
-                    </button>
-                </div>
+                <PageHeader
+                    title={t.suppliers.title}
+                    subtitle={t.suppliers.subtitle}
+                    breadcrumbs={modulePageBreadcrumbs(
+                        t.dashboardHome.breadcrumbHome,
+                        t.sidebar.modules.purchase,
+                        t.suppliers.title,
+                        'purchases',
+                    )}
+                    actions={(
+                        <button
+                            onClick={openCreate}
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center shadow-lg shadow-blue-200 transition-all hover:-translate-y-0.5 active:translate-y-0"
+                        >
+                            <Plus className="w-4 h-4 mr-2" />
+                            {t.suppliers.newSupplier}
+                        </button>
+                    )}
+                />
 
                 <DataTable<Supplier>
                     tableId="suppliers"
