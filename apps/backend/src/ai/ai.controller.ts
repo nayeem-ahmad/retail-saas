@@ -1,16 +1,26 @@
-import { Body, Controller, Get, Post, Request, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Get, Post, Request, ServiceUnavailableException, UseGuards, UseInterceptors } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Tenant, TenantContext } from '../database/tenant.decorator';
 import { TenantInterceptor } from '../database/tenant.interceptor';
 import { AiService } from './ai.service';
+import { PlatformSettingsService } from '../platform-settings/platform-settings.service';
 import { NarrateReportDto, DraftMessageDto, ParseVoiceEntryDto, ParseVoiceSaleDto } from './ai.dto';
 
 @ApiTags('ai')
 @ApiBearerAuth()
 @Controller('ai')
 export class AiController {
-    constructor(private readonly aiService: AiService) {}
+    constructor(
+        private readonly aiService: AiService,
+        private readonly platformSettings: PlatformSettingsService,
+    ) {}
+
+    private async assertVoiceEnabled() {
+        if (!await this.platformSettings.isFeatureEnabled('voice')) {
+            throw new ServiceUnavailableException('Voice features are not available');
+        }
+    }
 
     @Get('usage')
     @UseGuards(JwtAuthGuard)
@@ -36,14 +46,16 @@ export class AiController {
     @Post('parse-voice-entry')
     @UseGuards(JwtAuthGuard)
     @UseInterceptors(TenantInterceptor)
-    parseVoiceEntry(@Tenant() tenant: TenantContext, @Body() dto: ParseVoiceEntryDto) {
+    async parseVoiceEntry(@Tenant() tenant: TenantContext, @Body() dto: ParseVoiceEntryDto) {
+        await this.assertVoiceEnabled();
         return this.aiService.parseVoiceEntry(tenant.tenantId, dto);
     }
 
     @Post('parse-voice-sale')
     @UseGuards(JwtAuthGuard)
     @UseInterceptors(TenantInterceptor)
-    parseVoiceSale(@Tenant() tenant: TenantContext, @Body() dto: ParseVoiceSaleDto) {
+    async parseVoiceSale(@Tenant() tenant: TenantContext, @Body() dto: ParseVoiceSaleDto) {
+        await this.assertVoiceEnabled();
         return this.aiService.parseVoiceSale(tenant.tenantId, dto);
     }
 }

@@ -11,7 +11,8 @@ import * as crypto from 'node:crypto';
 import { SignupDto, LoginDto, UpdateProfileDto, ChangePasswordDto } from './auth.dto';
 import { isPlatformAdminEmail } from './platform-admin.util';
 import { DEMO_ACCOUNT_EMAIL } from '@erp71/database';
-import { ROLE_DEFAULT_PERMISSIONS, UserRole } from '@erp71/shared-types';
+import { DEFAULT_PLATFORM_FEATURES, ROLE_DEFAULT_PERMISSIONS, UserRole } from '@erp71/shared-types';
+import { PlatformSettingsService } from '../platform-settings/platform-settings.service';
 
 type TenantProvisionDto = {
     tenantName: string;
@@ -30,6 +31,7 @@ export class AuthService {
         private readonly audit: AuditService,
         private readonly totp: TotpService,
         private readonly assets: AssetsService,
+        private readonly platformSettings: PlatformSettingsService,
     ) { }
 
     async signup(dto: SignupDto) {
@@ -291,6 +293,8 @@ export class AuthService {
         const totpSecret = (user as any).totp_secret as string | null | undefined;
         const twoFactorEnabled = !!totpSecret && !totpSecret.startsWith('pending:');
 
+        const platformFeatures = await this.platformSettings.getPlatformFeatures().catch(() => DEFAULT_PLATFORM_FEATURES);
+
         return {
             id: user.id,
             email: user.email,
@@ -301,6 +305,7 @@ export class AuthService {
             email_verified: !!user.email_verified_at,
             two_factor_enabled: twoFactorEnabled,
             avatar_url: (user as any).avatar_url || null,
+            platform_features: platformFeatures,
             tenants: tenantMembers.map((membership) =>
                 this.mapTenantMembership(membership, storeAccess),
             ),

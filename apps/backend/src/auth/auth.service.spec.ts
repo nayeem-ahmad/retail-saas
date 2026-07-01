@@ -8,6 +8,7 @@ import { DatabaseService } from '../database/database.service';
 import { EmailService } from '../email/email.service';
 import { AuditService } from '../audit/audit.service';
 import { TotpService } from './totp.service';
+import { PlatformSettingsService } from '../platform-settings/platform-settings.service';
 
 jest.mock('bcrypt', () => ({
     hash: jest.fn().mockResolvedValue('hashed-password'),
@@ -68,6 +69,15 @@ describe('AuthService', () => {
         log: jest.fn().mockResolvedValue(undefined),
     };
 
+    const platformSettings = {
+        getPlatformFeatures: jest.fn().mockResolvedValue({
+            feedback: false,
+            support: false,
+            help: false,
+            voice: false,
+        }),
+    };
+
     const makeUserWithAccess = (storeId: string, tenantId: string) => ({
         id: 'user-1',
         email: 'owner@example.com',
@@ -116,6 +126,12 @@ describe('AuthService', () => {
         db.emailVerificationToken.create.mockResolvedValue({});
         jwtService.sign.mockReturnValue('jwt-token');
         auditService.log.mockResolvedValue(undefined);
+        platformSettings.getPlatformFeatures.mockResolvedValue({
+            feedback: false,
+            support: false,
+            help: false,
+            voice: false,
+        });
 
         const module: TestingModule = await Test.createTestingModule({
             providers: [
@@ -126,6 +142,7 @@ describe('AuthService', () => {
                 { provide: AuditService, useValue: auditService },
                 { provide: TotpService, useValue: { isEnabled: jest.fn().mockReturnValue(false) } },
                 { provide: AssetsService, useValue: { uploadFile: jest.fn() } },
+                { provide: PlatformSettingsService, useValue: platformSettings },
             ],
         }).compile();
 
@@ -222,6 +239,12 @@ describe('AuthService', () => {
         expect(result.tenants[0].stores[0].id).toBe('store-1');
         expect(result.preferred_locale).toBe('bn');
         expect(result.tenants[0].default_locale).toBe('en');
+        expect(result.platform_features).toEqual({
+            feedback: false,
+            support: false,
+            help: false,
+            voice: false,
+        });
     });
 
     it('updates preferred locale through updateProfile', async () => {

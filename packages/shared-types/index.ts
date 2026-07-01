@@ -729,6 +729,43 @@ export const ProductSchema = z.object({
 export type ProductInput = z.infer<typeof ProductSchema>;
 
 // ---------------------------------------------------------------------------
+// Platform feature toggles (platform-admin)
+// ---------------------------------------------------------------------------
+
+export interface PlatformFeatures {
+  feedback: boolean;
+  support: boolean;
+  help: boolean;
+  voice: boolean;
+}
+
+export const DEFAULT_PLATFORM_FEATURES: PlatformFeatures = {
+  feedback: false,
+  support: false,
+  help: false,
+  voice: false,
+};
+
+const PLATFORM_FEATURE_SETTING_KEYS: Record<keyof PlatformFeatures, string> = {
+  feedback: 'feedback_enabled',
+  support: 'support_enabled',
+  help: 'help_enabled',
+  voice: 'voice_enabled',
+};
+
+/** Parses general-group platform settings into feature booleans (`'true'` only). */
+export function parsePlatformFeatures(
+  settings: Record<string, string | null | undefined>,
+): PlatformFeatures {
+  return {
+    feedback: settings[PLATFORM_FEATURE_SETTING_KEYS.feedback] === 'true',
+    support: settings[PLATFORM_FEATURE_SETTING_KEYS.support] === 'true',
+    help: settings[PLATFORM_FEATURE_SETTING_KEYS.help] === 'true',
+    voice: settings[PLATFORM_FEATURE_SETTING_KEYS.voice] === 'true',
+  };
+}
+
+// ---------------------------------------------------------------------------
 // System health monitoring (platform-admin)
 // ---------------------------------------------------------------------------
 

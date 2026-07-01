@@ -1,5 +1,14 @@
 import { fireEvent, render, screen } from '@testing-library/react';
+import { PlatformFeaturesProvider } from '@/contexts/PlatformFeaturesContext';
 import { ContextualHelpPanel } from './ContextualHelpPanel';
+
+function renderHelp(features?: { help?: boolean }) {
+    return render(
+        <PlatformFeaturesProvider features={{ feedback: false, support: false, help: true, voice: false, ...features }}>
+            <ContextualHelpPanel {...HELP} />
+        </PlatformFeaturesProvider>,
+    );
+}
 
 jest.mock('next/link', () => ({
     __esModule: true,
@@ -19,8 +28,13 @@ describe('ContextualHelpPanel', () => {
         localStorage.clear();
     });
 
+    it('renders nothing when help feature is disabled', () => {
+        const { container } = renderHelp({ help: false });
+        expect(container).toBeEmptyDOMElement();
+    });
+
     it('renders summary and steps', () => {
-        render(<ContextualHelpPanel {...HELP} />);
+        renderHelp();
         expect(screen.getByText('Test quick guide')).toBeInTheDocument();
         expect(screen.getByText('Summary for testers.')).toBeInTheDocument();
         expect(screen.getByText('Step one')).toBeInTheDocument();
@@ -28,7 +42,7 @@ describe('ContextualHelpPanel', () => {
     });
 
     it('dismisses and can be restored', () => {
-        render(<ContextualHelpPanel {...HELP} />);
+        renderHelp();
         fireEvent.click(screen.getByRole('button', { name: 'Dismiss help' }));
         expect(screen.queryByText('Summary for testers.')).not.toBeInTheDocument();
         fireEvent.click(screen.getByRole('button', { name: /show test quick guide/i }));
@@ -36,7 +50,7 @@ describe('ContextualHelpPanel', () => {
     });
 
     it('collapses step list', () => {
-        render(<ContextualHelpPanel {...HELP} />);
+        renderHelp();
         fireEvent.click(screen.getByRole('button', { name: 'Collapse help' }));
         expect(screen.queryByText('Step one')).not.toBeInTheDocument();
         fireEvent.click(screen.getByRole('button', { name: 'Expand help' }));

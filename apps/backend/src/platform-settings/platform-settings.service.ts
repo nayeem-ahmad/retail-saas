@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { parsePlatformFeatures, type PlatformFeatures } from '@erp71/shared-types';
 import { DatabaseService } from '../database/database.service';
 import { encryptValue, decryptValue } from './crypto.util';
 
@@ -50,6 +51,10 @@ const SETTINGS_SCHEMA: Record<string, Record<string, SettingMeta>> = {
         platform_name:    { isSecret: false, default: 'ERP71' },
         support_email:    { isSecret: false, default: 'support@erp71.com' },
         maintenance_mode: { isSecret: false, default: 'false' },
+        feedback_enabled: { isSecret: false, default: 'false' },
+        support_enabled:  { isSecret: false, default: 'false' },
+        help_enabled:     { isSecret: false, default: 'false' },
+        voice_enabled:    { isSecret: false, default: 'false' },
     },
 };
 
@@ -124,5 +129,21 @@ export class PlatformSettingsService {
     /** Invalidates the in-memory cache for a group (e.g. after an external update) */
     invalidate(group: string): void {
         this.cache.delete(group);
+    }
+
+    /** Tenant-facing feature toggles from the general settings group. */
+    async getPlatformFeatures(): Promise<PlatformFeatures> {
+        const schema = SETTINGS_SCHEMA.general;
+        const raw = await this.getRawGroup('general');
+        const withDefaults: Record<string, string | null> = {};
+        for (const key of Object.keys(schema)) {
+            withDefaults[key] = raw[key] ?? schema[key].default ?? null;
+        }
+        return parsePlatformFeatures(withDefaults);
+    }
+
+    async isFeatureEnabled(feature: keyof PlatformFeatures): Promise<boolean> {
+        const features = await this.getPlatformFeatures();
+        return features[feature];
     }
 }

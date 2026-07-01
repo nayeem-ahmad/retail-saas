@@ -12,13 +12,63 @@ type GeneralSettings = {
     platform_name: string;
     support_email: string;
     maintenance_mode: string;
+    feedback_enabled: string;
+    support_enabled: string;
+    help_enabled: string;
+    voice_enabled: string;
 };
 
 const DEFAULTS: GeneralSettings = {
     platform_name: 'ERP71',
     support_email: 'support@erp71.com',
     maintenance_mode: 'false',
+    feedback_enabled: 'false',
+    support_enabled: 'false',
+    help_enabled: 'false',
+    voice_enabled: 'false',
 };
+
+type FeatureToggleKey = 'feedback_enabled' | 'support_enabled' | 'help_enabled' | 'voice_enabled';
+
+const FEATURE_TOGGLES: Array<{
+    key: FeatureToggleKey;
+    labelKey: 'feedback' | 'support' | 'help' | 'voice';
+}> = [
+    { key: 'feedback_enabled', labelKey: 'feedback' },
+    { key: 'support_enabled', labelKey: 'support' },
+    { key: 'help_enabled', labelKey: 'help' },
+    { key: 'voice_enabled', labelKey: 'voice' },
+];
+
+function FeatureSwitch({
+    label,
+    hint,
+    enabled,
+    onToggle,
+}: {
+    label: string;
+    hint: string;
+    enabled: boolean;
+    onToggle: () => void;
+}) {
+    return (
+        <div className="flex items-start justify-between gap-4">
+            <div>
+                <p className="text-sm font-semibold text-gray-800">{label}</p>
+                <p className="mt-0.5 text-xs text-gray-500">{hint}</p>
+            </div>
+            <button
+                type="button"
+                role="switch"
+                aria-checked={enabled}
+                onClick={onToggle}
+                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${enabled ? 'bg-blue-600' : 'bg-gray-200'}`}
+            >
+                <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${enabled ? 'translate-x-5' : 'translate-x-0'}`} />
+            </button>
+        </div>
+    );
+}
 
 type Toast = { type: 'success' | 'error'; message: string } | null;
 
@@ -56,6 +106,10 @@ export default function PlatformGeneralSettingsPage() {
                     platform_name: d.platform_name ?? DEFAULTS.platform_name,
                     support_email: d.support_email ?? DEFAULTS.support_email,
                     maintenance_mode: d.maintenance_mode ?? DEFAULTS.maintenance_mode,
+                    feedback_enabled: d.feedback_enabled ?? DEFAULTS.feedback_enabled,
+                    support_enabled: d.support_enabled ?? DEFAULTS.support_enabled,
+                    help_enabled: d.help_enabled ?? DEFAULTS.help_enabled,
+                    voice_enabled: d.voice_enabled ?? DEFAULTS.voice_enabled,
                 });
             })
             .catch(() => setToast({ type: 'error', message: c.loadFailed }))
@@ -147,6 +201,26 @@ export default function PlatformGeneralSettingsPage() {
                             >
                                 <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${maintenanceOn ? 'translate-x-5' : 'translate-x-0'}`} />
                             </button>
+                        </div>
+
+                        <div className="border-t border-gray-100 pt-5 space-y-4">
+                            <div>
+                                <p className="text-sm font-bold text-gray-900">{m.features.title}</p>
+                                <p className="mt-0.5 text-xs text-gray-500">{m.features.hint}</p>
+                            </div>
+                            {FEATURE_TOGGLES.map(({ key, labelKey }) => {
+                                const feature = m.features[labelKey];
+                                const enabled = settings[key] === 'true';
+                                return (
+                                    <FeatureSwitch
+                                        key={key}
+                                        label={feature.label}
+                                        hint={feature.hint}
+                                        enabled={enabled}
+                                        onToggle={() => set(key, enabled ? 'false' : 'true')}
+                                    />
+                                );
+                            })}
                         </div>
 
                         <div className="pt-2">

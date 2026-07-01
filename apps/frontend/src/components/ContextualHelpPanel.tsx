@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { BookOpen, ChevronDown, ChevronUp, X } from 'lucide-react';
+import { usePlatformFeatures } from '@/contexts/PlatformFeaturesContext';
 import type { ContextualHelpContent } from '@/lib/help/contextual-help';
 
 type ContextualHelpPanelProps = ContextualHelpContent;
@@ -14,6 +15,7 @@ export function ContextualHelpPanel({
     steps,
     learnMoreHref,
 }: ContextualHelpPanelProps) {
+    const { help } = usePlatformFeatures();
     const [dismissed, setDismissed] = useState(false);
     const [expanded, setExpanded] = useState(true);
 
@@ -22,6 +24,10 @@ export function ContextualHelpPanel({
         setDismissed(localStorage.getItem(panelKey) === '1');
         setExpanded(localStorage.getItem(panelKey) !== '1');
     }, [panelKey]);
+
+    if (!help) {
+        return null;
+    }
 
     const dismiss = () => {
         localStorage.setItem(panelKey, '1');

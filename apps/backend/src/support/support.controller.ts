@@ -8,12 +8,14 @@ import {
     UseInterceptors,
     NotFoundException,
     ForbiddenException,
+    ServiceUnavailableException,
 } from '@nestjs/common';
 import { IsString, MinLength, MaxLength } from 'class-validator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { TenantInterceptor } from '../database/tenant.interceptor';
 import { Tenant, TenantContext } from '../database/tenant.decorator';
 import { DatabaseService } from '../database/database.service';
+import { PlatformSettingsService } from '../platform-settings/platform-settings.service';
 
 class CreateThreadDto {
     @IsString()
@@ -36,10 +38,20 @@ class SendMessageDto {
 @UseGuards(JwtAuthGuard)
 @UseInterceptors(TenantInterceptor)
 export class SupportController {
-    constructor(private readonly db: DatabaseService) {}
+    constructor(
+        private readonly db: DatabaseService,
+        private readonly platformSettings: PlatformSettingsService,
+    ) {}
+
+    private async assertSupportEnabled() {
+        if (!await this.platformSettings.isFeatureEnabled('support')) {
+            throw new ServiceUnavailableException('Support chat is not available');
+        }
+    }
 
     @Get('threads')
     async listThreads(@Tenant() tenant: TenantContext) {
+        await this.assertSupportEnabled();
         const threads = await this.db.supportThread.findMany({
             where: { tenantId: tenant.tenantId },
             orderBy: { updatedAt: 'desc' },
@@ -66,6 +78,7 @@ export class SupportController {
 
     @Post('threads')
     async createThread(@Tenant() tenant: TenantContext, @Body() dto: CreateThreadDto) {
+        await this.assertSupportEnabled();
         const thread = await this.db.supportThread.create({
             data: {
                 tenantId: tenant.tenantId,
@@ -84,6 +97,7 @@ export class SupportController {
 
     @Get('threads/:id/messages')
     async getMessages(@Tenant() tenant: TenantContext, @Param('id') id: string) {
+        await this.assertSupportEnabled();
         const thread = await this.db.supportThread.findUnique({ where: { id } });
         if (!thread) throw new NotFoundException('Thread not found');
         if (thread.tenantId !== tenant.tenantId) throw new ForbiddenException();
@@ -112,6 +126,7 @@ export class SupportController {
         @Param('id') id: string,
         @Body() dto: SendMessageDto,
     ) {
+        await this.assertSupportEnabled();
         const thread = await this.db.supportThread.findUnique({ where: { id } });
         if (!thread) throw new NotFoundException('Thread not found');
         if (thread.tenantId !== tenant.tenantId) throw new ForbiddenException();

@@ -555,5 +555,6 @@ Track all work here. Check off items as they're completed. Add new items as they
 - [x] Deploy legal email update — pushed `472cf0a` to dev/main; VPS `scripts/deploy.sh main` rebuilt `erp71` stack — done 2026-07-01
 - [x] Platform admin soft-delete tenant — `deleted_at` on Tenant model + migration; `DELETE /admin/tenants/:id` soft-deletes (clears `storefront_slug`, cancels subscription, audit-logged); hidden from admin list/metrics and blocked in auth/tenant interceptor/storefront; same name/email can be reused for new tenants; frontend delete button on `/admin/tenants` — done 2026-07-02
 - [x] Deploy tenant soft-delete — pushed `fac246d` to dev/main; VPS `/opt/retail-saas` `scripts/deploy.sh main` rebuilt erp71 stack; `prisma db push` confirmed schema in sync; smoke checks green at `api.erp71.com` / `app.erp71.com` — done 2026-07-02
+- [x] Platform admin feature toggles — Feedback, Support, Help, and Voice On/Off switches in General platform settings (all off by default); `platform_features` on `/auth/me`; frontend hides nav/widgets/panels and backend gates feedback/support/voice APIs — done 2026-07-02
 
 

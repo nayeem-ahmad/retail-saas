@@ -14,7 +14,9 @@ import AppHeaderMobileMenu from '@/components/AppHeaderMobileMenu';
 import Toaster from '@/components/Toaster';
 import ServiceWorkerRegistrar from '@/components/ServiceWorkerRegistrar';
 import { CompactUiProvider } from '@/contexts/CompactUiContext';
+import { PlatformFeaturesProvider } from '@/contexts/PlatformFeaturesContext';
 import { TenantLocaleProvider } from '@/contexts/TenantLocaleContext';
+import { DEFAULT_PLATFORM_FEATURES, type PlatformFeatures } from '@erp71/shared-types';
 import TenantLocaleSync from '@/components/TenantLocaleSync';
 import { BrandingProvider } from '@/lib/branding';
 import { formatPlanDisplayName } from '@/lib/plan-display';
@@ -43,6 +45,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     const [resendingVerification, setResendingVerification] = useState(false);
     const [mobileNavOpen, setMobileNavOpen] = useState(false);
     const [workspaceEpoch, setWorkspaceEpoch] = useState(0);
+    const [platformFeatures, setPlatformFeatures] = useState<PlatformFeatures>(DEFAULT_PLATFORM_FEATURES);
 
     useEffect(() => {
         api.getMe().then((me) => {
@@ -58,6 +61,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 }
             }
             setUser(me);
+            setPlatformFeatures(me?.platform_features ?? DEFAULT_PLATFORM_FEATURES);
             setShowEmailVerificationBanner(!me?.email_verified);
             const isDemo = Boolean(me?.is_demo) || localStorage.getItem('demo_session') === '1';
             setShowDemoBanner(isDemo && localStorage.getItem('demo_banner_dismissed') !== '1');
@@ -205,7 +209,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         if (!hasPremiumCrm && pathname.startsWith(routes.crm.leads)) {
             router.replace(routes.crm.root);
         }
-    }, [canAccessAccounting, canAccessInventoryReports, canManageTeam, canViewAudit, hasPremiumCrm, hasResolvedUser, isPlatformAdmin, pathname, router, user]);
+        if (!platformFeatures.help && pathname.startsWith(routes.help)) {
+            router.replace(routes.home);
+        }
+        if (!platformFeatures.support && pathname === routes.support) {
+            router.replace(routes.home);
+        }
+    }, [canAccessAccounting, canAccessInventoryReports, canManageTeam, canViewAudit, hasPremiumCrm, hasResolvedUser, isPlatformAdmin, pathname, platformFeatures.help, platformFeatures.support, router, user]);
 
     const activeStore =
         tenantStores.find((store: { id: string }) => store.id === activeStoreId) ?? tenantStores[0];
@@ -223,6 +233,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
     return (
         <BrandingProvider>
+        <PlatformFeaturesProvider features={platformFeatures}>
         <TenantLocaleProvider tenant={tenantLocaleConfig}>
         <TenantLocaleSync tenant={tenantLocaleConfig} />
         <div className="flex h-dvh min-h-dvh bg-[#f9fafb] font-sans text-[#111827]">
@@ -234,6 +245,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 canManageBilling={canManageBilling}
                 canManageTeam={canManageTeam}
                 platformAdminMode={inPlatformAdminMode}
+                helpEnabled={platformFeatures.help}
+                supportEnabled={platformFeatures.support}
                 activePlanCode={activePlanCode}
                 compactNav={useCompactChrome}
                 isOpen={mobileNavOpen}
@@ -281,8 +294,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
                     <div className="flex items-center gap-1.5 md:gap-4 flex-shrink-0">
                         <div className="hidden md:contents">
-                            <VoiceNavWidget />
-                            <div className="h-8 w-px bg-gray-200 hidden sm:block" />
+                            {platformFeatures.voice ? <VoiceNavWidget /> : null}
+                            {platformFeatures.voice ? <div className="h-8 w-px bg-gray-200 hidden sm:block" /> : null}
                             <LanguageSwitcher />
                         </div>
                         <AppHeaderMobileMenu />
@@ -379,10 +392,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             </div>
 
             <Toaster />
-            <FloatingAssistDock />
+            {platformFeatures.feedback ? <FloatingAssistDock /> : null}
             <ServiceWorkerRegistrar />
         </div>
         </TenantLocaleProvider>
+        </PlatformFeaturesProvider>
         </BrandingProvider>
     );
 }

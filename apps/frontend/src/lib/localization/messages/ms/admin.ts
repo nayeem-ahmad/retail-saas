@@ -203,6 +203,26 @@ export const adminMessages = {
                     hint: 'Apabila diaktifkan, API mengembalikan 503 untuk semua permintaan bukan pentadbir.',
                     activeWarning: 'Mod penyelenggaraan AKTIF — penyewa tidak dapat mengakses platform.',
                 },
+                features: {
+                    title: 'Ciri Penyewa',
+                    hint: 'Kawal ciri bantuan yang kelihatan kepada pengguna kedai. Semua dimatikan secara lalai.',
+                    feedback: {
+                        label: 'Maklum Balas',
+                        hint: 'Widget maklum balas terapung di sudut kanan bawah.',
+                    },
+                    support: {
+                        label: 'Sokongan',
+                        hint: 'Sembang sokongan dalam aplikasi untuk pemilik kedai.',
+                    },
+                    help: {
+                        label: 'Bantuan',
+                        hint: 'Pautan Pusat Bantuan di bar sisi dan panel bantuan kontekstual.',
+                    },
+                    voice: {
+                        label: 'Suara',
+                        hint: 'Navigasi suara di pengepala dan kemasukan suara pada borang.',
+                    },
+                },
                 saved: 'Tetapan am disimpan.',
             },
             sms: {

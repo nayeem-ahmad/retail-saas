@@ -203,6 +203,26 @@ export const adminMessages = {
                     hint: "When enabled, the API returns a 503 for all non-admin requests.",
                     activeWarning: "Maintenance mode is ON — tenants cannot access the platform.",
                 },
+                features: {
+                    title: "Tenant Features",
+                    hint: "Control which assist features are visible to shop users. All are off by default.",
+                    feedback: {
+                        label: "Feedback",
+                        hint: "Floating feedback widget in the bottom-right corner.",
+                    },
+                    support: {
+                        label: "Support",
+                        hint: "In-app support chat for shop owners.",
+                    },
+                    help: {
+                        label: "Help",
+                        hint: "Help Center sidebar link and contextual help panels.",
+                    },
+                    voice: {
+                        label: "Voice",
+                        hint: "Voice navigation in the header and voice entry on forms.",
+                    },
+                },
                 saved: "General settings saved.",
             },
             sms: {

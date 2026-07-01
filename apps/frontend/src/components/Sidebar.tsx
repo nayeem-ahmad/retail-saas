@@ -402,7 +402,7 @@ function buildModules(t: ReturnType<typeof useI18n>['t']): NavModule[] {
 /* ------------------------------------------------------------------ */
 
 /** Modules visible when acting as the Platform Admin (no shop/tenant scope). */
-const PLATFORM_ADMIN_MODULES = new Set(['admin', 'help']);
+const PLATFORM_ADMIN_MODULES = new Set(['admin']);
 
 const SIDEBAR_COLLAPSED_WIDTH = 64;
 const SIDEBAR_MIN_WIDTH = 176;
@@ -421,6 +421,8 @@ export default function Sidebar({
     canManageBilling = false,
     canManageTeam = false,
     platformAdminMode = false,
+    helpEnabled = false,
+    supportEnabled = false,
     activePlanCode,
     compactNav = false,
     isOpen = false,
@@ -434,6 +436,8 @@ export default function Sidebar({
     canManageTeam?: boolean;
     /** When true, hide all shop modules and show only the admin console. */
     platformAdminMode?: boolean;
+    helpEnabled?: boolean;
+    supportEnabled?: boolean;
     activePlanCode?: string | null;
     /** Tighter nav when inside the accounting module trial */
     compactNav?: boolean;
@@ -454,9 +458,14 @@ export default function Sidebar({
     const modules = useMemo(() => buildModules(t)
         .filter((module) => {
             // Platform-admin console: shop owner/user options are hidden entirely.
-            if (platformAdminMode) return PLATFORM_ADMIN_MODULES.has(module.key);
+            if (platformAdminMode) {
+                if (module.key === 'help') return helpEnabled;
+                return PLATFORM_ADMIN_MODULES.has(module.key);
+            }
             if (module.key === 'accounting') return canAccessAccounting;
             if (module.key === 'admin') return canAccessAdmin;
+            if (module.key === 'help') return helpEnabled;
+            if (module.key === 'support') return supportEnabled;
             return true;
         })
         .map((module) => {
@@ -499,6 +508,8 @@ export default function Sidebar({
         canAccessAdmin,
         canManageBilling,
         canManageTeam,
+        helpEnabled,
+        supportEnabled,
     ]);
 
     const isActive = (href: string, exact = false) => {

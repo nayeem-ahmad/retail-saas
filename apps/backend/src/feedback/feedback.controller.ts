@@ -5,6 +5,7 @@ import {
     UseGuards,
     UseInterceptors,
     BadRequestException,
+    ForbiddenException,
     Logger,
 } from '@nestjs/common';
 import { IsEnum, IsString, IsOptional, MinLength } from 'class-validator';
@@ -13,6 +14,7 @@ import { TenantInterceptor } from '../database/tenant.interceptor';
 import { Tenant, TenantContext } from '../database/tenant.decorator';
 import { DatabaseService } from '../database/database.service';
 import { EmailService } from '../email/email.service';
+import { PlatformSettingsService } from '../platform-settings/platform-settings.service';
 
 enum FeedbackType {
     bug = 'bug',
@@ -42,10 +44,15 @@ export class FeedbackController {
     constructor(
         private readonly db: DatabaseService,
         private readonly emailService: EmailService,
+        private readonly platformSettings: PlatformSettingsService,
     ) {}
 
     @Post()
     async create(@Tenant() tenant: TenantContext, @Body() dto: CreateFeedbackDto) {
+        if (!await this.platformSettings.isFeatureEnabled('feedback')) {
+            throw new ForbiddenException('Feedback is not available');
+        }
+
         if (!['bug', 'feature', 'general'].includes(dto.type)) {
             throw new BadRequestException('type must be one of: bug, feature, general');
         }

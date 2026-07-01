@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Loader2, Mic, MicOff } from 'lucide-react';
+import { usePlatformFeatures } from '@/contexts/PlatformFeaturesContext';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import type { VoiceEntryResult, VoiceEntryType } from '@/lib/voice-entry';
@@ -62,6 +63,7 @@ export default function VoiceEntryInput({
     children,
     disabled = false,
 }: VoiceEntryInputProps) {
+    const { voice } = usePlatformFeatures();
     const { locale } = useI18n();
     const [supported, setSupported] = useState(false);
     const [recording, setRecording] = useState(false);
@@ -203,7 +205,7 @@ export default function VoiceEntryInput({
         void startRecording();
     };
 
-    if (!supported) {
+    if (!voice || !supported) {
         if (inline && children) {
             return <>{children}</>;
         }
