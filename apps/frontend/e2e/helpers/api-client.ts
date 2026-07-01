@@ -12,13 +12,28 @@ async function parseJson<T>(res: Response): Promise<T> {
     return (body.data ?? body) as T;
 }
 
+async function fetchWithRetry(
+    url: string,
+    init: RequestInit,
+    attempts = 4,
+): Promise<Response> {
+    let lastRes: Response | null = null;
+    for (let i = 0; i < attempts; i++) {
+        const res = await fetch(url, init);
+        if (res.status !== 429) return res;
+        lastRes = res;
+        await new Promise((resolve) => setTimeout(resolve, (i + 1) * 500));
+    }
+    return lastRes!;
+}
+
 export async function apiGet<T>(session: DemoSession, path: string): Promise<T> {
-    const res = await fetch(`${E2E_API_URL}/api/v1${path}`, { headers: authHeaders(session) });
+    const res = await fetchWithRetry(`${E2E_API_URL}/api/v1${path}`, { headers: authHeaders(session) });
     return parseJson<T>(res);
 }
 
 export async function apiPost<T>(session: DemoSession, path: string, payload: unknown): Promise<T> {
-    const res = await fetch(`${E2E_API_URL}/api/v1${path}`, {
+    const res = await fetchWithRetry(`${E2E_API_URL}/api/v1${path}`, {
         method: 'POST',
         headers: authHeaders(session),
         body: JSON.stringify(payload),
@@ -56,4 +71,118 @@ export async function listCustomers(session: DemoSession): Promise<CustomerSumma
 
 export async function listSuppliers(session: DemoSession): Promise<SupplierSummary[]> {
     return apiGet<SupplierSummary[]>(session, '/suppliers');
+}
+
+export interface AccountSummary {
+    id: string;
+    name: string;
+    code?: string | null;
+    type: string;
+}
+
+export async function listAccounts(session: DemoSession): Promise<AccountSummary[]> {
+    const result = await apiGet<AccountSummary[] | { items?: AccountSummary[] }>(session, '/accounting/accounts');
+    if (Array.isArray(result)) return result;
+    return result.items ?? [];
+}
+
+export async function upsertBudget(
+    session: DemoSession,
+    payload: { accountId: string; fiscalYear: number; month?: number; amount: number },
+) {
+    return apiPost(session, '/accounting/budgets', payload);
+}
+
+export async function getAccountingOverview(session: DemoSession) {
+    return apiGet(session, '/accounting');
+}
+
+export async function lockFiscalPeriod(
+    session: DemoSession,
+    payload: { year: number; month: number },
+) {
+    return apiPost(session, '/accounting/settings/fiscal-periods/lock', payload);
+}
+
+export async function unlockFiscalPeriod(
+    session: DemoSession,
+    payload: { year: number; month: number },
+) {
+    return apiPost(session, '/accounting/settings/fiscal-periods/unlock', payload);
+}
+
+export async function importOpeningBalances(
+    session: DemoSession,
+    payload: {
+        asOfDate: string;
+        entries: Array<{ accountId: string; debitAmount: number; creditAmount: number }>;
+    },
+) {
+    return apiPost(session, '/accounting/opening-balances', payload);
+}
+
+export async function createCostCenter(
+    session: DemoSession,
+    payload: { code: string; name: string },
+) {
+    return apiPost(session, '/accounting/cost-centers', payload);
+}
+
+export async function createFixedAsset(
+    session: DemoSession,
+    payload: {
+        assetCode: string;
+        name: string;
+        purchaseDate: string;
+        cost: number;
+        residualValue?: number;
+        usefulLifeMonths: number;
+        depreciationMethod?: string;
+    },
+) {
+    return apiPost(session, '/accounting/fixed-assets', payload);
+}
+
+export async function runDepreciation(
+    session: DemoSession,
+    payload: { year: number; month: number },
+) {
+    return apiPost(session, '/accounting/fixed-assets/run-depreciation', payload);
+}
+
+export async function createRecurringJournal(
+    session: DemoSession,
+    payload: {
+        name: string;
+        frequency: string;
+        nextDueDate: string;
+        lines: Array<{ accountId: string; debitAmount: number; creditAmount: number }>;
+    },
+) {
+    return apiPost(session, '/accounting/recurring-journals', payload);
+}
+
+export async function postRecurringJournal(session: DemoSession, id: string) {
+    return apiPost(session, `/accounting/recurring-journals/${id}/post`, {});
+}
+
+export async function createBankReconciliation(
+    session: DemoSession,
+    payload: { accountId: string; statementDate: string; statementClosingBalance: number },
+) {
+    return apiPost<{ id: string }>(session, '/accounting/bank-reconciliations', payload);
+}
+
+export async function importBankStatementEntries(
+    session: DemoSession,
+    payload: {
+        reconciliationId: string;
+        entries: Array<{ entryDate: string; description?: string; amount: number; entryType: string }>;
+    },
+) {
+    return apiPost(session, '/accounting/bank-reconciliations/import', payload);
+}
+
+export async function autoMatchBankEntries(session: DemoSession, reconciliationId: string) {
+    return apiPost(session, `/accounting/bank-reconciliations/${reconciliationId}/auto-match`, {});
 }

@@ -1,5 +1,6 @@
 import { Injectable, NestMiddleware, ForbiddenException } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
+import { getAllowedOrigins } from './allowed-origins.util';
 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
@@ -25,17 +26,10 @@ export class CsrfMiddleware implements NestMiddleware {
             throw new ForbiddenException('CSRF check failed: missing Origin');
         }
 
-        const allowed = this.allowedOrigins();
-        if (!allowed.includes(source)) {
+        if (!getAllowedOrigins().includes(source)) {
             throw new ForbiddenException('CSRF check failed: untrusted Origin');
         }
 
         next();
-    }
-
-    private allowedOrigins(): string[] {
-        const frontendUrl = process.env.FRONTEND_URL ?? 'http://localhost:3000';
-        const backendUrl = process.env.BACKEND_PUBLIC_URL ?? 'http://localhost:4000';
-        return [frontendUrl, backendUrl];
     }
 }

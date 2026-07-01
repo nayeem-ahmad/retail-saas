@@ -74,8 +74,10 @@ export const routes = {
     accounting: {
         root: '/accounting',
         vouchers: '/accounting/vouchers',
+        voucherEntry: '/accounting/vouchers/new',
+        voucherDetail: (id: string) => `/accounting/vouchers/${id}` as const,
         journal: '/accounting/journal',
-        journalDetail: (id: string) => `/accounting/journal/${id}` as const,
+        journalDetail: (id: string) => `/accounting/vouchers/${id}` as const,
         ledger: '/accounting/ledger',
         reconciliation: '/accounting/reconciliation',
         reconciliationBank: '/accounting/reconciliation/bank',

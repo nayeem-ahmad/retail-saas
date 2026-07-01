@@ -742,6 +742,96 @@ export class AccountingService {
         }
     }
 
+    async updateVoucher(tenantId: string, id: string, dto: CreateVoucherDto, userId?: string) {
+        this.validateVoucherDetails(dto);
+
+        const existing = await this.db.voucher.findFirst({
+            where: { tenant_id: tenantId, id },
+        });
+
+        if (!existing) {
+            throw new NotFoundException('Voucher not found');
+        }
+
+        if (existing.source_module) {
+            throw new BadRequestException('System-posted vouchers cannot be edited.');
+        }
+
+        const result = await this.db.$transaction(async (tx) => {
+            const uniqueAccountIds = [...new Set(dto.details.map((detail) => detail.accountId))];
+            const accounts = await tx.account.findMany({
+                where: {
+                    tenant_id: tenantId,
+                    id: { in: uniqueAccountIds },
+                },
+            });
+
+            if (accounts.length !== uniqueAccountIds.length) {
+                throw new BadRequestException('One or more accounts do not belong to the current tenant.');
+            }
+
+            this.validateVoucherTypeRules(dto, accounts);
+
+            await tx.voucherDetail.deleteMany({ where: { voucher_id: id } });
+
+            return tx.voucher.update({
+                where: { id },
+                data: {
+                    voucher_type: dto.voucherType,
+                    description: dto.description,
+                    reference_number: dto.referenceNumber,
+                    date: dto.date ? new Date(dto.date) : undefined,
+                    details: {
+                        create: dto.details.map((detail) => ({
+                            account_id: detail.accountId,
+                            debit_amount: detail.debitAmount,
+                            credit_amount: detail.creditAmount,
+                            comment: detail.comment,
+                        })),
+                    },
+                },
+                include: {
+                    details: {
+                        include: {
+                            account: {
+                                include: {
+                                    group: true,
+                                    subgroup: true,
+                                },
+                            },
+                        },
+                        orderBy: { created_at: 'asc' },
+                    },
+                },
+            });
+        });
+
+        this.auditService.log('accounting.voucher.update', 'voucher', { tenantId, userId }, id, { voucher_number: result.voucher_number }).catch(() => {});
+        return this.serializeVoucher(result);
+    }
+
+    async deleteVoucher(tenantId: string, id: string, userId?: string) {
+        const existing = await this.db.voucher.findFirst({
+            where: { tenant_id: tenantId, id },
+        });
+
+        if (!existing) {
+            throw new NotFoundException('Voucher not found');
+        }
+
+        if (existing.source_module) {
+            throw new BadRequestException('System-posted vouchers cannot be deleted.');
+        }
+
+        await this.db.$transaction(async (tx) => {
+            await tx.voucherDetail.deleteMany({ where: { voucher_id: id } });
+            await tx.voucher.delete({ where: { id } });
+        });
+
+        this.auditService.log('accounting.voucher.delete', 'voucher', { tenantId, userId }, id, { voucher_number: existing.voucher_number }).catch(() => {});
+        return { success: true, id };
+    }
+
     async listPostingRules(tenantId: string, query: ListPostingRulesQueryDto) {
         const rules = await this.db.postingRule.findMany({
             where: {

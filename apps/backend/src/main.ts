@@ -5,6 +5,7 @@ import { json, urlencoded } from 'express';
 import { AppModule } from './app.module';
 import { AppLogger } from './common/app-logger.service';
 import { HttpExceptionFilter } from './common/http-exception.filter';
+import { getAllowedOrigins } from './common/allowed-origins.util';
 import helmet from 'helmet';
 
 async function bootstrap() {
@@ -14,8 +15,15 @@ async function bootstrap() {
     app.useLogger(app.get(AppLogger));
     app.use(helmet());
     app.setGlobalPrefix('api/v1');
+    const allowedOrigins = getAllowedOrigins();
     app.enableCors({
-        origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+        origin: (origin, callback) => {
+            if (!origin || allowedOrigins.includes(origin)) {
+                callback(null, true);
+                return;
+            }
+            callback(new Error(`Origin ${origin} is not allowed by CORS`));
+        },
         credentials: true,
     });
     app.useGlobalFilters(new HttpExceptionFilter());

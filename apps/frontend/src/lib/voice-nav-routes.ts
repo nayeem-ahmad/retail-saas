@@ -118,8 +118,8 @@ export const VOICE_NAV_ROUTES: VoiceNavRoute[] = [
     },
     {
         id: 'voucher-entry',
-        path: '/accounting/vouchers',
-        aliases: ['voucher entry', 'voucher', 'journal voucher', 'ভাউচার', 'ভাউচার এন্ট্রি'],
+        path: '/accounting/vouchers/new',
+        aliases: ['voucher entry', 'new voucher', 'journal voucher', 'ভাউচার', 'ভাউচার এন্ট্রি'],
     },
     {
         id: 'purchase-entry',

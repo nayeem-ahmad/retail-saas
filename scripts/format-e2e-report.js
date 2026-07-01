@@ -99,27 +99,60 @@ if (parseError || !report) {
     }
 
     const stats = report.stats || {};
+    const runnerErrors = (report.errors || [])
+        .map((entry) => stripAnsi(entry.message || '').split('\n').filter(Boolean)[0])
+        .filter(Boolean);
     const total = specs.length;
     const failed = specs.filter((s) => !s.ok);
     failedCount = failed.length;
     const passed = total - failedCount;
     const duration = stats.duration ? `${(stats.duration / 1000).toFixed(1)}s` : 'n/a';
+    const noTestsRan = total === 0;
 
-    status = failedCount === 0 ? 'pass' : 'fail';
-    const icon = failedCount === 0 ? '✅' : '❌';
-    subject = failedCount === 0
-        ? `${icon} Nightly E2E: all ${passed} read-only checks passed`
-        : `${icon} Nightly E2E: ${failedCount} failed of ${total} read-only checks`;
+    if (noTestsRan || runnerErrors.length > 0) {
+        // Global setup failures produce an empty suite tree with errors[] populated.
+        // Treat that as a hard failure — not a green "0 passed" run.
+        status = 'error';
+        failedCount = noTestsRan && failedCount === 0 ? -1 : failedCount;
+        const icon = '⚠️';
+        subject = `${icon} Nightly read-only E2E could not run`;
+        const errorLines = runnerErrors.length > 0
+            ? runnerErrors
+            : ['Playwright finished without executing any @readonly tests.'];
+        const failedList = `<h3 style="color:#b91c1c">Runner errors</h3>
+           <ul>${errorLines.map((line) => `<li>${escapeHtml(line)}</li>`).join('')}</ul>
+           <p>Check that <code>PROD_BASE_URL</code> / <code>PROD_API_URL</code> point at the live
+              deployment and that <code>E2E_TEST_EMAIL</code> / <code>E2E_TEST_PASSWORD</code> are valid.</p>`;
+        html = `
+      <h2 style="color:#b91c1c">${icon} Nightly read-only E2E smoke test could not run</h2>
+      <p><strong>Target:</strong> ${escapeHtml(baseUrl)}<br>
+         <strong>When:</strong> ${escapeHtml(now)} (${TZ_LABEL})</p>
+      <table style="border-collapse:collapse;font-size:14px">
+        <tr><td style="padding:2px 12px 2px 0">Passed</td><td><strong>${passed}</strong></td></tr>
+        <tr><td style="padding:2px 12px 2px 0">Failed</td><td><strong>${failedCount < 0 ? 0 : failedCount}</strong></td></tr>
+        <tr><td style="padding:2px 12px 2px 0">Total</td><td>${total}</td></tr>
+        <tr><td style="padding:2px 12px 2px 0">Duration</td><td>${duration}</td></tr>
+      </table>
+      ${failedList}
+      <hr>
+      <p style="color:#9ca3af;font-size:12px">Automated nightly run from the
+         <code>Nightly Read-Only E2E</code> GitHub Actions workflow.</p>`;
+    } else {
+        status = failedCount === 0 ? 'pass' : 'fail';
+        const icon = failedCount === 0 ? '✅' : '❌';
+        subject = failedCount === 0
+            ? `${icon} Nightly E2E: all ${passed} read-only checks passed`
+            : `${icon} Nightly E2E: ${failedCount} failed of ${total} read-only checks`;
 
-    const failedList = failedCount === 0
-        ? '<p style="color:#15803d">No failures — every feature route and read-only flow is up. 🎉</p>'
-        : `<h3 style="color:#b91c1c">Failed cases (${failedCount})</h3>
-           <ul>${failed.map((f) =>
-                `<li><strong>${escapeHtml(f.title)}</strong>${
-                    f.errorMsg ? `<br><span style="color:#6b7280;font-size:12px">${escapeHtml(f.errorMsg)}</span>` : ''
-                }</li>`).join('')}</ul>`;
+        const failedList = failedCount === 0
+            ? '<p style="color:#15803d">No failures — every feature route and read-only flow is up. 🎉</p>'
+            : `<h3 style="color:#b91c1c">Failed cases (${failedCount})</h3>
+               <ul>${failed.map((f) =>
+                    `<li><strong>${escapeHtml(f.title)}</strong>${
+                        f.errorMsg ? `<br><span style="color:#6b7280;font-size:12px">${escapeHtml(f.errorMsg)}</span>` : ''
+                    }</li>`).join('')}</ul>`;
 
-    html = `
+        html = `
       <h2>${icon} Nightly read-only E2E smoke test</h2>
       <p><strong>Target:</strong> ${escapeHtml(baseUrl)}<br>
          <strong>When:</strong> ${escapeHtml(now)} (${TZ_LABEL})</p>
@@ -133,6 +166,7 @@ if (parseError || !report) {
       <hr>
       <p style="color:#9ca3af;font-size:12px">Automated nightly run from the
          <code>Nightly Read-Only E2E</code> GitHub Actions workflow.</p>`;
+    }
 }
 
 fs.writeFileSync('e2e-report.html', html);

@@ -2,40 +2,11 @@
 
 import { useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { ArrowRight, BookOpen, Calculator, ClipboardList, Download, FileText, Settings, AlertTriangle, ChevronDown, TrendingUp, LayoutDashboard, Landmark, Scale, Clock, Building2, Cpu, RefreshCw, GitMerge, Lock, Upload, Target, BarChart3, Waves } from 'lucide-react';
+import { ArrowRight, Download, ChevronDown } from 'lucide-react';
 import { HelpTooltip } from '@/components/HelpTooltip';
+import { ACCOUNTING_CORE_LINKS, ACCOUNTING_REPORT_LINKS } from '@/lib/accounting-nav';
 import { api } from '@/lib/api';
 import { useI18n, formatMessage } from '@/lib/i18n';
-
-const ACCOUNTING_LINK_CONFIG = [
-    { href: '/accounting/coa', key: 'coa' as const, icon: BookOpen, accent: 'bg-amber-50 text-amber-700 border-amber-100' },
-    { href: '/accounting/vouchers', key: 'vouchers' as const, icon: FileText, accent: 'bg-emerald-50 text-emerald-700 border-emerald-100' },
-    { href: '/accounting/journal', key: 'journal' as const, icon: ClipboardList, accent: 'bg-sky-50 text-sky-700 border-sky-100' },
-    { href: '/accounting/ledger', key: 'ledger' as const, icon: Calculator, accent: 'bg-violet-50 text-violet-700 border-violet-100' },
-    { href: '/accounting/posting-rules', key: 'postingRules' as const, icon: Settings, accent: 'bg-indigo-50 text-indigo-700 border-indigo-100' },
-    { href: '/accounting/reconciliation', key: 'postingExceptions' as const, icon: AlertTriangle, accent: 'bg-rose-50 text-rose-700 border-rose-100' },
-    { href: '/accounting/fiscal-periods', key: 'fiscalPeriods' as const, icon: Lock, accent: 'bg-slate-50 text-slate-700 border-slate-100' },
-    { href: '/accounting/opening-balances', key: 'openingBalances' as const, icon: Upload, accent: 'bg-teal-50 text-teal-700 border-teal-100' },
-    { href: '/accounting/cost-centers', key: 'costCenters' as const, icon: Building2, accent: 'bg-cyan-50 text-cyan-700 border-cyan-100' },
-    { href: '/accounting/fixed-assets', key: 'fixedAssets' as const, icon: Cpu, accent: 'bg-orange-50 text-orange-700 border-orange-100' },
-    { href: '/accounting/recurring-journals', key: 'recurringJournals' as const, icon: RefreshCw, accent: 'bg-purple-50 text-purple-700 border-purple-100' },
-    { href: '/accounting/reconciliation/bank', key: 'bankReconciliation' as const, icon: GitMerge, accent: 'bg-blue-50 text-blue-700 border-blue-100' },
-];
-
-const REPORT_LINK_CONFIG = [
-    { href: '/accounting/reports/pl', key: 'pl' as const, icon: TrendingUp, accent: 'bg-emerald-50 text-emerald-700 border-emerald-100' },
-    { href: '/accounting/reports/balance-sheet', key: 'balanceSheet' as const, icon: LayoutDashboard, accent: 'bg-sky-50 text-sky-700 border-sky-100' },
-    { href: '/accounting/reports/cashbook', key: 'cashbook' as const, icon: BookOpen, accent: 'bg-amber-50 text-amber-700 border-amber-100' },
-    { href: '/accounting/reports/bankbook', key: 'bankbook' as const, icon: Landmark, accent: 'bg-violet-50 text-violet-700 border-violet-100' },
-    { href: '/accounting/reports/trial-balance', key: 'trialBalance' as const, icon: Scale, accent: 'bg-slate-50 text-slate-700 border-slate-100' },
-    { href: '/accounting/reports/comparative-pl', key: 'comparativePl' as const, icon: BarChart3, accent: 'bg-emerald-50 text-emerald-700 border-emerald-100' },
-    { href: '/accounting/reports/ar-aging', key: 'arAging' as const, icon: Clock, accent: 'bg-sky-50 text-sky-700 border-sky-100' },
-    { href: '/accounting/reports/ap-aging', key: 'apAging' as const, icon: Clock, accent: 'bg-amber-50 text-amber-700 border-amber-100' },
-    { href: '/accounting/reports/vat-tax', key: 'vatTax' as const, icon: FileText, accent: 'bg-rose-50 text-rose-700 border-rose-100' },
-    { href: '/accounting/reports/budget-vs-actual', key: 'budgetVsActual' as const, icon: Target, accent: 'bg-indigo-50 text-indigo-700 border-indigo-100' },
-    { href: '/accounting/reports/cash-flow', key: 'cashFlow' as const, icon: Waves, accent: 'bg-teal-50 text-teal-700 border-teal-100' },
-    { href: '/accounting/reports/financial-ratios', key: 'financialRatios' as const, icon: Calculator, accent: 'bg-purple-50 text-purple-700 border-purple-100' },
-];
 
 type ExportFormat = 'tally' | 'quickbooks';
 
@@ -75,7 +46,7 @@ export default function AccountingPage() {
     const exportMenuRef = useRef<HTMLDivElement>(null);
 
     const accountingLinks = useMemo(
-        () => ACCOUNTING_LINK_CONFIG.map(({ href, key, icon, accent }) => ({
+        () => ACCOUNTING_CORE_LINKS.map(({ href, key, icon, accent }) => ({
             href,
             title: t.accounting.links[key].title,
             description: t.accounting.links[key].description,
@@ -86,7 +57,7 @@ export default function AccountingPage() {
     );
 
     const reportLinks = useMemo(
-        () => REPORT_LINK_CONFIG.map(({ href, key, icon, accent }) => ({
+        () => ACCOUNTING_REPORT_LINKS.map(({ href, key, icon, accent }) => ({
             href,
             title: t.accounting.links[key].title,
             description: t.accounting.links[key].description,

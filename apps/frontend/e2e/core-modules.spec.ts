@@ -186,7 +186,7 @@ test.describe.serial('Core modules — sales, purchase, accounting, inventory', 
     test('A1 — cash payment voucher', async ({ page }) => {
         test.setTimeout(60_000);
 
-        await page.goto('/accounting/vouchers');
+        await page.goto('/accounting/vouchers/new');
         await expect(page.getByText(/voucher/i).first()).toBeVisible({ timeout: 10_000 });
         await expect(page.locator('#voucher-type-select')).toHaveValue('cash_payment');
         await saveStepScreenshot(page, 'A1-vouchers-empty');

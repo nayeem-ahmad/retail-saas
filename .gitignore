@@ -9,6 +9,7 @@ playwright-report/
 playwright-results.json
 test-results/
 apps/frontend/e2e/screenshots/
+apps/frontend/e2e/.cache/
 e2e-report.html
 
 # Next.js

@@ -1,6 +1,6 @@
 'use client';
 
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import Sidebar from './Sidebar';
 
 jest.mock('next/link', () => {
@@ -65,6 +65,16 @@ jest.mock('lucide-react', () => {
         Layers: icon,
         BadgeCheck: icon,
         Banknote: icon,
+        Building2: icon,
+        Cpu: icon,
+        GitMerge: icon,
+        Lock: icon,
+        RefreshCw: icon,
+        Scale: icon,
+        Target: icon,
+        Upload: icon,
+        Waves: icon,
+        X: icon,
     };
 });
 
@@ -146,5 +156,46 @@ describe('Sidebar — Story 30.1', () => {
         expect(screen.queryByText('Reorder Report')).not.toBeInTheDocument();
         expect(screen.queryByText('Shrinkage Report')).not.toBeInTheDocument();
         expect(screen.getByText('Stock Ledger')).toBeInTheDocument();
+    });
+
+    it('shows full accounting navigation with subgroups when access is allowed', async () => {
+        render(<Sidebar canAccessAccounting canAccessInventoryReports />);
+
+        await waitFor(() => {
+            expect(screen.getByText('Transactions & Funds')).toBeInTheDocument();
+        });
+        expect(screen.getByText('Reconciliation')).toBeInTheDocument();
+        expect(screen.getByText('Accounting Reports')).toBeInTheDocument();
+        expect(screen.getByText('Accounting Setup')).toBeInTheDocument();
+
+        fireEvent.click(screen.getByText('Transactions & Funds'));
+        expect(screen.getByText('Expense Categories')).toBeInTheDocument();
+
+        fireEvent.click(screen.getByText('Accounting Reports'));
+        expect(screen.getByText('Trial Balance')).toBeInTheDocument();
+        expect(screen.getByText('Comparative P&L')).toBeInTheDocument();
+    });
+
+    it('hides advanced accounting reports for tenants without report entitlement', async () => {
+        render(<Sidebar canAccessAccounting canAccessInventoryReports={false} />);
+
+        await waitFor(() => {
+            expect(screen.getByText('Accounting Reports')).toBeInTheDocument();
+        });
+        fireEvent.click(screen.getByText('Accounting Reports'));
+        expect(screen.getByText('Profit & Loss')).toBeInTheDocument();
+        expect(screen.queryByText('Comparative P&L')).not.toBeInTheDocument();
+        expect(screen.queryByText('Budget vs. Actual')).not.toBeInTheDocument();
+        expect(screen.queryByText('Cash Flow Statement')).not.toBeInTheDocument();
+        expect(screen.queryByText('Financial Ratios')).not.toBeInTheDocument();
+    });
+
+    it('shows mobile close button when drawer is open', () => {
+        const onClose = jest.fn();
+        render(<Sidebar canAccessAccounting isOpen onClose={onClose} />);
+
+        const closeButton = screen.getByRole('button', { name: /close navigation/i });
+        fireEvent.click(closeButton);
+        expect(onClose).toHaveBeenCalled();
     });
 });

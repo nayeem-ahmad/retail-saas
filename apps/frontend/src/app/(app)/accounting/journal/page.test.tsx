@@ -6,22 +6,10 @@ jest.mock('next/link', () => {
     return ({ children, href }: { children: React.ReactNode; href: string }) => <a href={href}>{children}</a>;
 });
 
-jest.mock('@/components/data-table', () => ({
-    DataTable: ({ data }: { data: Array<{ voucher_number: string; description?: string }> }) => (
-        <div>
-            {data.map((row) => (
-                <div key={row.voucher_number}>{row.voucher_number} {row.description}</div>
-            ))}
-        </div>
-    ),
-}));
-
 jest.mock('lucide-react', () => ({
-    ArrowLeft: () => <span data-testid="icon-arrow-left" />,
-    ChevronLeft: () => <span data-testid="icon-chevron-left" />,
-    ChevronRight: () => <span data-testid="icon-chevron-right" />,
-    ClipboardList: () => <span data-testid="icon-clipboard-list" />,
-    Filter: () => <span data-testid="icon-filter" />,
+    ChevronLeft: () => <span />,
+    ChevronRight: () => <span />,
+    ClipboardList: () => <span />,
 }));
 
 jest.mock('@/lib/api', () => ({
@@ -30,8 +18,8 @@ jest.mock('@/lib/api', () => ({
     },
 }));
 
-describe('AccountingJournalPage — Story 30.6', () => {
-    it('loads journal rows with filters and pagination controls', async () => {
+describe('AccountingJournalPage', () => {
+    it('loads compact journal rows with filters and pagination controls', async () => {
         const getVouchers = api.getVouchers as jest.Mock;
         getVouchers.mockResolvedValue({
             data: [
@@ -44,13 +32,14 @@ describe('AccountingJournalPage — Story 30.6', () => {
                     total_amount: 125,
                 },
             ],
-            meta: { page: 1, limit: 20, total: 2, totalPages: 2 },
+            meta: { page: 1, limit: 30, total: 2, totalPages: 2 },
         });
 
         render(<AccountingJournalPage />);
 
         await waitFor(() => {
-            expect(screen.getByText(/CP-00001/)).toBeInTheDocument();
+            expect(screen.getByText('CP-00001')).toBeInTheDocument();
+            expect(screen.getByText('Office expense')).toBeInTheDocument();
         });
 
         fireEvent.change(screen.getByLabelText('Journal voucher type'), {
