@@ -15,8 +15,8 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-    title: 'ERP71 — Retail management for Bangladeshi businesses',
-    description: 'All-in-one retail management platform with POS, inventory, sales analytics, and integrated BDT payments.',
+    title: 'ERP71 — Business management for Bangladeshi SMEs',
+    description: 'All-in-one business management platform with sales, inventory, accounting, and integrated BDT payments.',
     manifest: '/manifest.json',
     appleWebApp: {
         capable: true,

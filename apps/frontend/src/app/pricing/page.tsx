@@ -251,10 +251,10 @@ export default function PricingPage() {
             <section className="py-20 px-6 bg-blue-600 text-white text-center">
                 <div className="max-w-2xl mx-auto space-y-6">
                     <h2 className="text-4xl font-black tracking-tight">
-                        Ready to modernise your store?
+                        Ready to modernise your business?
                     </h2>
                     <p className="text-blue-100 text-lg">
-                        Join hundreds of Bangladeshi retailers who have moved their business to ERP71.
+                        Join hundreds of Bangladeshi businesses who have moved their operations to ERP71.
                     </p>
                     <Link
                         href="/signup?plan=standard"

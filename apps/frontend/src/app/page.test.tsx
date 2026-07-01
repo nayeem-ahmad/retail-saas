@@ -24,17 +24,18 @@ describe('HomePage', () => {
 
     it('renders the hero tagline badge', () => {
         render(<HomePage />);
-        expect(screen.getByText('Built for Bangladeshi retail businesses')).toBeInTheDocument();
+        expect(screen.getByText('Built for Bangladeshi SMEs')).toBeInTheDocument();
     });
 
     it('renders the hero heading', () => {
         render(<HomePage />);
-        expect(screen.getByText('Run your store.')).toBeInTheDocument();
-        expect(screen.getByText('Grow your business.')).toBeInTheDocument();
+        expect(screen.getByText('Run your business.')).toBeInTheDocument();
+        expect(screen.getByText('Grow with confidence.')).toBeInTheDocument();
     });
 
     it('renders the dashboard preview', () => {
         render(<HomePage />);
+        expect(screen.getByText('app.erp71.com/dashboard')).toBeInTheDocument();
         expect(screen.getByText('Today sales')).toBeInTheDocument();
         expect(screen.getByText('Recent sales')).toBeInTheDocument();
     });
@@ -43,7 +44,7 @@ describe('HomePage', () => {
         render(<HomePage />);
         expect(screen.getByText('Up and running in one afternoon')).toBeInTheDocument();
         expect(screen.getByText('Create your workspace')).toBeInTheDocument();
-        expect(screen.getByText('Sell from POS')).toBeInTheDocument();
+        expect(screen.getByText('Start selling')).toBeInTheDocument();
     });
 
     it('renders all six feature titles', () => {
@@ -74,12 +75,12 @@ describe('HomePage', () => {
     it('renders the stats section', () => {
         render(<HomePage />);
         expect(screen.getByText('500+')).toBeInTheDocument();
-        expect(screen.getByText('Active stores')).toBeInTheDocument();
+        expect(screen.getByText('Active businesses')).toBeInTheDocument();
     });
 
     it('renders testimonials', () => {
         render(<HomePage />);
-        expect(screen.getByText('Trusted by retailers across Bangladesh')).toBeInTheDocument();
+        expect(screen.getByText('Trusted by businesses across Bangladesh')).toBeInTheDocument();
         expect(screen.getByText('Rahim Uddin')).toBeInTheDocument();
     });
 
@@ -106,7 +107,7 @@ describe('HomePage', () => {
 
     it('renders the CTA section', () => {
         render(<HomePage />);
-        expect(screen.getByText('Ready to modernise your store?')).toBeInTheDocument();
+        expect(screen.getByText('Ready to modernise your business?')).toBeInTheDocument();
     });
 
     it('renders the footer links', () => {

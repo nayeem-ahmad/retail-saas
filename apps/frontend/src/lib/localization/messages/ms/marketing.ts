@@ -1,7 +1,7 @@
 export const marketingMessages = {
         home: {
             preview: {
-                url: "app.nayeemahmad.com/dashboard",
+                url: "app.erp71.com/dashboard",
                 sidebar: [
                     "Dashboard",
                     "POS",
@@ -19,23 +19,23 @@ export const marketingMessages = {
                 live: "Langsung",
             },
             hero: {
-                badge: "Dibina untuk perniagaan runcit Bangladesh",
-                titleLine1: "Uruskan kedai anda.",
-                titleLine2: "Kembangkan perniagaan anda.",
-                description: "Pengurusan runcit semua-dalam-satu — POS, inventori, perakaunan, kedai dalam talian, dan pembayaran BDT. Mulakan dalam beberapa minit, skala dari satu kaunter ke banyak cawangan.",
+                badge: "Dibina untuk PKS Bangladesh",
+                titleLine1: "Uruskan perniagaan anda.",
+                titleLine2: "Berkembang dengan yakin.",
+                description: "Pengurusan perniagaan semua-dalam-satu — jualan, inventori, perakaunan, kedai dalam talian, dan pembayaran BDT. Mulakan dalam beberapa minit, sama ada kedai, kilang, atau firma perkhidmatan.",
                 startTrial: "Mulakan percubaan percuma anda",
                 tryDemo: "Cuba Demo",
                 footnote: "Tiada kad kredit diperlukan · Percubaan percuma 14 hari · Batalkan bila-bila masa",
             },
             stats: {
-                activeStores: "Kedai aktif",
+                activeStores: "Perniagaan aktif",
                 salesProcessed: "Jualan diproses setiap hari",
                 uptime: "SLA Masa Aktif",
                 posTime: "Masa transaksi POS",
             },
             howItWorks: {
                 title: "Berjalan dalam masa satu petang",
-                description: "Dari pendaftaran hingga jualan pertama — laluan berpandu yang direka untuk pemilik kedai, bukan pasukan IT.",
+                description: "Dari pendaftaran hingga transaksi pertama — laluan berpandu yang direka untuk pemilik perniagaan, bukan pasukan IT.",
                 steps: [
                     {
                         step: "01",
@@ -49,8 +49,8 @@ export const marketingMessages = {
                     },
                     {
                         step: "03",
-                        title: "Jual melalui POS",
-                        description: "Proses jualan dengan imbasan barcode, pembayaran berpecah, dan potongan stok automatik dalam masa nyata.",
+                        title: "Mula menjual",
+                        description: "Proses pesanan dan pembayaran dengan imbasan barcode, pembayaran berpecah, dan kemas kini stok automatik dalam masa nyata.",
                     },
                     {
                         step: "04",
@@ -60,7 +60,7 @@ export const marketingMessages = {
                 ],
             },
             features: {
-                title: "Semua yang kedai anda perlukan",
+                title: "Semua yang perniagaan anda perlukan",
                 description: "Satu platform untuk menggantikan hamparan, lejar kertas, dan alat yang tidak bersepadu.",
                 items: [
                     {
@@ -85,7 +85,7 @@ export const marketingMessages = {
                     },
                     {
                         title: "SaaS Berbilang Penyewa",
-                        desc: "Setiap perniagaan mendapat ruang kerja tersendiri. Skala dari satu kedai ke rangkaian seluruh negara.",
+                        desc: "Setiap perniagaan mendapat ruang kerja tersendiri. Skala dari satu lokasi ke operasi seluruh negara.",
                     },
                 ],
             },
@@ -135,7 +135,7 @@ export const marketingMessages = {
                 title: "Pembayaran yang pelanggan anda sudah gunakan",
             },
             testimonials: {
-                title: "Dipercayai oleh peruncit di seluruh Bangladesh",
+                title: "Dipercayai oleh perniagaan di seluruh Bangladesh",
                 items: [
                     {
                         name: "Rahim Uddin",
@@ -162,7 +162,7 @@ export const marketingMessages = {
             ],
             pricing: {
                 title: "Harga mudah dan telus",
-                description: "Mulakan percuma dengan PERCUMA. Naik taraf apabila anda memerlukan lebih banyak kedai, pengguna, atau perakaunan.",
+                description: "Mulakan percuma dengan PERCUMA. Naik taraf apabila anda memerlukan lebih banyak lokasi, pengguna, atau perakaunan.",
                 mostPopular: "Paling popular",
                 free: "Percuma",
                 perMonth: "/bln",
@@ -171,14 +171,14 @@ export const marketingMessages = {
                 seeFull: "Lihat perbandingan harga & ciri penuh",
             },
             cta: {
-                title: "Bersedia untuk memodenkan kedai anda?",
-                description: "Sertai ratusan peruncit Bangladesh yang telah memindahkan perniagaan mereka ke ERP71.",
+                title: "Bersedia untuk memodenkan perniagaan anda?",
+                description: "Sertai ratusan perniagaan Bangladesh yang telah memindahkan operasi mereka ke ERP71.",
                 button: "Mulakan percubaan percuma anda",
             },
         },
         pricing: {
             title: "Harga mudah dan telus",
-            description: "Dibina untuk perniagaan runcit Bangladesh. Mulakan percuma — naik taraf apabila anda bersedia.",
+            description: "Dibina untuk PKS Bangladesh. Mulakan percuma — naik taraf apabila anda bersedia.",
             monthly: "Bulanan",
             yearly: "Tahunan",
             yearlySave: "Jimat {percent}%",

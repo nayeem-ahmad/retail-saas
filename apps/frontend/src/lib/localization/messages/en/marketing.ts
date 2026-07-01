@@ -1,7 +1,7 @@
 export const marketingMessages = {
     home: {
         preview: {
-            url: 'app.nayeemahmad.com/dashboard',
+            url: 'app.erp71.com/dashboard',
             sidebar: ['Dashboard', 'POS', 'Inventory', 'Sales', 'Accounting'],
             cards: {
                 todaySales: 'Today sales',
@@ -13,32 +13,32 @@ export const marketingMessages = {
             live: 'Live',
         },
         hero: {
-            badge: 'Built for Bangladeshi retail businesses',
-            titleLine1: 'Run your store.',
-            titleLine2: 'Grow your business.',
-            description: 'All-in-one retail management — POS, inventory, accounting, storefront, and BDT payments. Go live in minutes, scale from one counter to many branches.',
+            badge: 'Built for Bangladeshi SMEs',
+            titleLine1: 'Run your business.',
+            titleLine2: 'Grow with confidence.',
+            description: 'All-in-one business management — sales, inventory, accounting, storefront, and BDT payments. Go live in minutes, whether you run a shop, factory, or service firm.',
             startTrial: 'Start your free trial',
             tryDemo: 'Try Demo',
             footnote: 'No credit card required · 14-day free trial · Cancel anytime',
         },
         stats: {
-            activeStores: 'Active stores',
+            activeStores: 'Active businesses',
             salesProcessed: 'Sales processed daily',
             uptime: 'Uptime SLA',
             posTime: 'POS transaction time',
         },
         howItWorks: {
             title: 'Up and running in one afternoon',
-            description: 'From signup to first sale — a guided path designed for shop owners, not IT teams.',
+            description: 'From signup to first transaction — a guided path designed for business owners, not IT teams.',
             steps: [
                 { step: '01', title: 'Create your workspace', description: 'Sign up in minutes with your business name, branch, and preferred plan. No credit card required.' },
                 { step: '02', title: 'Add products & stock', description: 'Import or add products, set prices in BDT, and configure warehouses for accurate inventory.' },
-                { step: '03', title: 'Sell from POS', description: 'Ring up sales with barcode scan, split payments, and automatic stock deduction in real time.' },
+                { step: '03', title: 'Start selling', description: 'Process orders and payments with barcode scan, split payments, and automatic stock updates in real time.' },
                 { step: '04', title: 'Track & grow', description: 'Monitor revenue, margins, and branch performance — then scale to accounting and storefront.' },
             ],
         },
         features: {
-            title: 'Everything your store needs',
+            title: 'Everything your business needs',
             description: 'One platform to replace spreadsheets, paper ledgers, and disconnected tools.',
             items: [
                 { title: 'Point of Sale', desc: 'Fast, reliable POS with barcode scanning, split payments, and real-time inventory sync.' },
@@ -46,7 +46,7 @@ export const marketingMessages = {
                 { title: 'Sales Analytics', desc: 'Revenue reports, top-selling products, and cashier performance — all in real time.' },
                 { title: 'Customer Management', desc: 'Build customer profiles, track purchase history, and run targeted promotions.' },
                 { title: 'Integrated Payments', desc: 'Accept bKash, Nagad, SSL Wireless, and cash — reconciled automatically.' },
-                { title: 'Multi-Tenant SaaS', desc: 'Each business gets an isolated workspace. Scale from one store to a nationwide chain.' },
+                { title: 'Multi-Tenant SaaS', desc: 'Each business gets an isolated workspace. Scale from one location to a nationwide operation.' },
             ],
         },
         modules: {
@@ -63,7 +63,7 @@ export const marketingMessages = {
             title: 'Payments your customers already use',
         },
         testimonials: {
-            title: 'Trusted by retailers across Bangladesh',
+            title: 'Trusted by businesses across Bangladesh',
             items: [
                 { name: 'Rahim Uddin', role: 'Owner, Rahim Electronics, Dhaka', quote: 'Switched from paper ledgers to ERP71 in a week. Our stock accuracy improved overnight.' },
                 { name: 'Nasrin Begum', role: 'Manager, Fashion House, Chittagong', quote: 'The POS is incredibly fast. During Eid rush we processed hundreds of sales without a single hiccup.' },
@@ -73,7 +73,7 @@ export const marketingMessages = {
         trustBadges: ['Bangladesh-hosted', 'BDT-native billing', 'Role-based access', 'Audit logs'],
         pricing: {
             title: 'Simple, transparent pricing',
-            description: 'Start free on FREE. Upgrade when you need more stores, users, or accounting.',
+            description: 'Start free on FREE. Upgrade when you need more locations, users, or accounting.',
             mostPopular: 'Most popular',
             free: 'Free',
             perMonth: '/mo',
@@ -82,14 +82,14 @@ export const marketingMessages = {
             seeFull: 'See full pricing & feature comparison',
         },
         cta: {
-            title: 'Ready to modernise your store?',
-            description: 'Join hundreds of Bangladeshi retailers who have moved their business to ERP71.',
+            title: 'Ready to modernise your business?',
+            description: 'Join hundreds of Bangladeshi businesses who have moved their operations to ERP71.',
             button: 'Start your free trial',
         },
     },
     pricing: {
         title: 'Simple, transparent pricing',
-        description: 'Built for Bangladeshi retail businesses. Start free — upgrade when you\'re ready.',
+        description: 'Built for Bangladeshi SMEs. Start free — upgrade when you\'re ready.',
         monthly: 'Monthly',
         yearly: 'Yearly',
         yearlySave: 'Save {percent}%',

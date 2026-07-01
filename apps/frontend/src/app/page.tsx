@@ -12,6 +12,25 @@ import {
 import { MARKETING_PLANS } from '@/lib/marketing/plans';
 import { useI18n } from '@/lib/i18n';
 
+function HeroBackground() {
+    return (
+        <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden>
+            <div className="absolute inset-0 bg-gradient-to-b from-blue-50 to-white" />
+            <div className="absolute -top-28 -left-28 w-[28rem] h-[28rem] bg-blue-200/35 rounded-full blur-3xl animate-hero-float" />
+            <div className="absolute top-1/4 -right-36 w-80 h-80 bg-indigo-200/30 rounded-full blur-3xl animate-hero-float-slow" />
+            <div
+                className="absolute bottom-8 left-1/3 w-72 h-72 bg-sky-200/25 rounded-full blur-3xl animate-hero-float"
+                style={{ animationDelay: '-11s' }}
+            />
+            <div
+                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[36rem] h-[36rem] bg-blue-100/20 rounded-full blur-3xl animate-hero-drift"
+                style={{ animationDelay: '-6s' }}
+            />
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_at_center,black_15%,transparent_72%)]" />
+        </div>
+    );
+}
+
 function DashboardPreview({ m }: { m: ReturnType<typeof useI18n>['t']['marketing']['home'] }) {
     const preview = m.preview;
     const previewCards = [
@@ -87,8 +106,9 @@ export default function HomePage() {
         <div className="min-h-screen bg-white font-sans text-gray-900">
             <MarketingNav />
 
-            <section className="pt-32 pb-20 px-6 bg-gradient-to-b from-blue-50 to-white">
-                <div className="max-w-6xl mx-auto">
+            <section className="relative pt-32 pb-20 px-6 overflow-hidden">
+                <HeroBackground />
+                <div className="relative z-10 max-w-6xl mx-auto">
                     <div className="text-center space-y-8 max-w-4xl mx-auto">
                         <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-700 px-4 py-1.5 rounded-full text-sm font-semibold">
                             <Zap className="w-4 h-4" />

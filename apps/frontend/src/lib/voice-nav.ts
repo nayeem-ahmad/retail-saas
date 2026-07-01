@@ -120,6 +120,73 @@ export function getSpeechRecognitionCtor(): SpeechRecognitionCtor | null {
     return win.SpeechRecognition ?? win.webkitSpeechRecognition ?? null;
 }
 
+/** Web Speech API only works in secure contexts (HTTPS or localhost). */
+export function isSpeechRecognitionSupported(): boolean {
+    return typeof window !== 'undefined'
+        && window.isSecureContext
+        && getSpeechRecognitionCtor() !== null;
+}
+
+export type MicPermissionResult =
+    | { ok: true }
+    | { ok: false; reason: 'denied' | 'unavailable' | 'insecure' };
+
+/** Prime microphone access before starting browser speech recognition. */
+export async function requestMicrophoneAccess(): Promise<MicPermissionResult> {
+    if (typeof window === 'undefined' || !window.isSecureContext) {
+        return { ok: false, reason: 'insecure' };
+    }
+    if (!navigator.mediaDevices?.getUserMedia) {
+        return { ok: false, reason: 'unavailable' };
+    }
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream.getTracks().forEach((track) => track.stop());
+        return { ok: true };
+    } catch (err) {
+        if (err instanceof DOMException && err.name === 'NotAllowedError') {
+            return { ok: false, reason: 'denied' };
+        }
+        return { ok: false, reason: 'unavailable' };
+    }
+}
+
+export type SpeechRecognitionErrorCode =
+    | 'not-allowed'
+    | 'aborted'
+    | 'no-speech'
+    | 'network'
+    | 'audio-capture'
+    | 'language-not-supported'
+    | 'service-not-allowed'
+    | 'other';
+
+export function classifySpeechRecognitionError(error: string): SpeechRecognitionErrorCode {
+    switch (error) {
+        case 'not-allowed':
+            return 'not-allowed';
+        case 'aborted':
+            return 'aborted';
+        case 'no-speech':
+            return 'no-speech';
+        case 'network':
+            return 'network';
+        case 'audio-capture':
+            return 'audio-capture';
+        case 'language-not-supported':
+            return 'language-not-supported';
+        case 'service-not-allowed':
+            return 'service-not-allowed';
+        default:
+            return 'other';
+    }
+}
+
+export function speechLocaleFallbackChain(locale: string): string[] {
+    const primary = speechLocaleToBcp47(locale);
+    return primary === 'en-US' ? [primary] : [primary, 'en-US'];
+}
+
 export function speechLocaleToBcp47(locale: string): string {
     if (locale === 'bn') return 'bn-BD';
     if (locale === 'ms') return 'ms-MY';

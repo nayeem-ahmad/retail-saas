@@ -6,12 +6,16 @@ import { HelpCircle, Mic, MicOff, X } from 'lucide-react';
 import { useI18n, formatMessage } from '@/lib/i18n';
 import { toast } from '@/lib/toast';
 import {
+    classifySpeechRecognitionError,
     extractBestTranscript,
     getSpeechRecognitionCtor,
     getVoiceNavHintIds,
+    isSpeechRecognitionSupported,
     matchVoiceNav,
-    speechLocaleToBcp47,
+    requestMicrophoneAccess,
+    speechLocaleFallbackChain,
     type BrowserSpeechRecognition,
+    type SpeechRecognitionErrorCode,
 } from '@/lib/voice-nav';
 
 const LISTEN_TIMEOUT_MS = 6_000;
@@ -28,10 +32,11 @@ export default function VoiceNavWidget() {
     const recognitionRef = useRef<BrowserSpeechRecognition | null>(null);
     const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const handledRef = useRef(false);
+    const startingRef = useRef(false);
     const rootRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        setSupported(getSpeechRecognitionCtor() !== null);
+        setSupported(isSpeechRecognitionSupported());
     }, []);
 
     useEffect(() => {
@@ -62,8 +67,19 @@ export default function VoiceNavWidget() {
 
     const stopListening = useCallback(() => {
         clearListenTimeout();
-        recognitionRef.current?.stop();
+        const recognition = recognitionRef.current;
         recognitionRef.current = null;
+        if (recognition) {
+            try {
+                recognition.abort();
+            } catch {
+                try {
+                    recognition.stop();
+                } catch {
+                    // Recognition may already be stopped or failed to start.
+                }
+            }
+        }
         setListening(false);
     }, [clearListenTimeout]);
 
@@ -98,24 +114,58 @@ export default function VoiceNavWidget() {
         navigateToMatch(trimmed);
     }, [navigateToMatch, stopListening]);
 
-    const startListening = useCallback(() => {
+    const toastForSpeechError = useCallback((code: SpeechRecognitionErrorCode) => {
+        switch (code) {
+            case 'not-allowed':
+                toast.error(m.micDenied);
+                break;
+            case 'network':
+                toast.error(m.networkError);
+                break;
+            case 'audio-capture':
+                toast.error(m.audioCaptureError);
+                break;
+            case 'service-not-allowed':
+                toast.error(m.insecureContext);
+                break;
+            case 'aborted':
+            case 'no-speech':
+                break;
+            default:
+                toast.error(m.listenError);
+        }
+    }, [m]);
+
+    const launchRecognition = useCallback((
+        lang: string,
+        langChain: string[],
+        langIndex: number,
+    ) => {
         const Ctor = getSpeechRecognitionCtor();
         if (!Ctor) {
             toast.error(m.unsupported);
             return;
         }
 
+        if (recognitionRef.current) {
+            try {
+                recognitionRef.current.abort();
+            } catch {
+                // Ignore stale recognition instances.
+            }
+            recognitionRef.current = null;
+        }
+
         handledRef.current = false;
         heardRef.current = null;
         setHeard(null);
         clearListenTimeout();
-        setHintOpen(false);
 
         const recognition = new Ctor();
         recognitionRef.current = recognition;
         recognition.continuous = false;
         recognition.interimResults = true;
-        recognition.lang = speechLocaleToBcp47(locale);
+        recognition.lang = lang;
         recognition.maxAlternatives = 1;
 
         recognition.onresult = (event) => {
@@ -132,14 +182,14 @@ export default function VoiceNavWidget() {
         };
 
         recognition.onerror = (event) => {
-            stopListening();
-            if (event.error === 'not-allowed') {
-                toast.error(m.micDenied);
+            const code = classifySpeechRecognitionError(event.error);
+            if (code === 'language-not-supported' && langIndex + 1 < langChain.length) {
+                recognitionRef.current = null;
+                launchRecognition(langChain[langIndex + 1], langChain, langIndex + 1);
                 return;
             }
-            if (event.error !== 'aborted' && event.error !== 'no-speech') {
-                toast.error(m.listenError);
-            }
+            stopListening();
+            toastForSpeechError(code);
         };
 
         recognition.onend = () => {
@@ -156,14 +206,48 @@ export default function VoiceNavWidget() {
             setListening(true);
             timeoutRef.current = setTimeout(() => {
                 if (!handledRef.current) {
-                    recognition.stop();
+                    try {
+                        recognition.stop();
+                    } catch {
+                        stopListening();
+                    }
                 }
             }, LISTEN_TIMEOUT_MS);
         } catch {
             stopListening();
             toast.error(m.listenError);
         }
-    }, [clearListenTimeout, handleTranscript, locale, m, stopListening]);
+    }, [clearListenTimeout, handleTranscript, m, stopListening, toastForSpeechError]);
+
+    const startListening = useCallback(async () => {
+        if (startingRef.current) return;
+        startingRef.current = true;
+
+        try {
+            if (!isSpeechRecognitionSupported()) {
+                toast.error(m.unsupported);
+                return;
+            }
+
+            const mic = await requestMicrophoneAccess();
+            if (mic.ok === false) {
+                if (mic.reason === 'denied') {
+                    toast.error(m.micDenied);
+                } else if (mic.reason === 'insecure') {
+                    toast.error(m.insecureContext);
+                } else {
+                    toast.error(m.audioCaptureError);
+                }
+                return;
+            }
+
+            setHintOpen(false);
+            const langChain = speechLocaleFallbackChain(locale);
+            launchRecognition(langChain[0], langChain, 0);
+        } finally {
+            startingRef.current = false;
+        }
+    }, [launchRecognition, locale, m]);
 
     const handleMicClick = () => {
         if (listening) {

@@ -1,4 +1,10 @@
-import { matchVoiceNav, normalizeVoicePhrase } from './voice-nav';
+import {
+    classifySpeechRecognitionError,
+    matchVoiceNav,
+    normalizeVoicePhrase,
+    speechLocaleFallbackChain,
+    speechLocaleToBcp47,
+} from './voice-nav';
 
 describe('normalizeVoicePhrase', () => {
     it('lowercases and strips punctuation', () => {
@@ -32,5 +38,33 @@ describe('matchVoiceNav', () => {
         expect(matchVoiceNav('')).toBeNull();
         expect(matchVoiceNav('hello world')).toBeNull();
         expect(matchVoiceNav('ab')).toBeNull();
+    });
+});
+
+describe('speechLocaleToBcp47', () => {
+    it('maps app locales to BCP-47 tags', () => {
+        expect(speechLocaleToBcp47('en')).toBe('en-US');
+        expect(speechLocaleToBcp47('bn')).toBe('bn-BD');
+        expect(speechLocaleToBcp47('ms')).toBe('ms-MY');
+    });
+});
+
+describe('speechLocaleFallbackChain', () => {
+    it('falls back to English when primary locale is not en-US', () => {
+        expect(speechLocaleFallbackChain('bn')).toEqual(['bn-BD', 'en-US']);
+        expect(speechLocaleFallbackChain('ms')).toEqual(['ms-MY', 'en-US']);
+    });
+
+    it('does not duplicate English fallback', () => {
+        expect(speechLocaleFallbackChain('en')).toEqual(['en-US']);
+    });
+});
+
+describe('classifySpeechRecognitionError', () => {
+    it('maps known browser error codes', () => {
+        expect(classifySpeechRecognitionError('network')).toBe('network');
+        expect(classifySpeechRecognitionError('audio-capture')).toBe('audio-capture');
+        expect(classifySpeechRecognitionError('language-not-supported')).toBe('language-not-supported');
+        expect(classifySpeechRecognitionError('something-else')).toBe('other');
     });
 });

@@ -25,7 +25,7 @@ describe('PricingPage', () => {
     it('renders the hero subtitle', () => {
         render(<PricingPage />);
         expect(
-            screen.getByText(/Built for Bangladeshi retail businesses/),
+            screen.getByText(/Built for Bangladeshi SMEs/),
         ).toBeInTheDocument();
     });
 
@@ -114,7 +114,7 @@ describe('PricingPage', () => {
 
     it('renders the CTA strip', () => {
         render(<PricingPage />);
-        expect(screen.getByText('Ready to modernise your store?')).toBeInTheDocument();
+        expect(screen.getByText('Ready to modernise your business?')).toBeInTheDocument();
         expect(screen.getByText('Get started with STANDARD')).toBeInTheDocument();
     });
 
