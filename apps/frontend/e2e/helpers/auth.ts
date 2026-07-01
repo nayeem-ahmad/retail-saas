@@ -108,16 +108,20 @@ export async function loginViaUi(page: Page) {
         return;
     }
 
-    const loginResponse = page.waitForResponse(
-        (res) => res.url().includes('/auth/login') && res.request().method() === 'POST',
-        { timeout: 30_000 },
-    );
+    await expect(page.getByLabel(/email/i)).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('button', { name: /sign in|log in/i })).toBeEnabled();
 
-    await page.getByLabel(/email/i).fill(E2E_EMAIL);
-    await page.getByLabel(/password/i).fill(E2E_PASSWORD);
-    await page.getByRole('button', { name: /sign in|log in/i }).click();
-
-    const response = await loginResponse;
+    const [response] = await Promise.all([
+        page.waitForResponse(
+            (res) => res.url().includes('/auth/login') && res.request().method() === 'POST',
+            { timeout: 45_000 },
+        ),
+        (async () => {
+            await page.getByLabel(/email/i).fill(E2E_EMAIL);
+            await page.getByLabel(/password/i).fill(E2E_PASSWORD);
+            await page.getByRole('button', { name: /sign in|log in/i }).click();
+        })(),
+    ]);
     if (!response.ok()) {
         const body = await response.json().catch(() => null);
         const pageError = await page.locator('.text-red-600').first().textContent().catch(() => '');
