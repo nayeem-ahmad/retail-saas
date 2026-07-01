@@ -67,8 +67,8 @@ export default function SlaPage() {
                                 </li>
                             </ul>
                             <div className="mt-4 bg-blue-50 rounded-xl p-4 text-sm text-blue-800">
-                                Real-time and historical uptime data is published at{' '}
-                                <Link href="/status" className="font-semibold underline hover:text-blue-600">status.erp71.com</Link>.
+                                Platform administrators can view live system health in the ERP71 app after signing in.
+                                Affected customers are notified by email during confirmed incidents.
                             </div>
                         </section>
 
@@ -86,8 +86,7 @@ export default function SlaPage() {
                             </div>
                             <p>
                                 We will provide at least <strong>24 hours&apos; advance notice</strong> of any scheduled
-                                maintenance via email to the primary account holder and via a banner on the{' '}
-                                <Link href="/status" className="text-blue-600 hover:underline">status page</Link>.
+                                maintenance via email to the primary account holder and via an in-app banner.
                                 Scheduled maintenance time does not count against the 99.9% uptime commitment.
                             </p>
                         </section>
@@ -153,14 +152,13 @@ export default function SlaPage() {
                                     investigation.
                                 </li>
                                 <li>
-                                    <strong>Status page update.</strong> An incident notice is published on{' '}
-                                    <Link href="/status" className="text-blue-600 hover:underline">status.erp71.com</Link>{' '}
+                                    <strong>Customer notification.</strong> Affected customers are notified by email{' '}
                                     <strong>within 15 minutes</strong> of confirmation, with a summary of impact and
                                     expected resolution time.
                                 </li>
                                 <li>
-                                    <strong>Resolution.</strong> Once the issue is resolved, the status page is updated
-                                    and affected customers are notified by email.
+                                    <strong>Resolution.</strong> Once the issue is resolved, affected customers receive
+                                    a follow-up email confirming service restoration.
                                 </li>
                                 <li>
                                     <strong>Post-mortem.</strong> For all P1 (Critical) incidents, we publish a written
@@ -257,7 +255,7 @@ export default function SlaPage() {
                                 <p><strong>ERP71 Ltd.</strong></p>
                                 <p>Dhaka, Bangladesh</p>
                                 <p>Support: <a href="mailto:support@erp71.com" className="text-blue-600 hover:underline">support@erp71.com</a></p>
-                                <p>Status: <Link href="/status" className="text-blue-600 hover:underline">status.erp71.com</Link></p>
+                                <p>Incidents: email updates to affected account holders</p>
                             </div>
                         </section>
 

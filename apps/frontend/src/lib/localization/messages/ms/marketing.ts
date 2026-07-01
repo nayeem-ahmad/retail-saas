@@ -280,6 +280,8 @@ export const marketingMessages = {
                 notAvailable: "N/A",
             },
             backToHome: "Kembali ke laman utama",
+            adminOnly: "Terhad kepada pentadbir platform sahaja.",
+            openFullDashboard: "Buka papan pemuka kesihatan sistem penuh",
         },
         globalError: {
             title: "Sesuatu telah berlaku",

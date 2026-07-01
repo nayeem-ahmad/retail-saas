@@ -1,12 +1,22 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { HelpCircle, ChevronDown, ChevronRight, ExternalLink, BookOpen, MessageCircle } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import { HelpCircle, ChevronDown, ChevronRight, Activity, BookOpen, MessageCircle } from 'lucide-react';
+import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
+import { routes } from '@/lib/routes';
 
 export default function HelpPage() {
     const { t } = useI18n();
     const h = t.help;
+    const [isPlatformAdmin, setIsPlatformAdmin] = useState(false);
+
+    useEffect(() => {
+        void api.getMe()
+            .then((me) => setIsPlatformAdmin(Boolean(me?.is_platform_admin)))
+            .catch(() => setIsPlatformAdmin(false));
+    }, []);
     const sections = useMemo(
         () => [
             h.sections.gettingStarted,
@@ -72,17 +82,18 @@ export default function HelpPage() {
                         <div className="text-xs text-green-600">{h.quickLinks.contact.subtitle}</div>
                     </div>
                 </a>
-                <a
-                    href="/status"
-                    target="_blank"
-                    className="flex items-center gap-3 p-4 bg-gray-50 border border-gray-200 rounded-xl hover:bg-gray-100 transition-colors"
-                >
-                    <ExternalLink className="h-5 w-5 text-gray-600 flex-shrink-0" />
-                    <div>
-                        <div className="font-medium text-sm text-gray-900">{h.quickLinks.status.title}</div>
-                        <div className="text-xs text-gray-500">{h.quickLinks.status.subtitle}</div>
-                    </div>
-                </a>
+                {isPlatformAdmin ? (
+                    <Link
+                        href={routes.status}
+                        className="flex items-center gap-3 p-4 bg-gray-50 border border-gray-200 rounded-xl hover:bg-gray-100 transition-colors"
+                    >
+                        <Activity className="h-5 w-5 text-gray-600 flex-shrink-0" />
+                        <div>
+                            <div className="font-medium text-sm text-gray-900">{h.quickLinks.status.title}</div>
+                            <div className="text-xs text-gray-500">{h.quickLinks.status.subtitle}</div>
+                        </div>
+                    </Link>
+                ) : null}
             </div>
 
             <div className="space-y-3">

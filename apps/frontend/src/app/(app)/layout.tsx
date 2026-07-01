@@ -166,6 +166,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         if (!isPlatformAdmin && pathname.startsWith(routes.admin.root)) {
             router.replace(routes.home);
         }
+        if (!user?.is_platform_admin && pathname === routes.status) {
+            if (!user) {
+                router.replace(`/login?redirect=${encodeURIComponent(routes.status)}`);
+            } else {
+                router.replace(routes.home);
+            }
+        }
         if (!canManageTeam && pathname.startsWith(routes.team)) {
             router.replace(routes.home);
         }
@@ -181,7 +188,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         if (!hasPremiumCrm && pathname.startsWith(routes.crm.leads)) {
             router.replace(routes.crm.root);
         }
-    }, [canAccessAccounting, canAccessInventoryReports, canManageTeam, canViewAudit, hasPremiumCrm, hasResolvedUser, isPlatformAdmin, pathname, router]);
+    }, [canAccessAccounting, canAccessInventoryReports, canManageTeam, canViewAudit, hasPremiumCrm, hasResolvedUser, isPlatformAdmin, pathname, router, user]);
 
     // Build a human-readable page title from the path
     const pageTitle = (() => {

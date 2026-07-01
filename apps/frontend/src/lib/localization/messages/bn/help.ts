@@ -12,7 +12,7 @@ export const helpMessages = {
             },
             status: {
                 title: "সিস্টেম স্ট্যাটাস",
-                subtitle: "আপটাইম দেখুন",
+                subtitle: "প্ল্যাটফর্ম অ্যাডমিন — লাইভ হেলথ ড্যাশবোর্ড",
             },
         },
         footerPrefix: "যা খুঁজছেন তা পাচ্ছেন না?",

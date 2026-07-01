@@ -185,6 +185,8 @@ export const marketingMessages = {
             notAvailable: 'N/A',
         },
         backToHome: 'Back to home',
+        adminOnly: 'Restricted to platform administrators.',
+        openFullDashboard: 'Open full system health dashboard',
     },
     globalError: {
         title: 'Something went wrong',
