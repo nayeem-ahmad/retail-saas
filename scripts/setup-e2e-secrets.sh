@@ -20,8 +20,8 @@
 #   SMTP_PASS=...
 #   EMAIL_FROM=monitoring@yourdomain.com
 #   # optional non-secret overrides (set as repo variables, not secrets):
-#   PROD_BASE_URL=https://erp71-frontend.onrender.com
-#   PROD_API_URL=https://erp71-backend.onrender.com
+#   PROD_BASE_URL=https://app.erp71.com
+#   PROD_API_URL=https://api.erp71.com
 #   REPORT_EMAIL_TO=nayeem.ahmad@gmail.com
 
 set -euo pipefail

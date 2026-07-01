@@ -15,6 +15,14 @@ async function globalSetup() {
 
     const ctx = await request.newContext();
     try {
+        // Nightly prod smoke tests use a pre-provisioned account — verify login first
+        // so we don't depend on signup against a live deployment.
+        const existingLogin = await ctx.post(`${apiUrl}/api/v1/auth/login`, {
+            data: { email, password },
+            failOnStatusCode: false,
+        });
+        if (existingLogin.ok()) return;
+
         let lastStatus = 0;
         let lastBody = '';
         // Tenant provisioning runs a multi-step transaction that can occasionally
