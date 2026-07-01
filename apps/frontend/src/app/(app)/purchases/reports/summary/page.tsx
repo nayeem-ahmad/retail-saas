@@ -6,6 +6,8 @@ import { ShoppingCart } from 'lucide-react';
 import { DataTable } from '@/components/data-table';
 import { api } from '@/lib/api';
 import { formatBDT } from '@/lib/format';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 import { useI18n } from '@/lib/i18n';
 
 interface SummaryRow {
@@ -94,12 +96,16 @@ export default function PurchaseSummaryPage() {
     return (
         <div className="overflow-y-auto h-full bg-[#f3f4f6] p-3 md:p-4 font-sans text-gray-900 text-[13px]">
             <div className="w-full space-y-4">
-                <div>
-                    <h1 className="text-lg font-bold tracking-tight text-gray-950">{t.purchaseReports.summary.title}</h1>
-                    <p className="text-xs text-gray-500 mt-0.5">
-                        {t.purchaseReports.summary.subtitle}
-                    </p>
-                </div>
+                <PageHeader
+                    title={t.purchaseReports.summary.title}
+                    subtitle={t.purchaseReports.summary.subtitle}
+                    breadcrumbs={modulePageBreadcrumbs(
+                        t.dashboardHome.breadcrumbHome,
+                        t.sidebar.modules.purchase,
+                        t.purchaseReports.summary.title,
+                        'purchases',
+                    )}
+                />
 
                 <div className="grid md:grid-cols-5 gap-4">
                     <div className="bg-white border border-gray-100 rounded-2xl p-5">

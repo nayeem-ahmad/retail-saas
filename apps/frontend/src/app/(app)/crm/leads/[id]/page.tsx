@@ -4,13 +4,15 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import {
-    ArrowLeft, Phone, Mail, MessageSquare, Plus, UserCheck, Sparkles, Loader2,
+    Phone, Mail, MessageSquare, Plus, UserCheck, Sparkles, Loader2,
     Pencil, ExternalLink, Calendar, Trash2, Send,
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { formatDate } from '@/lib/format';
 import { useI18n } from '@/lib/i18n';
 import { routes } from '@/lib/routes';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { nestedPageBreadcrumbs } from '@/lib/page-breadcrumbs';
 import {
     LeadFormFields,
     LEAD_CONVERSATION_TYPES,
@@ -234,9 +236,16 @@ export default function LeadDetailPage() {
 
     return (
         <div className="overflow-y-auto h-full p-8 bg-[#f9fafb] space-y-6">
-            <Link href={routes.crm.leads} className="flex items-center text-sm font-bold text-gray-500 hover:text-gray-900 transition-colors w-fit">
-                <ArrowLeft className="w-4 h-4 mr-2" /> {m.workspace.back}
-            </Link>
+            <PageHeader
+                title={lead.name}
+                breadcrumbs={nestedPageBreadcrumbs(
+                    t.dashboardHome.breadcrumbHome,
+                    t.sidebar.modules.crm,
+                    'crm',
+                    [{ label: m.title, href: routes.crm.leads }],
+                    lead.name,
+                )}
+            />
 
             <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100">
                 <div className="flex flex-col lg:flex-row lg:items-start gap-6">
@@ -245,7 +254,6 @@ export default function LeadDetailPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
-                            <h1 className="text-lg font-bold tracking-tight text-gray-950">{lead.name}</h1>
                             <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-violet-50 text-violet-700">{statusLabel}</span>
                             <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-gray-100 text-gray-700">{sourceLabel}</span>
                             {categoryLabel && (

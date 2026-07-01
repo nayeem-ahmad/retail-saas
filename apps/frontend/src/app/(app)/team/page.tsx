@@ -12,6 +12,8 @@ import {
 } from '@erp71/shared-types';
 import { api } from '@/lib/api';
 import { useI18n, formatMessage } from '@/lib/i18n';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 
 /* ------------------------------- Types -------------------------------- */
 
@@ -410,10 +412,16 @@ export default function TeamPage() {
     return (
         <div className="h-full overflow-y-auto bg-[#f9fafb]">
             <div className="max-w-6xl mx-auto px-6 py-8 space-y-6">
-                <div>
-                    <h1 className="text-2xl font-black text-gray-900 tracking-tight">{tm.title}</h1>
-                    <p className="mt-1 text-sm text-gray-500">{tm.description}</p>
-                </div>
+                <PageHeader
+                    title={tm.title}
+                    subtitle={tm.description}
+                    breadcrumbs={modulePageBreadcrumbs(
+                        t.dashboardHome.breadcrumbHome,
+                        t.sidebar.modules.accountSettings,
+                        tm.title,
+                        'settings',
+                    )}
+                />
 
                 {/* Invite */}
                 <form onSubmit={sendInvite} className="rounded-lg border border-gray-200 bg-white p-3 md:p-4">

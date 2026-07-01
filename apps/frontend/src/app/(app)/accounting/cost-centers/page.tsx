@@ -4,9 +4,10 @@ import { useEffect, useState } from 'react';
 import { Plus, Building2 } from 'lucide-react';
 import {
     AccountingPageShell,
-    AccountingToolbar,
     CompactSection,
 } from '@/components/accounting/compact';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 import { api } from '@/lib/api';
 import { formatBDT } from '@/lib/format';
 import { useI18n, formatMessage } from '@/lib/i18n';
@@ -76,8 +77,15 @@ export default function CostCentersPage() {
 
     return (
         <AccountingPageShell>
-            <AccountingToolbar
-                subtitle="Tag voucher lines by department or branch for segment P&L"
+            <PageHeader
+                title={t.costCenters.title}
+                subtitle={t.costCenters.subtitle}
+                breadcrumbs={modulePageBreadcrumbs(
+                    t.dashboardHome.breadcrumbHome,
+                    t.sidebar.modules.accounting,
+                    t.costCenters.title,
+                    'accounting',
+                )}
                 actions={(
                     <button onClick={() => setShowCreate(true)} className={`${compactDensity.btnPrimary} bg-gray-900 text-white hover:bg-gray-700`}>
                         <Plus className="w-3.5 h-3.5" /> New Cost Center

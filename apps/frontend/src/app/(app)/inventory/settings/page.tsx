@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { Plus, Save, Settings2, Warehouse } from 'lucide-react';
 import { api } from '@/lib/api';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 import { useI18n } from '@/lib/i18n';
 
 export default function InventorySettingsPage() {
@@ -147,17 +149,21 @@ export default function InventorySettingsPage() {
     return (
         <div className="overflow-y-auto h-full bg-[#f3f4f6] p-3 md:p-4 font-sans text-gray-900 text-[13px]">
             <div className="max-w-[1100px] mx-auto space-y-6">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-lg font-bold tracking-tight text-gray-950">{t.inventorySettings.title}</h1>
-                        <p className="text-xs text-gray-500 mt-0.5">
-                            {t.inventorySettings.subtitle}
-                        </p>
-                    </div>
-                    <button onClick={() => void handleSave()} className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center shadow-lg shadow-blue-200">
-                        <Save className="w-4 h-4 mr-2" /> {t.common.saveChanges}
-                    </button>
-                </div>
+                <PageHeader
+                    title={t.inventorySettings.title}
+                    subtitle={t.inventorySettings.subtitle}
+                    breadcrumbs={modulePageBreadcrumbs(
+                        t.dashboardHome.breadcrumbHome,
+                        t.sidebar.modules.inventory,
+                        t.inventorySettings.title,
+                        'inventory',
+                    )}
+                    actions={(
+                        <button onClick={() => void handleSave()} className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center shadow-lg shadow-blue-200">
+                            <Save className="w-4 h-4 mr-2" /> {t.common.saveChanges}
+                        </button>
+                    )}
+                />
 
                 {message ? <div className="bg-white border border-gray-100 rounded-xl px-4 py-3 text-sm font-bold text-gray-700">{message}</div> : null}
 

@@ -4,9 +4,10 @@ import { useEffect, useState } from 'react';
 import { Plus, Play, Trash2 } from 'lucide-react';
 import {
     AccountingPageShell,
-    AccountingToolbar,
     CompactSection,
 } from '@/components/accounting/compact';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 import { api } from '@/lib/api';
 import { formatBDT } from '@/lib/format';
 import { useI18n, formatMessage } from '@/lib/i18n';
@@ -108,8 +109,15 @@ export default function RecurringJournalsPage() {
 
     return (
         <AccountingPageShell>
-            <AccountingToolbar
-                subtitle="Schedule repeating entries — rent, salaries, subscriptions"
+            <PageHeader
+                title={t.recurringJournals.title}
+                subtitle={t.recurringJournals.subtitle}
+                breadcrumbs={modulePageBreadcrumbs(
+                    t.dashboardHome.breadcrumbHome,
+                    t.sidebar.modules.accounting,
+                    t.recurringJournals.title,
+                    'accounting',
+                )}
                 actions={(
                     <button onClick={() => setShowCreate(true)} className={`${compactDensity.btnPrimary} bg-gray-900 text-white hover:bg-gray-700`}>
                         <Plus className="w-3.5 h-3.5" /> New Template

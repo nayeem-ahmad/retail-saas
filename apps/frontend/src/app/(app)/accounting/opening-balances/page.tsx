@@ -4,9 +4,10 @@ import { useEffect, useState } from 'react';
 import { Plus, Trash2, CheckCircle } from 'lucide-react';
 import {
     AccountingPageShell,
-    AccountingToolbar,
     CompactSection,
 } from '@/components/accounting/compact';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 import { api } from '@/lib/api';
 import { formatBDT } from '@/lib/format';
 import { useI18n, formatMessage } from '@/lib/i18n';
@@ -85,7 +86,16 @@ export default function OpeningBalancesPage() {
 
     return (
         <AccountingPageShell>
-            <AccountingToolbar subtitle="Import opening account balances when migrating from another system" />
+            <PageHeader
+                title={t.openingBalances.title}
+                subtitle={t.openingBalances.subtitle}
+                breadcrumbs={modulePageBreadcrumbs(
+                    t.dashboardHome.breadcrumbHome,
+                    t.sidebar.modules.accounting,
+                    t.openingBalances.title,
+                    'accounting',
+                )}
+            />
 
             <CompactSection>
                 <div className="flex items-end gap-4 flex-wrap">

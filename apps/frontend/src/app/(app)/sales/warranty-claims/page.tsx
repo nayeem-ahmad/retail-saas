@@ -8,6 +8,8 @@ import { createColumnHelper } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table';
 import type { WarrantyClaim } from '@erp71/shared-types';
 import { useI18n, formatMessage } from '@/lib/i18n';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 
 const STATUS_STYLES: Record<string, string> = {
     SUBMITTED: 'bg-blue-50 text-blue-700 border-blue-200',
@@ -253,22 +255,31 @@ export default function WarrantyClaimsPage() {
 
     return (
         <div className="p-6 max-w-7xl mx-auto">
-            <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                    <ShieldCheck className="w-6 h-6 text-indigo-600" />
-                    <div>
-                        <h1 className="text-xl font-semibold text-gray-900">{t.warrantyClaims.title}</h1>
-                        <p className="text-sm text-gray-500">{t.warrantyClaims.subtitle}</p>
-                    </div>
-                </div>
-                <button
-                    onClick={() => setIsModalOpen(true)}
-                    className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
-                >
-                    <Plus className="w-4 h-4" />
-                    {t.warrantyClaims.newClaim}
-                </button>
-            </div>
+            <PageHeader
+                className="mb-6"
+                title={
+                    <span className="inline-flex items-center gap-3">
+                        <ShieldCheck className="w-6 h-6 text-indigo-600" />
+                        {t.warrantyClaims.title}
+                    </span>
+                }
+                subtitle={t.warrantyClaims.subtitle}
+                breadcrumbs={modulePageBreadcrumbs(
+                    t.dashboardHome.breadcrumbHome,
+                    t.sidebar.modules.sales,
+                    t.warrantyClaims.title,
+                    'sales',
+                )}
+                actions={
+                    <button
+                        onClick={() => setIsModalOpen(true)}
+                        className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
+                    >
+                        <Plus className="w-4 h-4" />
+                        {t.warrantyClaims.newClaim}
+                    </button>
+                }
+            />
 
             {loading ? (
                 <div className="text-center py-16 text-gray-400">{t.warrantyClaims.loadingClaims}</div>

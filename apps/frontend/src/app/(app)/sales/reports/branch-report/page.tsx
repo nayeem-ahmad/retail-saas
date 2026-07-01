@@ -5,6 +5,8 @@ import { TrendingUp, ShoppingCart, BarChart3, RotateCcw, Package } from 'lucide-
 import { api } from '@/lib/api';
 import { formatBDT } from '@/lib/format';
 import { useI18n, formatMessage } from '@/lib/i18n';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 
 function defaultFrom() {
     const d = new Date();
@@ -149,16 +151,18 @@ export default function BranchReportPage() {
         <div className="min-h-screen bg-gray-50">
             <div className="w-full px-4 sm:px-6 py-8 space-y-6">
 
-                {/* Header */}
-                <div className="flex flex-col sm:flex-row sm:items-end gap-4">
-                    <div className="flex-1">
-                        <h1 className="text-2xl font-bold text-gray-900">{m.title}</h1>
-                        <p className="mt-1 text-sm text-gray-500">
-                            {m.description}
-                        </p>
-                    </div>
+                <PageHeader
+                    title={m.title}
+                    subtitle={m.description}
+                    breadcrumbs={modulePageBreadcrumbs(
+                        t.dashboardHome.breadcrumbHome,
+                        t.sidebar.modules.sales,
+                        m.title,
+                        'sales',
+                    )}
+                />
 
-                    <div className="flex flex-wrap items-center gap-2">
+                <div className="flex flex-wrap items-center justify-end gap-2">
                         {/* Store selector */}
                         {storesLoading ? (
                             <Skeleton className="h-10 w-40" />
@@ -204,7 +208,6 @@ export default function BranchReportPage() {
                         >
                             {loading ? m.loading : m.generate}
                         </button>
-                    </div>
                 </div>
 
                 {error && (

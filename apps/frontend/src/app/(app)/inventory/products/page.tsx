@@ -11,6 +11,8 @@ import { createColumnHelper, type ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table';
 import CreatePurchaseModal from '../../purchases/CreatePurchaseModal';
 import ProductImage from '@/components/ProductImage';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 
 interface Product {
     id: string;
@@ -394,22 +396,25 @@ export default function InventoryPage() {
     return (
         <div className="overflow-y-auto h-full bg-[#f3f4f6] p-4 md:p-6 font-sans text-gray-900">
             <div className="w-full space-y-4">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                    <div>
-                        <h1 className="text-lg font-bold tracking-tight text-gray-950">{t.inventory.title}</h1>
-                        <p className="text-xs text-gray-500 mt-0.5">
-                            {t.inventory.subtitle}
-                        </p>
-                    </div>
+                <input
+                    ref={csvInputRef}
+                    type="file"
+                    accept=".csv"
+                    className="hidden"
+                    onChange={handleCsvFileChange}
+                />
 
-                    <input
-                        ref={csvInputRef}
-                        type="file"
-                        accept=".csv"
-                        className="hidden"
-                        onChange={handleCsvFileChange}
-                    />
-
+                <PageHeader
+                    title={t.inventory.title}
+                    subtitle={t.inventory.subtitle}
+                    breadcrumbs={modulePageBreadcrumbs(
+                        t.dashboardHome.breadcrumbHome,
+                        t.sidebar.modules.inventory,
+                        t.inventory.title,
+                        'inventory',
+                    )}
+                    actions={(
+                        <>
                     <div className="flex items-center gap-2 md:hidden">
                         <button
                             onClick={() => setIsModalOpen(true)}
@@ -568,7 +573,9 @@ export default function InventoryPage() {
                             {t.inventory.addProduct}
                         </button>
                     </div>
-                </div>
+                        </>
+                    )}
+                />
 
                 {importStatus && (
                     <div

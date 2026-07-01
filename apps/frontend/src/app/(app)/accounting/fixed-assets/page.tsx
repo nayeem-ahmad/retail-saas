@@ -4,9 +4,10 @@ import { useEffect, useState } from 'react';
 import { Plus, Play } from 'lucide-react';
 import {
     AccountingPageShell,
-    AccountingToolbar,
     CompactSection,
 } from '@/components/accounting/compact';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 import { api } from '@/lib/api';
 import { formatBDT } from '@/lib/format';
 import { useI18n, formatMessage } from '@/lib/i18n';
@@ -95,8 +96,15 @@ export default function FixedAssetsPage() {
 
     return (
         <AccountingPageShell>
-            <AccountingToolbar
-                subtitle="Track assets, useful life, and auto-generate depreciation journals"
+            <PageHeader
+                title={t.fixedAssets.title}
+                subtitle={t.fixedAssets.subtitle}
+                breadcrumbs={modulePageBreadcrumbs(
+                    t.dashboardHome.breadcrumbHome,
+                    t.sidebar.modules.accounting,
+                    t.fixedAssets.title,
+                    'accounting',
+                )}
                 actions={(
                     <>
                         <button onClick={() => setShowRunDep(true)} className={compactDensity.btnSecondary}>

@@ -9,6 +9,8 @@ import { api } from '@/lib/api';
 import CreatePurchaseReturnModal from './CreatePurchaseReturnModal';
 import { PostingBadge } from '@/components/PostingBadge';
 import { formatBDT, formatDate } from '@/lib/format';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 import { useI18n, formatMessage } from '@/lib/i18n';
 
 interface PurchaseReturnRecord {
@@ -197,21 +199,25 @@ export default function PurchaseReturnsPage() {
     return (
         <div className="overflow-y-auto h-full bg-[#f3f4f6] p-3 md:p-4 font-sans text-gray-900 text-[13px]">
             <div className="w-full space-y-4">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-lg font-bold tracking-tight text-gray-950">{t.purchaseReturns.title}</h1>
-                        <p className="text-xs text-gray-500 mt-0.5">
-                            {t.purchaseReturns.subtitle}
-                        </p>
-                    </div>
-                    <button
-                        onClick={() => openCreateModal()}
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center shadow-lg shadow-emerald-200 transition-all hover:-translate-y-0.5 active:translate-y-0"
-                    >
-                        <Plus className="w-4 h-4 mr-2" />
-                        New Return
-                    </button>
-                </div>
+                <PageHeader
+                    title={t.purchaseReturns.title}
+                    subtitle={t.purchaseReturns.subtitle}
+                    breadcrumbs={modulePageBreadcrumbs(
+                        t.dashboardHome.breadcrumbHome,
+                        t.sidebar.modules.purchase,
+                        t.purchaseReturns.title,
+                        'purchases',
+                    )}
+                    actions={(
+                        <button
+                            onClick={() => openCreateModal()}
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center shadow-lg shadow-emerald-200 transition-all hover:-translate-y-0.5 active:translate-y-0"
+                        >
+                            <Plus className="w-4 h-4 mr-2" />
+                            New Return
+                        </button>
+                    )}
+                />
 
                 <CreatePurchaseReturnModal
                     isOpen={isModalOpen}

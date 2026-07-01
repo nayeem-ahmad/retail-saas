@@ -1,8 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, BookOpen, FolderTree, Landmark, Plus } from 'lucide-react';
-import Link from 'next/link';
+import { BookOpen, FolderTree, Landmark, Plus } from 'lucide-react';
 import { createColumnHelper, type ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table';
 import { ContextualHelpPanel } from '@/components/ContextualHelpPanel';
@@ -12,6 +11,8 @@ import {
     AccountingToolbar,
     CompactSection,
 } from '@/components/accounting/compact';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 import { COA_FIELD_HELP, COA_HELP } from '@/lib/help/contextual-help';
 import { api } from '@/lib/api';
 import { useI18n, formatMessage } from '@/lib/i18n';
@@ -141,14 +142,15 @@ export default function ChartOfAccountsPage() {
 
     return (
         <AccountingPageShell>
-            <Link href="/accounting" className="inline-flex items-center text-xs font-medium text-gray-500 hover:text-gray-900 transition-colors">
-                <ArrowLeft className="w-3.5 h-3.5 mr-1.5" />
-                {t.accountingShared.backToAccounting}
-            </Link>
-
-            <AccountingToolbar
-                help={COA_FIELD_HELP.page}
+            <PageHeader
+                title={t.coa.title}
                 subtitle={t.coa.pageSubtitle}
+                breadcrumbs={modulePageBreadcrumbs(
+                    t.dashboardHome.breadcrumbHome,
+                    t.sidebar.modules.accounting,
+                    t.coa.title,
+                    'accounting',
+                )}
                 actions={(
                     <div className="rounded-lg border border-amber-100 bg-amber-50 px-3 py-1.5 text-right">
                         <p className="text-[10px] font-medium text-amber-600">{t.coa.bootstrapActive}</p>
@@ -156,6 +158,7 @@ export default function ChartOfAccountsPage() {
                     </div>
                 )}
             />
+            <AccountingToolbar help={COA_FIELD_HELP.page} />
 
             <ContextualHelpPanel {...COA_HELP} />
 

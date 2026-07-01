@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { CheckCircle, XCircle, Loader2, Palette, Image, Globe, Building2 } from 'lucide-react';
 import { fetchWithAuth } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -142,14 +144,21 @@ export default function BrandingSettingsPage() {
     return (
         <div className="h-full overflow-y-auto">
             <div className="max-w-2xl mx-auto px-6 py-8 space-y-6">
-                {/* Page header */}
-                <div>
-                    <h1 className="text-2xl font-black text-gray-900 tracking-tight flex items-center gap-2">
-                        <Palette className="w-6 h-6 text-blue-600" />
-                        {m.title}
-                    </h1>
-                    <p className="mt-1 text-sm text-gray-500">{m.description}</p>
-                </div>
+                <PageHeader
+                    title={(
+                        <span className="inline-flex items-center gap-2">
+                            <Palette className="w-6 h-6 text-blue-600" />
+                            {m.title}
+                        </span>
+                    )}
+                    subtitle={m.description}
+                    breadcrumbs={modulePageBreadcrumbs(
+                        t.dashboardHome.breadcrumbHome,
+                        t.sidebar.modules.accountSettings,
+                        m.title,
+                        'settings',
+                    )}
+                />
 
                 <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
                     {loading ? (

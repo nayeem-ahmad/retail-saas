@@ -1,13 +1,16 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { api } from '@/lib/api';
 import { formatBDT, formatDate } from '@/lib/format';
 import {
-    ArrowLeft, ShoppingBag, TrendingUp, Calendar, Clock, Package, BarChart3, Search,
+    ShoppingBag, TrendingUp, Calendar, Clock, Package, BarChart3, Search,
 } from 'lucide-react';
 import { useI18n, formatMessage } from '@/lib/i18n';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { nestedPageBreadcrumbs } from '@/lib/page-breadcrumbs';
+import { routes } from '@/lib/routes';
 
 interface MonthlyTotal {
     month: string;
@@ -70,7 +73,6 @@ const SEGMENT_COLORS: Record<string, string> = {
 export default function PurchaseHistoryPage() {
     const { t } = useI18n();
     const { id } = useParams();
-    const router = useRouter();
     const [data, setData] = useState<PurchaseHistory | null>(null);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
@@ -96,28 +98,30 @@ export default function PurchaseHistoryPage() {
 
     return (
         <div className="overflow-y-auto h-full p-8 bg-[#f9fafb] space-y-8">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-                <button
-                    onClick={() => router.push(`/sales/customers/${id}`)}
-                    className="flex items-center text-sm font-bold text-gray-500 hover:text-gray-900 transition-colors"
-                >
-                    <ArrowLeft className="w-4 h-4 mr-2" /> {t.customers.history.backToProfile}
-                </button>
-                <div className="flex items-center space-x-3">
-                    <span className="font-mono text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded">
-                        {customer.customer_code}
-                    </span>
-                    <span className={`px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-tighter ${SEGMENT_COLORS[customer.segment_category] ?? SEGMENT_COLORS.Regular}`}>
-                        {customer.segment_category}
-                    </span>
-                </div>
-            </div>
-
-            <div>
-                <h1 className="text-lg font-bold tracking-tight text-gray-950">{customer.name}</h1>
-                <p className="text-sm text-gray-500 font-medium mt-1">{t.customers.history.title}</p>
-            </div>
+            <PageHeader
+                title={customer.name}
+                subtitle={t.customers.history.title}
+                breadcrumbs={nestedPageBreadcrumbs(
+                    t.dashboardHome.breadcrumbHome,
+                    t.sidebar.modules.sales,
+                    'sales',
+                    [
+                        { label: t.customers.title, href: routes.sales.customers },
+                        { label: customer.name, href: routes.sales.customerDetail(id as string) },
+                    ],
+                    t.customers.history.title,
+                )}
+                actions={
+                    <div className="flex items-center space-x-3">
+                        <span className="font-mono text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded">
+                            {customer.customer_code}
+                        </span>
+                        <span className={`px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-tighter ${SEGMENT_COLORS[customer.segment_category] ?? SEGMENT_COLORS.Regular}`}>
+                            {customer.segment_category}
+                        </span>
+                    </div>
+                }
+            />
 
             {/* Summary Cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-5">

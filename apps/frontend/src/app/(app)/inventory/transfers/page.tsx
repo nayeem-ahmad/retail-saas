@@ -7,6 +7,8 @@ import { ArrowRightLeft, Plus, Truck } from 'lucide-react';
 import { DataTable } from '@/components/data-table';
 import { api } from '@/lib/api';
 import { PostingBadge } from '@/components/PostingBadge';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 import { useI18n } from '@/lib/i18n';
 
 interface WarehouseTransfer {
@@ -185,14 +187,16 @@ export default function InventoryTransfersPage() {
     return (
         <div className="overflow-y-auto h-full bg-[#f3f4f6] p-3 md:p-4 font-sans text-gray-900 text-[13px]">
             <div className="w-full space-y-4">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-lg font-bold tracking-tight text-gray-950">{t.inventoryTransfers.title}</h1>
-                        <p className="text-xs text-gray-500 mt-0.5">
-                            {t.inventoryTransfers.subtitle}
-                        </p>
-                    </div>
-                    <div className="flex items-center gap-3">
+                <PageHeader
+                    title={t.inventoryTransfers.title}
+                    subtitle={t.inventoryTransfers.subtitle}
+                    breadcrumbs={modulePageBreadcrumbs(
+                        t.dashboardHome.breadcrumbHome,
+                        t.sidebar.modules.inventory,
+                        t.inventoryTransfers.title,
+                        'inventory',
+                    )}
+                    actions={(
                         <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="bg-white border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-bold text-gray-700">
                             <option value="">{t.inventoryTransfers.allStatuses}</option>
                             <option value="DRAFT">{t.inventoryTransfers.statuses.draft}</option>
@@ -200,8 +204,8 @@ export default function InventoryTransfersPage() {
                             <option value="PARTIALLY_RECEIVED">{t.inventoryTransfers.statuses.partiallyReceived}</option>
                             <option value="RECEIVED">{t.inventoryTransfers.statuses.received}</option>
                         </select>
-                    </div>
-                </div>
+                    )}
+                />
 
                 <div className="bg-white border border-gray-100 rounded-2xl p-4 grid md:grid-cols-5 gap-3 items-end">
                     <select value={sourceWarehouseId} onChange={(e) => setSourceWarehouseId(e.target.value)} className="bg-gray-50 border-none rounded-xl py-3 px-4 text-sm font-medium">

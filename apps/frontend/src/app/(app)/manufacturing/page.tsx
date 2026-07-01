@@ -4,7 +4,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { Factory, Plus, X, RefreshCw, Cog, Trash2 } from 'lucide-react';
 import { fetchWithAuth } from '@/lib/api';
 import { formatDate } from '@/lib/format';
+import PageHeader from '@/components/ui/compact/PageHeader';
 import { useI18n, formatMessage } from '@/lib/i18n';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 
 // ------------------------------------------------------------------ //
 //  Types                                                              //
@@ -104,10 +106,16 @@ export default function ManufacturingPage() {
 
     return (
         <div className="p-6 space-y-6">
-            <div className="flex items-center gap-2">
-                <Factory className="h-6 w-6 text-gray-600" />
-                <h1 className="text-2xl font-bold text-gray-900">{t.manufacturing.title}</h1>
-            </div>
+            <PageHeader
+                title={t.manufacturing.title}
+                subtitle={t.manufacturing.subtitle}
+                breadcrumbs={modulePageBreadcrumbs(
+                    t.dashboardHome.breadcrumbHome,
+                    t.sidebar.modules.manufacturing,
+                    t.manufacturing.title,
+                    'manufacturing',
+                )}
+            />
 
             <div className="flex gap-1 border-b border-gray-200">
                 <button

@@ -3,7 +3,9 @@
 import { useI18n, formatMessage } from '@/lib/i18n';
 import { useEffect, useState } from 'react';
 import { Search, Bug, Sparkles, MessageSquare, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
+import PageHeader from '@/components/ui/compact/PageHeader';
 import { api } from '@/lib/api';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 
 type FeedbackItem = {
     id: string;
@@ -89,12 +91,16 @@ export default function AdminFeedbackPage() {
     return (
         <div className="overflow-y-auto h-full bg-[#f3f4f6] p-3 md:p-4 font-sans text-gray-900 text-[13px]">
             <div className="w-full space-y-4">
-                <div>
-                    <h1 className="text-lg font-bold tracking-tight text-gray-950">{m.title}</h1>
-                    <p className="text-xs font-bold uppercase tracking-widest text-gray-500 mt-1">
-                        {formatMessage(m.subtitle, { total })}
-                    </p>
-                </div>
+                <PageHeader
+                    title={m.title}
+                    subtitle={formatMessage(m.subtitle, { total })}
+                    breadcrumbs={modulePageBreadcrumbs(
+                        t.dashboardHome.breadcrumbHome,
+                        t.sidebar.modules.admin,
+                        m.title,
+                        'admin',
+                    )}
+                />
 
                 {error && (
                     <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">

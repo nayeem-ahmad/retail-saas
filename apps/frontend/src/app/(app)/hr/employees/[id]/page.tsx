@@ -2,11 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { User, Phone, Mail, Calendar, Briefcase, LinkIcon, Unlink, Save, ChevronRight } from 'lucide-react';
+import { User, Phone, Mail, Calendar, Briefcase, LinkIcon, Unlink, Save } from 'lucide-react';
 import { api } from '@/lib/api';
 import { formatDate } from '@/lib/format';
-import Link from 'next/link';
 import { useI18n } from '@/lib/i18n';
+import { routes } from '@/lib/routes';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { nestedPageBreadcrumbs } from '@/lib/page-breadcrumbs';
 
 interface Department { id: string; name: string; }
 interface Designation { id: string; name: string; }
@@ -172,20 +174,20 @@ export default function EmployeeDetailPage() {
     return (
         <div className="overflow-y-auto h-full bg-[#f3f4f6] p-3 md:p-4 font-sans text-gray-900 text-[13px]">
             <div className="max-w-3xl mx-auto space-y-6">
-                {/* Breadcrumb */}
-                <div className="flex items-center gap-2 text-sm text-gray-500">
-                    <Link href="/hr/employees" className="hover:text-blue-600 font-bold transition-colors">{t.employees.title}</Link>
-                    <ChevronRight className="w-4 h-4" />
-                    <span className="font-black text-gray-900">{employee.employee_code}</span>
-                </div>
+                <PageHeader
+                    title={employee.name}
+                    subtitle={employee.employee_code}
+                    breadcrumbs={nestedPageBreadcrumbs(
+                        t.dashboardHome.breadcrumbHome,
+                        t.sidebar.modules.hr,
+                        'hr',
+                        [{ label: t.employees.title, href: routes.hr.employees }],
+                        employee.name,
+                    )}
+                />
 
-                {/* Header */}
                 <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
-                    <div className="flex items-start justify-between">
-                        <div>
-                            <h1 className="text-lg font-bold tracking-tight text-gray-950">{employee.name}</h1>
-                            <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mt-1">{employee.employee_code}</p>
-                        </div>
+                    <div className="flex justify-end">
                         <span className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${employee.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-100 text-gray-500 border-gray-200'}`}>
                             {employee.status}
                         </span>

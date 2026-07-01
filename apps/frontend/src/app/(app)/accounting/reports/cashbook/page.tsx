@@ -9,6 +9,8 @@ import {
     AccountingToolbar,
     CompactStat,
 } from '@/components/accounting/compact';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 import { compactDensity } from '@/lib/ui/compact-density';
 import { api } from '@/lib/api';
 import { formatBDT } from '@/lib/format';
@@ -119,7 +121,17 @@ export default function CashbookPage() {
 
     return (
         <AccountingPageShell maxWidth="full">
-            <AccountingToolbar subtitle="Cash receipts and payments ledger with running balance">
+            <PageHeader
+                title={t.accounting.reports.cashbook.title}
+                subtitle={t.accounting.reports.cashbook.subtitle}
+                breadcrumbs={modulePageBreadcrumbs(
+                    t.dashboardHome.breadcrumbHome,
+                    t.sidebar.modules.accounting,
+                    t.accounting.reports.cashbook.title,
+                    'accounting',
+                )}
+            />
+            <AccountingToolbar>
                 <div className={compactDensity.filterBar}>
                     {data && data.accounts.length > 1 && (
                         <div className="flex flex-col gap-1">

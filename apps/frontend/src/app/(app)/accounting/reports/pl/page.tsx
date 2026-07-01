@@ -7,6 +7,8 @@ import {
     AccountingToolbar,
     CompactSection,
 } from '@/components/accounting/compact';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 import { compactDensity } from '@/lib/ui/compact-density';
 import { api } from '@/lib/api';
 import { formatBDT } from '@/lib/format';
@@ -95,7 +97,17 @@ export default function ProfitLossPage() {
 
     return (
         <AccountingPageShell maxWidth="narrow">
-            <AccountingToolbar subtitle={t.accounting.reports.pl.subtitle}>
+            <PageHeader
+                title={t.accounting.reports.pl.title}
+                subtitle={t.accounting.reports.pl.subtitle}
+                breadcrumbs={modulePageBreadcrumbs(
+                    t.dashboardHome.breadcrumbHome,
+                    t.sidebar.modules.accounting,
+                    t.accounting.reports.pl.title,
+                    'accounting',
+                )}
+            />
+            <AccountingToolbar>
                 <div className={compactDensity.filterBar}>
                     <div className="flex flex-col gap-1">
                         <span className={compactDensity.formLabel}>{t.accountingShared.from}</span>

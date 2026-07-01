@@ -5,6 +5,8 @@ import { Clock, DollarSign, ArrowDownCircle, ArrowUpCircle, X, CheckCircle, Aler
 import { api } from '@/lib/api';
 import { formatBDT } from '@/lib/format';
 import { useI18n, formatMessage } from '@/lib/i18n';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 
 export default function CashierSessionsPage() {
     const { t, locale } = useI18n();
@@ -123,30 +125,35 @@ export default function CashierSessionsPage() {
     return (
         <div className="overflow-y-auto h-full bg-[#f3f4f6] p-3 md:p-4 font-sans text-gray-900 text-[13px]">
             <div className="w-full space-y-4">
-                {/* Header */}
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-lg font-bold tracking-tight text-gray-950">{t.cashierSessions.title}</h1>
-                        <p className="text-xs text-gray-500 mt-0.5">{t.cashierSessions.subtitle}</p>
-                    </div>
-                    {!session ? (
-                        <button
-                            onClick={() => setShowOpenModal(true)}
-                            className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-2xl font-black text-sm uppercase tracking-widest shadow-lg flex items-center space-x-2 transition-all hover:-translate-y-0.5"
-                        >
-                            <Clock className="w-5 h-5" />
-                            <span>{t.cashierSessions.openShift}</span>
-                        </button>
-                    ) : (
-                        <button
-                            onClick={() => setShowCloseModal(true)}
-                            className="bg-rose-600 hover:bg-rose-700 text-white px-6 py-3 rounded-2xl font-black text-sm uppercase tracking-widest shadow-lg flex items-center space-x-2 transition-all hover:-translate-y-0.5"
-                        >
-                            <Clock className="w-5 h-5" />
-                            <span>{t.cashierSessions.closeShift}</span>
-                        </button>
+                <PageHeader
+                    title={t.cashierSessions.title}
+                    subtitle={t.cashierSessions.subtitle}
+                    breadcrumbs={modulePageBreadcrumbs(
+                        t.dashboardHome.breadcrumbHome,
+                        t.sidebar.modules.sales,
+                        t.cashierSessions.title,
+                        'sales',
                     )}
-                </div>
+                    actions={
+                        !session ? (
+                            <button
+                                onClick={() => setShowOpenModal(true)}
+                                className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-2xl font-black text-sm uppercase tracking-widest shadow-lg flex items-center space-x-2 transition-all hover:-translate-y-0.5"
+                            >
+                                <Clock className="w-5 h-5" />
+                                <span>{t.cashierSessions.openShift}</span>
+                            </button>
+                        ) : (
+                            <button
+                                onClick={() => setShowCloseModal(true)}
+                                className="bg-rose-600 hover:bg-rose-700 text-white px-6 py-3 rounded-2xl font-black text-sm uppercase tracking-widest shadow-lg flex items-center space-x-2 transition-all hover:-translate-y-0.5"
+                            >
+                                <Clock className="w-5 h-5" />
+                                <span>{t.cashierSessions.closeShift}</span>
+                            </button>
+                        )
+                    }
+                />
 
                 {/* Session Status */}
                 {session ? (

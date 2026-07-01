@@ -4,6 +4,8 @@ import { useI18n, formatMessage } from '@/lib/i18n';
 import { useState, useEffect } from 'react';
 import { Monitor, Plus, Pencil, Trash2, X, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { api } from '@/lib/api';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 
 type Counter = {
     id: string;
@@ -142,19 +144,25 @@ export default function CountersPage() {
     return (
         <div className="h-full overflow-y-auto">
             <div className="max-w-3xl mx-auto px-6 py-8 space-y-6">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-2xl font-black text-gray-900 tracking-tight">{m.title}</h1>
-                        <p className="mt-1 text-sm text-gray-500">{m.description}</p>
-                    </div>
-                    <button
-                        onClick={openAdd}
-                        className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-700 transition-colors shadow-sm"
-                    >
-                        <Plus className="w-4 h-4" />
-                        {m.addCounter}
-                    </button>
-                </div>
+                <PageHeader
+                    title={m.title}
+                    subtitle={m.description}
+                    breadcrumbs={modulePageBreadcrumbs(
+                        t.dashboardHome.breadcrumbHome,
+                        t.sidebar.modules.accountSettings,
+                        m.title,
+                        'settings',
+                    )}
+                    actions={(
+                        <button
+                            onClick={openAdd}
+                            className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-700 transition-colors shadow-sm"
+                        >
+                            <Plus className="w-4 h-4" />
+                            {m.addCounter}
+                        </button>
+                    )}
+                />
 
                 {loading ? (
                     <div className="flex items-center gap-2 text-gray-400 text-sm py-8">

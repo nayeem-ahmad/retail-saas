@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
 import { formatBDT, formatDate } from '@/lib/format';
 import { useI18n, formatMessage } from '@/lib/i18n';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 import { TrendingUp, ShoppingCart, BarChart3, Package } from 'lucide-react';
 
 /* ------------------------------------------------------------------ */
@@ -287,17 +289,18 @@ export default function ConsolidatedReportPage() {
         <div className="min-h-screen bg-gray-50">
             <div className="w-full px-4 sm:px-6 py-8 space-y-6">
 
-                {/* ---- Header ---- */}
-                <div className="flex flex-col sm:flex-row sm:items-end gap-4">
-                    <div className="flex-1">
-                        <h1 className="text-2xl font-bold text-gray-900">{m.title}</h1>
-                        <p className="mt-1 text-sm text-gray-500">
-                            {m.description}
-                        </p>
-                    </div>
+                <PageHeader
+                    title={m.title}
+                    subtitle={m.description}
+                    breadcrumbs={modulePageBreadcrumbs(
+                        t.dashboardHome.breadcrumbHome,
+                        t.sidebar.modules.sales,
+                        m.title,
+                        'sales',
+                    )}
+                />
 
-                    {/* Date range picker */}
-                    <div className="flex flex-wrap items-center gap-2">
+                <div className="flex flex-wrap items-center justify-end gap-2">
                         <div className="flex items-center gap-1.5 bg-white border border-gray-200 rounded-xl px-3 py-2 shadow-sm">
                             <label className="text-xs font-semibold text-gray-400 uppercase tracking-widest shrink-0">
                                 {m.fromLabel}
@@ -329,7 +332,6 @@ export default function ConsolidatedReportPage() {
                         >
                             {loading ? m.loading : m.generate}
                         </button>
-                    </div>
                 </div>
 
                 {/* Period badge */}

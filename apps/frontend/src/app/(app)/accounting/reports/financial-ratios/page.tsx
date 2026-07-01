@@ -7,6 +7,8 @@ import {
     CompactSection,
     CompactStat,
 } from '@/components/accounting/compact';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 import { compactDensity } from '@/lib/ui/compact-density';
 import { api } from '@/lib/api';
 import { formatBDT } from '@/lib/format';
@@ -92,7 +94,17 @@ export default function FinancialRatiosPage() {
 
     return (
         <AccountingPageShell maxWidth="narrow">
-            <AccountingToolbar subtitle="Key financial health indicators">
+            <PageHeader
+                title={t.accounting.reports.financialRatios.title}
+                subtitle={t.accounting.reports.financialRatios.subtitle}
+                breadcrumbs={modulePageBreadcrumbs(
+                    t.dashboardHome.breadcrumbHome,
+                    t.sidebar.modules.accounting,
+                    t.accounting.reports.financialRatios.title,
+                    'accounting',
+                )}
+            />
+            <AccountingToolbar>
                 <div className={compactDensity.filterBar}>
                     <div className="flex flex-col gap-1">
                         <span className={compactDensity.formLabel}>As Of (Balance Sheet)</span>

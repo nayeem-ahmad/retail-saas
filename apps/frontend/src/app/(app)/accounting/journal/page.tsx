@@ -4,9 +4,13 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight, ClipboardList } from 'lucide-react';
 import { VoucherType } from '@erp71/shared-types';
+import { AccountingPageShell } from '@/components/accounting/compact';
+import PageHeader from '@/components/ui/compact/PageHeader';
 import { api } from '@/lib/api';
 import { formatBDT, formatDate } from '@/lib/format';
 import { useI18n } from '@/lib/i18n';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
+import { compactDensity } from '@/lib/ui/compact-density';
 
 type JournalEntry = {
     id: string;
@@ -67,86 +71,88 @@ export default function AccountingJournalPage() {
         }
     };
 
+    const filterControls = (
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+            <select
+                aria-label={t.journal.voucherTypeAria}
+                value={voucherType}
+                onChange={(e) => { setVoucherType(e.target.value); setPage(1); }}
+                className="px-1.5 py-0.5 border rounded text-xs"
+            >
+                {voucherTypeOptions.map((option) => (
+                    <option key={option.label} value={option.value}>{option.label}</option>
+                ))}
+            </select>
+            <input
+                aria-label={t.journal.fromDateAria}
+                type="date"
+                value={from}
+                onChange={(e) => { setFrom(e.target.value); setPage(1); }}
+                className="px-1.5 py-0.5 border rounded text-xs"
+            />
+            <span className="text-gray-400">–</span>
+            <input
+                aria-label={t.journal.toDateAria}
+                type="date"
+                value={to}
+                onChange={(e) => { setTo(e.target.value); setPage(1); }}
+                className="px-1.5 py-0.5 border rounded text-xs"
+            />
+        </div>
+    );
+
     return (
-        <div className="flex flex-col h-full overflow-y-auto bg-gray-50 text-sm">
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2 border-b bg-white flex-shrink-0">
-                <div className="flex items-center gap-2">
-                    <Link href="/accounting" className="text-gray-400 hover:text-gray-700">
-                        <ChevronLeft className="w-5 h-5" />
-                    </Link>
-                    <h1 className="text-base font-bold text-gray-900">{t.journal.title}</h1>
-                </div>
-                <div className="h-5 w-px bg-gray-200 hidden sm:block" />
-                <p className="text-xs text-gray-500">{t.journal.compactSubtitle}</p>
-                <div className="flex flex-wrap items-center gap-2 text-xs ml-auto">
-                    <select
-                        aria-label={t.journal.voucherTypeAria}
-                        value={voucherType}
-                        onChange={(e) => { setVoucherType(e.target.value); setPage(1); }}
-                        className="px-1.5 py-0.5 border rounded text-xs"
-                    >
-                        {voucherTypeOptions.map((option) => (
-                            <option key={option.label} value={option.value}>{option.label}</option>
-                        ))}
-                    </select>
-                    <input
-                        aria-label={t.journal.fromDateAria}
-                        type="date"
-                        value={from}
-                        onChange={(e) => { setFrom(e.target.value); setPage(1); }}
-                        className="px-1.5 py-0.5 border rounded text-xs"
-                    />
-                    <span className="text-gray-400">–</span>
-                    <input
-                        aria-label={t.journal.toDateAria}
-                        type="date"
-                        value={to}
-                        onChange={(e) => { setTo(e.target.value); setPage(1); }}
-                        className="px-1.5 py-0.5 border rounded text-xs"
-                    />
-                </div>
-            </div>
+        <AccountingPageShell>
+            <PageHeader
+                title={t.journal.title}
+                subtitle={t.journal.compactSubtitle}
+                breadcrumbs={modulePageBreadcrumbs(
+                    t.dashboardHome.breadcrumbHome,
+                    t.sidebar.modules.accounting,
+                    t.journal.title,
+                    'accounting',
+                )}
+                actions={filterControls}
+            />
 
-            <div className="flex-1 p-3">
-                <div className="bg-white rounded border overflow-hidden">
-                    {loading ? (
-                        <div className="p-8 text-center text-xs text-gray-400">{t.accountingShared.loading}</div>
-                    ) : response.data.length === 0 ? (
-                        <div className="p-8 text-center">
-                            <ClipboardList className="w-12 h-12 text-gray-200 mx-auto mb-2" />
-                            <p className="text-xs font-bold uppercase tracking-widest text-gray-400">{t.journal.emptyMessage}</p>
-                        </div>
-                    ) : (
-                        <div className="divide-y divide-gray-50">
-                            {response.data.map((entry) => (
-                                <Link
-                                    key={entry.id}
-                                    href={`/accounting/vouchers/${entry.id}`}
-                                    className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-gray-50/80 transition-colors"
-                                >
-                                    <div className="min-w-0 flex-1">
-                                        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                                            <span className="text-sm font-black text-gray-900">{entry.voucher_number}</span>
-                                            <span className="text-[10px] font-bold uppercase tracking-wider text-sky-700">
-                                                {entry.voucher_type.replaceAll('_', ' ')}
-                                            </span>
-                                            <span className="text-xs text-gray-400">{formatDate(entry.date, locale)}</span>
-                                        </div>
-                                        <p className="text-xs text-gray-500 truncate mt-0.5">
-                                            {entry.description || t.accountingShared.noNarration}
-                                        </p>
+            <div className="bg-white rounded border overflow-hidden">
+                {loading ? (
+                    <div className="p-8 text-center text-xs text-gray-400">{t.accountingShared.loading}</div>
+                ) : response.data.length === 0 ? (
+                    <div className="p-8 text-center">
+                        <ClipboardList className="w-12 h-12 text-gray-200 mx-auto mb-2" />
+                        <p className="text-xs font-bold uppercase tracking-widest text-gray-400">{t.journal.emptyMessage}</p>
+                    </div>
+                ) : (
+                    <div className="divide-y divide-gray-50">
+                        {response.data.map((entry) => (
+                            <Link
+                                key={entry.id}
+                                href={`/accounting/vouchers/${entry.id}`}
+                                className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-gray-50/80 transition-colors"
+                            >
+                                <div className="min-w-0 flex-1">
+                                    <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                                        <span className="text-sm font-black text-gray-900">{entry.voucher_number}</span>
+                                        <span className="text-[10px] font-bold uppercase tracking-wider text-sky-700">
+                                            {entry.voucher_type.replaceAll('_', ' ')}
+                                        </span>
+                                        <span className="text-xs text-gray-400">{formatDate(entry.date, locale)}</span>
                                     </div>
-                                    <span className="text-sm font-black text-emerald-600 whitespace-nowrap">
-                                        {formatBDT(Number(entry.total_amount || 0), { locale })}
-                                    </span>
-                                </Link>
-                            ))}
-                        </div>
-                    )}
-                </div>
+                                    <p className="text-xs text-gray-500 truncate mt-0.5">
+                                        {entry.description || t.accountingShared.noNarration}
+                                    </p>
+                                </div>
+                                <span className="text-sm font-black text-emerald-600 whitespace-nowrap">
+                                    {formatBDT(Number(entry.total_amount || 0), { locale })}
+                                </span>
+                            </Link>
+                        ))}
+                    </div>
+                )}
             </div>
 
-            <div className="flex items-center justify-end gap-2 px-4 py-2 border-t bg-white flex-shrink-0">
+            <div className={`flex items-center justify-end gap-2 ${compactDensity.filterBar} !mt-0`}>
                 <button
                     type="button"
                     onClick={() => setPage((current) => Math.max(1, current - 1))}
@@ -167,6 +173,6 @@ export default function AccountingJournalPage() {
                     <ChevronRight className="ml-1 h-3.5 w-3.5" />
                 </button>
             </div>
-        </div>
+        </AccountingPageShell>
     );
 }

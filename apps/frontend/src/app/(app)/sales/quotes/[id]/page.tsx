@@ -1,8 +1,10 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import { ArrowLeft, Package, FileText, ClipboardList, PlusCircle, Printer, Pencil, Save, X, Search, Trash2 } from 'lucide-react';
-import Link from 'next/link';
+import { Package, FileText, ClipboardList, PlusCircle, Printer, Pencil, Save, X, Search, Trash2 } from 'lucide-react';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { nestedPageBreadcrumbs } from '@/lib/page-breadcrumbs';
+import { routes } from '@/lib/routes';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { api } from '@/lib/api';
 import { formatBDT, formatDate } from '@/lib/format';
@@ -233,23 +235,21 @@ function QuoteDetailsPageContent() {
                 </div>
             )}
 
-            {/* Header */}
             <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
                 <div className="px-8 py-6">
-                    <Link href="/sales/quotes" className="flex items-center space-x-2 text-gray-500 hover:text-gray-900 transition-colors w-fit mb-4">
-                        <ArrowLeft className="w-4 h-4" />
-                        <span className="text-xs font-bold uppercase tracking-widest">{t.quotes.detail.backToQuotes}</span>
-                    </Link>
-                    <div className="flex justify-between items-start">
-                        <div>
-                            <div className="flex items-center space-x-3">
+                    <PageHeader
+                        title={
+                            <span className="inline-flex items-center gap-3">
                                 <FileText className="w-8 h-8 text-purple-600" />
-                                <div>
-                                    <h1 className="text-lg font-bold tracking-tight text-gray-950">{quote.quote_number} <span className="text-lg bg-gray-100 text-gray-500 px-2 rounded-lg font-black ml-1">v{quote.version}</span></h1>
-                                </div>
-                            </div>
-                            <div className="flex items-center space-x-3 mt-3">
-                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-gray-100 text-gray-800`}>
+                                <span>
+                                    {quote.quote_number}{' '}
+                                    <span className="text-lg bg-gray-100 text-gray-500 px-2 rounded-lg font-black ml-1">v{quote.version}</span>
+                                </span>
+                            </span>
+                        }
+                        subtitle={
+                            <span className="inline-flex items-center gap-3">
+                                <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-gray-100 text-gray-800">
                                     {formatMessage(t.quotes.detail.statusLabel, {
                                         status: t.shared.statuses.quote[quote.status as keyof typeof t.shared.statuses.quote] ?? quote.status,
                                     })}
@@ -259,61 +259,69 @@ function QuoteDetailsPageContent() {
                                         ? formatMessage(t.quotes.detail.expires, { date: formatDate(quote.valid_until, locale) })
                                         : formatMessage(t.quotes.detail.expires, { date: t.quotes.detail.expiresNever })}
                                 </span>
-                            </div>
-                        </div>
-                        
-                        <div className="flex flex-wrap gap-3 justify-end">
-                            <button onClick={() => window.print()} className="bg-white border border-gray-200 text-gray-900 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center hover:bg-gray-50 shadow-sm transition-all">
-                                <Printer className="w-4 h-4 mr-2 text-gray-400" />
-                                {t.quotes.detail.printPdf}
-                            </button>
-                            <button
-                                onClick={() => router.push(`/sales/quotes/${quote.id}?edit=true`)}
-                                className="bg-white border border-gray-200 text-gray-900 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center hover:bg-gray-50 shadow-sm transition-all"
-                            >
-                                <Pencil className="w-4 h-4 mr-2 text-gray-400" />
-                                {t.quotes.detail.edit}
-                            </button>
-                            <button
-                                onClick={handleDelete}
-                                disabled={actionLoading}
-                                className="bg-red-50 border border-red-100 text-red-600 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center hover:bg-red-100 transition-all disabled:opacity-50"
-                            >
-                                <Trash2 className="w-4 h-4 mr-2" />
-                                {t.quotes.detail.delete}
-                            </button>
-                            {quote.status === 'DRAFT' && (
-                                <button onClick={() => handleUpdateStatus('SENT')} disabled={actionLoading} className="bg-blue-50 border border-blue-200 text-blue-700 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center hover:bg-blue-100 transition-all disabled:opacity-50">
-                                    {t.quotes.detail.markSent}
+                            </span>
+                        }
+                        breadcrumbs={nestedPageBreadcrumbs(
+                            t.dashboardHome.breadcrumbHome,
+                            t.sidebar.modules.sales,
+                            'sales',
+                            [{ label: t.quotes.title, href: routes.sales.quotes }],
+                            quote.quote_number,
+                        )}
+                        actions={
+                            <>
+                                <button onClick={() => window.print()} className="bg-white border border-gray-200 text-gray-900 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center hover:bg-gray-50 shadow-sm transition-all">
+                                    <Printer className="w-4 h-4 mr-2 text-gray-400" />
+                                    {t.quotes.detail.printPdf}
                                 </button>
-                            )}
-                            {quote.status === 'SENT' && (
-                                <>
-                                    <button onClick={() => handleUpdateStatus('ACCEPTED')} disabled={actionLoading} className="bg-emerald-50 border border-emerald-200 text-emerald-700 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center hover:bg-emerald-100 transition-all disabled:opacity-50">
-                                        {t.quotes.detail.accept}
-                                    </button>
-                                    <button onClick={() => handleUpdateStatus('REJECTED')} disabled={actionLoading} className="bg-red-50 border border-red-200 text-red-700 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center hover:bg-red-100 transition-all disabled:opacity-50">
-                                        {t.quotes.detail.reject}
-                                    </button>
-                                    <button onClick={() => handleUpdateStatus('EXPIRED')} disabled={actionLoading} className="bg-gray-100 border border-gray-200 text-gray-600 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center hover:bg-gray-200 transition-all disabled:opacity-50">
-                                        {t.quotes.detail.markExpired}
-                                    </button>
-                                </>
-                            )}
-                            {quote.status !== 'REVISED' && quote.status !== 'CONVERTED' && (
-                                <button onClick={handleRevise} disabled={actionLoading} className="bg-amber-100 text-amber-700 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center hover:bg-amber-200 transition-all">
-                                    <PlusCircle className="w-4 h-4 mr-2" />
-                                    {t.quotes.detail.revise}
+                                <button
+                                    onClick={() => router.push(`/sales/quotes/${quote.id}?edit=true`)}
+                                    className="bg-white border border-gray-200 text-gray-900 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center hover:bg-gray-50 shadow-sm transition-all"
+                                >
+                                    <Pencil className="w-4 h-4 mr-2 text-gray-400" />
+                                    {t.quotes.detail.edit}
                                 </button>
-                            )}
-                            {quote.status !== 'REVISED' && quote.status !== 'CONVERTED' && (
-                                <button onClick={handleConvertToOrder} disabled={actionLoading} className="bg-blue-600 text-white px-6 py-2.5 rounded-xl font-bold text-sm flex items-center hover:bg-blue-700 shadow-xl shadow-blue-500/20 transition-all">
-                                    <ClipboardList className="w-4 h-4 mr-2" />
-                                    {t.quotes.detail.convertToOrder}
+                                <button
+                                    onClick={handleDelete}
+                                    disabled={actionLoading}
+                                    className="bg-red-50 border border-red-100 text-red-600 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center hover:bg-red-100 transition-all disabled:opacity-50"
+                                >
+                                    <Trash2 className="w-4 h-4 mr-2" />
+                                    {t.quotes.detail.delete}
                                 </button>
-                            )}
-                        </div>
-                    </div>
+                                {quote.status === 'DRAFT' && (
+                                    <button onClick={() => handleUpdateStatus('SENT')} disabled={actionLoading} className="bg-blue-50 border border-blue-200 text-blue-700 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center hover:bg-blue-100 transition-all disabled:opacity-50">
+                                        {t.quotes.detail.markSent}
+                                    </button>
+                                )}
+                                {quote.status === 'SENT' && (
+                                    <>
+                                        <button onClick={() => handleUpdateStatus('ACCEPTED')} disabled={actionLoading} className="bg-emerald-50 border border-emerald-200 text-emerald-700 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center hover:bg-emerald-100 transition-all disabled:opacity-50">
+                                            {t.quotes.detail.accept}
+                                        </button>
+                                        <button onClick={() => handleUpdateStatus('REJECTED')} disabled={actionLoading} className="bg-red-50 border border-red-200 text-red-700 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center hover:bg-red-100 transition-all disabled:opacity-50">
+                                            {t.quotes.detail.reject}
+                                        </button>
+                                        <button onClick={() => handleUpdateStatus('EXPIRED')} disabled={actionLoading} className="bg-gray-100 border border-gray-200 text-gray-600 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center hover:bg-gray-200 transition-all disabled:opacity-50">
+                                            {t.quotes.detail.markExpired}
+                                        </button>
+                                    </>
+                                )}
+                                {quote.status !== 'REVISED' && quote.status !== 'CONVERTED' && (
+                                    <button onClick={handleRevise} disabled={actionLoading} className="bg-amber-100 text-amber-700 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center hover:bg-amber-200 transition-all">
+                                        <PlusCircle className="w-4 h-4 mr-2" />
+                                        {t.quotes.detail.revise}
+                                    </button>
+                                )}
+                                {quote.status !== 'REVISED' && quote.status !== 'CONVERTED' && (
+                                    <button onClick={handleConvertToOrder} disabled={actionLoading} className="bg-blue-600 text-white px-6 py-2.5 rounded-xl font-bold text-sm flex items-center hover:bg-blue-700 shadow-xl shadow-blue-500/20 transition-all">
+                                        <ClipboardList className="w-4 h-4 mr-2" />
+                                        {t.quotes.detail.convertToOrder}
+                                    </button>
+                                )}
+                            </>
+                        }
+                    />
                 </div>
             </header>
 

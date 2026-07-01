@@ -88,6 +88,7 @@ export default function PurchasesHubPage() {
 
     return (
         <ModuleHub
+            module="purchases"
             moduleLabel={hub.moduleLabel}
             title={hub.title}
             subtitle={hub.subtitle}

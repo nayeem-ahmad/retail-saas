@@ -3,11 +3,13 @@
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { BookOpen, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { createColumnHelper, type ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table';
 import { api } from '@/lib/api';
 import { formatBDT } from '@/lib/format';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 import { useI18n } from '@/lib/i18n';
 
 type SupplierOption = {
@@ -271,25 +273,24 @@ function SupplierLedgerContent() {
     return (
         <div className="h-full overflow-y-auto bg-[#f3f4f6] p-6 font-sans text-gray-900">
             <div className="w-full space-y-4">
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div>
-                        <h1 className="text-lg font-bold tracking-tight text-gray-950 inline-flex items-center gap-2">
-                            <BookOpen className="w-7 h-7 text-orange-600" />
-                            {copy.title}
-                        </h1>
-                        <p className="text-xs text-gray-500 mt-0.5">
-                            {copy.subtitle}
-                        </p>
-                    </div>
-                    {supplierId ? (
+                <PageHeader
+                    title={copy.title}
+                    subtitle={copy.subtitle}
+                    breadcrumbs={modulePageBreadcrumbs(
+                        t.dashboardHome.breadcrumbHome,
+                        t.sidebar.modules.purchase,
+                        copy.title,
+                        'purchases',
+                    )}
+                    actions={supplierId ? (
                         <Link
                             href={`/purchases/supplier-payments?supplierId=${supplierId}&new=1`}
                             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#293F75] text-white text-sm font-black hover:bg-[#1f3058]"
                         >
                             {copy.recordPayment}
                         </Link>
-                    ) : null}
-                </div>
+                    ) : undefined}
+                />
 
                 <div className="rounded-lg border border-gray-200 bg-white p-3 md:p-4">
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">

@@ -4,6 +4,10 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ChevronLeft, ChevronRight, Eye, FileText, Pencil, Plus, Printer, Trash2 } from 'lucide-react';
+import { AccountingPageShell } from '@/components/accounting/compact';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
+import { compactDensity } from '@/lib/ui/compact-density';
 import { createColumnHelper, type ColumnDef } from '@tanstack/react-table';
 import { VoucherType } from '@erp71/shared-types';
 import { DataTable } from '@/components/data-table';
@@ -240,57 +244,62 @@ function AccountingVouchersListPageContent() {
         [handleDelete, handlePrint, locale, t],
     );
 
-    return (
-        <div className="flex flex-col h-full overflow-y-auto bg-gray-50 text-sm">
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2 border-b bg-white flex-shrink-0">
-                <div className="flex items-center gap-2">
-                    <Link href="/accounting" className="text-gray-400 hover:text-gray-700">
-                        <ChevronLeft className="w-5 h-5" />
-                    </Link>
-                    <h1 className="text-base font-bold text-gray-900">{t.vouchers.list.title}</h1>
-                </div>
-                <div className="h-5 w-px bg-gray-200 hidden sm:block" />
-                <div className="flex flex-wrap items-center gap-2 text-xs">
-                    <select
-                        aria-label={t.journal.voucherTypeAria}
-                        value={voucherType}
-                        onChange={(e) => { setVoucherType(e.target.value); setPage(1); }}
-                        className="px-1.5 py-0.5 border rounded text-xs"
-                    >
-                        {voucherTypeOptions.map((option) => (
-                            <option key={option.label} value={option.value}>{option.label}</option>
-                        ))}
-                    </select>
-                    <input
-                        aria-label={t.journal.fromDateAria}
-                        type="date"
-                        value={from}
-                        onChange={(e) => { setFrom(e.target.value); setPage(1); }}
-                        className="px-1.5 py-0.5 border rounded text-xs"
-                    />
-                    <span className="text-gray-400">–</span>
-                    <input
-                        aria-label={t.journal.toDateAria}
-                        type="date"
-                        value={to}
-                        onChange={(e) => { setTo(e.target.value); setPage(1); }}
-                        className="px-1.5 py-0.5 border rounded text-xs"
-                    />
-                    <span className="text-gray-500">{response.meta.total} total</span>
-                </div>
-                <div className="ml-auto">
-                    <Link
-                        href="/accounting/vouchers/new"
-                        className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-blue-600 text-white rounded text-xs font-medium hover:bg-blue-700"
-                    >
-                        <Plus className="w-3.5 h-3.5" />
-                        {t.vouchers.list.newVoucher}
-                    </Link>
-                </div>
-            </div>
+    const filterControls = (
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+            <select
+                aria-label={t.journal.voucherTypeAria}
+                value={voucherType}
+                onChange={(e) => { setVoucherType(e.target.value); setPage(1); }}
+                className="px-1.5 py-0.5 border rounded text-xs"
+            >
+                {voucherTypeOptions.map((option) => (
+                    <option key={option.label} value={option.value}>{option.label}</option>
+                ))}
+            </select>
+            <input
+                aria-label={t.journal.fromDateAria}
+                type="date"
+                value={from}
+                onChange={(e) => { setFrom(e.target.value); setPage(1); }}
+                className="px-1.5 py-0.5 border rounded text-xs"
+            />
+            <span className="text-gray-400">–</span>
+            <input
+                aria-label={t.journal.toDateAria}
+                type="date"
+                value={to}
+                onChange={(e) => { setTo(e.target.value); setPage(1); }}
+                className="px-1.5 py-0.5 border rounded text-xs"
+            />
+            <span className="text-gray-500">{response.meta.total} total</span>
+        </div>
+    );
 
-            <div className="flex-1 p-3 min-h-0">
-                <DataTable<VoucherRow>
+    return (
+        <AccountingPageShell>
+            <PageHeader
+                title={t.vouchers.list.title}
+                breadcrumbs={modulePageBreadcrumbs(
+                    t.dashboardHome.breadcrumbHome,
+                    t.sidebar.modules.accounting,
+                    t.vouchers.list.title,
+                    'accounting',
+                )}
+                actions={(
+                    <>
+                        {filterControls}
+                        <Link
+                            href="/accounting/vouchers/new"
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-blue-600 text-white rounded text-xs font-medium hover:bg-blue-700"
+                        >
+                            <Plus className="w-3.5 h-3.5" />
+                            {t.vouchers.list.newVoucher}
+                        </Link>
+                    </>
+                )}
+            />
+
+            <DataTable<VoucherRow>
                     tableId="accounting-vouchers-list"
                     columns={columns}
                     data={response.data}
@@ -300,9 +309,8 @@ function AccountingVouchersListPageContent() {
                     emptyIcon={<FileText className="w-10 h-10 text-gray-200" />}
                     searchPlaceholder={t.vouchers.list.searchPlaceholder}
                 />
-            </div>
 
-            <div className="flex items-center justify-end gap-2 px-4 py-2 border-t bg-white flex-shrink-0">
+            <div className={`flex items-center justify-end gap-2 ${compactDensity.filterBar} !mt-0`}>
                 <button
                     type="button"
                     onClick={() => setPage((current) => Math.max(1, current - 1))}
@@ -325,6 +333,6 @@ function AccountingVouchersListPageContent() {
                     <ChevronRight className="ml-1 h-3.5 w-3.5" />
                 </button>
             </div>
-        </div>
+        </AccountingPageShell>
     );
 }

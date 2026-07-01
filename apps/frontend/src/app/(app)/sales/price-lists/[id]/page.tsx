@@ -1,13 +1,15 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { ArrowLeft, RefreshCw } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 import { createColumnHelper, type ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { nestedPageBreadcrumbs } from '@/lib/page-breadcrumbs';
+import { routes } from '@/lib/routes';
 import { formatBDT } from '@/lib/format';
 
 interface PriceListItem {
@@ -212,20 +214,24 @@ export default function PriceListDetailPage() {
     return (
         <div className="min-h-screen bg-gray-50/50 p-6 md:p-10">
             <div className="max-w-6xl mx-auto">
-                <Link href="/sales/price-lists" className="inline-flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-gray-800 mb-6">
-                    <ArrowLeft className="w-4 h-4" /> {t.priceLists.backToLists}
-                </Link>
-
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-                    <div>
-                        <h1 className="text-2xl font-black text-gray-900 tracking-tight">{listName || t.priceLists.detailTitle}</h1>
-                        <p className="text-sm text-gray-500 font-medium mt-1">{t.priceLists.subtitle}</p>
-                    </div>
-                    <button onClick={handleSync} disabled={syncing} className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-2">
-                        <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
-                        {syncing ? t.priceLists.syncing : t.priceLists.syncProducts}
-                    </button>
-                </div>
+                <PageHeader
+                    className="mb-8"
+                    title={listName || t.priceLists.detailTitle}
+                    subtitle={t.priceLists.subtitle}
+                    breadcrumbs={nestedPageBreadcrumbs(
+                        t.dashboardHome.breadcrumbHome,
+                        t.sidebar.modules.sales,
+                        'sales',
+                        [{ label: t.priceLists.title, href: routes.sales.priceLists }],
+                        listName || t.priceLists.detailTitle,
+                    )}
+                    actions={
+                        <button onClick={handleSync} disabled={syncing} className="bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-2">
+                            <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
+                            {syncing ? t.priceLists.syncing : t.priceLists.syncProducts}
+                        </button>
+                    }
+                />
 
                 <DataTable<PriceListItem>
                     tableId={`price-list-${listId}`}

@@ -5,7 +5,9 @@ import Link from 'next/link';
 import { Camera, CheckCircle, Loader2, Settings, XCircle } from 'lucide-react';
 import { api, fetchWithAuth } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
+import PageHeader from '@/components/ui/compact/PageHeader';
 import { routes } from '@/lib/routes';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 import AvatarCropModal from '@/components/AvatarCropModal';
 
 type ToastState = { type: 'success' | 'error'; message: string } | null;
@@ -131,10 +133,16 @@ export default function ProfilePage() {
     return (
         <div className="overflow-y-auto h-full bg-[#f3f4f6] p-3 md:p-4 font-sans text-gray-900 text-[13px]">
             <div className="max-w-2xl mx-auto space-y-6">
-                <div>
-                    <h1 className="text-lg font-bold tracking-tight text-gray-950 text-gray-900">{t.profile.pageTitle}</h1>
-                    <p className="text-sm text-gray-500 mt-1">{t.profile.pageDescription}</p>
-                </div>
+                <PageHeader
+                    title={t.profile.pageTitle}
+                    subtitle={t.profile.pageDescription}
+                    breadcrumbs={modulePageBreadcrumbs(
+                        t.dashboardHome.breadcrumbHome,
+                        t.profile.pageTitle,
+                        t.profile.pageTitle,
+                        'profile',
+                    )}
+                />
 
                 <div className="rounded-lg border border-gray-200 bg-white p-3 md:p-4 shadow-sm space-y-4">
                     <div className="flex flex-col sm:flex-row sm:items-center gap-5">

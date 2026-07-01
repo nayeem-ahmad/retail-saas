@@ -3,7 +3,10 @@
 import { useMemo } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import CompactLinkGrid, { type CompactLinkItem } from '@/components/ui/compact/CompactLinkGrid';
+import PageHeader from '@/components/ui/compact/PageHeader';
 import PageShell from '@/components/ui/compact/PageShell';
+import { useI18n } from '@/lib/i18n';
+import { modulePageBreadcrumbs, type ModuleKey } from '@/lib/page-breadcrumbs';
 
 export interface HubLinkConfig {
     href: string;
@@ -25,6 +28,7 @@ interface HubLinkCopy {
 }
 
 interface ModuleHubProps {
+    module: ModuleKey;
     moduleLabel: string;
     title: string;
     subtitle: string;
@@ -37,6 +41,8 @@ interface ModuleHubProps {
 }
 
 export default function ModuleHub({
+    module,
+    moduleLabel,
     title,
     subtitle,
     sections,
@@ -44,6 +50,7 @@ export default function ModuleHub({
     linkCopy,
     canAccessAdvanced = true,
 }: ModuleHubProps) {
+    const { t } = useI18n();
     const sectionGrids = useMemo(() => {
         return sections
             .filter((section) => !section.advancedOnly || canAccessAdvanced)
@@ -64,12 +71,16 @@ export default function ModuleHub({
             .filter((section) => section.links.length > 0);
     }, [canAccessAdvanced, linkCopy, sectionLabels, sections]);
 
+    const breadcrumbs = modulePageBreadcrumbs(
+        t.dashboardHome.breadcrumbHome,
+        moduleLabel,
+        title,
+        module,
+    );
+
     return (
         <PageShell maxWidth="wide">
-            <div className="space-y-1">
-                <h1 className="text-lg font-bold tracking-tight text-gray-950">{title}</h1>
-                <p className="text-xs text-gray-500 max-w-3xl">{subtitle}</p>
-            </div>
+            <PageHeader title={title} subtitle={subtitle} breadcrumbs={breadcrumbs} />
 
             {sectionGrids.map((section) => (
                 <CompactLinkGrid key={section.label} label={section.label} links={section.links} />

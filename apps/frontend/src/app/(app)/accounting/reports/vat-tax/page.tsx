@@ -7,6 +7,8 @@ import {
     CompactSection,
     CompactStat,
 } from '@/components/accounting/compact';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 import { compactDensity } from '@/lib/ui/compact-density';
 import { api } from '@/lib/api';
 import { formatBDT } from '@/lib/format';
@@ -48,7 +50,17 @@ export default function VatTaxPage() {
 
     return (
         <AccountingPageShell maxWidth="narrow">
-            <AccountingToolbar subtitle="Output VAT collected and input VAT paid">
+            <PageHeader
+                title={t.accounting.reports.vatTax.title}
+                subtitle={t.accounting.reports.vatTax.subtitle}
+                breadcrumbs={modulePageBreadcrumbs(
+                    t.dashboardHome.breadcrumbHome,
+                    t.sidebar.modules.accounting,
+                    t.accounting.reports.vatTax.title,
+                    'accounting',
+                )}
+            />
+            <AccountingToolbar>
                 <div className={compactDensity.filterBar}>
                     <div className="flex flex-col gap-1">
                         <span className={compactDensity.formLabel}>From</span>

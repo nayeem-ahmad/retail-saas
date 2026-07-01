@@ -8,6 +8,9 @@ import { HelpTooltip } from '@/components/HelpTooltip';
 import { STOCK_TAKES_FIELD_HELP, STOCK_TAKE_DETAIL_HELP } from '@/lib/help/contextual-help';
 import { api } from '@/lib/api';
 import { formatBDT } from '@/lib/format';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { nestedPageBreadcrumbs } from '@/lib/page-breadcrumbs';
+import { routes } from '@/lib/routes';
 import { useI18n, formatMessage } from '@/lib/i18n';
 
 export default function StockTakeDetailPage() {
@@ -110,41 +113,48 @@ export default function StockTakeDetailPage() {
     return (
         <div className="overflow-y-auto h-full bg-[#f3f4f6] p-3 md:p-4 font-sans text-gray-900 text-[13px]">
             <div className="max-w-[1300px] mx-auto space-y-6">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-lg font-bold tracking-tight text-gray-950 inline-flex items-center gap-2">
+                <PageHeader
+                    title={(
+                        <span className="inline-flex items-center gap-2">
                             {formatMessage(t.inventoryStockTakeDetail.title, { number: session.session_number })}
                             <HelpTooltip text={STOCK_TAKES_FIELD_HELP.page} wide />
-                        </h1>
-                        <p className="text-xs text-gray-500 mt-0.5">
-                            {formatMessage(t.inventoryStockTakeDetail.subtitle, {
-                                warehouse: session.warehouse?.name ?? '-',
-                                status: session.status,
-                                count: discrepancyCount,
-                            })}
-                        </p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <button onClick={() => void handleSave()} className="bg-white border border-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center">
-                            <Save className="w-4 h-4 mr-2" /> {t.inventoryStockTakeDetail.saveCounts}
-                        </button>
-                        {canMoveToReview ? (
-                            <button onClick={() => void handleMoveToReview()} className="bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold">{t.inventoryStockTakeDetail.moveToReview}</button>
-                        ) : null}
-                        {canReturnToCounting ? (
-                            <button onClick={() => void api.updateStockTakeStatus(String(id), { status: 'COUNTING' }).then(loadSession).catch((error: any) => setMessage(error.message || t.inventoryStockTakeDetail.returnFailed))} className="bg-white border border-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-semibold">
-                                {t.inventoryStockTakeDetail.returnToCounting}
+                        </span>
+                    )}
+                    subtitle={formatMessage(t.inventoryStockTakeDetail.subtitle, {
+                        warehouse: session.warehouse?.name ?? '-',
+                        status: session.status,
+                        count: discrepancyCount,
+                    })}
+                    breadcrumbs={nestedPageBreadcrumbs(
+                        t.dashboardHome.breadcrumbHome,
+                        t.sidebar.modules.inventory,
+                        'inventory',
+                        [{ label: t.inventoryStockTakes.title, href: routes.inventory.stockTakes }],
+                        session.session_number,
+                    )}
+                    actions={(
+                        <>
+                            <button onClick={() => void handleSave()} className="bg-white border border-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center">
+                                <Save className="w-4 h-4 mr-2" /> {t.inventoryStockTakeDetail.saveCounts}
                             </button>
-                        ) : null}
-                        <button disabled={!canPost} onClick={() => void handlePost()} className="bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center shadow-lg shadow-emerald-200 disabled:shadow-none">
-                            <CheckCircle2 className="w-4 h-4 mr-2" />
-                            <span className="inline-flex items-center gap-1.5">
-                                {t.inventoryStockTakeDetail.postSession}
-                                <HelpTooltip text={STOCK_TAKES_FIELD_HELP.post} side="left" />
-                            </span>
-                        </button>
-                    </div>
-                </div>
+                            {canMoveToReview ? (
+                                <button onClick={() => void handleMoveToReview()} className="bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold">{t.inventoryStockTakeDetail.moveToReview}</button>
+                            ) : null}
+                            {canReturnToCounting ? (
+                                <button onClick={() => void api.updateStockTakeStatus(String(id), { status: 'COUNTING' }).then(loadSession).catch((error: any) => setMessage(error.message || t.inventoryStockTakeDetail.returnFailed))} className="bg-white border border-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-semibold">
+                                    {t.inventoryStockTakeDetail.returnToCounting}
+                                </button>
+                            ) : null}
+                            <button disabled={!canPost} onClick={() => void handlePost()} className="bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center shadow-lg shadow-emerald-200 disabled:shadow-none">
+                                <CheckCircle2 className="w-4 h-4 mr-2" />
+                                <span className="inline-flex items-center gap-1.5">
+                                    {t.inventoryStockTakeDetail.postSession}
+                                    <HelpTooltip text={STOCK_TAKES_FIELD_HELP.post} side="left" />
+                                </span>
+                            </button>
+                        </>
+                    )}
+                />
 
                 {message ? <div className="bg-white border border-gray-100 rounded-xl px-4 py-3 text-sm font-bold text-gray-700">{message}</div> : null}
 

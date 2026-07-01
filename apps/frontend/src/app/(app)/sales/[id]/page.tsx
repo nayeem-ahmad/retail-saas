@@ -2,12 +2,15 @@
 
 import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, Printer, Save, Package, CreditCard, FileText, Pencil, Plus, Trash2, X, Search, User, Download } from 'lucide-react';
+import { Printer, Save, Package, CreditCard, FileText, Pencil, Plus, Trash2, X, Search, User, Download } from 'lucide-react';
 import { api } from '@/lib/api';
 import { formatBDT } from '@/lib/format';
 import { printPOSReceipt } from '@/lib/pos-receipt-printer';
 import Link from 'next/link';
 import { useI18n, formatMessage } from '@/lib/i18n';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { nestedPageBreadcrumbs } from '@/lib/page-breadcrumbs';
+import { routes } from '@/lib/routes';
 
 interface EditItem {
     productId: string;
@@ -290,24 +293,18 @@ function SaleDetailPageContent() {
                     </div>
                 )}
 
-                {/* Header */}
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                        <button
-                            onClick={() => router.push('/sales/list')}
-                            className="p-2 bg-white rounded-xl shadow-sm hover:shadow-md transition-all text-gray-400 hover:text-gray-900"
-                        >
-                            <ArrowLeft className="w-5 h-5" />
-                        </button>
-                        <div>
-                            <h1 className="text-lg font-bold tracking-tight text-gray-950">{sale.serial_number}</h1>
-                            <p className="text-xs text-gray-500 mt-0.5">
-                                {new Date(sale.created_at).toLocaleString()}
-                            </p>
-                        </div>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                        {!isEditMode && (
+                <PageHeader
+                    title={sale.serial_number}
+                    subtitle={new Date(sale.created_at).toLocaleString()}
+                    breadcrumbs={nestedPageBreadcrumbs(
+                        t.dashboardHome.breadcrumbHome,
+                        t.sidebar.modules.sales,
+                        'sales',
+                        [{ label: t.sales.list.title, href: routes.sales.list }],
+                        sale.serial_number,
+                    )}
+                    actions={
+                        !isEditMode ? (
                             <>
                                 <button
                                     onClick={() => router.push(`/sales/${sale.id}?edit=true`)}
@@ -338,9 +335,9 @@ function SaleDetailPageContent() {
                                     <span>{t.sales.detail.invoicePdf}</span>
                                 </Link>
                             </>
-                        )}
-                    </div>
-                </div>
+                        ) : null
+                    }
+                />
 
                 {/* Status & Summary (edit or view) */}
                 {isEditMode ? (

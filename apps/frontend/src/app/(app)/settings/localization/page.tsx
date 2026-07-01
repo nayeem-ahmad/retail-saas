@@ -7,6 +7,8 @@ import { api } from '@/lib/api';
 import { localeRegistry } from '@/lib/localization/config';
 import { useTenantLocales } from '@/contexts/TenantLocaleContext';
 import { useI18n } from '@/lib/i18n';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 
 type LocaleOption = 'en' | 'bn' | 'ms';
 
@@ -88,10 +90,16 @@ export default function LocalizationSettingsPage() {
         return (
             <div className="h-full overflow-y-auto p-6">
                 <div className="max-w-3xl mx-auto space-y-4">
-                    <div>
-                        <h1 className="text-2xl font-black text-gray-900 tracking-tight">{t.settings.localization.title}</h1>
-                        <p className="mt-1 text-sm text-gray-500">{t.settings.localization.description}</p>
-                    </div>
+                    <PageHeader
+                        title={t.settings.localization.title}
+                        subtitle={t.settings.localization.description}
+                        breadcrumbs={modulePageBreadcrumbs(
+                            t.dashboardHome.breadcrumbHome,
+                            t.sidebar.modules.accountSettings,
+                            t.settings.localization.title,
+                            'settings',
+                        )}
+                    />
                     <div className="rounded-lg border border-gray-200 bg-white p-4 text-sm text-gray-600">
                         {t.settings.localization.disabledByAdmin}
                     </div>
@@ -103,10 +111,16 @@ export default function LocalizationSettingsPage() {
     return (
         <div className="h-full overflow-y-auto p-6">
             <div className="max-w-3xl mx-auto space-y-6">
-                <div>
-                    <h1 className="text-2xl font-black text-gray-900 tracking-tight">{t.settings.localization.title}</h1>
-                    <p className="mt-1 text-sm text-gray-500">{t.settings.localization.description}</p>
-                </div>
+                <PageHeader
+                    title={t.settings.localization.title}
+                    subtitle={t.settings.localization.description}
+                    breadcrumbs={modulePageBreadcrumbs(
+                        t.dashboardHome.breadcrumbHome,
+                        t.sidebar.modules.accountSettings,
+                        t.settings.localization.title,
+                        'settings',
+                    )}
+                />
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <section className="rounded-lg border border-gray-200 bg-white p-3 md:p-4 space-y-4">

@@ -3,7 +3,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { useI18n, formatMessage } from '@/lib/i18n';
 import { MessageSquare, Search, Send, CheckCircle, RotateCcw, Loader2 } from 'lucide-react';
+import PageHeader from '@/components/ui/compact/PageHeader';
 import { api } from '@/lib/api';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 
 type Thread = {
     id: string;
@@ -152,12 +154,16 @@ export default function AdminSupportPage() {
             <div className="flex-1 flex overflow-hidden p-4 gap-4 min-h-0">
                 {/* Thread list */}
                 <div className="w-80 shrink-0 flex flex-col gap-3 overflow-hidden">
-                    <div>
-                        <h1 className="text-xl font-black tracking-tight text-gray-900">{m.title}</h1>
-                        <p className="text-xs font-bold uppercase tracking-widest text-gray-500 mt-0.5">
-                            {formatMessage(m.subtitle, { total })}
-                        </p>
-                    </div>
+                    <PageHeader
+                        title={m.title}
+                        subtitle={formatMessage(m.subtitle, { total })}
+                        breadcrumbs={modulePageBreadcrumbs(
+                            t.dashboardHome.breadcrumbHome,
+                            t.sidebar.modules.admin,
+                            m.title,
+                            'admin',
+                        )}
+                    />
 
                     {error && (
                         <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700">

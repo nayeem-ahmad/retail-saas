@@ -5,6 +5,8 @@ import { createColumnHelper, type ColumnDef } from '@tanstack/react-table';
 import { BookOpen, RefreshCw } from 'lucide-react';
 import { DataTable } from '@/components/data-table';
 import { api } from '@/lib/api';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 import { useI18n } from '@/lib/i18n';
 
 interface LedgerRow {
@@ -104,17 +106,21 @@ export default function InventoryLedgerPage() {
     return (
         <div className="overflow-y-auto h-full bg-[#f3f4f6] p-3 md:p-4 font-sans text-gray-900 text-[13px]">
             <div className="w-full space-y-4">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-lg font-bold tracking-tight text-gray-950">{t.inventoryLedger.title}</h1>
-                        <p className="text-xs text-gray-500 mt-0.5">
-                            {t.inventoryLedger.subtitle}
-                        </p>
-                    </div>
-                    <button onClick={() => void loadLedger()} className="bg-white border border-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center">
-                        <RefreshCw className="w-4 h-4 mr-2" /> {t.common.refresh}
-                    </button>
-                </div>
+                <PageHeader
+                    title={t.inventoryLedger.title}
+                    subtitle={t.inventoryLedger.subtitle}
+                    breadcrumbs={modulePageBreadcrumbs(
+                        t.dashboardHome.breadcrumbHome,
+                        t.sidebar.modules.inventory,
+                        t.inventoryLedger.title,
+                        'inventory',
+                    )}
+                    actions={(
+                        <button onClick={() => void loadLedger()} className="bg-white border border-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center">
+                            <RefreshCw className="w-4 h-4 mr-2" /> {t.common.refresh}
+                        </button>
+                    )}
+                />
 
                 <div className="bg-white border border-gray-100 rounded-2xl p-4 flex flex-wrap gap-3 items-end">
                     <div className="min-w-[220px]">

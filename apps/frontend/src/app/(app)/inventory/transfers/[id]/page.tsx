@@ -4,6 +4,9 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { ArrowRightLeft, CheckCircle2 } from 'lucide-react';
 import { api } from '@/lib/api';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { nestedPageBreadcrumbs } from '@/lib/page-breadcrumbs';
+import { routes } from '@/lib/routes';
 import { useI18n, formatMessage } from '@/lib/i18n';
 
 export default function InventoryTransferDetailPage() {
@@ -75,32 +78,35 @@ export default function InventoryTransferDetailPage() {
     return (
         <div className="overflow-y-auto h-full bg-[#f3f4f6] p-3 md:p-4 font-sans text-gray-900 text-[13px]">
             <div className="max-w-[1100px] mx-auto space-y-6">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-lg font-bold tracking-tight text-gray-950">
-                            {formatMessage(t.inventoryTransferDetail.transferTitle, { number: transfer.transfer_number })}
-                        </h1>
-                        <p className="text-xs text-gray-500 mt-0.5">
-                            {formatMessage(t.inventoryTransferDetail.routeSubtitle, {
-                                source: transfer.sourceWarehouse?.name ?? '-',
-                                destination: transfer.destinationWarehouse?.name ?? '-',
-                                status: transfer.status,
-                            })}
-                        </p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        {transfer.status === 'DRAFT' ? (
-                            <button onClick={() => void handleSend()} className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center shadow-lg shadow-blue-200">
-                                <ArrowRightLeft className="w-4 h-4 mr-2" /> {t.inventoryTransferDetail.sendTransfer}
-                            </button>
-                        ) : null}
-                        {canReceive ? (
-                            <button onClick={() => void handleReceive()} className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center shadow-lg shadow-emerald-200">
-                                <CheckCircle2 className="w-4 h-4 mr-2" /> {t.inventoryTransferDetail.receiveStock}
-                            </button>
-                        ) : null}
-                    </div>
-                </div>
+                <PageHeader
+                    title={formatMessage(t.inventoryTransferDetail.transferTitle, { number: transfer.transfer_number })}
+                    subtitle={formatMessage(t.inventoryTransferDetail.routeSubtitle, {
+                        source: transfer.sourceWarehouse?.name ?? '-',
+                        destination: transfer.destinationWarehouse?.name ?? '-',
+                        status: transfer.status,
+                    })}
+                    breadcrumbs={nestedPageBreadcrumbs(
+                        t.dashboardHome.breadcrumbHome,
+                        t.sidebar.modules.inventory,
+                        'inventory',
+                        [{ label: t.inventoryTransfers.title, href: routes.inventory.transfers }],
+                        transfer.transfer_number,
+                    )}
+                    actions={(
+                        <>
+                            {transfer.status === 'DRAFT' ? (
+                                <button onClick={() => void handleSend()} className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center shadow-lg shadow-blue-200">
+                                    <ArrowRightLeft className="w-4 h-4 mr-2" /> {t.inventoryTransferDetail.sendTransfer}
+                                </button>
+                            ) : null}
+                            {canReceive ? (
+                                <button onClick={() => void handleReceive()} className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center shadow-lg shadow-emerald-200">
+                                    <CheckCircle2 className="w-4 h-4 mr-2" /> {t.inventoryTransferDetail.receiveStock}
+                                </button>
+                            ) : null}
+                        </>
+                    )}
+                />
 
                 {message ? <div className="bg-white border border-gray-100 rounded-xl px-4 py-3 text-sm font-bold text-gray-700">{message}</div> : null}
 

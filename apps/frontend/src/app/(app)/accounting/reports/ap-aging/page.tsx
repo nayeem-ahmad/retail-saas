@@ -6,6 +6,8 @@ import {
     AccountingToolbar,
     CompactSection,
 } from '@/components/accounting/compact';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 import { compactDensity } from '@/lib/ui/compact-density';
 import { api } from '@/lib/api';
 import { formatBDT } from '@/lib/format';
@@ -48,7 +50,17 @@ export default function ApAgingPage() {
 
     return (
         <AccountingPageShell maxWidth="full">
-            <AccountingToolbar subtitle="Accounts payable by age bucket">
+            <PageHeader
+                title={t.accounting.reports.apAging.title}
+                subtitle={t.accounting.reports.apAging.subtitle}
+                breadcrumbs={modulePageBreadcrumbs(
+                    t.dashboardHome.breadcrumbHome,
+                    t.sidebar.modules.accounting,
+                    t.accounting.reports.apAging.title,
+                    'accounting',
+                )}
+            />
+            <AccountingToolbar>
                 <div className={compactDensity.filterBar}>
                     <div className="flex flex-col gap-1">
                         <span className={compactDensity.formLabel}>As Of Date</span>

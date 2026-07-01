@@ -5,6 +5,8 @@ import { BarChart3 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { formatBDT } from '@/lib/format';
 import { useI18n, formatMessage } from '@/lib/i18n';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 import { resolveLocaleForFormatting } from '@/lib/format';
 
 interface MonthlyRow {
@@ -67,12 +69,16 @@ export default function MonthlySalesPage() {
     return (
         <div className="overflow-y-auto h-full bg-[#f3f4f6] p-3 md:p-4 font-sans text-gray-900 text-[13px]">
             <div className="max-w-[1600px] mx-auto space-y-6">
-                <div>
-                    <h1 className="text-lg font-bold tracking-tight text-gray-950">{t.salesReports.monthly.title}</h1>
-                    <p className="text-xs text-gray-500 mt-0.5">
-                        {t.salesReports.monthly.subtitle}
-                    </p>
-                </div>
+                <PageHeader
+                    title={t.salesReports.monthly.title}
+                    subtitle={t.salesReports.monthly.subtitle}
+                    breadcrumbs={modulePageBreadcrumbs(
+                        t.dashboardHome.breadcrumbHome,
+                        t.sidebar.modules.sales,
+                        t.salesReports.monthly.title,
+                        'sales',
+                    )}
+                />
 
                 <div className="bg-white border border-gray-100 rounded-2xl p-4 flex flex-wrap gap-3 items-end">
                     <div className="flex flex-col gap-1">

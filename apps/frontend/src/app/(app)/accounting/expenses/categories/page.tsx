@@ -1,11 +1,13 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
-import { ArrowLeft, Loader2, Plus, Pencil, Trash2 } from 'lucide-react';
+import { Loader2, Plus, Pencil, Trash2 } from 'lucide-react';
 import { createColumnHelper, type ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table';
-import { AccountingPageShell, AccountingToolbar } from '@/components/accounting/compact';
+import { AccountingPageShell } from '@/components/accounting/compact';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { nestedPageBreadcrumbs } from '@/lib/page-breadcrumbs';
+import { routes } from '@/lib/routes';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { compactDensity } from '@/lib/ui/compact-density';
@@ -140,12 +142,15 @@ export default function ExpenseCategoriesPage() {
 
     return (
         <AccountingPageShell>
-            <Link href="/accounting/expenses" className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-400 hover:text-gray-700">
-                <ArrowLeft className="w-3.5 h-3.5" />
-                {t.expenses.title}
-            </Link>
-
-            <AccountingToolbar
+            <PageHeader
+                title={t.accounting.links.expenseCategories.title}
+                breadcrumbs={nestedPageBreadcrumbs(
+                    t.dashboardHome.breadcrumbHome,
+                    t.sidebar.modules.accounting,
+                    'accounting',
+                    [{ label: t.expenses.title, href: routes.accounting.expenses }],
+                    t.accounting.links.expenseCategories.title,
+                )}
                 actions={(
                     <button type="button" onClick={openCreate} className={`${compactDensity.btnPrimary} bg-rose-600 text-white hover:bg-rose-700`}>
                         <Plus className="w-3.5 h-3.5" />

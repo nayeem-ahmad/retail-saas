@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { Sparkles, Loader2, AlertTriangle, CheckCircle2, BarChart2 } from 'lucide-react';
+import PageHeader from '@/components/ui/compact/PageHeader';
 import { api } from '@/lib/api';
+import { useI18n } from '@/lib/i18n';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 
 type AiUsageLogEntry = {
     id: string;
@@ -45,6 +48,7 @@ function UsageBar({ used, limit }: { used: number; limit: number }) {
 }
 
 export default function AiCreditsPage() {
+    const { t } = useI18n();
     const [summary, setSummary] = useState<AiUsageSummary | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
@@ -82,13 +86,16 @@ export default function AiCreditsPage() {
 
     return (
         <div className="p-4 md:p-8 max-w-4xl mx-auto space-y-6">
-            <div className="flex items-center gap-3">
-                <Sparkles className="text-purple-600" size={28} />
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900">AI Credits</h1>
-                    <p className="text-sm text-gray-500">Track your monthly AI usage and credit balance</p>
-                </div>
-            </div>
+            <PageHeader
+                title="AI Credits"
+                subtitle="Track your monthly AI usage and credit balance"
+                breadcrumbs={modulePageBreadcrumbs(
+                    t.dashboardHome.breadcrumbHome,
+                    'AI Credits',
+                    'AI Credits',
+                    'aiCredits',
+                )}
+            />
 
             {/* Summary card */}
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-4">

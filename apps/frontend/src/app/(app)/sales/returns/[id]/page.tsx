@@ -2,10 +2,13 @@
 
 import { useState, useEffect, useRef, Suspense } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, Printer, Save, Package, FileText, Pencil, X, Trash2 } from 'lucide-react';
+import { Printer, Save, Package, FileText, Pencil, X, Trash2 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { formatBDT } from '@/lib/format';
 import { useI18n, formatMessage } from '@/lib/i18n';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { nestedPageBreadcrumbs } from '@/lib/page-breadcrumbs';
+import { routes } from '@/lib/routes';
 
 interface EditItem {
     saleItemId: string;
@@ -198,24 +201,18 @@ function ReturnDetailPageContent() {
                     </div>
                 )}
 
-                {/* Header */}
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                        <button
-                            onClick={() => router.push('/sales/returns')}
-                            className="p-2 bg-white rounded-xl shadow-sm hover:shadow-md transition-all text-gray-400 hover:text-gray-900"
-                        >
-                            <ArrowLeft className="w-5 h-5" />
-                        </button>
-                        <div>
-                            <h1 className="text-lg font-bold tracking-tight text-gray-950">{ret.return_number}</h1>
-                            <p className="text-xs text-gray-500 mt-0.5">
-                                {new Date(ret.created_at).toLocaleString()}
-                            </p>
-                        </div>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                        {!isEditMode && (
+                <PageHeader
+                    title={ret.return_number}
+                    subtitle={new Date(ret.created_at).toLocaleString()}
+                    breadcrumbs={nestedPageBreadcrumbs(
+                        t.dashboardHome.breadcrumbHome,
+                        t.sidebar.modules.sales,
+                        'sales',
+                        [{ label: t.returns.title, href: routes.sales.returns }],
+                        ret.return_number,
+                    )}
+                    actions={
+                        !isEditMode ? (
                             <>
                                 <button
                                     onClick={() => router.push(`/sales/returns/${ret.id}?edit=true`)}
@@ -232,9 +229,9 @@ function ReturnDetailPageContent() {
                                     <span>{t.returns.detail.printPreview}</span>
                                 </button>
                             </>
-                        )}
-                    </div>
-                </div>
+                        ) : null
+                    }
+                />
 
                 {/* Summary cards */}
                 {isEditMode ? (

@@ -6,6 +6,8 @@ import { ShoppingBag, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-rea
 import { fetchWithAuth } from '@/lib/api';
 import { formatBDT, formatDate } from '@/lib/format';
 import Link from 'next/link';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 
 interface StorefrontOrder {
     id: string;
@@ -82,24 +84,25 @@ export default function StorefrontOrdersPage() {
         <div className="h-full overflow-auto p-6">
             <div className="max-w-6xl mx-auto space-y-6">
                 {/* Header */}
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
-                            <ShoppingBag className="w-5 h-5 text-white" />
-                        </div>
-                        <div>
-                            <h1 className="text-xl font-bold tracking-tight">{m.title}</h1>
-                            <p className="text-sm text-gray-500">{m.description}</p>
-                        </div>
-                    </div>
-                    <Link
-                        href="/storefront/settings"
-                        className="flex items-center space-x-2 text-sm font-semibold text-blue-600 hover:text-blue-700 bg-blue-50 px-3 py-2 rounded-xl"
-                    >
-                        <ExternalLink className="w-4 h-4" />
-                        <span>{m.storeSettings}</span>
-                    </Link>
-                </div>
+                <PageHeader
+                    title={m.title}
+                    subtitle={m.description}
+                    breadcrumbs={modulePageBreadcrumbs(
+                        t.dashboardHome.breadcrumbHome,
+                        t.sidebar.modules.storefront,
+                        m.title,
+                        'storefront',
+                    )}
+                    actions={(
+                        <Link
+                            href="/storefront/settings"
+                            className="flex items-center space-x-2 text-sm font-semibold text-blue-600 hover:text-blue-700 bg-blue-50 px-3 py-2 rounded-xl"
+                        >
+                            <ExternalLink className="w-4 h-4" />
+                            <span>{m.storeSettings}</span>
+                        </Link>
+                    )}
+                />
 
                 {/* Table */}
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">

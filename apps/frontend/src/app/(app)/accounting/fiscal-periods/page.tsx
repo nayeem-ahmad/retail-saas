@@ -4,11 +4,12 @@ import { useEffect, useState } from 'react';
 import { Lock, Unlock, AlertTriangle } from 'lucide-react';
 import {
     AccountingPageShell,
-    AccountingToolbar,
     CompactSection,
 } from '@/components/accounting/compact';
+import PageHeader from '@/components/ui/compact/PageHeader';
 import { api } from '@/lib/api';
-
+import { useI18n } from '@/lib/i18n';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 import { compactDensity } from '@/lib/ui/compact-density';
 
 interface FiscalPeriod {
@@ -21,6 +22,7 @@ interface FiscalPeriod {
 }
 
 export default function FiscalPeriodsPage() {
+    const { t } = useI18n();
     const currentYear = new Date().getFullYear();
     const [year, setYear] = useState(currentYear);
     const [periods, setPeriods] = useState<FiscalPeriod[]>([]);
@@ -62,7 +64,16 @@ export default function FiscalPeriodsPage() {
 
     return (
         <AccountingPageShell maxWidth="narrow">
-            <AccountingToolbar subtitle="Lock closed periods to prevent backdated voucher entry" />
+            <PageHeader
+                title={t.fiscalPeriods.title}
+                subtitle={t.fiscalPeriods.subtitle}
+                breadcrumbs={modulePageBreadcrumbs(
+                    t.dashboardHome.breadcrumbHome,
+                    t.sidebar.modules.accounting,
+                    t.fiscalPeriods.title,
+                    'accounting',
+                )}
+            />
 
             <CompactSection className="border-amber-100 bg-amber-50/50">
                 <div className="flex items-start gap-2">

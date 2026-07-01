@@ -8,10 +8,11 @@ import { Loader2, Plus, Settings2, BarChart3, Trash2 } from 'lucide-react';
 import { DataTable } from '@/components/data-table';
 import {
     AccountingPageShell,
-    AccountingToolbar,
     CompactSection,
     CompactStat,
 } from '@/components/accounting/compact';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { formatBDT, formatDate } from '@/lib/format';
@@ -211,8 +212,15 @@ function ExpensesPageContent() {
 
     return (
         <AccountingPageShell>
-            <AccountingToolbar
+            <PageHeader
+                title={t.expenses.title}
                 subtitle={t.expenses.subtitle}
+                breadcrumbs={modulePageBreadcrumbs(
+                    t.dashboardHome.breadcrumbHome,
+                    t.sidebar.modules.accounting,
+                    t.expenses.title,
+                    'accounting',
+                )}
                 actions={(
                     <>
                         <Link href="/accounting/expenses/categories" className={compactDensity.btnSecondary}>

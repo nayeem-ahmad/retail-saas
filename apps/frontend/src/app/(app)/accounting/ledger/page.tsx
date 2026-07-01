@@ -3,15 +3,16 @@
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, ReceiptText, Wallet } from 'lucide-react';
+import { ReceiptText, Wallet } from 'lucide-react';
 import { createColumnHelper, type ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table';
 import {
     AccountingPageShell,
-    AccountingToolbar,
     CompactSection,
     CompactStat,
 } from '@/components/accounting/compact';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 import { api } from '@/lib/api';
 import { formatBDT, formatDate } from '@/lib/format';
 import { useI18n, formatMessage } from '@/lib/i18n';
@@ -258,13 +259,15 @@ function AccountingLedgerPageContent() {
 
     return (
         <AccountingPageShell>
-            <Link href="/accounting" className="inline-flex items-center text-xs font-medium text-gray-500 hover:text-gray-900 transition-colors">
-                <ArrowLeft className="w-3.5 h-3.5 mr-1.5" />
-                {t.accountingShared.backToAccounting}
-            </Link>
-
-            <AccountingToolbar
+            <PageHeader
+                title={t.ledger.title}
                 subtitle="Review one account at a time with opening balance, period movement, closing position, and voucher drill-down."
+                breadcrumbs={modulePageBreadcrumbs(
+                    t.dashboardHome.breadcrumbHome,
+                    t.sidebar.modules.accounting,
+                    t.ledger.title,
+                    'accounting',
+                )}
             />
 
             <CompactSection title={t.ledger.title}>

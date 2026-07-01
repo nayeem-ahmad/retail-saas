@@ -6,6 +6,8 @@ import { Banknote, Loader2, Plus, Trash2 } from 'lucide-react';
 import { DataTable } from '@/components/data-table';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 import { formatBDT, formatDate } from '@/lib/format';
 
 interface Employee {
@@ -217,25 +219,31 @@ export default function SalaryPaymentsPage() {
     return (
         <div className="h-full overflow-y-auto bg-[#f3f4f6] p-6 font-sans text-gray-900">
             <div className="w-full space-y-4">
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div>
-                        <h1 className="text-lg font-bold tracking-tight text-gray-950 inline-flex items-center gap-2">
+                <PageHeader
+                    title={(
+                        <span className="inline-flex items-center gap-2">
                             <Banknote className="w-7 h-7 text-emerald-600" />
-                            {t.sidebar.items.salaryPayments}
-                        </h1>
-                        <p className="text-xs text-gray-500 mt-0.5">
-                            Record and track staff salary disbursements
-                        </p>
-                    </div>
-                    <button
-                        type="button"
-                        onClick={() => { resetForm(); setShowForm(true); }}
-                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-black hover:bg-emerald-700"
-                    >
-                        <Plus className="w-4 h-4" />
-                        Pay Salary
-                    </button>
-                </div>
+                            {t.hr.hub.links.salaryPayments.title}
+                        </span>
+                    )}
+                    subtitle={t.hr.hub.links.salaryPayments.description}
+                    breadcrumbs={modulePageBreadcrumbs(
+                        t.dashboardHome.breadcrumbHome,
+                        t.sidebar.modules.hr,
+                        t.hr.hub.links.salaryPayments.title,
+                        'hr',
+                    )}
+                    actions={(
+                        <button
+                            type="button"
+                            onClick={() => { resetForm(); setShowForm(true); }}
+                            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-black hover:bg-emerald-700"
+                        >
+                            <Plus className="w-4 h-4" />
+                            Pay Salary
+                        </button>
+                    )}
+                />
 
                 {toast && (
                     <div className={`rounded-xl px-4 py-3 text-sm font-semibold ${toast.type === 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-rose-50 text-rose-800 border border-rose-200'}`}>

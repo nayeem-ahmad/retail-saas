@@ -9,6 +9,8 @@ import { DataTable } from '@/components/data-table';
 import { api } from '@/lib/api';
 import { formatBDT } from '@/lib/format';
 import { useI18n } from '@/lib/i18n';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 
 type CustomerOption = {
     id: string;
@@ -271,25 +273,31 @@ function CustomerLedgerContent() {
     return (
         <div className="h-full overflow-y-auto bg-[#f3f4f6] p-6 font-sans text-gray-900">
             <div className="w-full space-y-4">
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div>
-                        <h1 className="text-lg font-bold tracking-tight text-gray-950 inline-flex items-center gap-2">
+                <PageHeader
+                    title={
+                        <span className="inline-flex items-center gap-2">
                             <BookOpen className="w-7 h-7 text-indigo-600" />
                             {copy.title}
-                        </h1>
-                        <p className="text-xs text-gray-500 mt-0.5">
-                            {copy.subtitle}
-                        </p>
-                    </div>
-                    {customerId ? (
-                        <Link
-                            href={`/sales/customer-payments?customerId=${customerId}&new=1`}
-                            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#293F75] text-white text-sm font-black hover:bg-[#1f3058]"
-                        >
-                            {copy.recordPayment}
-                        </Link>
-                    ) : null}
-                </div>
+                        </span>
+                    }
+                    subtitle={copy.subtitle}
+                    breadcrumbs={modulePageBreadcrumbs(
+                        t.dashboardHome.breadcrumbHome,
+                        t.sidebar.modules.sales,
+                        copy.title,
+                        'sales',
+                    )}
+                    actions={
+                        customerId ? (
+                            <Link
+                                href={`/sales/customer-payments?customerId=${customerId}&new=1`}
+                                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#293F75] text-white text-sm font-black hover:bg-[#1f3058]"
+                            >
+                                {copy.recordPayment}
+                            </Link>
+                        ) : null
+                    }
+                />
 
                 <div className="rounded-lg border border-gray-200 bg-white p-3 md:p-4">
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">

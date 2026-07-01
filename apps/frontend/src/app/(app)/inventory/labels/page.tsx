@@ -5,6 +5,8 @@ import { Printer, Search, Tag, X } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useBranding } from '@/lib/branding';
 import BarcodeLabel from '@/components/BarcodeLabel';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 import { useI18n } from '@/lib/i18n';
 
 interface Product {
@@ -124,16 +126,23 @@ export default function PrintLabelsPage() {
     };
 
     return (
-        <div className="flex h-full min-h-screen bg-gray-50">
+        <div className="flex h-full min-h-screen flex-col bg-gray-50">
+            <div className="print:hidden border-b border-gray-200 bg-white px-4 py-3">
+                <PageHeader
+                    title={t.inventoryLabels.title}
+                    breadcrumbs={modulePageBreadcrumbs(
+                        t.dashboardHome.breadcrumbHome,
+                        t.sidebar.modules.inventory,
+                        t.inventoryLabels.title,
+                        'inventory',
+                    )}
+                />
+            </div>
+
+            <div className="flex min-h-0 flex-1">
             {/* ---- Left panel: product selector (hidden on print) ---- */}
             <aside className="print:hidden w-72 flex-shrink-0 bg-white border-r border-gray-200 flex flex-col">
-                {/* Header */}
                 <div className="px-4 py-4 border-b border-gray-100">
-                    <div className="flex items-center gap-2 mb-3">
-                        <Tag className="w-5 h-5 text-blue-600" />
-                        <h1 className="text-base font-bold text-gray-900">{t.inventoryLabels.title}</h1>
-                    </div>
-
                     {/* Search */}
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
@@ -283,6 +292,7 @@ export default function PrintLabelsPage() {
                     </>
                 )}
             </main>
+            </div>
         </div>
     );
 }

@@ -1,15 +1,18 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { api } from '@/lib/api';
 import { formatBDT, formatDate } from '@/lib/format';
 import {
-    ArrowLeft, Phone, Mail, ShoppingBag, CreditCard, MapPin, Building2,
+    Phone, Mail, ShoppingBag, CreditCard, MapPin, Building2,
     FolderTree, Map, ChevronLeft, ChevronRight, MessageSquare, Wallet,
     Plus, Trash2, CheckCircle2, Send, ClipboardList, AlertCircle, Sparkles, Loader2,
 } from 'lucide-react';
 import { useI18n, formatMessage } from '@/lib/i18n';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { nestedPageBreadcrumbs } from '@/lib/page-breadcrumbs';
+import { routes } from '@/lib/routes';
 
 type Tab = 'history' | 'interactions' | 'credit' | 'tasks';
 
@@ -35,7 +38,6 @@ const typeIcons: Record<string, string> = {
 export default function CustomerProfile() {
     const { t } = useI18n();
     const { id } = useParams();
-    const router = useRouter();
     const [customer, setCustomer] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState<Tab>('history');
@@ -231,9 +233,16 @@ export default function CustomerProfile() {
 
     return (
         <div className="overflow-y-auto h-full p-8 bg-[#f9fafb] space-y-6">
-            <button onClick={() => router.back()} className="flex items-center text-sm font-bold text-gray-500 hover:text-gray-900 transition-colors">
-                <ArrowLeft className="w-4 h-4 mr-2" /> {t.customers.profile.back}
-            </button>
+            <PageHeader
+                title={customer.name}
+                breadcrumbs={nestedPageBreadcrumbs(
+                    t.dashboardHome.breadcrumbHome,
+                    t.sidebar.modules.sales,
+                    'sales',
+                    [{ label: t.customers.title, href: routes.sales.customers }],
+                    customer.name,
+                )}
+            />
 
             {/* Profile Header */}
             <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 flex items-start space-x-6">

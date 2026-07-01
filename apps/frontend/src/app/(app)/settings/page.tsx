@@ -6,6 +6,8 @@ import { CheckCircle, XCircle, Loader2, ShieldCheck, ShieldOff, Eye, EyeOff, Pal
 import { api, fetchWithAuth } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { routes } from '@/lib/routes';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -708,11 +710,16 @@ export default function AccountSettingsPage() {
     return (
         <div className="h-full overflow-y-auto">
             <div className="max-w-3xl mx-auto px-6 py-8 space-y-6">
-                {/* Page header */}
-                <div>
-                    <h1 className="text-2xl font-black text-gray-900 tracking-tight">{t.settings.title}</h1>
-                    <p className="mt-1 text-sm text-gray-500">{t.settings.description}</p>
-                </div>
+                <PageHeader
+                    title={t.settings.title}
+                    subtitle={t.settings.description}
+                    breadcrumbs={modulePageBreadcrumbs(
+                        t.dashboardHome.breadcrumbHome,
+                        t.sidebar.modules.accountSettings,
+                        t.settings.title,
+                        'settings',
+                    )}
+                />
 
                 {/* Quick links to sub-settings */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

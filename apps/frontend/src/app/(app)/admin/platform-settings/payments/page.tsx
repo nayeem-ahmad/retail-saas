@@ -1,8 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { CreditCard, ArrowLeft, Loader2, CheckCircle, XCircle } from 'lucide-react';
+import { CreditCard, Loader2, CheckCircle, XCircle } from 'lucide-react';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { nestedPageBreadcrumbs } from '@/lib/page-breadcrumbs';
+import { routes } from '@/lib/routes';
 import { fetchWithAuth } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 
@@ -182,13 +184,16 @@ export default function PlatformPaymentsSettingsPage() {
     return (
         <div className="overflow-y-auto h-full bg-[#f3f4f6] p-3 md:p-4 font-sans text-gray-900 text-[13px]">
             <div className="max-w-2xl mx-auto space-y-6">
-                <div className="flex items-center gap-3">
-                    <Link href="/admin/platform-settings" className="p-1.5 rounded-lg hover:bg-gray-200 transition-colors">
-                        <ArrowLeft className="w-4 h-4 text-gray-500" />
-                    </Link>
-                    <CreditCard className="w-5 h-5 text-violet-600" />
-                    <h1 className="text-xl font-black tracking-tight">{m.title}</h1>
-                </div>
+                <PageHeader
+                    title={m.title}
+                    breadcrumbs={nestedPageBreadcrumbs(
+                        t.dashboardHome.breadcrumbHome,
+                        t.sidebar.modules.admin,
+                        'admin',
+                        [{ label: t.admin.platformSettings.index.title, href: routes.admin.platformSettings.root }],
+                        m.title,
+                    )}
+                />
 
                 {loading ? (
                     <div className="flex items-center gap-2 text-gray-400 text-sm py-8 justify-center">

@@ -3,7 +3,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Loader2, MessageSquare, Plus, ArrowDownCircle, ArrowUpCircle, AlertTriangle } from 'lucide-react';
 import { api } from '@/lib/api';
+import PageHeader from '@/components/ui/compact/PageHeader';
 import { formatBDT, formatDate, formatNumber } from '@/lib/format';
+import { useI18n } from '@/lib/i18n';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 
 type SmsPackage = {
     id: string;
@@ -36,6 +39,7 @@ type SmsCreditSummary = {
 };
 
 export default function SmsCreditsPage() {
+    const { t } = useI18n();
     const [summary, setSummary] = useState<SmsCreditSummary | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [purchasingId, setPurchasingId] = useState<string | null>(null);
@@ -89,12 +93,16 @@ export default function SmsCreditsPage() {
     return (
         <div className="overflow-y-auto h-full bg-[#f3f4f6] p-3 md:p-4 font-sans text-gray-900 text-[13px]">
             <div className="max-w-6xl mx-auto space-y-6">
-                <div className="flex flex-col gap-2">
-                    <h1 className="text-lg font-bold tracking-tight text-gray-950">SMS Credits</h1>
-                    <p className="text-xs font-bold uppercase tracking-widest text-gray-500">
-                        Prepaid SMS balance for {summary?.tenant.name || 'your shop'} — credits are spent whenever an SMS is sent
-                    </p>
-                </div>
+                <PageHeader
+                    title="SMS Credits"
+                    subtitle={`Prepaid SMS balance for ${summary?.tenant.name || 'your shop'} — credits are spent whenever an SMS is sent`}
+                    breadcrumbs={modulePageBreadcrumbs(
+                        t.dashboardHome.breadcrumbHome,
+                        'SMS Credits',
+                        'SMS Credits',
+                        'smsCredits',
+                    )}
+                />
 
                 {error && (
                     <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">

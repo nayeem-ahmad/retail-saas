@@ -7,6 +7,8 @@ import { formatDate } from '@/lib/format';
 import { createColumnHelper, type ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table';
 import { useI18n } from '@/lib/i18n';
+import PageHeader from '@/components/ui/compact/PageHeader';
+import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 
 interface Employee {
     id: string;
@@ -215,22 +217,25 @@ export default function AttendancePage() {
     return (
         <div className="overflow-y-auto h-full bg-[#f3f4f6] p-3 md:p-4 font-sans text-gray-900 text-[13px]">
             <div className="w-full space-y-4">
-                {/* Header */}
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-lg font-bold tracking-tight text-gray-950">{t.attendance.title}</h1>
-                        <p className="text-xs text-gray-500 mt-0.5">
-                            {t.attendance.pageSubtitle}
-                        </p>
-                    </div>
-                    <button
-                        onClick={() => setShowModal(true)}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center shadow-lg shadow-blue-200 transition-all hover:-translate-y-0.5 active:translate-y-0"
-                    >
-                        <Plus className="w-4 h-4 mr-2" />
-                        {t.attendance.logAttendance}
-                    </button>
-                </div>
+                <PageHeader
+                    title={t.attendance.title}
+                    subtitle={t.attendance.pageSubtitle}
+                    breadcrumbs={modulePageBreadcrumbs(
+                        t.dashboardHome.breadcrumbHome,
+                        t.sidebar.modules.hr,
+                        t.attendance.title,
+                        'hr',
+                    )}
+                    actions={(
+                        <button
+                            onClick={() => setShowModal(true)}
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center shadow-lg shadow-blue-200 transition-all hover:-translate-y-0.5 active:translate-y-0"
+                        >
+                            <Plus className="w-4 h-4 mr-2" />
+                            {t.attendance.logAttendance}
+                        </button>
+                    )}
+                />
 
                 {/* Filters */}
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
