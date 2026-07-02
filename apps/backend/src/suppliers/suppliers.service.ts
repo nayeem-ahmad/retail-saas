@@ -118,7 +118,6 @@ export class SuppliersService {
                 phone: raw.phone ? String(raw.phone).trim() || null : null,
                 email: raw.email ? String(raw.email).trim() || null : null,
                 address: raw.address ? String(raw.address).trim() || null : null,
-                contact_person: raw.contact_person ? String(raw.contact_person).trim() || null : null,
             }),
             findDuplicate: async (row) => {
                 const existing = await this.db.supplier.findUnique({
