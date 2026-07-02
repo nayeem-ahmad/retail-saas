@@ -4,12 +4,19 @@ import { InvitationsService } from './invitations.service';
 import { DatabaseService } from '../database/database.service';
 import { EmailService } from '../email/email.service';
 import { PlanEntitlementsService } from '../subscription-plans/plan-entitlements.service';
-import { UserRole } from '@erp71/shared-types';
+import { StorePermission, UserRole } from '@erp71/shared-types';
 import * as crypto from 'crypto';
+
+jest.mock('../team/role-sync.util', () => ({
+    syncMemberPermissionsFromRole: jest.fn().mockResolvedValue(1),
+}));
+
+import { syncMemberPermissionsFromRole } from '../team/role-sync.util';
 
 const db = {
     tenant: { findUnique: jest.fn() },
     user: { findUnique: jest.fn() },
+    tenantRole: { findFirst: jest.fn() },
     userInvitation: {
         findUnique: jest.fn(),
         findMany: jest.fn(),
@@ -47,24 +54,25 @@ describe('InvitationsService', () => {
 
     it('blocks CASHIER from inviting', async () => {
         await expect(
-            service.invite('t1', 'u1', UserRole.CASHIER, 'new@example.com', UserRole.CASHIER),
+            service.invite('t1', 'u1', UserRole.CASHIER, 'new@example.com', 'role-cashier'),
         ).rejects.toThrow(ForbiddenException);
     });
 
     it('blocks ACCOUNTANT from inviting', async () => {
         await expect(
-            service.invite('t1', 'u1', UserRole.ACCOUNTANT, 'new@example.com', UserRole.CASHIER),
+            service.invite('t1', 'u1', UserRole.ACCOUNTANT, 'new@example.com', 'role-cashier'),
         ).rejects.toThrow(ForbiddenException);
     });
 
     it('throws ConflictException if user already a member', async () => {
+        db.tenantRole.findFirst.mockResolvedValue({ id: 'role-cashier', name: 'Cashier' });
         db.tenant.findUnique.mockResolvedValue({ id: 't1', name: 'Acme' });
         db.user.findUnique
             .mockResolvedValueOnce({ id: 'inviter', name: 'Owner', email: 'owner@example.com' })
             .mockResolvedValueOnce({ id: 'existing', email: 'member@example.com', tenantMembers: [{ tenant_id: 't1' }] });
         db.userInvitation.deleteMany.mockResolvedValue({ count: 0 });
         await expect(
-            service.invite('t1', 'inviter', UserRole.OWNER, 'member@example.com', UserRole.CASHIER),
+            service.invite('t1', 'inviter', UserRole.OWNER, 'member@example.com', 'role-cashier'),
         ).rejects.toThrow(ConflictException);
     });
 
@@ -77,6 +85,7 @@ describe('InvitationsService', () => {
             accepted_at: null,
             expires_at: new Date(Date.now() - 1000),
             tenant: { name: 'Acme' },
+            tenantRole: { name: 'Cashier' },
         });
         await expect(service.getInfo(rawToken)).rejects.toThrow(BadRequestException);
     });
@@ -104,9 +113,10 @@ describe('InvitationsService', () => {
             {
                 id: 'inv1',
                 email: 'cashier@example.com',
-                role: UserRole.CASHIER,
+                tenant_role_id: 'role-cashier',
                 expires_at: new Date(Date.now() + 86400_000),
                 created_at: new Date('2026-06-01'),
+                tenantRole: { id: 'role-cashier', name: 'Cashier' },
                 invitedBy: { id: 'u1', name: 'Manager', email: 'manager@example.com' },
             },
         ]);
@@ -115,6 +125,8 @@ describe('InvitationsService', () => {
 
         expect(pending).toHaveLength(1);
         expect(pending[0].email).toBe('cashier@example.com');
+        expect(pending[0].roleName).toBe('Cashier');
+        expect(pending[0].tenantRoleId).toBe('role-cashier');
     });
 
     it('cancels a pending invitation', async () => {
@@ -127,19 +139,13 @@ describe('InvitationsService', () => {
     });
 
     it('updates a team member role and syncs permissions', async () => {
+        db.tenantRole.findFirst.mockResolvedValue({ id: 'role-manager', name: 'Manager' });
         db.tenant.findUnique.mockResolvedValue({ owner_id: 'owner-1' });
         db.tenantUser.findUnique.mockResolvedValue({
             tenant_id: 't1',
             user_id: 'cashier-1',
             role: UserRole.CASHIER,
-        });
-        db.userStoreAccess.findMany.mockResolvedValue([{ store_id: 'store-1' }]);
-        db.userStorePermission.deleteMany.mockResolvedValue({ count: 3 });
-        db.userStorePermission.createMany.mockResolvedValue({ count: 5 });
-        db.tenantUser.update.mockResolvedValue({
-            tenant_id: 't1',
-            user_id: 'cashier-1',
-            role: UserRole.MANAGER,
+            tenant_role_id: 'role-cashier',
         });
 
         const result = await service.updateMemberRole(
@@ -147,18 +153,28 @@ describe('InvitationsService', () => {
             'owner-1',
             UserRole.OWNER,
             'cashier-1',
-            UserRole.MANAGER,
+            'role-manager',
         );
 
-        expect(result).toEqual({ user_id: 'cashier-1', role: UserRole.MANAGER });
-        expect(db.tenantUser.update).toHaveBeenCalled();
-        expect(db.userStorePermission.deleteMany).toHaveBeenCalled();
-        expect(db.userStorePermission.createMany).toHaveBeenCalled();
+        expect(result).toEqual({ user_id: 'cashier-1', tenantRoleId: 'role-manager' });
+        expect(db.tenantUser.update).toHaveBeenCalledWith({
+            where: { tenant_id_user_id: { tenant_id: 't1', user_id: 'cashier-1' } },
+            data: { tenant_role_id: 'role-manager' },
+        });
+        expect(syncMemberPermissionsFromRole).toHaveBeenCalledWith(
+            db,
+            expect.objectContaining({
+                tenantId: 't1',
+                userIds: ['cashier-1'],
+                tenantRoleId: 'role-manager',
+                grantedBy: 'owner-1',
+            }),
+        );
     });
 
     it('blocks changing your own role', async () => {
         await expect(
-            service.updateMemberRole('t1', 'u1', UserRole.OWNER, 'u1', UserRole.MANAGER),
+            service.updateMemberRole('t1', 'u1', UserRole.OWNER, 'u1', 'role-manager'),
         ).rejects.toThrow(BadRequestException);
     });
 
@@ -171,28 +187,30 @@ describe('InvitationsService', () => {
         });
 
         await expect(
-            service.updateMemberRole('t1', 'manager-1', UserRole.MANAGER, 'owner-1', UserRole.CASHIER),
+            service.updateMemberRole('t1', 'manager-1', UserRole.MANAGER, 'owner-1', 'role-cashier'),
         ).rejects.toThrow(ForbiddenException);
     });
 
-    it('rejects OWNER role in invite', async () => {
-        db.tenant.findUnique.mockResolvedValue({ id: 't1', name: 'Acme' });
-        db.user.findUnique
-            .mockResolvedValueOnce({ id: 'inviter', name: 'Owner', email: 'owner@example.com' })
-            .mockResolvedValueOnce(null);
-
+    it('rejects invalid tenant role in invite', async () => {
+        db.tenantRole.findFirst.mockResolvedValue(null);
         await expect(
-            service.invite('t1', 'inviter', UserRole.OWNER, 'new@example.com', UserRole.OWNER),
-        ).rejects.toThrow(BadRequestException);
+            service.invite('t1', 'inviter', UserRole.OWNER, 'new@example.com', 'missing-role'),
+        ).rejects.toThrow(NotFoundException);
     });
 
     it('rejects accept when email does not match', async () => {
         const rawToken = 'mismatch-token';
         const hash = crypto.createHash('sha256').update(rawToken).digest('hex');
         db.userInvitation.findUnique.mockResolvedValue({
-            id: 'inv1', token_hash: hash, email: 'other@example.com',
-            accepted_at: null, expires_at: new Date(Date.now() + 86400_000),
-            tenant_id: 't1', role: UserRole.CASHIER, invited_by: 'owner',
+            id: 'inv1',
+            token_hash: hash,
+            email: 'other@example.com',
+            accepted_at: null,
+            expires_at: new Date(Date.now() + 86400_000),
+            tenant_id: 't1',
+            tenant_role_id: 'role-cashier',
+            invited_by: 'owner',
+            tenantRole: { permissions: [{ permission: StorePermission.CREATE_SALE }] },
         });
         db.user.findUnique.mockResolvedValue({ id: 'u2', email: 'wrong@example.com' });
         await expect(service.accept(rawToken, 'u2')).rejects.toThrow(BadRequestException);

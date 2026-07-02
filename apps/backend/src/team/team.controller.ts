@@ -72,7 +72,7 @@ export class TeamController {
 
     @Post('invitations')
     invite(@Tenant() ctx: TenantContext, @Body() dto: InviteMemberDto) {
-        return this.team.invite(ctx, dto.email, dto.role);
+        return this.team.invite(ctx, dto.email, dto.tenantRoleId);
     }
 
     @Delete('invitations/:id')
@@ -87,7 +87,7 @@ export class TeamController {
 
     @Patch('members/:userId/role')
     updateRole(@Tenant() ctx: TenantContext, @Param('userId') userId: string, @Body() dto: UpdateRoleDto) {
-        return this.team.updateRole(ctx, userId, dto.role, dto.reseedPermissions ?? false);
+        return this.team.updateRole(ctx, userId, dto.tenantRoleId);
     }
 
     @Post('members/:userId/stores')

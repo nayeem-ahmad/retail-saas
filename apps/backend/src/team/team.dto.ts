@@ -1,5 +1,5 @@
-import { IsArray, IsBoolean, IsEmail, IsEnum, IsIn, IsOptional, IsString } from 'class-validator';
-import { StorePermission, UserRole } from '@erp71/shared-types';
+import { IsArray, IsBoolean, IsEmail, IsIn, IsOptional, IsString } from 'class-validator';
+import { StorePermission } from '@erp71/shared-types';
 
 const STORE_PERMISSION_VALUES = Object.values(StorePermission) as string[];
 
@@ -7,18 +7,13 @@ export class InviteMemberDto {
     @IsEmail()
     email: string;
 
-    @IsEnum(UserRole)
-    role: UserRole;
+    @IsString()
+    tenantRoleId: string;
 }
 
 export class UpdateRoleDto {
-    @IsEnum(UserRole)
-    role: UserRole;
-
-    /** When true, reset each accessible branch's permissions to the new role's defaults. */
-    @IsOptional()
-    @IsBoolean()
-    reseedPermissions?: boolean;
+    @IsString()
+    tenantRoleId: string;
 }
 
 export class GrantStoreAccessDto {

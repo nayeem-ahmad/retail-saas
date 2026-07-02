@@ -8,11 +8,7 @@ import { paginate, PaginatedResult } from '../common/pagination.dto';
 import { DatabaseService } from '../database/database.service';
 import { AuditService } from '../audit/audit.service';
 import { InvitationsService } from '../invitations/invitations.service';
-import {
-    ROLE_DEFAULT_PERMISSIONS,
-    StorePermission,
-    UserRole,
-} from '@erp71/shared-types';
+import { StorePermission, UserRole } from '@erp71/shared-types';
 import { TenantContext } from '../database/tenant.decorator';
 import { syncMemberPermissionsFromRole } from './role-sync.util';
 import { CreateTenantRoleDto, UpdateTenantRoleDto } from './team.dto';
@@ -57,6 +53,7 @@ export class TeamService {
     private async getMembership(tenantId: string, userId: string) {
         const membership = await this.db.tenantUser.findUnique({
             where: { tenant_id_user_id: { tenant_id: tenantId, user_id: userId } },
+            include: { tenantRole: { include: { permissions: { select: { permission: true } } } } },
         });
         if (!membership) throw new NotFoundException('User is not a member of this organization.');
         return membership;
@@ -131,7 +128,10 @@ export class TeamService {
         const [members, total, accessRows, permCounts] = await Promise.all([
             this.db.tenantUser.findMany({
                 where,
-                include: { user: { select: { id: true, email: true, name: true } } },
+                include: {
+                    user: { select: { id: true, email: true, name: true } },
+                    tenantRole: { select: { id: true, name: true } },
+                },
                 orderBy: { user: { email: 'asc' } },
                 skip,
                 take: limitNum,
@@ -157,7 +157,9 @@ export class TeamService {
             userId: member.user_id,
             email: member.user.email,
             name: member.user.name,
-            role: member.role,
+            isOwner: member.role === UserRole.OWNER,
+            roleName: member.role === UserRole.OWNER ? 'Owner' : member.tenantRole?.name,
+            tenantRoleId: member.tenant_role_id,
             isSelf: member.user_id === ctx.userId,
             stores: accessRows
                 .filter((a) => a.user_id === member.user_id)
@@ -235,7 +237,9 @@ export class TeamService {
             userId,
             email: user?.email,
             name: user?.name,
-            role: membership.role,
+            isOwner: membership.role === UserRole.OWNER,
+            roleName: membership.role === UserRole.OWNER ? 'Owner' : membership.tenantRole?.name,
+            tenantRoleId: membership.tenant_role_id,
             isSelf: userId === ctx.userId,
             stores: stores.map((s) => ({
                 storeId: s.id,
@@ -369,48 +373,34 @@ export class TeamService {
         return { message: 'Role deleted.' };
     }
 
-    async updateRole(ctx: TenantContext, userId: string, role: UserRole, reseed: boolean) {
+    async updateRole(ctx: TenantContext, userId: string, tenantRoleId: string) {
         await this.assertPermission(ctx, StorePermission.MANAGE_USERS);
         const membership = await this.getMembership(ctx.tenantId, userId);
 
         if (userId === ctx.userId) {
             throw new BadRequestException('You cannot change your own role.');
         }
-        if (membership.role === UserRole.OWNER && role !== UserRole.OWNER && (await this.countOwners(ctx.tenantId)) <= 1) {
-            throw new BadRequestException('Cannot change the role of the last owner.');
+        if (membership.role === UserRole.OWNER) {
+            throw new BadRequestException('Cannot change the role of an owner.');
         }
 
-        const defaults = (ROLE_DEFAULT_PERMISSIONS[role] ?? []).filter((p) => VALID_PERMISSIONS.has(p));
+        await this.getTenantRole(ctx.tenantId, tenantRoleId);
 
         await this.db.$transaction(async (tx) => {
             await tx.tenantUser.update({
                 where: { tenant_id_user_id: { tenant_id: ctx.tenantId, user_id: userId } },
-                data: { role },
+                data: { tenant_role_id: tenantRoleId },
             });
 
-            if (reseed) {
-                const access = await tx.userStoreAccess.findMany({
-                    where: { tenant_id: ctx.tenantId, user_id: userId },
-                    select: { store_id: true },
-                });
-                await tx.userStorePermission.deleteMany({ where: { tenant_id: ctx.tenantId, user_id: userId } });
-                for (const { store_id } of access) {
-                    if (defaults.length === 0) continue;
-                    await tx.userStorePermission.createMany({
-                        data: defaults.map((permission) => ({
-                            user_id: userId,
-                            store_id,
-                            tenant_id: ctx.tenantId,
-                            permission: permission as any,
-                            granted_by: ctx.userId,
-                        })),
-                        skipDuplicates: true,
-                    });
-                }
-            }
+            await syncMemberPermissionsFromRole(tx, {
+                tenantId: ctx.tenantId,
+                userIds: [userId],
+                tenantRoleId,
+                grantedBy: ctx.userId,
+            });
         });
 
-        await this.audit.log('team.role_updated', 'TenantUser', this.auditCtx(ctx), userId, { role, reseed });
+        await this.audit.log('team.role_updated', 'TenantUser', this.auditCtx(ctx), userId, { tenantRoleId });
         return { message: 'Role updated.' };
     }
 
@@ -442,10 +432,11 @@ export class TeamService {
                 create: { user_id: userId, store_id: storeId, tenant_id: ctx.tenantId, access_level: accessLevel },
             });
 
-            if (!existing && seedDefaults) {
-                const defaults = (ROLE_DEFAULT_PERMISSIONS[membership.role as UserRole] ?? []).filter((p) =>
-                    VALID_PERMISSIONS.has(p),
-                );
+            if (!existing && seedDefaults && membership.role !== UserRole.OWNER) {
+                const rolePermissions = membership.tenantRole?.permissions ?? [];
+                const defaults = rolePermissions
+                    .map((p) => p.permission)
+                    .filter((p) => VALID_PERMISSIONS.has(p));
                 if (defaults.length > 0) {
                     await tx.userStorePermission.createMany({
                         data: defaults.map((permission) => ({
@@ -559,21 +550,25 @@ export class TeamService {
         const invites = await this.db.userInvitation.findMany({
             where: { tenant_id: ctx.tenantId, accepted_at: null, expires_at: { gt: new Date() } },
             orderBy: { created_at: 'desc' },
-            select: { id: true, email: true, role: true, created_at: true, expires_at: true },
+            include: { tenantRole: { select: { id: true, name: true } } },
         });
         return invites.map((i) => ({
             id: i.id,
             email: i.email,
-            role: i.role,
+            roleName: i.tenantRole.name,
+            tenantRoleId: i.tenant_role_id,
             invitedAt: i.created_at,
             expiresAt: i.expires_at,
         }));
     }
 
-    async invite(ctx: TenantContext, email: string, role: UserRole) {
+    async invite(ctx: TenantContext, email: string, tenantRoleId: string) {
         await this.assertPermission(ctx, StorePermission.MANAGE_USERS);
-        await this.invitations.invite(ctx.tenantId, ctx.userId, ctx.userRole ?? '', email, role);
-        await this.audit.log('team.invitation_sent', 'UserInvitation', this.auditCtx(ctx), undefined, { email, role });
+        await this.invitations.invite(ctx.tenantId, ctx.userId, ctx.userRole ?? '', email, tenantRoleId);
+        await this.audit.log('team.invitation_sent', 'UserInvitation', this.auditCtx(ctx), undefined, {
+            email,
+            tenantRoleId,
+        });
         return { message: 'Invitation sent.' };
     }
 

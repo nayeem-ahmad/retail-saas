@@ -2,12 +2,11 @@ import { Injectable, NotFoundException, ConflictException, BadRequestException, 
 import { DatabaseService } from '../database/database.service';
 import { EmailService } from '../email/email.service';
 import { PlanEntitlementsService } from '../subscription-plans/plan-entitlements.service';
-import { UserRole, ROLE_DEFAULT_PERMISSIONS } from '@erp71/shared-types';
+import { UserRole } from '@erp71/shared-types';
+import { syncMemberPermissionsFromRole } from '../team/role-sync.util';
 import * as crypto from 'crypto';
 
 const CAN_INVITE_ROLES: string[] = [UserRole.OWNER, UserRole.MANAGER];
-
-const INVITABLE_ROLES: UserRole[] = [UserRole.MANAGER, UserRole.CASHIER, UserRole.ACCOUNTANT];
 
 @Injectable()
 export class InvitationsService {
@@ -17,11 +16,11 @@ export class InvitationsService {
         private planEntitlements: PlanEntitlementsService,
     ) {}
 
-    async getInfo(rawToken: string): Promise<{ tenantName: string; email: string; role: string; expiresAt: Date }> {
+    async getInfo(rawToken: string): Promise<{ tenantName: string; email: string; roleName: string; expiresAt: Date }> {
         const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
         const invitation = await this.db.userInvitation.findUnique({
             where: { token_hash: tokenHash },
-            include: { tenant: true },
+            include: { tenant: true, tenantRole: { select: { name: true } } },
         });
 
         if (!invitation || invitation.accepted_at || invitation.expires_at < new Date()) {
@@ -31,7 +30,7 @@ export class InvitationsService {
         return {
             tenantName: invitation.tenant.name,
             email: invitation.email,
-            role: invitation.role,
+            roleName: invitation.tenantRole.name,
             expiresAt: invitation.expires_at,
         };
     }
@@ -40,6 +39,15 @@ export class InvitationsService {
         if (!CAN_INVITE_ROLES.includes(callerRole)) {
             throw new ForbiddenException('Only OWNER or MANAGER can manage team invitations');
         }
+    }
+
+    private async getTenantRole(tenantId: string, tenantRoleId: string) {
+        const role = await this.db.tenantRole.findFirst({
+            where: { id: tenantRoleId, tenant_id: tenantId },
+            select: { id: true, name: true },
+        });
+        if (!role) throw new NotFoundException('Role not found.');
+        return role;
     }
 
     async listMembers(tenantId: string, callerRole: string) {
@@ -81,6 +89,7 @@ export class InvitationsService {
                 expires_at: { gt: new Date() },
             },
             include: {
+                tenantRole: { select: { id: true, name: true } },
                 invitedBy: { select: { id: true, name: true, email: true } },
             },
             orderBy: { created_at: 'desc' },
@@ -89,7 +98,8 @@ export class InvitationsService {
         return invitations.map((invitation) => ({
             id: invitation.id,
             email: invitation.email,
-            role: invitation.role,
+            roleName: invitation.tenantRole.name,
+            tenantRoleId: invitation.tenant_role_id,
             expires_at: invitation.expires_at,
             created_at: invitation.created_at,
             invited_by: {
@@ -104,16 +114,12 @@ export class InvitationsService {
         callerUserId: string,
         callerRole: string,
         targetUserId: string,
-        newRole: UserRole,
-    ): Promise<{ user_id: string; role: UserRole }> {
+        tenantRoleId: string,
+    ): Promise<{ user_id: string; tenantRoleId: string }> {
         this.assertCanManageTeam(callerRole);
 
         if (targetUserId === callerUserId) {
             throw new BadRequestException('You cannot change your own role');
-        }
-
-        if (!INVITABLE_ROLES.includes(newRole)) {
-            throw new BadRequestException('Invalid role assignment');
         }
 
         const [tenant, membership] = await Promise.all([
@@ -126,51 +132,31 @@ export class InvitationsService {
         if (!tenant) throw new NotFoundException('Tenant not found');
         if (!membership) throw new NotFoundException('Team member not found');
 
-        if (tenant.owner_id === targetUserId) {
+        if (tenant.owner_id === targetUserId || membership.role === UserRole.OWNER) {
             throw new ForbiddenException('Cannot change the workspace owner\'s role');
         }
 
-        if (callerRole === UserRole.MANAGER && membership.role === UserRole.OWNER) {
-            throw new ForbiddenException('Managers cannot modify owner accounts');
-        }
+        await this.getTenantRole(tenantId, tenantRoleId);
 
-        if (membership.role === newRole) {
-            return { user_id: targetUserId, role: newRole };
+        if (membership.tenant_role_id === tenantRoleId) {
+            return { user_id: targetUserId, tenantRoleId };
         }
 
         await this.db.$transaction(async (tx) => {
             await tx.tenantUser.update({
                 where: { tenant_id_user_id: { tenant_id: tenantId, user_id: targetUserId } },
-                data: { role: newRole },
+                data: { tenant_role_id: tenantRoleId },
             });
 
-            const storeAccess = await tx.userStoreAccess.findMany({
-                where: { user_id: targetUserId, tenant_id: tenantId },
-                select: { store_id: true },
+            await syncMemberPermissionsFromRole(tx, {
+                tenantId,
+                userIds: [targetUserId],
+                tenantRoleId,
+                grantedBy: callerUserId,
             });
-
-            for (const { store_id } of storeAccess) {
-                await tx.userStorePermission.deleteMany({
-                    where: { user_id: targetUserId, store_id, tenant_id: tenantId },
-                });
-
-                const permissions = ROLE_DEFAULT_PERMISSIONS[newRole] ?? [];
-                if (permissions.length > 0) {
-                    await tx.userStorePermission.createMany({
-                        data: permissions.map((permission) => ({
-                            user_id: targetUserId,
-                            store_id,
-                            tenant_id: tenantId,
-                            permission,
-                            granted_by: callerUserId,
-                        })),
-                        skipDuplicates: true,
-                    });
-                }
-            }
         });
 
-        return { user_id: targetUserId, role: newRole };
+        return { user_id: targetUserId, tenantRoleId };
     }
 
     async cancelInvitation(tenantId: string, callerRole: string, invitationId: string): Promise<void> {
@@ -196,13 +182,11 @@ export class InvitationsService {
         invitedByUserId: string,
         callerRole: string,
         inviteeEmail: string,
-        role: UserRole,
+        tenantRoleId: string,
     ): Promise<void> {
         this.assertCanManageTeam(callerRole);
 
-        if (!INVITABLE_ROLES.includes(role)) {
-            throw new BadRequestException('Invalid role for invitation');
-        }
+        await this.getTenantRole(tenantId, tenantRoleId);
 
         const [tenant, inviter] = await Promise.all([
             this.db.tenant.findUnique({ where: { id: tenantId } }),
@@ -234,7 +218,14 @@ export class InvitationsService {
         const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
         await this.db.userInvitation.create({
-            data: { tenant_id: tenantId, email: inviteeEmail, role, token_hash: tokenHash, invited_by: invitedByUserId, expires_at: expiresAt },
+            data: {
+                tenant_id: tenantId,
+                email: inviteeEmail,
+                tenant_role_id: tenantRoleId,
+                token_hash: tokenHash,
+                invited_by: invitedByUserId,
+                expires_at: expiresAt,
+            },
         });
 
         await this.email.sendInvitation(inviteeEmail, tenant.name, inviter.name ?? inviter.email, rawToken);
@@ -242,7 +233,10 @@ export class InvitationsService {
 
     async accept(rawToken: string, acceptingUserId: string): Promise<void> {
         const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
-        const invitation = await this.db.userInvitation.findUnique({ where: { token_hash: tokenHash } });
+        const invitation = await this.db.userInvitation.findUnique({
+            where: { token_hash: tokenHash },
+            include: { tenantRole: { include: { permissions: { select: { permission: true } } } } },
+        });
 
         if (!invitation || invitation.accepted_at || invitation.expires_at < new Date()) {
             throw new BadRequestException('Invalid or expired invitation');
@@ -257,16 +251,26 @@ export class InvitationsService {
 
         await this.db.$transaction(async (tx) => {
             await tx.tenantUser.create({
-                data: { tenant_id: invitation.tenant_id, user_id: acceptingUserId, role: invitation.role },
+                data: {
+                    tenant_id: invitation.tenant_id,
+                    user_id: acceptingUserId,
+                    role: UserRole.CASHIER,
+                    tenant_role_id: invitation.tenant_role_id,
+                },
             });
 
             const store = await tx.store.findFirst({ where: { tenant_id: invitation.tenant_id } });
             if (store) {
                 await tx.userStoreAccess.create({
-                    data: { user_id: acceptingUserId, store_id: store.id, tenant_id: invitation.tenant_id, access_level: 'STORE_ONLY' },
+                    data: {
+                        user_id: acceptingUserId,
+                        store_id: store.id,
+                        tenant_id: invitation.tenant_id,
+                        access_level: 'STORE_ONLY',
+                    },
                 });
 
-                const permissions = ROLE_DEFAULT_PERMISSIONS[invitation.role] ?? [];
+                const permissions = invitation.tenantRole.permissions.map((p) => p.permission);
                 if (permissions.length > 0) {
                     await tx.userStorePermission.createMany({
                         data: permissions.map((permission) => ({

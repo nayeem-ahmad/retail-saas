@@ -86,23 +86,53 @@ describe('TeamService', () => {
         });
     });
 
-    it('refuses to demote the last owner', async () => {
-        db.tenantUser.findUnique.mockResolvedValue({ role: UserRole.OWNER, user_id: 'other' });
-        db.tenantUser.count.mockResolvedValue(1);
-        await expect(
-            service.updateRole(owner, 'other', UserRole.MANAGER, false),
-        ).rejects.toThrow(BadRequestException);
+    it('refuses to change an owner member role', async () => {
+        db.tenantUser.findUnique.mockResolvedValue({ role: UserRole.OWNER, user_id: 'other', tenant_role_id: null });
+        await expect(service.updateRole(owner, 'other', 'role-manager')).rejects.toThrow(BadRequestException);
     });
 
     it('refuses to change your own role', async () => {
-        db.tenantUser.findUnique.mockResolvedValue({ role: UserRole.OWNER, user_id: 'owner' });
-        await expect(
-            service.updateRole(owner, 'owner', UserRole.MANAGER, false),
-        ).rejects.toThrow(BadRequestException);
+        db.tenantUser.findUnique.mockResolvedValue({ role: UserRole.OWNER, user_id: 'owner', tenant_role_id: null });
+        await expect(service.updateRole(owner, 'owner', 'role-manager')).rejects.toThrow(BadRequestException);
+    });
+
+    it('updates member tenant role and syncs permissions', async () => {
+        db.tenantUser.findUnique.mockResolvedValue({
+            role: UserRole.CASHIER,
+            user_id: 'u2',
+            tenant_role_id: 'role-cashier',
+            tenantRole: { permissions: [] },
+        });
+        db.tenantRole.findFirst.mockResolvedValue({
+            id: 'role-manager',
+            name: 'Manager',
+            tenant_id: 't1',
+            permissions: [{ permission: StorePermission.MANAGE_USERS }],
+        });
+
+        await service.updateRole(owner, 'u2', 'role-manager');
+
+        expect(db.tenantUser.update).toHaveBeenCalledWith({
+            where: { tenant_id_user_id: { tenant_id: 't1', user_id: 'u2' } },
+            data: { tenant_role_id: 'role-manager' },
+        });
+        expect(syncMemberPermissionsFromRole).toHaveBeenCalledWith(
+            db,
+            expect.objectContaining({
+                tenantId: 't1',
+                userIds: ['u2'],
+                tenantRoleId: 'role-manager',
+                grantedBy: 'owner',
+            }),
+        );
     });
 
     it('requires branch access before setting permissions', async () => {
-        db.tenantUser.findUnique.mockResolvedValue({ role: UserRole.CASHIER, user_id: 'u2' });
+        db.tenantUser.findUnique.mockResolvedValue({
+            role: UserRole.CASHIER,
+            user_id: 'u2',
+            tenantRole: { permissions: [] },
+        });
         db.userStoreAccess.findUnique.mockResolvedValue(null);
         await expect(
             service.setStorePermissions(owner, 'u2', 's1', [StorePermission.CREATE_SALE]),
@@ -110,7 +140,11 @@ describe('TeamService', () => {
     });
 
     it('replaces permissions for a branch the user can access', async () => {
-        db.tenantUser.findUnique.mockResolvedValue({ role: UserRole.CASHIER, user_id: 'u2' });
+        db.tenantUser.findUnique.mockResolvedValue({
+            role: UserRole.CASHIER,
+            user_id: 'u2',
+            tenantRole: { permissions: [] },
+        });
         db.userStoreAccess.findUnique.mockResolvedValue({ id: 'a1', tenant_id: 't1' });
         await service.setStorePermissions(owner, 'u2', 's1', [
             StorePermission.CREATE_SALE,

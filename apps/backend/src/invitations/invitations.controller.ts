@@ -3,15 +3,14 @@ import { Throttle } from '@nestjs/throttler';
 import { InvitationsService } from './invitations.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { TenantInterceptor } from '../database/tenant.interceptor';
-import { IsEmail, IsEnum, IsString } from 'class-validator';
-import { UserRole } from '@erp71/shared-types';
+import { IsEmail, IsString } from 'class-validator';
 
 class InviteDto {
     @IsEmail()
     email: string;
 
-    @IsEnum(UserRole)
-    role: UserRole;
+    @IsString()
+    tenantRoleId: string;
 }
 
 class AcceptInvitationDto {
@@ -20,8 +19,8 @@ class AcceptInvitationDto {
 }
 
 class UpdateMemberRoleDto {
-    @IsEnum(UserRole)
-    role: UserRole;
+    @IsString()
+    tenantRoleId: string;
 }
 
 @Controller('invitations')
@@ -59,7 +58,7 @@ export class InvitationsController {
     async updateMemberRole(@Request() req, @Param('userId') userId: string, @Body() dto: UpdateMemberRoleDto) {
         const tenantId: string | undefined = req.tenantId;
         if (!tenantId) throw new ForbiddenException('Tenant context required. Send x-tenant-id header.');
-        return this.service.updateMemberRole(tenantId, req.user.userId, req.userRole, userId, dto.role);
+        return this.service.updateMemberRole(tenantId, req.user.userId, req.userRole, userId, dto.tenantRoleId);
     }
 
     @UseGuards(JwtAuthGuard)
@@ -68,7 +67,7 @@ export class InvitationsController {
     async invite(@Request() req, @Body() dto: InviteDto) {
         const tenantId: string | undefined = req.tenantId;
         if (!tenantId) throw new ForbiddenException('Tenant context required. Send x-tenant-id header.');
-        await this.service.invite(tenantId, req.user.userId, req.userRole, dto.email, dto.role);
+        await this.service.invite(tenantId, req.user.userId, req.userRole, dto.email, dto.tenantRoleId);
         return { message: 'Invitation sent.' };
     }
 
