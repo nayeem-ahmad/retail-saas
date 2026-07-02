@@ -12,6 +12,7 @@ import {
     defaultPlanFeatures,
     normalizePlanFeatures,
     PLAN_ENTITLEMENT_GROUP_ORDER,
+    PLAN_ENTITLEMENT_REGISTRY,
     type FixedSubscriptionPlanCode,
     type PlanEntitlementDefinition,
     type PlanEntitlementGroup,
@@ -175,14 +176,9 @@ export default function PlatformSubscriptionPlansPage() {
     const isFreePlan = selectedCode === 'FREE';
 
     const groupedEntitlements = useMemo(() => {
-        const source = entitlements.length
+        const source: PlanEntitlementDefinition[] = entitlements.length
             ? entitlements
-            : Object.entries(defaultPlanFeatures()).map(([key, defaultValue]) => ({
-                key,
-                type: typeof defaultValue === 'boolean' ? 'boolean' as const : 'number' as const,
-                label: key,
-                defaultValue,
-            }));
+            : PLAN_ENTITLEMENT_REGISTRY;
         const groups = new Map<PlanEntitlementGroup | 'other', PlanEntitlementDefinition[]>();
         for (const definition of source) {
             const group = definition.group ?? 'other';
