@@ -73,6 +73,7 @@ Track all work here. Check off items as they're completed. Add new items as they
 - [x] Implement refresh token rotation
 - [x] Shop-owner team & permissions management — `TeamModule` (GET/POST/PATCH/PUT/DELETE under `/team`) for listing members, inviting/revoking staff, changing roles, assigning branch access (STORE_ONLY vs MULTI_STORE_CAPABLE), and editing per-branch feature permissions; Team & Permissions UI at `/dashboard/team` with feature×branch matrix; gated to OWNER/MANAGER; audit-logged — done 2026-06-11
 
+
 ### API Hardening
 - [x] Add API versioning (`/api/v1/`) before any external integrations are built — global prefix in `main.ts` — done 2026-06-12
 - [x] Standardize response envelope (`{ data, meta, error }`) across all endpoints — `TransformInterceptor` + `HttpExceptionFilter` — done 2026-06-12
@@ -573,6 +574,7 @@ Track all work here. Check off items as they're completed. Add new items as they
 - [x] Fix platform navigation Save Settings (HTTP 400) — `SaveNavLayoutDto` nested nodes lacked class-validator decorators; global `forbidNonWhitelisted` rejected all layout fields; added DTO validators + spec; deployed `283ab49` — done 2026-07-02
 - [x] Fix shared-types production build — added `tsc` build to `@erp71/shared-types` so Node can load compiled `navigation` re-exports; required in backend/frontend Dockerfiles — done 2026-07-02
 - [x] Deploy latest main to VPS (`c4307e9`) — dynamic navigation + shared-types build fix; `/opt/erp71` `scripts/deploy.sh main` rebuilt erp71 stack; smoke checks green at `api.erp71.com` / `app.erp71.com` — done 2026-07-02
+- [x] Custom tenant roles — OWNER can CRUD role templates from `StorePermission` enum; auto-sync member branch permissions on role edit/assignment; Roles tab on `/team`; permission-based nav gates; spec `docs/superpowers/specs/2026-07-02-custom-tenant-roles-design.md` — done 2026-07-02
 - [x] Update manual VPS deploy workflow path — `.github/workflows/deploy-vps.yml` now uses `/opt/erp71` instead of retired `/opt/retail-saas` — done 2026-07-02
 - [x] Platform admin subscription plan catalog editor (Phase 1) — `PLAN_ENTITLEMENT_REGISTRY` + normalize/parse helpers in `@erp71/shared-types`; `GET/PUT /admin/subscription-plans` + registry endpoint with audit logging; platform-admin UI at `/admin/platform-settings/plans` (pricing, active flag, entitlement form per fixed plan code); signup/billing already read live DB plans — done 2026-07-02
 - [x] Subscription plan phases 2–3 + quotas + marketing bullets — DB-driven `planRank`/`aiCreditsMonthly`; accounting-only sidebar/route guards; product + invite quotas; `marketing_features_json` column + admin editor; public pricing page merges `GET /auth/plans` — done 2026-07-02

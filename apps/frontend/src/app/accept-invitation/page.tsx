@@ -13,7 +13,8 @@ type PageStatus = 'loading' | 'ready' | 'accepting' | 'success' | 'error';
 interface InvitationInfo {
     tenantName: string;
     email: string;
-    role: string;
+    roleName?: string;
+    role?: string;
     expiresAt: string;
 }
 
@@ -109,7 +110,7 @@ function AcceptInvitationContent() {
                                 </div>
                                 <h1 className="text-2xl font-bold tracking-tight text-gray-900">{m.title}</h1>
                                 <p className="text-gray-500 mt-2 text-sm leading-relaxed">
-                                    {formatMessage(m.joinDescription, { tenant: info.tenantName, role: info.role })}
+                                    {formatMessage(m.joinDescription, { tenant: info.tenantName, role: info.roleName ?? info.role ?? 'Member' })}
                                 </p>
                             </div>
 
