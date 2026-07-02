@@ -4,6 +4,7 @@ import { paginatedFindMany } from '../common/list-pagination.util';
 import { PaginatedResult } from '../common/pagination.dto';
 import { DatabaseService } from '../database/database.service';
 import { resolvePrice } from './price-list-resolver';
+import { runImport, ImportResult } from '../common/import.util';
 import {
     BulkUpdatePriceListItemsDto,
     CreatePriceListDto,
@@ -135,6 +136,37 @@ export class PriceListsService {
             throw new BadRequestException('Cannot delete the default price list. Set another list as default first.');
         }
         return this.db.priceList.delete({ where: { id } });
+    }
+
+    async importRows(
+        tenantId: string,
+        rows: Record<string, unknown>[],
+        mode: 'skip' | 'upsert',
+    ): Promise<ImportResult> {
+        return runImport(rows, mode, tenantId, {
+            requiredFields: ['name'],
+            castRow: (raw) => ({
+                name: String(raw.name ?? '').trim(),
+                description: raw.description ? String(raw.description).trim() || null : null,
+            }),
+            findDuplicate: async (row) => {
+                const existing = await this.db.priceList.findUnique({
+                    where: { tenant_id_name: { tenant_id: tenantId, name: row.name } },
+                });
+                return existing?.id ?? null;
+            },
+            create: async (row) => {
+                await this.db.priceList.create({
+                    data: { tenant_id: tenantId, name: row.name, description: row.description },
+                });
+            },
+            update: async (id, row) => {
+                await this.db.priceList.update({
+                    where: { id },
+                    data: { name: row.name, description: row.description },
+                });
+            },
+        });
     }
 
     async listItems(tenantId: string, priceListId: string, page = 1, limit = 50, search?: string) {
