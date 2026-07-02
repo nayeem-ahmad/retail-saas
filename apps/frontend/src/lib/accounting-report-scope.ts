@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
+import { hasPermission } from '@/lib/permissions';
 
 export type ReportScopeMode = 'branch' | 'company' | 'compare';
 
 const REPORT_SCOPE_KEY = 'report_scope';
 
-export function canUserConsolidate(role?: string): boolean {
-    return role === 'OWNER' || role === 'ACCOUNTANT';
+export function canViewConsolidatedReports(role: string | null | undefined, permissions?: string[]) {
+    return role === 'OWNER' || hasPermission(permissions, 'VIEW_CONSOLIDATED_REPORTS');
 }
 
 export function getDefaultReportScope(storesCount: number, canConsolidate: boolean): ReportScopeMode {
@@ -51,7 +52,7 @@ export function useReportStores() {
                 const tenantId = localStorage.getItem('tenant_id');
                 const tenant = me?.tenants?.find((entry: { id: string }) => entry.id === tenantId) || me?.tenants?.[0];
                 setStores(tenant?.stores ?? []);
-                setCanConsolidate(canUserConsolidate(tenant?.role));
+                setCanConsolidate(canViewConsolidatedReports(tenant?.role, tenant?.permissions));
             } catch {
                 if (active) {
                     setStores([]);

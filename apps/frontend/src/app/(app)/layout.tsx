@@ -38,6 +38,7 @@ import { syncLocalePreferenceFromSession } from '@/lib/localization/preference';
 import { clampLocaleToTenant } from '@/lib/tenant-locales';
 import { routes } from '@/lib/routes';
 import { toast } from '@/lib/toast';
+import { hasPermission, isOwner } from '@/lib/permissions';
 
 type DashboardLayoutProps = Readonly<{ children: React.ReactNode }>;
 
@@ -167,11 +168,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     const hasPremiumCrm = Boolean(planFeatures.premiumCrm);
     const accountingOnlyMode = Boolean(planFeatures.accountingOnly);
     const isPlatformAdmin = inPlatformAdminMode;
-    const canManageBilling = primaryRole === 'OWNER' || primaryRole === 'MANAGER';
-    const canManageTeam = primaryRole === 'OWNER' || primaryRole === 'MANAGER';
+    const perms = activeTenant?.permissions ?? [];
+    const owner = isOwner(primaryRole);
+    const canManageBilling = owner || hasPermission(perms, 'MANAGE_USERS');
+    const canManageTeam = owner || hasPermission(perms, 'MANAGE_USERS');
     const canViewAudit = canManageTeam;
     const canAccessAccounting =
-        (primaryRole === 'OWNER' || primaryRole === 'MANAGER' || primaryRole === 'ACCOUNTANT')
+        (owner || hasPermission(perms, 'VIEW_LEDGER'))
         && hasPaidPlan
         && hasAccountingEntitlement;
     const canAccessInventoryReports = Boolean(hasInventoryReportEntitlement);
