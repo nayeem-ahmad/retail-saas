@@ -5,6 +5,7 @@ import { TenantInterceptor } from '../database/tenant.interceptor';
 import { Tenant, TenantContext } from '../database/tenant.decorator';
 import { CreateProductGroupDto, UpdateProductGroupDto } from './product-group.dto';
 import { ProductGroupsService } from './product-groups.service';
+import { ImportRowsDto } from '../common/import.dto';
 
 @Controller('product-groups')
 @UseGuards(JwtAuthGuard)
@@ -15,6 +16,11 @@ export class ProductGroupsController {
     @Post()
     create(@Tenant() tenant: TenantContext, @Body() dto: CreateProductGroupDto) {
         return this.service.create(tenant.tenantId, dto);
+    }
+
+    @Post('import')
+    importRows(@Tenant() tenant: TenantContext, @Body() body: ImportRowsDto) {
+        return this.service.importRows(tenant.tenantId, body.rows, body.mode);
     }
 
     @Get()
