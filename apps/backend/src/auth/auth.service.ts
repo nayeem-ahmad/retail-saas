@@ -11,8 +11,9 @@ import * as crypto from 'node:crypto';
 import { SignupDto, LoginDto, UpdateProfileDto, ChangePasswordDto } from './auth.dto';
 import { isPlatformAdminEmail } from './platform-admin.util';
 import { DEMO_ACCOUNT_EMAIL } from '@erp71/database';
-import { DEFAULT_PLATFORM_FEATURES, ROLE_DEFAULT_PERMISSIONS, UserRole } from '@erp71/shared-types';
+import { DEFAULT_PLATFORM_FEATURES, ROLE_DEFAULT_PERMISSIONS, StorePermission, UserRole } from '@erp71/shared-types';
 import { PlatformSettingsService } from '../platform-settings/platform-settings.service';
+import { seedDefaultTenantRoles } from '../team/tenant-role.seed';
 
 type TenantProvisionDto = {
     tenantName: string;
@@ -230,10 +231,14 @@ export class AuthService {
                                 },
                             },
                         },
+                        tenantRole: { select: { id: true, name: true } },
                     },
                 },
                 storeAccess: {
                     include: { store: true },
+                },
+                storePermissions: {
+                    select: { tenant_id: true, store_id: true, permission: true },
                 },
             },
         });
@@ -244,6 +249,7 @@ export class AuthService {
 
         const tenantMembers = (user.tenantMembers ?? []).filter((membership) => membership?.tenant);
         const storeAccess = user.storeAccess ?? [];
+        const storePermissions = user.storePermissions ?? [];
 
         const isPlatformAdmin = (user as any).is_platform_admin === true || isPlatformAdminEmail(user.email);
         const payload = { sub: user.id, email: user.email, tv: user.token_version };
@@ -258,8 +264,10 @@ export class AuthService {
                 is_platform_admin: isPlatformAdmin,
                 email_verified: !!user.email_verified_at,
             },
-            tenants: tenantMembers.map((membership) =>
-                this.mapTenantMembership(membership, storeAccess),
+            tenants: await Promise.all(
+                tenantMembers.map((membership) =>
+                    this.mapTenantMembership(membership, storeAccess, user.id, storePermissions),
+                ),
             ),
         };
     }
@@ -278,10 +286,14 @@ export class AuthService {
                                 },
                             },
                         },
+                        tenantRole: { select: { id: true, name: true } },
                     },
                 },
                 storeAccess: {
                     include: { store: true },
+                },
+                storePermissions: {
+                    select: { tenant_id: true, store_id: true, permission: true },
                 },
             },
         });
@@ -292,6 +304,7 @@ export class AuthService {
 
         const tenantMembers = (user.tenantMembers ?? []).filter((membership) => membership?.tenant);
         const storeAccess = user.storeAccess ?? [];
+        const storePermissions = user.storePermissions ?? [];
 
         const totpSecret = (user as any).totp_secret as string | null | undefined;
         const twoFactorEnabled = !!totpSecret && !totpSecret.startsWith('pending:');
@@ -309,8 +322,10 @@ export class AuthService {
             two_factor_enabled: twoFactorEnabled,
             avatar_url: (user as any).avatar_url || null,
             platform_features: platformFeatures,
-            tenants: tenantMembers.map((membership) =>
-                this.mapTenantMembership(membership, storeAccess),
+            tenants: await Promise.all(
+                tenantMembers.map((membership) =>
+                    this.mapTenantMembership(membership, storeAccess, user.id, storePermissions),
+                ),
             ),
         };
     }
@@ -432,6 +447,8 @@ export class AuthService {
             },
         });
 
+        await seedDefaultTenantRoles(tx, tenant.id);
+
         await tx.tenantUser.create({
             data: {
                 tenant_id: tenant.id,
@@ -487,7 +504,12 @@ export class AuthService {
         return { tenant, store };
     }
 
-    private mapTenantMembership(membership: any, allStoreAccess: any[] = []) {
+    private async mapTenantMembership(
+        membership: any,
+        allStoreAccess: any[] = [],
+        userId: string,
+        allStorePermissions: any[] = [],
+    ) {
         const subscription = membership.tenant.subscription;
         const plan = subscription?.plan;
         // Only return stores the user has explicit UserStoreAccess for in this tenant
@@ -502,6 +524,19 @@ export class AuthService {
             localization_enabled: membership.tenant.localization_enabled,
             secondary_locale: membership.tenant.secondary_locale,
             role: membership.role,
+            tenant_role:
+                membership.role === 'OWNER'
+                    ? null
+                    : membership.tenantRole
+                      ? { id: membership.tenantRole.id, name: membership.tenantRole.name }
+                      : null,
+            permissions: await this.resolveTenantPermissions(
+                userId,
+                membership.tenant_id,
+                membership.role,
+                allStoreAccess,
+                allStorePermissions,
+            ),
             stores: accessibleStores,
             subscription: subscription
                 ? {
@@ -524,5 +559,32 @@ export class AuthService {
                   }
                 : null,
         };
+    }
+
+    private async resolveTenantPermissions(
+        userId: string,
+        tenantId: string,
+        role: string,
+        allStoreAccess: any[],
+        allStorePermissions: any[] = [],
+    ): Promise<StorePermission[]> {
+        if (role === 'OWNER') {
+            return Object.values(StorePermission);
+        }
+
+        const accessibleStoreIds = new Set(
+            allStoreAccess
+                .filter((access) => access.tenant_id === tenantId)
+                .map((access) => access.store_id),
+        );
+
+        const permissions = new Set<StorePermission>();
+        for (const grant of allStorePermissions) {
+            if (grant.tenant_id === tenantId && accessibleStoreIds.has(grant.store_id)) {
+                permissions.add(grant.permission);
+            }
+        }
+
+        return [...permissions];
     }
 }

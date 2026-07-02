@@ -7,6 +7,7 @@ import * as bcrypt from 'bcrypt';
 import { bootstrapDefaultAccountingForTenant } from './bootstrap-accounting';
 import { seedDemoAccount, DEMO_ACCOUNT_EMAIL } from './seed-demo';
 import { ROLE_DEFAULT_PERMISSIONS, UserRole } from '@erp71/shared-types';
+import { seedDefaultTenantRoles } from '../../../apps/backend/src/team/tenant-role.seed';
 
 const prisma = new PrismaClient();
 
@@ -297,21 +298,45 @@ async function main() {
         });
     }
 
-    // ── 3. Tenant memberships ────────────────────────────────────────────────
+    // ── 3. Tenant roles + memberships ─────────────────────────────────────
+    const existingSystemRoles = await prisma.tenantRole.findMany({
+        where: { tenant_id: tenant.id, is_system: true },
+        select: { id: true, name: true },
+    });
+    const roleIdsByName = Object.fromEntries(existingSystemRoles.map((role) => [role.name, role.id]));
+    const tenantRoleIds =
+        roleIdsByName.Manager && roleIdsByName.Cashier && roleIdsByName.Accountant
+            ? {
+                  manager: roleIdsByName.Manager,
+                  cashier: roleIdsByName.Cashier,
+                  accountant: roleIdsByName.Accountant,
+              }
+            : await seedDefaultTenantRoles(prisma, tenant.id);
+
     await prisma.tenantUser.upsert({
         where: { tenant_id_user_id: { tenant_id: tenant.id, user_id: adminUser.id } },
-        update: {},
-        create: { tenant_id: tenant.id, user_id: adminUser.id, role: 'OWNER' },
+        update: { tenant_role_id: null },
+        create: { tenant_id: tenant.id, user_id: adminUser.id, role: 'OWNER', tenant_role_id: null },
     });
     await prisma.tenantUser.upsert({
         where: { tenant_id_user_id: { tenant_id: tenant.id, user_id: managerUser.id } },
-        update: {},
-        create: { tenant_id: tenant.id, user_id: managerUser.id, role: 'MANAGER' },
+        update: { tenant_role_id: tenantRoleIds.manager },
+        create: {
+            tenant_id: tenant.id,
+            user_id: managerUser.id,
+            role: 'MANAGER',
+            tenant_role_id: tenantRoleIds.manager,
+        },
     });
     await prisma.tenantUser.upsert({
         where: { tenant_id_user_id: { tenant_id: tenant.id, user_id: cashierUser.id } },
-        update: {},
-        create: { tenant_id: tenant.id, user_id: cashierUser.id, role: 'CASHIER' },
+        update: { tenant_role_id: tenantRoleIds.cashier },
+        create: {
+            tenant_id: tenant.id,
+            user_id: cashierUser.id,
+            role: 'CASHIER',
+            tenant_role_id: tenantRoleIds.cashier,
+        },
     });
 
     // ── 4. Store ─────────────────────────────────────────────────────────────

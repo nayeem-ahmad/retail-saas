@@ -9,6 +9,7 @@ import { EmailService } from '../email/email.service';
 import { AuditService } from '../audit/audit.service';
 import { TotpService } from './totp.service';
 import { PlatformSettingsService } from '../platform-settings/platform-settings.service';
+import { StorePermission } from '@erp71/shared-types';
 
 jest.mock('bcrypt', () => ({
     hash: jest.fn().mockResolvedValue('hashed-password'),
@@ -48,6 +49,8 @@ describe('AuthService', () => {
         },
         tenant: { create: jest.fn() },
         tenantUser: { create: jest.fn() },
+        tenantRole: { create: jest.fn() },
+        tenantRolePermission: { createMany: jest.fn() },
         store: { create: jest.fn() },
         tenantSubscription: { create: jest.fn() },
         userStoreAccess: { create: jest.fn() },
@@ -85,10 +88,12 @@ describe('AuthService', () => {
         preferred_locale: 'bn',
         token_version: 0,
         email_verified_at: null,
-        storeAccess: [{ tenant_id: tenantId, store: { id: storeId } }],
+        storeAccess: [{ tenant_id: tenantId, store_id: storeId, store: { id: storeId } }],
+        storePermissions: [],
         tenantMembers: [{
             role: 'OWNER',
             tenant_id: tenantId,
+            tenantRole: null,
             tenant: {
                 id: tenantId,
                 name: 'Tenant One',
@@ -122,6 +127,10 @@ describe('AuthService', () => {
         ]);
         db.userStoreAccess.create.mockResolvedValue({});
         db.userStorePermission.createMany.mockResolvedValue({ count: 22 });
+        db.tenantRole.create.mockImplementation((args: any) =>
+            Promise.resolve({ id: `role-${args.data.name}`, ...args.data }),
+        );
+        db.tenantRolePermission.createMany.mockResolvedValue({ count: 0 });
         db.emailVerificationToken.deleteMany.mockResolvedValue({ count: 0 });
         db.emailVerificationToken.create.mockResolvedValue({});
         jwtService.sign.mockReturnValue('jwt-token');
@@ -218,13 +227,18 @@ describe('AuthService', () => {
             token_version: 0,
             email_verified_at: null,
             storeAccess: [
-                { tenant_id: 'tenant-1', store: { id: 'store-1', name: 'Gulshan' } },
+                { tenant_id: 'tenant-1', store_id: 'store-1', store: { id: 'store-1', name: 'Gulshan' } },
                 // store-2 belongs to different tenant, should NOT appear in tenant-1 stores
-                { tenant_id: 'tenant-2', store: { id: 'store-2', name: 'Banani' } },
+                { tenant_id: 'tenant-2', store_id: 'store-2', store: { id: 'store-2', name: 'Banani' } },
+            ],
+            storePermissions: [
+                { tenant_id: 'tenant-1', store_id: 'store-1', permission: StorePermission.CREATE_SALE },
+                { tenant_id: 'tenant-1', store_id: 'store-1', permission: StorePermission.VIEW_LEDGER },
             ],
             tenantMembers: [{
                 role: 'MANAGER',
                 tenant_id: 'tenant-1',
+                tenantRole: { id: 'role-manager', name: 'Manager' },
                 tenant: {
                     id: 'tenant-1',
                     name: 'Tenant One',
@@ -237,6 +251,10 @@ describe('AuthService', () => {
         const result = await service.getMe('user-1');
         expect(result.tenants[0].stores).toHaveLength(1);
         expect(result.tenants[0].stores[0].id).toBe('store-1');
+        expect(result.tenants[0].tenant_role).toEqual({ id: 'role-manager', name: 'Manager' });
+        expect(result.tenants[0].permissions).toEqual(
+            expect.arrayContaining([StorePermission.CREATE_SALE, StorePermission.VIEW_LEDGER]),
+        );
         expect(result.preferred_locale).toBe('bn');
         expect(result.tenants[0].default_locale).toBe('en');
         expect(result.platform_features).toEqual({
@@ -245,6 +263,35 @@ describe('AuthService', () => {
             help: false,
             voice: false,
         });
+    });
+
+    it('mapTenantMembership returns all StorePermission values for OWNER', async () => {
+        db.user.findUnique.mockResolvedValue({
+            id: 'user-1',
+            email: 'owner@example.com',
+            name: 'Owner',
+            preferred_locale: 'en',
+            token_version: 0,
+            email_verified_at: null,
+            storeAccess: [{ tenant_id: 'tenant-1', store_id: 'store-1', store: { id: 'store-1' } }],
+            storePermissions: [],
+            tenantMembers: [{
+                role: 'OWNER',
+                tenant_id: 'tenant-1',
+                tenantRole: null,
+                tenant: {
+                    id: 'tenant-1',
+                    name: 'Tenant One',
+                    default_locale: 'en',
+                    subscription: null,
+                },
+            }],
+        });
+
+        const result = await service.getMe('user-1');
+
+        expect(result.tenants[0].tenant_role).toBeNull();
+        expect(result.tenants[0].permissions).toEqual(Object.values(StorePermission));
     });
 
     it('updates preferred locale through updateProfile', async () => {
@@ -296,6 +343,7 @@ describe('AuthService', () => {
                 token_version: 0,
                 email_verified_at: null,
                 storeAccess: [],
+                storePermissions: [],
                 tenantMembers: [],
             });
 
