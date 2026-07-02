@@ -222,18 +222,19 @@ model EmailVerificationToken {
 }
 
 model UserInvitation {
-  id          String    @id @default(uuid())
-  tenant_id   String
-  email       String
-  role        UserRole  @default(CASHIER)
-  token_hash  String    @unique
-  invited_by  String
-  expires_at  DateTime
-  accepted_at DateTime?
-  created_at  DateTime  @default(now())
+  id             String    @id @default(uuid())
+  tenant_id      String
+  email          String
+  tenant_role_id String
+  token_hash     String    @unique
+  invited_by     String
+  expires_at     DateTime
+  accepted_at    DateTime?
+  created_at     DateTime  @default(now())
 
-  tenant      Tenant    @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
-  invitedBy   User      @relation("InvitationSender", fields: [invited_by], references: [id])
+  tenant      Tenant     @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  tenantRole  TenantRole @relation(fields: [tenant_role_id], references: [id], onDelete: Restrict)
+  invitedBy   User       @relation("InvitationSender", fields: [invited_by], references: [id])
 
   @@index([tenant_id, email])
 }
@@ -361,6 +362,7 @@ model Tenant {
   postingEvents     PostingEvent[]
   warrantyClaims    WarrantyClaim[]
   invitations       UserInvitation[]
+  tenantRoles       TenantRole[]
   feedbacks         Feedback[]
   supportThreads    SupportThread[]
   storefrontOrders  StorefrontOrder[]
@@ -434,16 +436,46 @@ model SalesSettings {
 }
 
 model TenantUser {
-  id        String   @id @default(uuid())
-  tenant_id String
-  user_id   String
-  role      UserRole @default(CASHIER)
-  
+  id             String   @id @default(uuid())
+  tenant_id      String
+  user_id        String
+  role           UserRole @default(CASHIER)
+  tenant_role_id String?
+
   // Relations
-  tenant    Tenant   @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
-  user      User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  tenant     Tenant      @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  user       User        @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  tenantRole TenantRole? @relation(fields: [tenant_role_id], references: [id], onDelete: SetNull)
 
   @@unique([tenant_id, user_id])
+}
+
+model TenantRole {
+  id          String   @id @default(uuid())
+  tenant_id   String
+  name        String
+  description String?
+  is_system   Boolean  @default(false)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  tenant       Tenant                 @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+  permissions  TenantRolePermission[]
+  members      TenantUser[]
+  invitations  UserInvitation[]
+
+  @@unique([tenant_id, name])
+  @@index([tenant_id])
+}
+
+model TenantRolePermission {
+  id             String          @id @default(uuid())
+  tenant_role_id String
+  permission     StorePermission
+
+  tenantRole TenantRole @relation(fields: [tenant_role_id], references: [id], onDelete: Cascade)
+
+  @@unique([tenant_role_id, permission])
 }
 
 model Store {
