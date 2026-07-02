@@ -350,6 +350,7 @@ Track all work here. Check off items as they're completed. Add new items as they
 
 ## COMPLETED
 
+- [x] Master data import endpoint Task 7: Customers — `POST /customers/import` with phone/email dedup, `customer_code` auto-generation, `customer_group_name` → `customer_group_id` lookup (null if not found, no error); `CustomersService.importRows()` + controller endpoint; 6 unit tests (create, skip-duplicate, upsert-duplicate, missing-name error, DB error resilience, group-not-found sets null) all passing — done 2026-07-02
 - [x] Shared bulk import utility — `runImport<T>`, `ImportResult`, `ImportConfig<T>`, `ImportRowsDto` in `apps/backend/src/common/import.util.ts` + `import.dto.ts`; 7 Jest tests all passing — done 2026-07-02
 - [x] Master data import endpoint Task 6: Price Lists — `POST /price-lists/import` with skip/upsert modes, imports `name` and `description` fields; `PriceListsService.importRows()` + controller endpoint; 5 unit tests (create, skip-duplicate, upsert-duplicate, missing-name error, DB error resilience) all passing — done 2026-07-02
 - [x] Platform admin user access control — self-demotion protection (cannot revoke own admin status), last-admin lockout (must keep at least 1 DB-flagged admin), `isAdmin` filter on `GET /admin/users`, admin-only filter toggle + "You" badge + pagination controls on `/admin/users` frontend page — done 2026-07-02
