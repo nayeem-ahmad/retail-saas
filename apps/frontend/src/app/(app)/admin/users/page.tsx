@@ -42,7 +42,7 @@ export default function AdminUsersPage() {
         setError('');
         try {
             const res: any = await api.getAdminUsers({
-                search: opts?.q ?? search || undefined,
+                search: (opts?.q ?? search) || undefined,
                 page: opts?.p ?? page,
                 limit: PAGE_SIZE,
                 isAdmin: opts?.isAdmin !== undefined ? opts.isAdmin : adminFilter,
