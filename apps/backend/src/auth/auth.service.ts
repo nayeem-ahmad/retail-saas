@@ -21,6 +21,7 @@ type TenantProvisionDto = {
     address?: string;
     planCode?: 'FREE' | 'BASIC' | 'ACCOUNTING' | 'STANDARD' | 'PREMIUM';
     businessType?: string;
+    referralCode?: string;
 };
 
 @Injectable()
@@ -61,6 +62,7 @@ export class AuthService {
                     storeName: dto.storeName,
                     address: dto.address,
                     planCode: dto.planCode,
+                    referralCode: dto.referralCode,
                 });
             }
 
@@ -196,6 +198,22 @@ export class AuthService {
 
     private isDemoAccount(email: string) {
         return email === DEMO_ACCOUNT_EMAIL;
+    }
+
+    async validateReferralCode(code: string) {
+        const referee = await this.db.referee.findFirst({
+            where: { referral_code: code.trim().toUpperCase(), is_active: true },
+            select: { referral_code: true, signup_discount: true, name: true },
+        });
+        if (!referee) {
+            return { valid: false };
+        }
+        return {
+            valid: true,
+            referral_code: referee.referral_code,
+            discount_pct: Number(referee.signup_discount),
+            referee_name: referee.name,
+        };
     }
 
     async getPlans() {
@@ -500,6 +518,23 @@ export class AuthService {
         });
 
         await bootstrapDefaultAccountingForTenant(tx, tenant.id);
+
+        if (dto.referralCode?.trim()) {
+            const referee = await tx.referee.findFirst({
+                where: { referral_code: dto.referralCode.trim().toUpperCase(), is_active: true },
+            });
+            if (referee) {
+                await tx.referralSignup.create({
+                    data: {
+                        referee_id: referee.id,
+                        tenant_id: tenant.id,
+                        discount_pct: referee.signup_discount,
+                        commission_pct: referee.commission_rate,
+                        status: 'PENDING',
+                    },
+                });
+            }
+        }
 
         return { tenant, store };
     }
