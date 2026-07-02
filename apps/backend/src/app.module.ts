@@ -81,6 +81,7 @@ import { FundTransfersModule } from './fund-transfers/fund-transfers.module';
 import { SalaryPaymentsModule } from './salary-payments/salary-payments.module';
 import { AiModule } from './ai/ai.module';
 import { SupportModule } from './support/support.module';
+import { ReferralsModule } from './referrals/referrals.module';
 
 @Module({
     imports: [
@@ -166,6 +167,7 @@ import { SupportModule } from './support/support.module';
         SalaryPaymentsModule,
         AiModule,
         SupportModule,
+        ReferralsModule,
     ],
     controllers: [],
     providers: [

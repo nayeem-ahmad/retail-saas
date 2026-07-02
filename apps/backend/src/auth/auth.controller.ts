@@ -1,4 +1,4 @@
-import { Controller, Post, Patch, Body, UseGuards, Request, Get, Query, HttpCode, HttpStatus, UploadedFile, UseInterceptors, BadRequestException } from '@nestjs/common';
+import { Controller, Post, Patch, Body, UseGuards, Request, Get, Query, Param, HttpCode, HttpStatus, UploadedFile, UseInterceptors, BadRequestException } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
@@ -41,6 +41,11 @@ export class AuthController {
     @Get('plans')
     async getPlans() {
         return this.authService.getPlans();
+    }
+
+    @Get('referral-code/:code')
+    async validateReferralCode(@Param('code') code: string) {
+        return this.authService.validateReferralCode(code);
     }
 
     @UseGuards(JwtAuthGuard)
