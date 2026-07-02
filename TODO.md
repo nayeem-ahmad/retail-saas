@@ -588,5 +588,6 @@ Track all work here. Check off items as they're completed. Add new items as they
 - [x] Phase 5 granular plan entitlements — advanced accounting reports, AI, and voice gated per plan; plan editor grouped by module — done 2026-07-02
 - [x] Fix accounting-only dashboard layout — `/dashboard` hides retail quick links (sales/customer/supplier), KPI tiles, recent activity, and inventory panels when `accountingOnly` plan entitlement is set; shows accounting-focused quick links instead — done 2026-07-02
 - [x] Sidebar nav relabel — tenant Settings module renamed to Admin (`Building2`); settings hub quick links moved to Admin submenu; accounting subgroups renamed to Reports and Settings; `/settings` overview is account tabs only — done 2026-07-02
+- [x] Task 10: Frontend ImportDialog component — shared React component for CSV/XLSX bulk import (file upload → field mapping → preview → result); four-step wizard with duplicate-handling modes (skip/upsert); automatic header matching; `@erp71/shared-types` exports `ImportField` and `ImportResult` interfaces; component at `apps/frontend/src/components/import-dialog.tsx`; papaparse installed; TypeScript compiles clean; consumed by all 11 list pages in Task 11 — done 2026-07-02
 
 
