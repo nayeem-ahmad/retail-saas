@@ -2,12 +2,18 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { api } from '@/lib/api';
-import { Plus, MapPin, Pencil, Trash2, X } from 'lucide-react';
+import { Plus, MapPin, Pencil, Trash2, X, Upload } from 'lucide-react';
 import { createColumnHelper, type ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table';
 import { useI18n } from '@/lib/i18n';
 import PageHeader from '@/components/ui/compact/PageHeader';
 import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
+import { ImportDialog, type ImportField } from '@/components/import-dialog';
+
+const IMPORT_FIELDS: ImportField[] = [
+    { key: 'name', label: 'Name', required: true },
+    { key: 'description', label: 'Description', required: false },
+];
 
 interface Territory {
     id: string;
@@ -26,6 +32,7 @@ export default function TerritoriesPage() {
     const [loading, setLoading] = useState(true);
     const [editingTerritory, setEditingTerritory] = useState<Territory | null>(null);
     const [isFormOpen, setIsFormOpen] = useState(false);
+    const [importOpen, setImportOpen] = useState(false);
 
     useEffect(() => { loadTerritories(); }, []);
 
@@ -204,9 +211,18 @@ export default function TerritoriesPage() {
                         'sales',
                     )}
                     actions={
-                        <button onClick={openCreate} className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center shadow-lg shadow-blue-200 transition-all hover:-translate-y-0.5 active:translate-y-0">
-                            <Plus className="w-4 h-4 mr-2" /> {t.territories.newTerritory}
-                        </button>
+                        <>
+                            <button
+                                onClick={() => setImportOpen(true)}
+                                className="bg-white border border-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center transition-all hover:border-blue-300 hover:text-blue-700"
+                            >
+                                <Upload className="w-4 h-4 mr-1.5" />
+                                Import
+                            </button>
+                            <button onClick={openCreate} className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center shadow-lg shadow-blue-200 transition-all hover:-translate-y-0.5 active:translate-y-0">
+                                <Plus className="w-4 h-4 mr-2" /> {t.territories.newTerritory}
+                            </button>
+                        </>
                     }
                 />
 
@@ -230,6 +246,15 @@ export default function TerritoriesPage() {
                     searchPlaceholder={t.territories.searchPlaceholder}
                 />
             </div>
+
+            <ImportDialog
+                open={importOpen}
+                onClose={() => setImportOpen(false)}
+                entityLabel="Territories"
+                fields={IMPORT_FIELDS}
+                importFn={(rows, mode) => api.importTerritories(rows, mode)}
+                onSuccess={() => void loadTerritories()}
+            />
         </div>
     );
 }

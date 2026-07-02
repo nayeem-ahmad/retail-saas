@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { Users, Plus, Eye } from 'lucide-react';
+import { Users, Plus, Eye, Upload } from 'lucide-react';
 import { api } from '@/lib/api';
 import { formatDate } from '@/lib/format';
 import AddEmployeeModal from './AddEmployeeModal';
@@ -11,6 +11,15 @@ import { DataTable } from '@/components/data-table';
 import { useI18n } from '@/lib/i18n';
 import PageHeader from '@/components/ui/compact/PageHeader';
 import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
+import { ImportDialog, type ImportField } from '@/components/import-dialog';
+
+const IMPORT_FIELDS: ImportField[] = [
+    { key: 'name', label: 'Name', required: true },
+    { key: 'phone', label: 'Phone', required: false },
+    { key: 'email', label: 'Email', required: false },
+    { key: 'joining_date', label: 'Joining Date', required: false },
+    { key: 'salary', label: 'Salary', required: false },
+];
 
 interface Employee {
     id: string;
@@ -33,6 +42,7 @@ export default function EmployeesPage() {
     const [employees, setEmployees] = useState<Employee[]>([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [importOpen, setImportOpen] = useState(false);
 
     useEffect(() => {
         loadEmployees();
@@ -163,17 +173,35 @@ export default function EmployeesPage() {
                         'hr',
                     )}
                     actions={(
-                        <button
-                            onClick={() => setIsModalOpen(true)}
-                            className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center shadow-lg shadow-blue-200 transition-all hover:-translate-y-0.5 active:translate-y-0"
-                        >
-                            <Plus className="w-4 h-4 mr-2" />
-                            {t.employees.newEmployee}
-                        </button>
+                        <>
+                            <button
+                                onClick={() => setImportOpen(true)}
+                                className="bg-white border border-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center transition-all hover:border-blue-300 hover:text-blue-700"
+                            >
+                                <Upload className="w-4 h-4 mr-1.5" />
+                                Import
+                            </button>
+                            <button
+                                onClick={() => setIsModalOpen(true)}
+                                className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center shadow-lg shadow-blue-200 transition-all hover:-translate-y-0.5 active:translate-y-0"
+                            >
+                                <Plus className="w-4 h-4 mr-2" />
+                                {t.employees.newEmployee}
+                            </button>
+                        </>
                     )}
                 />
 
                 <AddEmployeeModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onAdd={handleAdd} />
+
+                <ImportDialog
+                    open={importOpen}
+                    onClose={() => setImportOpen(false)}
+                    entityLabel="Employees"
+                    fields={IMPORT_FIELDS}
+                    importFn={(rows, mode) => api.importEmployees(rows, mode)}
+                    onSuccess={() => void loadEmployees()}
+                />
 
                 <DataTable<Employee>
                     tableId="employees"

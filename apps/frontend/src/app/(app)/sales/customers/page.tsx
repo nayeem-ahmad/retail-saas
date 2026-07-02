@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { Users, Plus, Eye, RefreshCw, Crown, AlertTriangle, UserCheck } from 'lucide-react';
+import { Users, Plus, Eye, RefreshCw, Crown, AlertTriangle, UserCheck, Upload } from 'lucide-react';
 import { api } from '@/lib/api';
 import { formatBDT, formatDate } from '@/lib/format';
 import { useI18n, formatMessage } from '@/lib/i18n';
@@ -11,6 +11,15 @@ import { createColumnHelper, type ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table';
 import PageHeader from '@/components/ui/compact/PageHeader';
 import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
+import { ImportDialog, type ImportField } from '@/components/import-dialog';
+
+const IMPORT_FIELDS: ImportField[] = [
+    { key: 'name', label: 'Name', required: true },
+    { key: 'phone', label: 'Phone', required: false },
+    { key: 'email', label: 'Email', required: false },
+    { key: 'address', label: 'Address', required: false },
+    { key: 'customer_group_name', label: 'Customer Group', required: false },
+];
 
 interface Customer {
     id: string;
@@ -52,6 +61,7 @@ export default function CustomersPage() {
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [importOpen, setImportOpen] = useState(false);
     const [segmentStats, setSegmentStats] = useState<SegmentStats | null>(null);
     const [runningSegmentation, setRunningSegmentation] = useState(false);
     const [evaluating, setEvaluating] = useState(false);
@@ -283,6 +293,13 @@ export default function CustomersPage() {
                                 {runningSegmentation ? t.customers.running : t.customers.runSegmentation}
                             </button>
                             <button
+                                onClick={() => setImportOpen(true)}
+                                className="bg-white border border-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center transition-all hover:border-blue-300 hover:text-blue-700"
+                            >
+                                <Upload className="w-4 h-4 mr-1.5" />
+                                Import
+                            </button>
+                            <button
                                 onClick={() => setIsModalOpen(true)}
                                 className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center shadow-lg shadow-blue-200 transition-all hover:-translate-y-0.5 active:translate-y-0"
                             >
@@ -321,6 +338,15 @@ export default function CustomersPage() {
                 )}
 
                 <AddCustomerModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onAdd={handleAddCustomer} />
+
+                <ImportDialog
+                    open={importOpen}
+                    onClose={() => setImportOpen(false)}
+                    entityLabel="Customers"
+                    fields={IMPORT_FIELDS}
+                    importFn={(rows, mode) => api.importCustomers(rows, mode)}
+                    onSuccess={() => void loadCustomers()}
+                />
                 {evalMessage && (
                     <div className="bg-white border border-gray-100 rounded-xl px-4 py-3 text-sm font-bold text-gray-700">{evalMessage}</div>
                 )}

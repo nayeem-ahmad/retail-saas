@@ -2,13 +2,22 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { createColumnHelper, type ColumnDef } from '@tanstack/react-table';
-import { Truck, Plus, Pencil, Trash2, X } from 'lucide-react';
+import { Truck, Plus, Pencil, Trash2, X, Upload } from 'lucide-react';
 import { DataTable } from '@/components/data-table';
 import PageHeader from '@/components/ui/compact/PageHeader';
 import { api } from '@/lib/api';
 import { formatDate } from '@/lib/format';
 import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 import { useI18n } from '@/lib/i18n';
+import { ImportDialog, type ImportField } from '@/components/import-dialog';
+
+const IMPORT_FIELDS: ImportField[] = [
+    { key: 'name', label: 'Name', required: true },
+    { key: 'phone', label: 'Phone', required: false },
+    { key: 'email', label: 'Email', required: false },
+    { key: 'address', label: 'Address', required: false },
+    { key: 'contact_person', label: 'Contact Person', required: false },
+];
 
 interface Supplier {
     id: string;
@@ -33,6 +42,7 @@ export default function SuppliersPage() {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
     const [deleteId, setDeleteId] = useState<string | null>(null);
+    const [importOpen, setImportOpen] = useState(false);
 
     useEffect(() => {
         void load();
@@ -197,13 +207,22 @@ export default function SuppliersPage() {
                         'purchases',
                     )}
                     actions={(
-                        <button
-                            onClick={openCreate}
-                            className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center shadow-lg shadow-blue-200 transition-all hover:-translate-y-0.5 active:translate-y-0"
-                        >
-                            <Plus className="w-4 h-4 mr-2" />
-                            {t.suppliers.newSupplier}
-                        </button>
+                        <>
+                            <button
+                                onClick={() => setImportOpen(true)}
+                                className="bg-white border border-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center transition-all hover:border-blue-300 hover:text-blue-700"
+                            >
+                                <Upload className="w-4 h-4 mr-1.5" />
+                                Import
+                            </button>
+                            <button
+                                onClick={openCreate}
+                                className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center shadow-lg shadow-blue-200 transition-all hover:-translate-y-0.5 active:translate-y-0"
+                            >
+                                <Plus className="w-4 h-4 mr-2" />
+                                {t.suppliers.newSupplier}
+                            </button>
+                        </>
                     )}
                 />
 
@@ -295,6 +314,15 @@ export default function SuppliersPage() {
                     </div>
                 </div>
             )}
+
+            <ImportDialog
+                open={importOpen}
+                onClose={() => setImportOpen(false)}
+                entityLabel="Suppliers"
+                fields={IMPORT_FIELDS}
+                importFn={(rows, mode) => api.importSuppliers(rows, mode)}
+                onSuccess={() => void load()}
+            />
 
             {deleteId && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
