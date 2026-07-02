@@ -97,7 +97,7 @@ export class InventoryService {
             where: { tenant_id: tenantId },
             orderBy: { created_at: 'asc' },
         });
-        if (!store) throw new BadRequestException('No active store found for this tenant.');
+        if (!store) throw new BadRequestException('No store found for this tenant.');
 
         return runImport(rows, mode, tenantId, {
             requiredFields: ['name'],
