@@ -15,6 +15,10 @@ const makeContext = (overrides: Partial<{
         storeId: overrides.storeId ?? 'store-1',
         tenantId: overrides.tenantId ?? 'tenant-1',
         userRole: overrides.userRole ?? 'CASHIER',
+        headers: {
+            'x-tenant-id': overrides.tenantId ?? 'tenant-1',
+            'x-store-id': overrides.storeId ?? 'store-1',
+        },
     };
     return {
         switchToHttp: () => ({ getRequest: () => req }),
@@ -28,6 +32,12 @@ describe('StorePermissionGuard', () => {
     let reflector: jest.Mocked<Reflector>;
     const db = {
         userStorePermission: {
+            findMany: jest.fn(),
+        },
+        tenantUser: {
+            findUnique: jest.fn(),
+        },
+        userStoreAccess: {
             findMany: jest.fn(),
         },
     };
@@ -70,8 +80,10 @@ describe('StorePermissionGuard', () => {
     it('throws BadRequestException when store context is missing (non-OWNER)', async () => {
         reflector.getAllAndOverride.mockReturnValue([StorePermission.CREATE_SALE]);
         const ctx = makeContext({ storeId: undefined as any });
-        // Override storeId on request to undefined
-        (ctx.switchToHttp().getRequest() as any).storeId = undefined;
+        const req = ctx.switchToHttp().getRequest() as any;
+        req.storeId = undefined;
+        req.headers['x-store-id'] = undefined;
+        db.userStoreAccess.findMany.mockResolvedValue([]);
         await expect(guard.canActivate(ctx)).rejects.toThrow(BadRequestException);
     });
 

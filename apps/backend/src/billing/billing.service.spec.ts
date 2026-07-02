@@ -1,6 +1,15 @@
 import { BadRequestException, ForbiddenException, InternalServerErrorException, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { BillingService } from './billing.service';
 import { CircuitBreakerRegistry } from '../system-health/resilience/circuit-breaker.registry';
+import { TenantContext } from '../database/tenant.decorator';
+
+const tenantCtx = (overrides: Partial<TenantContext> = {}): TenantContext => ({
+    tenantId: 'tenant-1',
+    userId: 'user-1',
+    userRole: 'OWNER',
+    storeId: 'store-1',
+    ...overrides,
+});
 
 describe('BillingService', () => {
     const db = {
@@ -9,6 +18,7 @@ describe('BillingService', () => {
         tenantSubscription: { findUnique: jest.fn(), upsert: jest.fn(), update: jest.fn() },
         tenant: { findUnique: jest.fn() },
         billingEvent: { findMany: jest.fn(), findUnique: jest.fn(), upsert: jest.fn() },
+        userStorePermission: { findFirst: jest.fn() },
     } as any;
 
     const audit = { log: jest.fn().mockResolvedValue(undefined) } as any;
@@ -92,7 +102,7 @@ describe('BillingService', () => {
             })),
         });
 
-        const result = await service.createCheckoutSession('user-1', 'tenant-1', {
+        const result = await service.createCheckoutSession(tenantCtx(), {
             planCode: 'PREMIUM',
             billingCycle: 'MONTHLY',
         });
@@ -131,7 +141,7 @@ describe('BillingService', () => {
             },
         });
 
-        const result = await service.createCheckoutSession('user-1', 'tenant-1', {
+        const result = await service.createCheckoutSession(tenantCtx(), {
             planCode: 'FREE',
             billingCycle: 'MONTHLY',
         });
@@ -310,7 +320,7 @@ describe('BillingService', () => {
             provider_name: 'ssl-wireless',
         });
 
-        const result = await service.processRefund('user-1', 'tenant-1', {
+        const result = await service.processRefund(tenantCtx(), {
             referenceId: 'bank-ref-1',
             amount: 3999,
             reason: 'Customer request',
@@ -339,7 +349,7 @@ describe('BillingService', () => {
             plan: { code: 'BASIC', name: 'Basic', description: 'Entry', monthly_price: 999, yearly_price: 9990, features_json: {} },
         });
 
-        const result = await service.getSummary('user-1', 'tenant-1');
+        const result = await service.getSummary(tenantCtx());
 
         expect(result.can_manage_billing).toBe(true);
         expect(result.subscription).not.toBeNull();
@@ -363,7 +373,7 @@ describe('BillingService', () => {
             plan: { code: 'PREMIUM', name: 'Premium', description: 'Advanced', monthly_price: 3999, yearly_price: 39990, features_json: {} },
         });
 
-        const result = await service.cancelAtPeriodEnd('user-1', 'tenant-1');
+        const result = await service.cancelAtPeriodEnd(tenantCtx());
 
         expect(db.tenantSubscription.update).toHaveBeenCalledWith(expect.objectContaining({
             data: { cancel_at_period_end: true },
@@ -374,7 +384,7 @@ describe('BillingService', () => {
     it('throws NotFoundException when cancelling with no subscription', async () => {
         db.tenantSubscription.findUnique.mockResolvedValueOnce(null);
 
-        await expect(service.cancelAtPeriodEnd('user-1', 'tenant-1')).rejects.toThrow(NotFoundException);
+        await expect(service.cancelAtPeriodEnd(tenantCtx())).rejects.toThrow(NotFoundException);
     });
 
     it('throws NotFoundException when applying subscription for unknown tenant', async () => {
@@ -390,7 +400,7 @@ describe('BillingService', () => {
         delete process.env.SSL_WIRELESS_STORE_ID;
         delete process.env.SSL_WIRELESS_STORE_PASSWORD;
 
-        await expect(service.createCheckoutSession('user-1', 'tenant-1', {
+        await expect(service.createCheckoutSession(tenantCtx(), {
             planCode: 'PREMIUM',
             billingCycle: 'MONTHLY',
         })).rejects.toThrow(BadRequestException);
@@ -405,7 +415,7 @@ describe('BillingService', () => {
             })),
         });
 
-        await expect(service.createCheckoutSession('user-1', 'tenant-1', {
+        await expect(service.createCheckoutSession(tenantCtx(), {
             planCode: 'PREMIUM',
             billingCycle: 'MONTHLY',
         })).rejects.toThrow(InternalServerErrorException);
@@ -442,7 +452,7 @@ describe('BillingService', () => {
             })),
         });
 
-        const result = await service.createCheckoutSession('user-1', 'tenant-1', {
+        const result = await service.createCheckoutSession(tenantCtx(), {
             planCode: 'PREMIUM',
             billingCycle: 'YEARLY',
         });
@@ -457,14 +467,18 @@ describe('BillingService', () => {
             tenant: { id: 'tenant-1', name: 'Tenant One' },
             user: { id: 'user-cashier', email: 'cashier@example.com', name: 'Cashier' },
         });
+        db.userStorePermission.findFirst.mockResolvedValueOnce(null);
 
-        await expect(service.createCheckoutSession('user-cashier', 'tenant-1', {
+        await expect(service.createCheckoutSession(tenantCtx({
+            userId: 'user-cashier',
+            userRole: 'CASHIER',
+        }), {
             planCode: 'PREMIUM',
         })).rejects.toThrow(ForbiddenException);
     });
 
     it('confirms manual checkout and activates subscription', async () => {
-        const result = await service.confirmCheckout('user-1', 'tenant-1', {
+        const result = await service.confirmCheckout(tenantCtx(), {
             planCode: 'PREMIUM',
             billingCycle: 'MONTHLY',
             reference: 'manual_ref_123',

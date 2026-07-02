@@ -5,8 +5,10 @@ import { Reflector } from '@nestjs/core';
 import { AccountingController } from './accounting.controller';
 import { AccountingService } from './accounting.service';
 import { TenantRoleGuard } from '../auth/tenant-role.guard';
+import { StorePermissionGuard } from '../auth/store-permission.guard';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { SubscriptionAccessGuard } from '../auth/subscription-access.guard';
+import { StorePermission } from '@erp71/shared-types';
 import { TenantInterceptor } from '../database/tenant.interceptor';
 import { DatabaseService } from '../database/database.service';
 import { CallHandler, ExecutionContext } from '@nestjs/common';
@@ -35,6 +37,13 @@ describe('AccountingController — Story 30.1', () => {
         tenantUser: {
             findUnique: jest.fn(),
         },
+        userStorePermission: {
+            findMany: jest.fn(),
+            findFirst: jest.fn(),
+        },
+        userStoreAccess: {
+            findMany: jest.fn(),
+        },
     };
 
     class MockJwtAuthGuard {
@@ -58,8 +67,8 @@ describe('AccountingController — Story 30.1', () => {
         intercept(context: ExecutionContext, next: CallHandler) {
             const request = context.switchToHttp().getRequest();
             request.tenantId = request.headers['x-tenant-id'] || 'tenant-1';
-            request.storeId = request.headers['x-store-id'];
-            request.userRole = 'OWNER';
+            request.storeId = request.headers['x-store-id'] || 'store-1';
+            request.userRole = request.headers['x-user-role'] || 'OWNER';
             request.tenant = {
                 tenantId: request.headers['x-tenant-id'] || 'tenant-1',
                 userId: request.headers['x-user-id'] || 'user-1',
@@ -161,6 +170,7 @@ describe('AccountingController — Story 30.1', () => {
         const moduleBuilder = Test.createTestingModule({
             controllers: [AccountingController],
             providers: [
+                StorePermissionGuard,
                 TenantRoleGuard,
                 TenantInterceptor,
                 Reflector,
@@ -191,11 +201,13 @@ describe('AccountingController — Story 30.1', () => {
 
     it('allows OWNER users to access accounting overview', async () => {
         db.tenantUser.findUnique.mockResolvedValue({ role: 'OWNER' });
+        db.userStoreAccess.findMany.mockResolvedValue([]);
 
         await request(app.getHttpServer())
             .get('/accounting')
             .set('x-user-id', 'user-owner')
             .set('x-tenant-id', 'tenant-1')
+            .set('x-store-id', 'store-1')
             .expect(200)
             .expect(({ body }) => {
                 expect(body.module).toBe('accounting');
@@ -212,13 +224,16 @@ describe('AccountingController — Story 30.1', () => {
         });
     });
 
-    it('allows MANAGER users to access write routes', async () => {
+    it('allows users with VIEW_LEDGER permission to access write routes', async () => {
         db.tenantUser.findUnique.mockResolvedValue({ role: 'MANAGER' });
+        db.userStorePermission.findMany.mockResolvedValue([{ permission: StorePermission.VIEW_LEDGER }]);
 
         await request(app.getHttpServer())
             .post('/accounting/accounts')
             .set('x-user-id', 'user-manager')
             .set('x-tenant-id', 'tenant-1')
+            .set('x-store-id', 'store-1')
+            .set('x-user-role', 'MANAGER')
             .send({
                 groupId: 'group-1',
                 name: 'Cash in Hand',
@@ -235,6 +250,8 @@ describe('AccountingController — Story 30.1', () => {
             .post('/accounting/vouchers')
             .set('x-user-id', 'user-manager')
             .set('x-tenant-id', 'tenant-1')
+            .set('x-store-id', 'store-1')
+            .set('x-user-role', 'MANAGER')
             .send({
                 voucherType: 'cash_payment',
                 details: [
@@ -250,12 +267,14 @@ describe('AccountingController — Story 30.1', () => {
 
     it('returns the next voucher number preview for authorized users', async () => {
         db.tenantUser.findUnique.mockResolvedValue({ role: 'OWNER' });
+        db.userStoreAccess.findMany.mockResolvedValue([]);
 
         await request(app.getHttpServer())
             .get('/accounting/vouchers/next-number')
             .query({ voucherType: 'cash_payment' })
             .set('x-user-id', 'user-owner')
             .set('x-tenant-id', 'tenant-1')
+            .set('x-store-id', 'store-1')
             .expect(200)
             .expect(({ body }) => {
                 expect(body.voucherNumber).toBe('CP-00001');
@@ -267,12 +286,14 @@ describe('AccountingController — Story 30.1', () => {
 
     it('returns paginated journal results and voucher details for authorized users', async () => {
         db.tenantUser.findUnique.mockResolvedValue({ role: 'OWNER' });
+        db.userStoreAccess.findMany.mockResolvedValue([]);
 
         await request(app.getHttpServer())
             .get('/accounting/vouchers')
             .query({ voucherType: 'cash_payment', page: 1, limit: 20 })
             .set('x-user-id', 'user-owner')
             .set('x-tenant-id', 'tenant-1')
+            .set('x-store-id', 'store-1')
             .expect(200)
             .expect(({ body }) => {
                 expect(body.data[0].voucher_number).toBe('CP-00001');
@@ -283,6 +304,7 @@ describe('AccountingController — Story 30.1', () => {
             .get('/accounting/vouchers/voucher-1')
             .set('x-user-id', 'user-owner')
             .set('x-tenant-id', 'tenant-1')
+            .set('x-store-id', 'store-1')
             .expect(200)
             .expect(({ body }) => {
                 expect(body.voucher_number).toBe('CP-00001');
@@ -294,6 +316,7 @@ describe('AccountingController — Story 30.1', () => {
             .query({ from: '2026-03-01', to: '2026-03-31' })
             .set('x-user-id', 'user-owner')
             .set('x-tenant-id', 'tenant-1')
+            .set('x-store-id', 'store-1')
             .expect(200)
             .expect(({ body }) => {
                 expect(body.kpis.cash_inflow).toBe(300);
@@ -311,6 +334,7 @@ describe('AccountingController — Story 30.1', () => {
             .query({ from: '2026-03-01', to: '2026-03-31' })
             .set('x-user-id', 'user-owner')
             .set('x-tenant-id', 'tenant-1')
+            .set('x-store-id', 'store-1')
             .expect(200)
             .expect(({ body }) => {
                 expect(body.granularity).toBe('day');
@@ -329,6 +353,7 @@ describe('AccountingController — Story 30.1', () => {
             .query({ from: '2026-03-05', to: '2026-03-31' })
             .set('x-user-id', 'user-owner')
             .set('x-tenant-id', 'tenant-1')
+            .set('x-store-id', 'store-1')
             .expect(200)
             .expect(({ body }) => {
                 expect(body.account.name).toBe('Cash in Hand');
@@ -343,16 +368,19 @@ describe('AccountingController — Story 30.1', () => {
         });
     });
 
-    it('rejects CASHIER users from accounting endpoints', async () => {
+    it('rejects users without VIEW_LEDGER permission from accounting endpoints', async () => {
         db.tenantUser.findUnique.mockResolvedValue({ role: 'CASHIER' });
+        db.userStorePermission.findMany.mockResolvedValue([]);
 
         await request(app.getHttpServer())
             .get('/accounting')
             .set('x-user-id', 'user-cashier')
             .set('x-tenant-id', 'tenant-1')
+            .set('x-store-id', 'store-1')
+            .set('x-user-role', 'CASHIER')
             .expect(403)
             .expect(({ body }) => {
-                expect(body.message).toBe('You do not have access to the accounting module');
+                expect(body.message).toContain('Missing store permissions');
             });
     });
 
@@ -373,9 +401,9 @@ describe('AccountingController — Story 30.1', () => {
         await request(app.getHttpServer())
             .get('/accounting')
             .set('x-user-id', 'user-missing-tenant')
-            .expect(401)
+            .expect(403)
             .expect(({ body }) => {
-                expect(body.message).toBe('Missing tenant context');
+                expect(body.message).toBe('Authentication context missing');
             });
     });
 });

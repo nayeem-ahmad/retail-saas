@@ -31,8 +31,8 @@ export class BillingController {
     @Get('summary')
     @UseGuards(JwtAuthGuard)
     @UseInterceptors(TenantInterceptor)
-    getSummary(@Request() req: any, @Tenant() tenant: TenantContext) {
-        return this.billingService.getSummary(req.user.userId, tenant.tenantId);
+    getSummary(@Tenant() tenant: TenantContext) {
+        return this.billingService.getSummary(tenant);
     }
 
     @Throttle({ default: { ttl: 60_000, limit: 20 } })
@@ -40,40 +40,37 @@ export class BillingController {
     @UseGuards(JwtAuthGuard)
     @UseInterceptors(TenantInterceptor)
     createCheckoutSession(
-        @Request() req: any,
         @Tenant() tenant: TenantContext,
         @Body() dto: CreateCheckoutSessionDto,
     ) {
-        return this.billingService.createCheckoutSession(req.user.userId, tenant.tenantId, dto);
+        return this.billingService.createCheckoutSession(tenant, dto);
     }
 
     @Post('confirm')
     @UseGuards(JwtAuthGuard)
     @UseInterceptors(TenantInterceptor)
     confirmCheckout(
-        @Request() req: any,
         @Tenant() tenant: TenantContext,
         @Body() dto: ConfirmCheckoutDto,
     ) {
-        return this.billingService.confirmCheckout(req.user.userId, tenant.tenantId, dto);
+        return this.billingService.confirmCheckout(tenant, dto);
     }
 
     @Post('cancel-at-period-end')
     @UseGuards(JwtAuthGuard)
     @UseInterceptors(TenantInterceptor)
-    cancelAtPeriodEnd(@Request() req: any, @Tenant() tenant: TenantContext) {
-        return this.billingService.cancelAtPeriodEnd(req.user.userId, tenant.tenantId);
+    cancelAtPeriodEnd(@Tenant() tenant: TenantContext) {
+        return this.billingService.cancelAtPeriodEnd(tenant);
     }
 
     @Post('refund')
     @UseGuards(JwtAuthGuard)
     @UseInterceptors(TenantInterceptor)
     processRefund(
-        @Request() req: any,
         @Tenant() tenant: TenantContext,
         @Body() dto: RefundBillingDto,
     ) {
-        return this.billingService.processRefund(req.user.userId, tenant.tenantId, dto);
+        return this.billingService.processRefund(tenant, dto);
     }
 
     @Post('webhooks/manual')

@@ -13,26 +13,24 @@ export class SmsCreditController {
     constructor(private readonly smsCreditService: SmsCreditService) {}
 
     @Get('summary')
-    getSummary(@Request() req: any, @Tenant() tenant: TenantContext) {
-        return this.smsCreditService.getSummary(req.user.userId, tenant.tenantId);
+    getSummary(@Tenant() tenant: TenantContext) {
+        return this.smsCreditService.getSummary(tenant);
     }
 
     @Throttle({ default: { ttl: 60_000, limit: 20 } })
     @Post('purchase')
     createPurchase(
-        @Request() req: any,
         @Tenant() tenant: TenantContext,
         @Body() dto: PurchaseSmsCreditsDto,
     ) {
-        return this.smsCreditService.createPurchase(req.user.userId, tenant.tenantId, dto);
+        return this.smsCreditService.createPurchase(tenant, dto);
     }
 
     @Post('confirm')
     confirmPurchase(
-        @Request() req: any,
         @Tenant() tenant: TenantContext,
         @Body() dto: ConfirmSmsCreditsPurchaseDto,
     ) {
-        return this.smsCreditService.confirmPurchase(req.user.userId, tenant.tenantId, dto);
+        return this.smsCreditService.confirmPurchase(tenant, dto);
     }
 }

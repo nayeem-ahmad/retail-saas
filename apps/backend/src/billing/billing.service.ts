@@ -7,6 +7,9 @@ import {
     ServiceUnavailableException,
     UnauthorizedException,
 } from '@nestjs/common';
+import { StorePermission } from '@erp71/shared-types';
+import { hasStorePermission } from '../auth/permission.util';
+import { TenantContext } from '../database/tenant.decorator';
 import { DatabaseService } from '../database/database.service';
 import { AuditService } from '../audit/audit.service';
 import { EmailService } from '../email/email.service';
@@ -36,15 +39,15 @@ export class BillingService {
         private readonly breakers: CircuitBreakerRegistry,
     ) {}
 
-    async getSummary(userId: string, tenantId: string) {
-        const membership = await this.requireTenantMembership(userId, tenantId);
+    async getSummary(ctx: TenantContext) {
+        const membership = await this.requireTenantMembership(ctx.userId, ctx.tenantId);
         const [plans, subscription] = await Promise.all([
             this.db.subscriptionPlan.findMany({
                 where: { is_active: true },
                 orderBy: { monthly_price: 'asc' },
             }),
             this.db.tenantSubscription.findUnique({
-                where: { tenant_id: tenantId },
+                where: { tenant_id: ctx.tenantId },
                 include: { plan: true },
             }),
         ]);
@@ -55,33 +58,33 @@ export class BillingService {
                 name: membership.tenant.name,
             },
             role: membership.role,
-            can_manage_billing: this.canManageBilling(membership.role),
+            can_manage_billing: await this.canManageBilling(ctx),
             provider_name: this.getProviderName(),
             subscription: this.mapSubscription(subscription),
             available_plans: plans.map((plan) => this.mapPlan(plan)),
-            billing_history: await this.getBillingHistory(tenantId),
+            billing_history: await this.getBillingHistory(ctx.tenantId),
         };
     }
 
-    async createCheckoutSession(userId: string, tenantId: string, dto: CreateCheckoutSessionDto) {
-        const membership = await this.requireTenantMembership(userId, tenantId);
-        this.assertBillingAccess(membership.role);
+    async createCheckoutSession(ctx: TenantContext, dto: CreateCheckoutSessionDto) {
+        const membership = await this.requireTenantMembership(ctx.userId, ctx.tenantId);
+        await this.assertBillingAccess(ctx);
 
         if (dto.planCode === 'FREE') {
-            const reference = `free_${tenantId.slice(0, 8)}_${Date.now()}`;
+            const reference = `free_${ctx.tenantId.slice(0, 8)}_${Date.now()}`;
             const result = await this.applySubscriptionChange({
-                tenantId,
+                tenantId: ctx.tenantId,
                 planCode: 'FREE',
                 billingCycle: 'MONTHLY',
                 status: 'ACTIVE',
                 providerName: 'manual',
-                providerCustomerRef: `tenant_${tenantId}`,
+                providerCustomerRef: `tenant_${ctx.tenantId}`,
                 providerSubscriptionRef: reference,
                 cancelAtPeriodEnd: false,
             });
 
             await this.recordBillingEvent({
-                tenantId,
+                tenantId: ctx.tenantId,
                 providerName: 'manual',
                 externalEventId: reference,
                 eventType: 'CHECKOUT_BYPASSED',
@@ -113,12 +116,12 @@ export class BillingService {
             : Number(plan.monthly_price);
         const providerName = this.getProviderName();
         const referencePrefix = providerName === 'ssl-wireless' ? 'sslw' : 'manual';
-        const reference = `${referencePrefix}_${tenantId.slice(0, 8)}_${Date.now()}`;
+        const reference = `${referencePrefix}_${ctx.tenantId.slice(0, 8)}_${Date.now()}`;
 
         const checkout = providerName === 'ssl-wireless'
             ? await this.createSslWirelessCheckout({
-                  tenantId,
-                  userId,
+                  tenantId: ctx.tenantId,
+                  userId: ctx.userId,
                   tenantName: membership.tenant.name,
                   customerEmail: membership.user.email,
                   customerName: membership.user.name || membership.user.email,
@@ -129,7 +132,7 @@ export class BillingService {
                   plan: this.mapPlan(plan),
               })
             : this.createManualCheckout({
-                  tenantId,
+                  tenantId: ctx.tenantId,
                   reference,
                   billingCycle,
                   amount,
@@ -138,7 +141,7 @@ export class BillingService {
               });
 
         await this.recordBillingEvent({
-            tenantId,
+            tenantId: ctx.tenantId,
             providerName: checkout.provider_name,
             externalEventId: checkout.external_event_id,
             eventType: 'CHECKOUT_CREATED',
@@ -152,28 +155,28 @@ export class BillingService {
         return checkout;
     }
 
-    async confirmCheckout(userId: string, tenantId: string, dto: ConfirmCheckoutDto) {
-        const membership = await this.requireTenantMembership(userId, tenantId);
-        this.assertBillingAccess(membership.role);
+    async confirmCheckout(ctx: TenantContext, dto: ConfirmCheckoutDto) {
+        await this.requireTenantMembership(ctx.userId, ctx.tenantId);
+        await this.assertBillingAccess(ctx);
 
         return this.applySubscriptionChange({
-            tenantId,
+            tenantId: ctx.tenantId,
             planCode: dto.planCode,
             billingCycle: this.normalizeBillingCycle(dto.billingCycle),
             status: 'ACTIVE',
             providerName: 'manual',
-            providerCustomerRef: `tenant_${tenantId}`,
-            providerSubscriptionRef: dto.reference || `manual_${tenantId}_${Date.now()}`,
+            providerCustomerRef: `tenant_${ctx.tenantId}`,
+            providerSubscriptionRef: dto.reference || `manual_${ctx.tenantId}_${Date.now()}`,
             cancelAtPeriodEnd: false,
         });
     }
 
-    async cancelAtPeriodEnd(userId: string, tenantId: string) {
-        const membership = await this.requireTenantMembership(userId, tenantId);
-        this.assertBillingAccess(membership.role);
+    async cancelAtPeriodEnd(ctx: TenantContext) {
+        await this.requireTenantMembership(ctx.userId, ctx.tenantId);
+        await this.assertBillingAccess(ctx);
 
         const existing = await this.db.tenantSubscription.findUnique({
-            where: { tenant_id: tenantId },
+            where: { tenant_id: ctx.tenantId },
             include: { plan: true },
         });
 
@@ -182,7 +185,7 @@ export class BillingService {
         }
 
         const subscription = await this.db.tenantSubscription.update({
-            where: { tenant_id: tenantId },
+            where: { tenant_id: ctx.tenantId },
             data: { cancel_at_period_end: true },
             include: { plan: true },
         });
@@ -232,12 +235,12 @@ export class BillingService {
         return result;
     }
 
-    async processRefund(userId: string, tenantId: string, dto: RefundBillingDto) {
-        const membership = await this.requireTenantMembership(userId, tenantId);
-        this.assertBillingAccess(membership.role);
+    async processRefund(ctx: TenantContext, dto: RefundBillingDto) {
+        await this.requireTenantMembership(ctx.userId, ctx.tenantId);
+        await this.assertBillingAccess(ctx);
 
         const subscription = await this.db.tenantSubscription.findUnique({
-            where: { tenant_id: tenantId },
+            where: { tenant_id: ctx.tenantId },
             include: { plan: true },
         });
 
@@ -261,7 +264,7 @@ export class BillingService {
         const currency = dto.currency ?? 'BDT';
 
         await this.recordBillingEvent({
-            tenantId,
+            tenantId: ctx.tenantId,
             providerName,
             externalEventId,
             eventType: 'REFUND',
@@ -278,14 +281,14 @@ export class BillingService {
         this.audit.log(
             'BILLING_REFUND',
             'BillingEvent',
-            { tenantId },
-            tenantId,
+            { tenantId: ctx.tenantId },
+            ctx.tenantId,
             { referenceId: dto.referenceId, amount, currency, reason: dto.reason ?? null },
         ).catch(() => {});
 
         if (dto.downgradeToFree) {
             await this.applySubscriptionChange({
-                tenantId,
+                tenantId: ctx.tenantId,
                 planCode: 'FREE',
                 billingCycle: 'MONTHLY',
                 status: 'ACTIVE',
@@ -910,13 +913,13 @@ export class BillingService {
         return periodEnd;
     }
 
-    private canManageBilling(role: string) {
-        return role === 'OWNER' || role === 'MANAGER';
+    private async canManageBilling(ctx: TenantContext): Promise<boolean> {
+        return hasStorePermission(this.db, ctx, StorePermission.MANAGE_USERS);
     }
 
-    private assertBillingAccess(role: string) {
-        if (!this.canManageBilling(role)) {
-            throw new ForbiddenException('Only tenant owners and managers can manage billing.');
+    private async assertBillingAccess(ctx: TenantContext): Promise<void> {
+        if (!(await this.canManageBilling(ctx))) {
+            throw new ForbiddenException('You do not have permission to manage billing.');
         }
     }
 

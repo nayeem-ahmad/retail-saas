@@ -1,13 +1,18 @@
 import { Body, Controller, Delete, Get, Header, Param, Patch, Post, Query, Res, UseGuards, UseInterceptors } from '@nestjs/common';
 import { Response } from 'express';
+import { StorePermission } from '@erp71/shared-types';
 import { AccountingService } from './accounting.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { hasStorePermission } from '../auth/permission.util';
 import { RequiresAdditionalFeature, RequiresFeature } from '../auth/subscription-access.decorator';
 import { SubscriptionAccessGuard } from '../auth/subscription-access.guard';
+import { RequireStorePermission } from '../auth/store-permission.decorator';
+import { StorePermissionGuard } from '../auth/store-permission.guard';
 import { TenantRoleGuard } from '../auth/tenant-role.guard';
 import { TenantRoles } from '../auth/tenant-roles.decorator';
 import { Tenant, TenantContext } from '../database/tenant.decorator';
 import { TenantInterceptor } from '../database/tenant.interceptor';
+import { DatabaseService } from '../database/database.service';
 import {
     CreateVoucherDto,
     CreateAccountDto,
@@ -55,12 +60,15 @@ import {
 } from './accounting.dto';
 
 @Controller('accounting')
-@UseGuards(JwtAuthGuard, TenantRoleGuard, SubscriptionAccessGuard)
+@UseGuards(JwtAuthGuard, StorePermissionGuard, TenantRoleGuard, SubscriptionAccessGuard)
 @UseInterceptors(TenantInterceptor)
-@TenantRoles('OWNER', 'MANAGER', 'ACCOUNTANT')
+@RequireStorePermission(StorePermission.VIEW_LEDGER)
 @RequiresFeature('premiumAccounting')
 export class AccountingController {
-    constructor(private readonly accountingService: AccountingService) {}
+    constructor(
+        private readonly accountingService: AccountingService,
+        private readonly db: DatabaseService,
+    ) {}
 
     @Get()
     getOverview(@Tenant() tenant: TenantContext) {
@@ -215,14 +223,14 @@ export class AccountingController {
     }
 
     @Get('reports/profit-loss')
-    getProfitLoss(@Tenant() tenant: TenantContext, @Query() query: ProfitLossQueryDto) {
-        const hasConsolidatedAccess = tenant.userRole === 'OWNER' || tenant.userRole === 'ACCOUNTANT';
+    async getProfitLoss(@Tenant() tenant: TenantContext, @Query() query: ProfitLossQueryDto) {
+        const hasConsolidatedAccess = await hasStorePermission(this.db, tenant, StorePermission.VIEW_CONSOLIDATED_REPORTS);
         return this.accountingService.getProfitLoss(tenant.tenantId, query, hasConsolidatedAccess);
     }
 
     @Get('reports/balance-sheet')
-    getBalanceSheet(@Tenant() tenant: TenantContext, @Query() query: BalanceSheetQueryDto) {
-        const hasConsolidatedAccess = tenant.userRole === 'OWNER' || tenant.userRole === 'ACCOUNTANT';
+    async getBalanceSheet(@Tenant() tenant: TenantContext, @Query() query: BalanceSheetQueryDto) {
+        const hasConsolidatedAccess = await hasStorePermission(this.db, tenant, StorePermission.VIEW_CONSOLIDATED_REPORTS);
         return this.accountingService.getBalanceSheet(tenant.tenantId, query, hasConsolidatedAccess);
     }
 
@@ -237,8 +245,8 @@ export class AccountingController {
     }
 
     @Get('reports/trial-balance')
-    getTrialBalance(@Tenant() tenant: TenantContext, @Query() query: TrialBalanceQueryDto) {
-        const hasConsolidatedAccess = tenant.userRole === 'OWNER' || tenant.userRole === 'ACCOUNTANT';
+    async getTrialBalance(@Tenant() tenant: TenantContext, @Query() query: TrialBalanceQueryDto) {
+        const hasConsolidatedAccess = await hasStorePermission(this.db, tenant, StorePermission.VIEW_CONSOLIDATED_REPORTS);
         return this.accountingService.getTrialBalance(tenant.tenantId, query, hasConsolidatedAccess);
     }
 

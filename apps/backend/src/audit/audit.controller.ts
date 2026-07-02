@@ -1,8 +1,11 @@
-import { Controller, Get, Query, UseGuards, UseInterceptors, ForbiddenException, Request } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards, UseInterceptors, ForbiddenException } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import { StorePermission } from '@erp71/shared-types';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { hasStorePermission } from '../auth/permission.util';
 import { TenantInterceptor } from '../database/tenant.interceptor';
 import { Tenant, TenantContext } from '../database/tenant.decorator';
+import { DatabaseService } from '../database/database.service';
 import { AuditService } from './audit.service';
 
 @ApiTags('audit-logs')
@@ -11,7 +14,10 @@ import { AuditService } from './audit.service';
 @UseInterceptors(TenantInterceptor)
 @Controller('audit-logs')
 export class AuditController {
-    constructor(private readonly auditService: AuditService) {}
+    constructor(
+        private readonly auditService: AuditService,
+        private readonly db: DatabaseService,
+    ) {}
 
     @Get()
     @ApiQuery({ name: 'entity', required: false })
@@ -23,7 +29,6 @@ export class AuditController {
     @ApiQuery({ name: 'limit', required: false })
     @ApiQuery({ name: 'offset', required: false })
     async list(
-        @Request() req,
         @Tenant() tenant: TenantContext,
         @Query('entity') entity?: string,
         @Query('entity_id') entityId?: string,
@@ -34,8 +39,11 @@ export class AuditController {
         @Query('limit') limit?: string,
         @Query('offset') offset?: string,
     ) {
-        if (!['OWNER', 'MANAGER'].includes(req.userRole)) {
-            throw new ForbiddenException('Only OWNER or MANAGER can view audit logs');
+        const canView =
+            tenant.userRole === 'OWNER' ||
+            (await hasStorePermission(this.db, tenant, StorePermission.MANAGE_USERS));
+        if (!canView) {
+            throw new ForbiddenException('You do not have permission to view audit logs');
         }
 
         return this.auditService.query({

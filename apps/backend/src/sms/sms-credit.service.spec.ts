@@ -1,5 +1,14 @@
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { SmsCreditService } from './sms-credit.service';
+import { TenantContext } from '../database/tenant.decorator';
+
+const tenantCtx = (overrides: Partial<TenantContext> = {}): TenantContext => ({
+    tenantId: 'tenant-1',
+    userId: 'user-1',
+    userRole: 'OWNER',
+    storeId: 'store-1',
+    ...overrides,
+});
 
 describe('SmsCreditService', () => {
     const db = {
@@ -8,6 +17,7 @@ describe('SmsCreditService', () => {
         smsTransaction: { findMany: jest.fn(), create: jest.fn() },
         tenantUser: { findUnique: jest.fn() },
         billingEvent: { upsert: jest.fn() },
+        userStorePermission: { findFirst: jest.fn() },
     } as any;
 
     const audit = { log: jest.fn().mockResolvedValue(undefined) } as any;
@@ -82,11 +92,12 @@ describe('SmsCreditService', () => {
     });
 
     describe('createPurchase', () => {
-        it('rejects non owner/manager roles', async () => {
+        it('rejects users without billing management permission', async () => {
             db.tenantUser.findUnique.mockResolvedValue({ role: 'CASHIER' });
+            db.userStorePermission.findFirst.mockResolvedValue(null);
 
             await expect(
-                service.createPurchase('user-1', 'tenant-1', { packageId: 'pkg-1' }),
+                service.createPurchase(tenantCtx({ userRole: 'CASHIER' }), { packageId: 'pkg-1' }),
             ).rejects.toBeInstanceOf(ForbiddenException);
         });
 
@@ -95,7 +106,7 @@ describe('SmsCreditService', () => {
             db.smsPackage.findUnique.mockResolvedValue(null);
 
             await expect(
-                service.createPurchase('user-1', 'tenant-1', { packageId: 'missing' }),
+                service.createPurchase(tenantCtx(), { packageId: 'missing' }),
             ).rejects.toBeInstanceOf(BadRequestException);
         });
 
@@ -110,7 +121,7 @@ describe('SmsCreditService', () => {
                 is_active: true,
             });
 
-            const result = await service.createPurchase('user-1', 'tenant-1', { packageId: 'pkg-1' });
+            const result = await service.createPurchase(tenantCtx(), { packageId: 'pkg-1' });
 
             expect(result.requires_confirmation).toBe(true);
             expect(result.package.credits).toBe(500);
@@ -132,7 +143,7 @@ describe('SmsCreditService', () => {
             db.tenant.update.mockResolvedValue({ sms_credits: 600 });
             db.smsTransaction.create.mockResolvedValue({ id: 'tx-1' });
 
-            const result = await service.confirmPurchase('user-1', 'tenant-1', {
+            const result = await service.confirmPurchase(tenantCtx(), {
                 packageId: 'pkg-1',
                 reference: 'sms_ref',
             });

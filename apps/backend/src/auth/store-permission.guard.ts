@@ -4,6 +4,7 @@ import {
     ExecutionContext,
     ForbiddenException,
     BadRequestException,
+    UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { StorePermission } from '@erp71/shared-types';
@@ -30,13 +31,36 @@ export class StorePermissionGuard implements CanActivate {
 
         const request = context.switchToHttp().getRequest();
         const userId: string = request.user?.userId;
-        const storeId: string = request.storeId;
-        const tenantId: string = request.tenantId;
-        const userRole: string = request.userRole;
+        const tenantIdHeader = request.headers['x-tenant-id'];
+        const storeIdHeader = request.headers['x-store-id'];
+        let tenantId: string = request.tenantId ?? (Array.isArray(tenantIdHeader) ? tenantIdHeader[0] : tenantIdHeader);
+        let storeId: string = request.storeId ?? (Array.isArray(storeIdHeader) ? storeIdHeader[0] : storeIdHeader);
+        let userRole: string = request.userRole;
 
         if (!userId || !tenantId) {
             throw new ForbiddenException('Authentication context missing');
         }
+
+        // Guards run before TenantInterceptor — resolve membership when context is not pre-set.
+        if (!userRole) {
+            const membership = await this.db.tenantUser.findUnique({
+                where: {
+                    tenant_id_user_id: {
+                        tenant_id: tenantId,
+                        user_id: userId,
+                    },
+                },
+            });
+
+            if (!membership) {
+                throw new UnauthorizedException('Invalid tenant context');
+            }
+
+            userRole = membership.role;
+            request.userRole = userRole;
+        }
+
+        request.tenantId = tenantId;
 
         // OWNER bypasses all permission checks
         if (userRole === 'OWNER') {
@@ -44,8 +68,22 @@ export class StorePermissionGuard implements CanActivate {
         }
 
         if (!storeId) {
+            const userStoreAccess = await this.db.userStoreAccess.findMany({
+                where: { user_id: userId, tenant_id: tenantId },
+                select: { store_id: true },
+                take: 2,
+            });
+
+            if (userStoreAccess.length === 1) {
+                storeId = userStoreAccess[0].store_id;
+            }
+        }
+
+        if (!storeId) {
             throw new BadRequestException('Store context required for this operation');
         }
+
+        request.storeId = storeId;
 
         // Check each required permission — all must be granted
         const grants = await this.db.userStorePermission.findMany({

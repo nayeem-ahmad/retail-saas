@@ -6,6 +6,9 @@ import {
     NotFoundException,
     UnauthorizedException,
 } from '@nestjs/common';
+import { StorePermission } from '@erp71/shared-types';
+import { hasStorePermission } from '../auth/permission.util';
+import { TenantContext } from '../database/tenant.decorator';
 import { DatabaseService } from '../database/database.service';
 import { AuditService } from '../audit/audit.service';
 import { ConfirmSmsCreditsPurchaseDto, PurchaseSmsCreditsDto } from './sms-credit.dto';
@@ -121,11 +124,11 @@ export class SmsCreditService {
     }
 
     /** Balance, available top-up packages, and recent ledger entries. */
-    async getSummary(userId: string, tenantId: string) {
-        const membership = await this.requireTenantMembership(userId, tenantId);
+    async getSummary(ctx: TenantContext) {
+        const membership = await this.requireTenantMembership(ctx.userId, ctx.tenantId);
         const [tenant, packages, transactions] = await Promise.all([
             this.db.tenant.findUnique({
-                where: { id: tenantId },
+                where: { id: ctx.tenantId },
                 select: { id: true, name: true, sms_credits: true, sms_enabled: true },
             }),
             this.db.smsPackage.findMany({
@@ -133,7 +136,7 @@ export class SmsCreditService {
                 orderBy: [{ sort_order: 'asc' }, { price: 'asc' }],
             }),
             this.db.smsTransaction.findMany({
-                where: { tenant_id: tenantId },
+                where: { tenant_id: ctx.tenantId },
                 orderBy: { created_at: 'desc' },
                 take: 20,
             }),
@@ -146,7 +149,7 @@ export class SmsCreditService {
         return {
             tenant: { id: tenant.id, name: tenant.name },
             role: membership.role,
-            can_manage_billing: this.canManageBilling(membership.role),
+            can_manage_billing: await this.canManageBilling(ctx),
             sms_enabled: tenant.sms_enabled,
             balance: tenant.sms_credits,
             low_balance: tenant.sms_credits < 20,
@@ -159,15 +162,15 @@ export class SmsCreditService {
      * Start a top-up purchase. In manual mode the credits are granted only
      * after `confirmPurchase`; the response tells the frontend to confirm.
      */
-    async createPurchase(userId: string, tenantId: string, dto: PurchaseSmsCreditsDto) {
-        const membership = await this.requireTenantMembership(userId, tenantId);
-        this.assertBillingAccess(membership.role);
+    async createPurchase(ctx: TenantContext, dto: PurchaseSmsCreditsDto) {
+        await this.requireTenantMembership(ctx.userId, ctx.tenantId);
+        await this.assertBillingAccess(ctx);
 
         const pkg = await this.getActivePackage(dto.packageId);
-        const reference = `sms_${tenantId.slice(0, 8)}_${Date.now()}`;
+        const reference = `sms_${ctx.tenantId.slice(0, 8)}_${Date.now()}`;
 
         await this.recordBillingEvent({
-            tenantId,
+            tenantId: ctx.tenantId,
             externalEventId: reference,
             eventType: 'SMS_TOPUP_CREATED',
             status: 'PENDING',
@@ -187,21 +190,21 @@ export class SmsCreditService {
     }
 
     /** Grant the purchased credits and write the PURCHASE ledger entry. */
-    async confirmPurchase(userId: string, tenantId: string, dto: ConfirmSmsCreditsPurchaseDto) {
-        const membership = await this.requireTenantMembership(userId, tenantId);
-        this.assertBillingAccess(membership.role);
+    async confirmPurchase(ctx: TenantContext, dto: ConfirmSmsCreditsPurchaseDto) {
+        await this.requireTenantMembership(ctx.userId, ctx.tenantId);
+        await this.assertBillingAccess(ctx);
 
         const pkg = await this.getActivePackage(dto.packageId);
-        const reference = dto.reference || `sms_${tenantId}_${Date.now()}`;
+        const reference = dto.reference || `sms_${ctx.tenantId}_${Date.now()}`;
 
-        const result = await this.grantCredits(tenantId, pkg.credits, {
+        const result = await this.grantCredits(ctx.tenantId, pkg.credits, {
             type: 'PURCHASE',
             reference,
             description: `Purchased ${pkg.name} (${pkg.credits} SMS credits)`,
         });
 
         await this.recordBillingEvent({
-            tenantId,
+            tenantId: ctx.tenantId,
             externalEventId: `${reference}:confirmed`,
             eventType: 'SMS_TOPUP_CONFIRMED',
             status: 'COMPLETED',
@@ -212,7 +215,7 @@ export class SmsCreditService {
         });
 
         this.audit
-            .log('SMS_CREDITS_PURCHASED', 'SmsTransaction', { userId, tenantId }, result.transactionId, {
+            .log('SMS_CREDITS_PURCHASED', 'SmsTransaction', { userId: ctx.userId, tenantId: ctx.tenantId }, result.transactionId, {
                 packageId: pkg.id,
                 credits: pkg.credits,
                 amount: Number(pkg.price),
@@ -353,13 +356,13 @@ export class SmsCreditService {
         return membership;
     }
 
-    private canManageBilling(role: string) {
-        return role === 'OWNER' || role === 'MANAGER';
+    private async canManageBilling(ctx: TenantContext): Promise<boolean> {
+        return hasStorePermission(this.db, ctx, StorePermission.MANAGE_USERS);
     }
 
-    private assertBillingAccess(role: string) {
-        if (!this.canManageBilling(role)) {
-            throw new ForbiddenException('Only tenant owners and managers can purchase SMS credits.');
+    private async assertBillingAccess(ctx: TenantContext): Promise<void> {
+        if (!(await this.canManageBilling(ctx))) {
+            throw new ForbiddenException('You do not have permission to purchase SMS credits.');
         }
     }
 }
