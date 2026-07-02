@@ -637,6 +637,100 @@ describe('InventoryService', () => {
         });
     });
 
+    // ─── importWarehouses ─────────────────────────────────────────────────
+
+    describe('importWarehouses', () => {
+        const tenantId = 'tenant-1';
+        const store = { id: 'store-1', tenant_id: tenantId, is_active: true };
+
+        it('creates a new warehouse when no duplicate exists', async () => {
+            db.store.findFirst.mockResolvedValueOnce(store);
+            db.warehouse.findFirst.mockResolvedValueOnce(null); // findDuplicate: no existing by name
+            db.warehouse.count.mockResolvedValueOnce(0); // generateWarehouseCode: no prefix conflicts
+            db.warehouse.create.mockResolvedValue({ id: 'wh-new' });
+
+            const result = await service.importWarehouses(tenantId, [{ name: 'North WH' }], 'skip');
+
+            expect(result.created).toBe(1);
+            expect(result.skipped).toBe(0);
+            expect(result.updated).toBe(0);
+            expect(result.errors).toHaveLength(0);
+            expect(db.warehouse.create).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    data: expect.objectContaining({
+                        tenant_id: tenantId,
+                        store_id: store.id,
+                        name: 'North WH',
+                    }),
+                }),
+            );
+        });
+
+        it('skips a duplicate warehouse in skip mode', async () => {
+            db.store.findFirst.mockResolvedValueOnce(store);
+            db.warehouse.findFirst.mockResolvedValueOnce({ id: 'wh-existing' }); // findDuplicate: found
+
+            const result = await service.importWarehouses(tenantId, [{ name: 'North WH' }], 'skip');
+
+            expect(result.skipped).toBe(1);
+            expect(result.created).toBe(0);
+            expect(db.warehouse.create).not.toHaveBeenCalled();
+        });
+
+        it('updates a duplicate warehouse in upsert mode', async () => {
+            db.store.findFirst.mockResolvedValueOnce(store);
+            db.warehouse.findFirst.mockResolvedValueOnce({ id: 'wh-existing' }); // findDuplicate: found
+            db.warehouse.update.mockResolvedValue({ id: 'wh-existing' });
+
+            const result = await service.importWarehouses(
+                tenantId,
+                [{ name: 'North WH Updated' }],
+                'upsert',
+            );
+
+            expect(result.updated).toBe(1);
+            expect(result.created).toBe(0);
+            expect(db.warehouse.update).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    where: { id: 'wh-existing' },
+                    data: expect.objectContaining({ name: 'North WH Updated' }),
+                }),
+            );
+        });
+
+        it('records an error when required field name is missing', async () => {
+            db.store.findFirst.mockResolvedValueOnce(store);
+
+            const result = await service.importWarehouses(tenantId, [{ address: '123 Main St' }], 'skip');
+
+            expect(result.errors).toHaveLength(1);
+            expect(result.errors[0]).toContain('name');
+            expect(result.created).toBe(0);
+        });
+
+        it('continues processing remaining rows when a DB error occurs on one row', async () => {
+            db.store.findFirst.mockResolvedValueOnce(store);
+            db.warehouse.findFirst
+                .mockResolvedValueOnce(null) // findDuplicate row 1: no duplicate
+                .mockRejectedValueOnce(new Error('DB connection lost')); // findDuplicate row 2: DB error
+            db.warehouse.count.mockResolvedValueOnce(0); // generateWarehouseCode for row 1
+            db.warehouse.create.mockResolvedValue({ id: 'wh-new' });
+
+            const result = await service.importWarehouses(
+                tenantId,
+                [
+                    { name: 'Alpha WH' },
+                    { name: 'Beta WH' },
+                ],
+                'skip',
+            );
+
+            expect(result.created).toBe(1);
+            expect(result.errors).toHaveLength(1);
+            expect(result.errors[0]).toContain('DB connection lost');
+        });
+    });
+
     // ─── getLedger ────────────────────────────────────────────────────────────
 
     describe('getLedger', () => {

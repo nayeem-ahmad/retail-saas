@@ -4,6 +4,7 @@ import { PaginatedResult } from '../common/pagination.dto';
 import { DatabaseService } from '../database/database.service';
 import { PriceListsService } from '../price-lists/price-lists.service';
 import { CreateCustomerGroupDto, UpdateCustomerGroupDto } from './customer-group.dto';
+import { runImport, ImportResult } from '../common/import.util';
 
 @Injectable()
 export class CustomerGroupsService {
@@ -91,5 +92,50 @@ export class CustomerGroupsService {
             );
         }
         return this.db.customerGroup.delete({ where: { id } });
+    }
+
+    async importRows(
+        tenantId: string,
+        rows: Record<string, unknown>[],
+        mode: 'skip' | 'upsert',
+    ): Promise<ImportResult> {
+        return runImport(rows, mode, tenantId, {
+            requiredFields: ['name'],
+            castRow: (raw) => ({
+                name: String(raw.name ?? '').trim(),
+                description: raw.description ? String(raw.description).trim() || null : null,
+                discount_percent: (() => {
+                    if (raw.discount_percent == null || raw.discount_percent === '') return null;
+                    const n = Number(raw.discount_percent);
+                    return isNaN(n) ? null : n;
+                })(),
+            }),
+            findDuplicate: async (row) => {
+                const existing = await this.db.customerGroup.findUnique({
+                    where: { tenant_id_name: { tenant_id: tenantId, name: row.name } },
+                });
+                return existing?.id ?? null;
+            },
+            create: async (row) => {
+                await this.db.customerGroup.create({
+                    data: {
+                        tenant_id: tenantId,
+                        name: row.name,
+                        description: row.description,
+                        ...(row.discount_percent != null ? { discount_percent: row.discount_percent } : {}),
+                    },
+                });
+            },
+            update: async (id, row) => {
+                await this.db.customerGroup.update({
+                    where: { id },
+                    data: {
+                        name: row.name,
+                        description: row.description,
+                        ...(row.discount_percent != null ? { discount_percent: row.discount_percent } : {}),
+                    },
+                });
+            },
+        });
     }
 }

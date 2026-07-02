@@ -27,6 +27,10 @@ export class SignupDto {
     @IsOptional()
     @IsString()
     planCode?: 'FREE' | 'BASIC' | 'ACCOUNTING' | 'STANDARD' | 'PREMIUM';
+
+    @IsOptional()
+    @IsString()
+    referralCode?: string;
 }
 
 export class LoginDto {

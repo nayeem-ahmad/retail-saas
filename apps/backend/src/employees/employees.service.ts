@@ -3,6 +3,7 @@ import { DatabaseService } from '../database/database.service';
 import { EncryptionService } from '../common/encryption.service';
 import { CreateEmployeeDto, UpdateEmployeeDto, CreateDepartmentDto, UpdateDepartmentDto, CreateDesignationDto, UpdateDesignationDto } from './employee.dto';
 import { paginate, PaginatedResult } from '../common/pagination.dto';
+import { runImport, ImportResult } from '../common/import.util';
 
 @Injectable()
 export class EmployeesService {
@@ -251,6 +252,60 @@ export class EmployeesService {
         return this.db.employee.update({
             where: { id },
             data: { deleted_at: new Date(), user_id: null },
+        });
+    }
+
+    async importRows(
+        tenantId: string,
+        rows: Record<string, unknown>[],
+        mode: 'skip' | 'upsert',
+    ): Promise<ImportResult> {
+        return runImport(rows, mode, tenantId, {
+            requiredFields: ['name'],
+            castRow: (raw) => ({
+                name: String(raw.name ?? '').trim(),
+                phone: raw.phone ? String(raw.phone).trim() || null : null,
+                email: raw.email ? String(raw.email).trim() || null : null,
+                joining_date: raw.joining_date ? String(raw.joining_date).trim() || null : null,
+                salary: (() => {
+                    if (raw.salary == null || raw.salary === '') return null;
+                    const n = Number(raw.salary);
+                    return isNaN(n) ? null : n;
+                })(),
+            }),
+            findDuplicate: async (row) => {
+                if (!row.phone) return null;
+                const existing = await this.db.employee.findFirst({
+                    where: { tenant_id: tenantId, phone: row.phone, deleted_at: null },
+                });
+                return existing?.id ?? null;
+            },
+            create: async (row) => {
+                const employee_code = await this.generateEmployeeCode(tenantId);
+                await this.db.employee.create({
+                    data: {
+                        tenant_id: tenantId,
+                        employee_code,
+                        name: row.name,
+                        phone: row.phone,
+                        email: row.email,
+                        ...(row.joining_date ? { joining_date: new Date(row.joining_date) } : {}),
+                        ...(row.salary != null ? { salary: row.salary } : {}),
+                    },
+                });
+            },
+            update: async (id, row) => {
+                await this.db.employee.update({
+                    where: { id },
+                    data: {
+                        name: row.name,
+                        phone: row.phone ?? undefined,
+                        email: row.email ?? undefined,
+                        ...(row.joining_date ? { joining_date: new Date(row.joining_date) } : {}),
+                        ...(row.salary != null ? { salary: row.salary } : {}),
+                    },
+                });
+            },
         });
     }
 

@@ -5,6 +5,7 @@ import { CreateCustomerGroupDto, UpdateCustomerGroupDto } from './customer-group
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { TenantInterceptor } from '../database/tenant.interceptor';
 import { Tenant, TenantContext } from '../database/tenant.decorator';
+import { ImportRowsDto } from '../common/import.dto';
 
 @Controller('customer-groups')
 @UseGuards(JwtAuthGuard)
@@ -15,6 +16,11 @@ export class CustomerGroupsController {
     @Post()
     create(@Tenant() tenant: TenantContext, @Body() dto: CreateCustomerGroupDto) {
         return this.service.create(tenant.tenantId, dto);
+    }
+
+    @Post('import')
+    importRows(@Tenant() tenant: TenantContext, @Body() body: ImportRowsDto) {
+        return this.service.importRows(tenant.tenantId, body.rows, body.mode);
     }
 
     @Get()

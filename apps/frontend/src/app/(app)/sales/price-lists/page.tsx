@@ -3,12 +3,18 @@
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
-import { Plus, Tag, Pencil, Trash2, X } from 'lucide-react';
+import { Plus, Tag, Pencil, Trash2, X, Upload } from 'lucide-react';
 import { createColumnHelper, type ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table';
 import { useI18n } from '@/lib/i18n';
 import PageHeader from '@/components/ui/compact/PageHeader';
 import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
+import { ImportDialog, type ImportField } from '@/components/import-dialog';
+
+const IMPORT_FIELDS: ImportField[] = [
+    { key: 'name', label: 'Name', required: true },
+    { key: 'description', label: 'Description', required: false },
+];
 
 interface PriceList {
     id: string;
@@ -35,6 +41,7 @@ export default function PriceListsPage() {
     const [loading, setLoading] = useState(true);
     const [editingList, setEditingList] = useState<PriceList | null>(null);
     const [isFormOpen, setIsFormOpen] = useState(false);
+    const [importOpen, setImportOpen] = useState(false);
 
     useEffect(() => { loadLists(); }, []);
 
@@ -153,9 +160,18 @@ export default function PriceListsPage() {
                         'sales',
                     )}
                     actions={
-                        <button onClick={() => { setEditingList(null); setIsFormOpen(true); }} className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center shadow-lg shadow-blue-200 transition-all hover:-translate-y-0.5 active:translate-y-0">
-                            <Plus className="w-4 h-4 mr-2" /> {t.priceLists.newList}
-                        </button>
+                        <>
+                            <button
+                                onClick={() => setImportOpen(true)}
+                                className="bg-white border border-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center transition-all hover:border-blue-300 hover:text-blue-700"
+                            >
+                                <Upload className="w-4 h-4 mr-1.5" />
+                                Import
+                            </button>
+                            <button onClick={() => { setEditingList(null); setIsFormOpen(true); }} className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center shadow-lg shadow-blue-200 transition-all hover:-translate-y-0.5 active:translate-y-0">
+                                <Plus className="w-4 h-4 mr-2" /> {t.priceLists.newList}
+                            </button>
+                        </>
                     }
                 />
 
@@ -176,6 +192,15 @@ export default function PriceListsPage() {
                     emptyMessage={t.priceLists.emptyMessage}
                     emptyIcon={<Tag className="w-16 h-16 text-gray-200" />}
                     searchPlaceholder={t.priceLists.searchPlaceholder}
+                />
+
+                <ImportDialog
+                    open={importOpen}
+                    onClose={() => setImportOpen(false)}
+                    entityLabel="Price Lists"
+                    fields={IMPORT_FIELDS}
+                    importFn={(rows, mode) => api.importPriceLists(rows, mode)}
+                    onSuccess={() => void loadLists()}
                 />
             </div>
         </div>

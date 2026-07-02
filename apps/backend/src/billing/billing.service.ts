@@ -111,9 +111,20 @@ export class BillingService {
 
         const billingCycle = this.normalizeBillingCycle(dto.billingCycle);
         const plan = await this.getActivePlan(dto.planCode);
-        const amount = billingCycle === 'YEARLY'
+        let amount = billingCycle === 'YEARLY'
             ? Number(plan.yearly_price ?? Number(plan.monthly_price) * 12)
             : Number(plan.monthly_price);
+
+        // Apply referral discount if this tenant was referred
+        const referralSignup = await this.db.referralSignup.findUnique({
+            where: { tenant_id: ctx.tenantId },
+            select: { id: true, discount_pct: true, status: true },
+        });
+        if (referralSignup && referralSignup.status === 'PENDING' && Number(referralSignup.discount_pct) > 0) {
+            const multiplier = (100 - Number(referralSignup.discount_pct)) / 100;
+            amount = Math.round(amount * multiplier * 100) / 100;
+        }
+
         const providerName = this.getProviderName();
         const referencePrefix = providerName === 'ssl-wireless' ? 'sslw' : 'manual';
         const reference = `${referencePrefix}_${ctx.tenantId.slice(0, 8)}_${Date.now()}`;
@@ -475,12 +486,34 @@ export class BillingService {
                     currency: 'BDT',
                 }).catch(() => {});
             }
+
+            if (resolvedStatus === 'ACTIVE' && emailAmount > 0) {
+                this.earnReferralCommission(input.tenantId, emailAmount).catch(() => {});
+            }
         }
 
         return {
             tenant,
             subscription: this.mapSubscription(subscription),
         };
+    }
+
+    private async earnReferralCommission(tenantId: string, planAmount: number): Promise<void> {
+        const signup = await this.db.referralSignup.findUnique({
+            where: { tenant_id: tenantId },
+        });
+        if (!signup || signup.status !== 'PENDING') return;
+
+        const commissionAmount = Math.round(planAmount * Number(signup.commission_pct)) / 100;
+        await this.db.referralSignup.update({
+            where: { id: signup.id },
+            data: {
+                status: 'EARNED',
+                earned_at: new Date(),
+                plan_amount: planAmount,
+                commission_amount: commissionAmount,
+            },
+        });
     }
 
     private async notifyTenantOwner(

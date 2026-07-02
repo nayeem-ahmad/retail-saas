@@ -170,6 +170,12 @@ export const api = {
     deleteProductGroup: (id: string) => fetchWithAuth(`/product-groups/${id}`, {
         method: 'DELETE',
     }),
+    importProductGroups: (rows: Record<string, unknown>[], mode: 'skip' | 'upsert') =>
+        fetchWithAuth('/product-groups/import', {
+            method: 'POST',
+            body: JSON.stringify({ rows, mode }),
+            headers: { 'Content-Type': 'application/json' },
+        }),
     getProductSubgroups: (params?: { groupId?: string }) => {
         const query = new URLSearchParams();
         if (params?.groupId) query.set('groupId', params.groupId);
@@ -190,6 +196,12 @@ export const api = {
     deleteProductSubgroup: (id: string) => fetchWithAuth(`/product-subgroups/${id}`, {
         method: 'DELETE',
     }),
+    importProductSubgroups: (rows: Record<string, unknown>[], mode: 'skip' | 'upsert') =>
+        fetchWithAuth('/product-subgroups/import', {
+            method: 'POST',
+            body: JSON.stringify({ rows, mode }),
+            headers: { 'Content-Type': 'application/json' },
+        }),
     getInventoryWarehouses: () => fetchWithAuth('/inventory/warehouses'),
     createInventoryWarehouse: (data: any) => fetchWithAuth('/inventory/warehouses', {
         method: 'POST',
@@ -201,6 +213,12 @@ export const api = {
         body: JSON.stringify(data),
         headers: { 'Content-Type': 'application/json' },
     }),
+    importWarehouses: (rows: Record<string, unknown>[], mode: 'skip' | 'upsert') =>
+        fetchWithAuth('/inventory/warehouses/import', {
+            method: 'POST',
+            body: JSON.stringify({ rows, mode }),
+            headers: { 'Content-Type': 'application/json' },
+        }),
     getInventorySettings: () => fetchWithAuth('/inventory/settings'),
     updateInventorySettings: (data: any) => fetchWithAuth('/inventory/settings', {
         method: 'PATCH',
@@ -369,6 +387,12 @@ export const api = {
         body: JSON.stringify(data),
         headers: { 'Content-Type': 'application/json' },
     }),
+    importCustomers: (rows: Record<string, unknown>[], mode: 'skip' | 'upsert') =>
+        fetchWithAuth('/customers/import', {
+            method: 'POST',
+            body: JSON.stringify({ rows, mode }),
+            headers: { 'Content-Type': 'application/json' },
+        }),
     updateCustomer: (id: string, data: any) => fetchWithAuth(`/customers/${id}`, {
         method: 'PATCH',
         body: JSON.stringify(data),
@@ -549,6 +573,12 @@ export const api = {
     deleteCustomerGroup: (id: string) => fetchWithAuth(`/customer-groups/${id}`, {
         method: 'DELETE',
     }),
+    importCustomerGroups: (rows: Record<string, unknown>[], mode: 'skip' | 'upsert') =>
+        fetchWithAuth('/customer-groups/import', {
+            method: 'POST',
+            body: JSON.stringify({ rows, mode }),
+            headers: { 'Content-Type': 'application/json' },
+        }),
     // Price Lists
     getPriceLists: () => fetchWithAuth('/price-lists?limit=100').then((r: any) => r?.items ?? r),
     getPriceList: (id: string) => fetchWithAuth(`/price-lists/${id}`),
@@ -563,6 +593,12 @@ export const api = {
         headers: { 'Content-Type': 'application/json' },
     }),
     deletePriceList: (id: string) => fetchWithAuth(`/price-lists/${id}`, { method: 'DELETE' }),
+    importPriceLists: (rows: Record<string, unknown>[], mode: 'skip' | 'upsert') =>
+        fetchWithAuth('/price-lists/import', {
+            method: 'POST',
+            body: JSON.stringify({ rows, mode }),
+            headers: { 'Content-Type': 'application/json' },
+        }),
     getPriceListItems: (id: string, params?: { page?: number; limit?: number; search?: string }) => {
         const query = new URLSearchParams();
         if (params?.page) query.set('page', String(params.page));
@@ -593,6 +629,12 @@ export const api = {
     deleteTerritory: (id: string) => fetchWithAuth(`/territories/${id}`, {
         method: 'DELETE',
     }),
+    importTerritories: (rows: Record<string, unknown>[], mode: 'skip' | 'upsert') =>
+        fetchWithAuth('/territories/import', {
+            method: 'POST',
+            body: JSON.stringify({ rows, mode }),
+            headers: { 'Content-Type': 'application/json' },
+        }),
     // Accounting
     getAccountingOverview: () => fetchWithAuth('/accounting'),
     getAccountGroups: () => fetchWithAuth('/accounting/account-groups'),
@@ -804,6 +846,12 @@ export const api = {
     createBrand: (data: any) => fetchWithAuth('/brands', { method: 'POST', body: JSON.stringify(data), headers: { 'Content-Type': 'application/json' } }),
     updateBrand: (id: string, data: any) => fetchWithAuth(`/brands/${id}`, { method: 'PATCH', body: JSON.stringify(data), headers: { 'Content-Type': 'application/json' } }),
     deleteBrand: (id: string) => fetchWithAuth(`/brands/${id}`, { method: 'DELETE' }),
+    importBrands: (rows: Record<string, unknown>[], mode: 'skip' | 'upsert') =>
+        fetchWithAuth('/brands/import', {
+            method: 'POST',
+            body: JSON.stringify({ rows, mode }),
+            headers: { 'Content-Type': 'application/json' },
+        }),
     getSuppliers: () => fetchWithAuth('/suppliers?limit=100').then((r: any) => r?.items ?? r),
     getSupplierCreditLedger: (id: string, params?: { page?: number; limit?: number; from?: string; to?: string }) => {
         const query = new URLSearchParams();
@@ -860,6 +908,12 @@ export const api = {
         body: JSON.stringify(data),
         headers: { 'Content-Type': 'application/json' },
     }),
+    importSuppliers: (rows: Record<string, unknown>[], mode: 'skip' | 'upsert') =>
+        fetchWithAuth('/suppliers/import', {
+            method: 'POST',
+            body: JSON.stringify({ rows, mode }),
+            headers: { 'Content-Type': 'application/json' },
+        }),
     getPurchaseSummary: (params?: { storeId?: string; from?: string; to?: string }) => {
         const query = new URLSearchParams();
         if (params?.storeId) query.set('storeId', params.storeId);
@@ -1123,6 +1177,19 @@ export const api = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
     }),
+    getTenantLedger: (tenantId: string) => fetchWithAuth(`/admin/tenants/${tenantId}/ledger`),
+    recordTenantPayment: (tenantId: string, data: { amount: number; notes?: string; method?: string }) =>
+        fetchWithAuth(`/admin/tenants/${tenantId}/payments`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+        }),
+    recordTenantRefund: (tenantId: string, data: { amount: number; notes?: string }) =>
+        fetchWithAuth(`/admin/tenants/${tenantId}/refunds`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+        }),
     lookupAdminUser: (email: string) =>
         fetchWithAuth(`/admin/users/lookup?email=${encodeURIComponent(email)}`),
     getAdminMetrics: () => fetchWithAuth('/admin/metrics'),
@@ -1326,6 +1393,12 @@ export const api = {
         headers: { 'Content-Type': 'application/json' },
     }),
     deleteEmployee: (id: string) => fetchWithAuth(`/employees/${id}`, { method: 'DELETE' }),
+    importEmployees: (rows: Record<string, unknown>[], mode: 'skip' | 'upsert') =>
+        fetchWithAuth('/employees/import', {
+            method: 'POST',
+            body: JSON.stringify({ rows, mode }),
+            headers: { 'Content-Type': 'application/json' },
+        }),
     getDepartments: () => fetchWithAuth('/employees/departments'),
     createDepartment: (data: { name: string }) => fetchWithAuth('/employees/departments', {
         method: 'POST',
@@ -1739,6 +1812,12 @@ export const api = {
         headers: { 'Content-Type': 'application/json' },
     }),
     deletePaymentMethod: (id: string) => fetchWithAuth(`/payment-methods/${id}`, { method: 'DELETE' }),
+    importPaymentMethods: (rows: Record<string, unknown>[], mode: 'skip' | 'upsert') =>
+        fetchWithAuth('/payment-methods/import', {
+            method: 'POST',
+            body: JSON.stringify({ rows, mode }),
+            headers: { 'Content-Type': 'application/json' },
+        }),
     // Sales Settings
     getSalesSettings: () => fetchWithAuth('/sales-settings'),
     updateSalesSettings: (data: any) => fetchWithAuth('/sales-settings', {

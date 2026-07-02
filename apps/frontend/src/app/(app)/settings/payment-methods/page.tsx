@@ -1,11 +1,18 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { CreditCard, Loader2, Plus, Edit2, Trash2, CheckCircle, XCircle, X } from 'lucide-react';
+import { CreditCard, Loader2, Plus, Edit2, Trash2, CheckCircle, XCircle, X, Upload } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import PageHeader from '@/components/ui/compact/PageHeader';
 import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
+import { ImportDialog, type ImportField } from '@/components/import-dialog';
+
+const IMPORT_FIELDS: ImportField[] = [
+    { key: 'name', label: 'Name', required: true },
+    { key: 'description', label: 'Description', required: false },
+    { key: 'is_active', label: 'Is Active', required: false },
+];
 
 type ToastState = { type: 'success' | 'error'; message: string } | null;
 
@@ -183,6 +190,7 @@ export default function PaymentMethodsSettingsPage() {
     const [showCreate, setShowCreate] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [deletingId, setDeletingId] = useState<string | null>(null);
+    const [importOpen, setImportOpen] = useState(false);
 
     const loadData = useCallback(async () => {
         try {
@@ -262,13 +270,22 @@ export default function PaymentMethodsSettingsPage() {
                         'settings',
                     )}
                     actions={(
-                        <button
-                            onClick={() => { setShowCreate(true); setEditingId(null); }}
-                            className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-700 transition-colors shadow-sm"
-                        >
-                            <Plus className="w-4 h-4" />
-                            Add Method
-                        </button>
+                        <>
+                            <button
+                                onClick={() => setImportOpen(true)}
+                                className="bg-white border border-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center transition-all hover:border-blue-300 hover:text-blue-700"
+                            >
+                                <Upload className="w-4 h-4 mr-1.5" />
+                                Import
+                            </button>
+                            <button
+                                onClick={() => { setShowCreate(true); setEditingId(null); }}
+                                className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-700 transition-colors shadow-sm"
+                            >
+                                <Plus className="w-4 h-4" />
+                                Add Method
+                            </button>
+                        </>
                     )}
                 />
 
@@ -354,6 +371,15 @@ export default function PaymentMethodsSettingsPage() {
             </div>
 
             <Toast toast={toast} onDismiss={() => setToast(null)} />
+
+            <ImportDialog
+                open={importOpen}
+                onClose={() => setImportOpen(false)}
+                entityLabel="Payment Methods"
+                fields={IMPORT_FIELDS}
+                importFn={(rows, mode) => api.importPaymentMethods(rows, mode)}
+                onSuccess={() => void loadData()}
+            />
         </div>
     );
 }

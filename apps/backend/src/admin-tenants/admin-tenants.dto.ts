@@ -1,4 +1,4 @@
-import { IsBoolean, IsEmail, IsIn, IsInt, IsOptional, IsString, Max, Min, ValidateIf } from 'class-validator';
+import { IsBoolean, IsEmail, IsIn, IsInt, IsNumber, IsOptional, IsPositive, IsString, Max, Min, ValidateIf } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 
 export class ListAdminTenantsQueryDto {
@@ -83,4 +83,15 @@ export class CreateAdminTenantDto {
 
     @IsIn(['FREE', 'BASIC', 'ACCOUNTING', 'STANDARD', 'PREMIUM'])
     planCode: 'FREE' | 'BASIC' | 'ACCOUNTING' | 'STANDARD' | 'PREMIUM';
+}
+
+export class RecordTenantPaymentDto {
+    @IsNumber() @IsPositive() amount: number;
+    @IsOptional() @IsString() notes?: string;
+    @IsOptional() @IsString() method?: string;
+}
+
+export class RecordTenantRefundDto {
+    @IsNumber() @IsPositive() amount: number;
+    @IsOptional() @IsString() notes?: string;
 }
