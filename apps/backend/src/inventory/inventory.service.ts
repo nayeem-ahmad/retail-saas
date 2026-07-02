@@ -10,6 +10,7 @@ import {
     UpdateWarehouseDto,
 } from './inventory.dto';
 import { assertWarehouseBelongsToTenant, ensureDefaultWarehouse } from '../database/inventory.utils';
+import { runImport, ImportResult } from '../common/import.util';
 
 @Injectable()
 export class InventoryService {
@@ -84,6 +85,48 @@ export class InventoryService {
                     ...(dto.isActive !== undefined ? { is_active: dto.isActive } : {}),
                 },
             });
+        });
+    }
+
+    async importWarehouses(
+        tenantId: string,
+        rows: Record<string, unknown>[],
+        mode: 'skip' | 'upsert',
+    ): Promise<ImportResult> {
+        const store = await this.db.store.findFirst({
+            where: { tenant_id: tenantId },
+            orderBy: { created_at: 'asc' },
+        });
+        if (!store) throw new BadRequestException('No active store found for this tenant.');
+
+        return runImport(rows, mode, tenantId, {
+            requiredFields: ['name'],
+            castRow: (raw) => ({
+                name: String(raw.name ?? '').trim(),
+            }),
+            findDuplicate: async (row) => {
+                const existing = await this.db.warehouse.findFirst({
+                    where: { tenant_id: tenantId, store_id: store.id, name: { equals: row.name, mode: 'insensitive' } },
+                });
+                return existing?.id ?? null;
+            },
+            create: async (row) => {
+                const code = await this.generateWarehouseCode(tenantId, row.name);
+                await this.db.warehouse.create({
+                    data: {
+                        tenant_id: tenantId,
+                        store_id: store.id,
+                        name: row.name,
+                        code,
+                    },
+                });
+            },
+            update: async (id, row) => {
+                await this.db.warehouse.update({
+                    where: { id },
+                    data: { name: row.name },
+                });
+            },
         });
     }
 
