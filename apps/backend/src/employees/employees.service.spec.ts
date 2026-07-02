@@ -594,4 +594,80 @@ describe('EmployeesService', () => {
       await expect(service.unlinkUser('t1', 'emp-999')).rejects.toThrow(NotFoundException);
     });
   });
+
+  describe('importRows', () => {
+    it('creates a new employee when no duplicate exists', async () => {
+      db.employee.findFirst
+        .mockResolvedValueOnce(null) // findDuplicate: no existing by phone
+        .mockResolvedValueOnce(null); // generateEmployeeCode: no last employee
+      db.employee.create.mockResolvedValue({ id: 'emp-new' });
+
+      const result = await service.importRows('t1', [{ name: 'Bob', phone: '01800000001' }], 'skip');
+
+      expect(result.created).toBe(1);
+      expect(result.skipped).toBe(0);
+      expect(result.updated).toBe(0);
+      expect(result.errors).toHaveLength(0);
+      expect(db.employee.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ name: 'Bob', employee_code: 'EMP-00001', tenant_id: 't1' }),
+        }),
+      );
+    });
+
+    it('skips a duplicate employee in skip mode', async () => {
+      db.employee.findFirst.mockResolvedValueOnce({ id: 'emp-existing' }); // findDuplicate: found
+
+      const result = await service.importRows('t1', [{ name: 'Bob', phone: '01800000001' }], 'skip');
+
+      expect(result.skipped).toBe(1);
+      expect(result.created).toBe(0);
+      expect(db.employee.create).not.toHaveBeenCalled();
+    });
+
+    it('updates a duplicate employee in upsert mode', async () => {
+      db.employee.findFirst.mockResolvedValueOnce({ id: 'emp-existing' }); // findDuplicate: found
+      db.employee.update.mockResolvedValue({ id: 'emp-existing' });
+
+      const result = await service.importRows('t1', [{ name: 'Bob Updated', phone: '01800000001' }], 'upsert');
+
+      expect(result.updated).toBe(1);
+      expect(result.created).toBe(0);
+      expect(db.employee.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'emp-existing' },
+          data: expect.objectContaining({ name: 'Bob Updated' }),
+        }),
+      );
+    });
+
+    it('records an error when required field name is missing', async () => {
+      const result = await service.importRows('t1', [{ phone: '01800000002' }], 'skip');
+
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0]).toContain('name');
+      expect(result.created).toBe(0);
+    });
+
+    it('continues processing remaining rows when a DB error occurs on one row', async () => {
+      db.employee.findFirst
+        .mockResolvedValueOnce(null) // findDuplicate row 1: no duplicate
+        .mockRejectedValueOnce(new Error('DB connection lost')) // findDuplicate row 2: DB error
+        .mockResolvedValueOnce(null); // generateEmployeeCode for row 1
+      db.employee.create.mockResolvedValue({ id: 'emp-new' });
+
+      const result = await service.importRows(
+        't1',
+        [
+          { name: 'Alice', phone: '01800000003' },
+          { name: 'Charlie', phone: '01800000004' },
+        ],
+        'skip',
+      );
+
+      expect(result.created).toBe(1);
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0]).toContain('DB connection lost');
+    });
+  });
 });
