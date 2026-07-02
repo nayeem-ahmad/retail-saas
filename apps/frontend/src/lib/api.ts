@@ -1190,17 +1190,31 @@ export const api = {
             headers: { 'Content-Type': 'application/json' },
         }),
     // Team & permissions (tenant-scoped staff management)
+    getTeamRoles: () => fetchWithAuth('/team/roles'),
+    createTeamRole: (data: { name: string; description?: string; permissions: string[] }) =>
+        fetchWithAuth('/team/roles', {
+            method: 'POST',
+            body: JSON.stringify(data),
+            headers: { 'Content-Type': 'application/json' },
+        }),
+    updateTeamRole: (id: string, data: { name?: string; description?: string; permissions?: string[] }) =>
+        fetchWithAuth(`/team/roles/${id}`, {
+            method: 'PATCH',
+            body: JSON.stringify(data),
+            headers: { 'Content-Type': 'application/json' },
+        }),
+    deleteTeamRole: (id: string) => fetchWithAuth(`/team/roles/${id}`, { method: 'DELETE' }),
     getTeamMembers: () => fetchWithAuth('/team/members?limit=100').then((r: any) => r?.items ?? r),
     getTeamMember: (userId: string) => fetchWithAuth(`/team/members/${userId}`),
     getTeamStores: () => fetchWithAuth('/team/stores'),
     getTeamInvitations: () => fetchWithAuth('/team/invitations'),
-    sendTeamInvitation: (data: { email: string; role: string }) => fetchWithAuth('/team/invitations', {
+    sendTeamInvitation: (data: { email: string; tenantRoleId: string }) => fetchWithAuth('/team/invitations', {
         method: 'POST',
         body: JSON.stringify(data),
         headers: { 'Content-Type': 'application/json' },
     }),
     revokeTeamInvitation: (id: string) => fetchWithAuth(`/team/invitations/${id}`, { method: 'DELETE' }),
-    updateMemberRole: (userId: string, data: { role: string; reseedPermissions?: boolean }) =>
+    updateMemberRole: (userId: string, data: { tenantRoleId: string }) =>
         fetchWithAuth(`/team/members/${userId}/role`, {
             method: 'PATCH',
             body: JSON.stringify(data),
