@@ -19,6 +19,7 @@ describe('BillingService', () => {
         tenant: { findUnique: jest.fn() },
         billingEvent: { findMany: jest.fn(), findUnique: jest.fn(), upsert: jest.fn() },
         userStorePermission: { findFirst: jest.fn() },
+        referralSignup: { findUnique: jest.fn().mockResolvedValue(null), update: jest.fn() },
     } as any;
 
     const audit = { log: jest.fn().mockResolvedValue(undefined) } as any;
