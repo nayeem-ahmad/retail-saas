@@ -12,6 +12,7 @@ import {
     CustomerPaymentDirectionDto,
 } from './customer.dto';
 import { paginate, PaginatedResult } from '../common/pagination.dto';
+import { runImport, ImportResult } from '../common/import.util';
 
 @Injectable()
 export class CustomersService {
@@ -734,5 +735,77 @@ export class CustomersService {
         }
 
         return Object.values(customerDues).filter(d => d.total > 0);
+    }
+
+    async importRows(
+        tenantId: string,
+        rows: Record<string, unknown>[],
+        mode: 'skip' | 'upsert',
+    ): Promise<ImportResult> {
+        return runImport(rows, mode, tenantId, {
+            requiredFields: ['name'],
+            castRow: (raw) => ({
+                name: String(raw.name ?? '').trim(),
+                phone: raw.phone ? String(raw.phone).trim() || null : null,
+                email: raw.email ? String(raw.email).trim() || null : null,
+                address: raw.address ? String(raw.address).trim() || null : null,
+                customer_group_name: raw.customer_group_name ? String(raw.customer_group_name).trim() || null : null,
+            }),
+            findDuplicate: async (row) => {
+                if (row.phone) {
+                    const byPhone = await this.db.customer.findUnique({
+                        where: { tenant_id_phone: { tenant_id: tenantId, phone: row.phone } },
+                    });
+                    if (byPhone) return byPhone.id;
+                }
+                if (row.email) {
+                    const byEmail = await this.db.customer.findFirst({
+                        where: { tenant_id: tenantId, email: row.email },
+                    });
+                    if (byEmail) return byEmail.id;
+                }
+                return null;
+            },
+            create: async (row) => {
+                const customer_code = await this.generateCustomerCode(tenantId);
+                let customer_group_id: string | null = null;
+                if (row.customer_group_name) {
+                    const group = await this.db.customerGroup.findFirst({
+                        where: { tenant_id: tenantId, name: { equals: row.customer_group_name, mode: 'insensitive' } },
+                    });
+                    customer_group_id = group?.id ?? null;
+                }
+                await this.db.customer.create({
+                    data: {
+                        tenant_id: tenantId,
+                        customer_code,
+                        name: row.name,
+                        phone: row.phone ?? '',
+                        email: row.email,
+                        address: row.address,
+                        customer_group_id,
+                    },
+                });
+            },
+            update: async (id, row) => {
+                let customer_group_id: string | null | undefined = undefined;
+                if (row.customer_group_name !== null) {
+                    const group = await this.db.customerGroup.findFirst({
+                        where: { tenant_id: tenantId, name: { equals: row.customer_group_name ?? '', mode: 'insensitive' } },
+                    });
+                    customer_group_id = group?.id ?? null;
+                }
+                await this.db.customer.update({
+                    where: { id },
+                    data: {
+                        name: row.name,
+                        phone: row.phone ?? undefined,
+                        email: row.email ?? undefined,
+                        address: row.address ?? undefined,
+                        ...(customer_group_id !== undefined ? { customer_group_id } : {}),
+                    },
+                });
+            },
+        });
     }
 }

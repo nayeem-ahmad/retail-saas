@@ -38,6 +38,9 @@ describe('CustomersService', () => {
         findMany: jest.fn(),
         findFirst: jest.fn(),
       },
+      customerGroup: {
+        findFirst: jest.fn(),
+      },
       customerCreditTransaction: {
         count: jest.fn(),
         findMany: jest.fn(),
@@ -428,6 +431,123 @@ describe('CustomersService', () => {
         data: { due_balance: 200 },
       });
       expect(result.deleted).toBe(true);
+    });
+  });
+
+  // ─── importRows ─────────────────────────────────────────────────────────────
+
+  describe('importRows', () => {
+    const tenantId = 'tenant-1';
+
+    it('creates new customer', async () => {
+      db.customer.findUnique.mockResolvedValue(null);
+      db.customer.findFirst.mockResolvedValue(null); // generateCustomerCode
+      db.customerGroup.findFirst.mockResolvedValue(null);
+      db.customer.create.mockResolvedValue({});
+
+      const result = await service.importRows(
+        tenantId,
+        [{ name: 'Alice', phone: '01711000001' }],
+        'skip',
+      );
+
+      expect(result).toEqual({ created: 1, updated: 0, skipped: 0, errors: [] });
+      expect(db.customer.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            tenant_id: tenantId,
+            name: 'Alice',
+            phone: '01711000001',
+          }),
+        }),
+      );
+    });
+
+    it('skips duplicate (by phone) when mode is skip', async () => {
+      db.customer.findUnique.mockResolvedValue({ id: 'cust-1' });
+      db.customer.create.mockResolvedValue({});
+
+      const result = await service.importRows(
+        tenantId,
+        [{ name: 'Alice', phone: '01711000001' }],
+        'skip',
+      );
+
+      expect(result).toEqual({ created: 0, updated: 0, skipped: 1, errors: [] });
+      expect(db.customer.create).not.toHaveBeenCalled();
+    });
+
+    it('updates duplicate (by phone) when mode is upsert', async () => {
+      db.customer.findUnique.mockResolvedValue({ id: 'cust-1' });
+      db.customerGroup.findFirst.mockResolvedValue(null);
+      db.customer.update.mockResolvedValue({});
+
+      const result = await service.importRows(
+        tenantId,
+        [{ name: 'Alice Updated', phone: '01711000001' }],
+        'upsert',
+      );
+
+      expect(result).toEqual({ created: 0, updated: 1, skipped: 0, errors: [] });
+      expect(db.customer.update).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: 'cust-1' } }),
+      );
+    });
+
+    it('errors on missing required name field', async () => {
+      const result = await service.importRows(
+        tenantId,
+        [{ phone: '01711000002' }],
+        'skip',
+      );
+
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0]).toMatch(/Row 2.*name/);
+      expect(db.customer.create).not.toHaveBeenCalled();
+    });
+
+    it('continues on DB error and processes remaining rows', async () => {
+      db.customer.findUnique.mockResolvedValue(null);
+      db.customer.findFirst.mockResolvedValue(null);
+      db.customerGroup.findFirst.mockResolvedValue(null);
+      db.customer.create
+        .mockRejectedValueOnce(new Error('DB error'))
+        .mockResolvedValueOnce({});
+
+      const result = await service.importRows(
+        tenantId,
+        [
+          { name: 'Alice', phone: '01711000001' },
+          { name: 'Bob', phone: '01711000002' },
+        ],
+        'skip',
+      );
+
+      expect(result.created).toBe(1);
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0]).toMatch(/Row 2.*DB error/);
+    });
+
+    it('sets customer_group_id to null when group name is not found', async () => {
+      db.customer.findUnique.mockResolvedValue(null);
+      db.customer.findFirst.mockResolvedValue(null); // generateCustomerCode
+      db.customerGroup.findFirst.mockResolvedValue(null); // group not found
+      db.customer.create.mockResolvedValue({});
+
+      const result = await service.importRows(
+        tenantId,
+        [{ name: 'Alice', phone: '01711000001', customer_group_name: 'NonExistentGroup' }],
+        'skip',
+      );
+
+      expect(result).toEqual({ created: 1, updated: 0, skipped: 0, errors: [] });
+      expect(db.customer.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            customer_group_id: null,
+          }),
+        }),
+      );
     });
   });
 });

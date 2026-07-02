@@ -11,6 +11,7 @@ import {
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { TenantInterceptor } from '../database/tenant.interceptor';
 import { Tenant, TenantContext } from '../database/tenant.decorator';
+import { ImportRowsDto } from '../common/import.dto';
 
 @Controller('customers')
 @UseGuards(JwtAuthGuard)
@@ -86,6 +87,11 @@ export class CustomersController {
     @Post('segments/evaluate')
     async evaluateSegments(@Tenant() tenant: TenantContext) {
         return this.segmentsService.evaluateForTenant(tenant.tenantId);
+    }
+
+    @Post('import')
+    importRows(@Tenant() tenant: TenantContext, @Body() body: ImportRowsDto) {
+        return this.customersService.importRows(tenant.tenantId, body.rows, body.mode);
     }
 
     @Get(':id')
