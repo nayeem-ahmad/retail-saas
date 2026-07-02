@@ -7,7 +7,7 @@ import * as bcrypt from 'bcrypt';
 import { bootstrapDefaultAccountingForTenant } from './bootstrap-accounting';
 import { seedDemoAccount, DEMO_ACCOUNT_EMAIL } from './seed-demo';
 import { ROLE_DEFAULT_PERMISSIONS, UserRole } from '@erp71/shared-types';
-import { seedDefaultTenantRoles } from '../../../apps/backend/src/team/tenant-role.seed';
+import { seedDefaultTenantRoles } from './tenant-role.seed';
 
 const prisma = new PrismaClient();
 

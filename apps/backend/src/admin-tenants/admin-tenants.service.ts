@@ -8,7 +8,7 @@ import * as bcrypt from 'bcrypt';
 import * as crypto from 'node:crypto';
 import { bootstrapDefaultAccountingForTenant, seedBusinessTypeTemplate } from '@erp71/database';
 import { ROLE_DEFAULT_PERMISSIONS, UserRole } from '@erp71/shared-types';
-import { seedDefaultTenantRoles } from '../team/tenant-role.seed';
+import { seedDefaultTenantRoles } from '@erp71/database';
 import {
     ListAdminTenantsQueryDto,
     ListAdminUsersQueryDto,
