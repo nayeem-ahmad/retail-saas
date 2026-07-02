@@ -9,6 +9,8 @@ import {
     SuspendTenantDto,
     DeleteTenantDto,
     CreateAdminTenantDto,
+    RecordTenantPaymentDto,
+    RecordTenantRefundDto,
 } from './admin-tenants.dto';
 
 @Controller('admin/tenants')
@@ -75,5 +77,28 @@ export class AdminTenantsController {
         @Request() req: any,
     ) {
         return this.adminTenantsService.deleteTenant(tenantId, dto, req.user.userId);
+    }
+
+    @Get(':tenantId/ledger')
+    getTenantLedger(@Param('tenantId') tenantId: string) {
+        return this.adminTenantsService.getTenantLedger(tenantId);
+    }
+
+    @Post(':tenantId/payments')
+    recordPayment(
+        @Param('tenantId') tenantId: string,
+        @Body() dto: RecordTenantPaymentDto,
+        @Request() req: any,
+    ) {
+        return this.adminTenantsService.recordPayment(tenantId, dto, req.user.userId);
+    }
+
+    @Post(':tenantId/refunds')
+    recordRefund(
+        @Param('tenantId') tenantId: string,
+        @Body() dto: RecordTenantRefundDto,
+        @Request() req: any,
+    ) {
+        return this.adminTenantsService.recordRefund(tenantId, dto, req.user.userId);
     }
 }

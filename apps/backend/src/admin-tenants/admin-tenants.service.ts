@@ -17,6 +17,8 @@ import {
     UpdateAdminTenantSubscriptionDto,
     UpdateAdminTenantLocalizationDto,
     CreateAdminTenantDto,
+    RecordTenantPaymentDto,
+    RecordTenantRefundDto,
 } from './admin-tenants.dto';
 
 const ACTIVE_TENANT_FILTER = { deleted_at: null } as const;
@@ -597,6 +599,124 @@ export class AdminTenantsService {
         });
 
         return { success: true, userId, is_platform_admin: false };
+    }
+
+    async getTenantLedger(tenantId: string) {
+        const tenant = await this.db.tenant.findFirst({
+            where: { id: tenantId, ...ACTIVE_TENANT_FILTER },
+            select: { id: true },
+        });
+        if (!tenant) throw new NotFoundException('Tenant not found');
+
+        const events = await this.db.billingEvent.findMany({
+            where: { tenant_id: tenantId },
+            orderBy: { created_at: 'desc' },
+        });
+
+        return events.map((e) => ({
+            id: e.id,
+            event_type: e.event_type,
+            status: e.status,
+            provider_name: e.provider_name,
+            amount: e.amount !== null ? Number(e.amount) : null,
+            currency: e.currency,
+            reference_id: e.reference_id,
+            payload: e.payload,
+            created_at: e.created_at,
+        }));
+    }
+
+    async recordPayment(tenantId: string, dto: RecordTenantPaymentDto, adminUserId: string) {
+        const tenant = await this.db.tenant.findFirst({
+            where: { id: tenantId, ...ACTIVE_TENANT_FILTER },
+            select: { id: true },
+        });
+        if (!tenant) throw new NotFoundException('Tenant not found');
+
+        const externalEventId = `manual_payment_${crypto.randomBytes(16).toString('hex')}`;
+
+        const event = await this.db.billingEvent.create({
+            data: {
+                tenant_id: tenantId,
+                provider_name: 'manual',
+                external_event_id: externalEventId,
+                event_type: 'manual_payment',
+                status: 'succeeded',
+                amount: dto.amount,
+                currency: 'BDT',
+                payload: {
+                    recorded_by: adminUserId,
+                    notes: dto.notes ?? null,
+                    method: dto.method ?? null,
+                },
+            },
+        });
+
+        // Activate a PAST_DUE subscription upon payment
+        const subscription = await this.db.tenantSubscription.findUnique({
+            where: { tenant_id: tenantId },
+        });
+        if (subscription?.status === 'PAST_DUE') {
+            await this.db.tenantSubscription.update({
+                where: { tenant_id: tenantId },
+                data: { status: 'ACTIVE' },
+            });
+        }
+
+        await this.auditService.log('tenant.payment.record', 'Tenant', { userId: adminUserId }, tenantId, {
+            amount: dto.amount,
+            method: dto.method ?? null,
+            event_id: event.id,
+        });
+
+        return {
+            id: event.id,
+            event_type: event.event_type,
+            status: event.status,
+            amount: Number(event.amount),
+            currency: event.currency,
+            created_at: event.created_at,
+        };
+    }
+
+    async recordRefund(tenantId: string, dto: RecordTenantRefundDto, adminUserId: string) {
+        const tenant = await this.db.tenant.findFirst({
+            where: { id: tenantId, ...ACTIVE_TENANT_FILTER },
+            select: { id: true },
+        });
+        if (!tenant) throw new NotFoundException('Tenant not found');
+
+        const externalEventId = `manual_refund_${crypto.randomBytes(16).toString('hex')}`;
+
+        const event = await this.db.billingEvent.create({
+            data: {
+                tenant_id: tenantId,
+                provider_name: 'manual',
+                external_event_id: externalEventId,
+                event_type: 'manual_refund',
+                status: 'succeeded',
+                amount: dto.amount,
+                currency: 'BDT',
+                payload: {
+                    recorded_by: adminUserId,
+                    notes: dto.notes ?? null,
+                },
+            },
+        });
+
+        await this.auditService.log('tenant.refund.record', 'Tenant', { userId: adminUserId }, tenantId, {
+            amount: dto.amount,
+            event_id: event.id,
+        });
+
+        return {
+            id: event.id,
+            event_type: event.event_type,
+            status: event.status,
+            amount: Number(event.amount),
+            currency: event.currency,
+            created_at: event.created_at,
+        };
     }
 
     private mapTenant(tenant: any) {

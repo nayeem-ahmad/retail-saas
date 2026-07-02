@@ -2,7 +2,7 @@
 
 import { useI18n, formatMessage } from '@/lib/i18n';
 import { useEffect, useMemo, useState } from 'react';
-import { Building2, CheckCircle, Loader2, LogIn, Plus, Search, ShieldCheck, Trash2, Users, UserX } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, Building2, CheckCircle, Loader2, LogIn, Plus, Search, ShieldCheck, Trash2, Users, UserX } from 'lucide-react';
 import PageHeader from '@/components/ui/compact/PageHeader';
 import { api } from '@/lib/api';
 import { formatDate } from '@/lib/format';
@@ -85,6 +85,32 @@ export default function AdminTenantsPage() {
     const [isCreating, setIsCreating] = useState(false);
     const [createError, setCreateError] = useState('');
 
+    type LedgerEvent = {
+        id: string;
+        event_type: string;
+        status: string;
+        provider_name: string;
+        amount: number | null;
+        currency: string | null;
+        reference_id: string | null;
+        payload: any;
+        created_at: string;
+    };
+
+    const [ledger, setLedger] = useState<LedgerEvent[]>([]);
+    const [isLoadingLedger, setIsLoadingLedger] = useState(false);
+    const [ledgerError, setLedgerError] = useState('');
+
+    const [showPaymentModal, setShowPaymentModal] = useState(false);
+    const [paymentDraft, setPaymentDraft] = useState({ amount: '', method: '', notes: '' });
+    const [isRecordingPayment, setIsRecordingPayment] = useState(false);
+    const [paymentError, setPaymentError] = useState('');
+
+    const [showRefundModal, setShowRefundModal] = useState(false);
+    const [refundDraft, setRefundDraft] = useState({ amount: '', notes: '' });
+    const [isRecordingRefund, setIsRecordingRefund] = useState(false);
+    const [refundError, setRefundError] = useState('');
+
     const loadTenants = async () => {
         setIsLoading(true);
         try {
@@ -98,10 +124,14 @@ export default function AdminTenantsPage() {
             const nextSelectedId = selectedTenantId || rows[0]?.id || '';
             setSelectedTenantId(nextSelectedId);
             if (nextSelectedId) {
-                const detail = await api.getAdminTenant(nextSelectedId);
+                const [detail] = await Promise.all([
+                    api.getAdminTenant(nextSelectedId),
+                    loadLedger(nextSelectedId),
+                ]);
                 setSelectedTenant(detail);
             } else {
                 setSelectedTenant(null);
+                setLedger([]);
             }
         } catch (err: any) {
             setError(err.message || m.loadFailed);
@@ -114,11 +144,27 @@ export default function AdminTenantsPage() {
         void loadTenants();
     }, [search, planCode, status]);
 
+    const loadLedger = async (tenantId: string) => {
+        setIsLoadingLedger(true);
+        setLedgerError('');
+        try {
+            const events = await api.getTenantLedger(tenantId);
+            setLedger(events);
+        } catch (err: any) {
+            setLedgerError(err.message || m.ledger.loadFailed);
+        } finally {
+            setIsLoadingLedger(false);
+        }
+    };
+
     const selectTenant = async (tenantId: string) => {
         setSelectedTenantId(tenantId);
         setError('');
         try {
-            const detail = await api.getAdminTenant(tenantId);
+            const [detail] = await Promise.all([
+                api.getAdminTenant(tenantId),
+                loadLedger(tenantId),
+            ]);
             setSelectedTenant(detail);
         } catch (err: any) {
             setError(err.message || m.loadDetailFailed);
@@ -323,6 +369,60 @@ export default function AdminTenantsPage() {
             setError(err.message || m.deleteFailed);
         } finally {
             setIsDeleting(false);
+        }
+    };
+
+    const ml = m.ledger;
+
+    const handleRecordPayment = async () => {
+        if (!selectedTenant) return;
+        const amount = parseFloat(paymentDraft.amount);
+        if (!amount || amount <= 0) {
+            setPaymentError(ml.paymentModal.amountRequired);
+            return;
+        }
+        setIsRecordingPayment(true);
+        setPaymentError('');
+        try {
+            await api.recordTenantPayment(selectedTenant.id, {
+                amount,
+                method: paymentDraft.method || undefined,
+                notes: paymentDraft.notes || undefined,
+            });
+            setShowPaymentModal(false);
+            setPaymentDraft({ amount: '', method: '', notes: '' });
+            showToast(formatMessage(ml.paymentModal.success, { amount: amount.toFixed(2) }));
+            await loadLedger(selectedTenant.id);
+            await selectTenant(selectedTenant.id);
+        } catch (err: any) {
+            setPaymentError(err.message || ml.paymentModal.failed);
+        } finally {
+            setIsRecordingPayment(false);
+        }
+    };
+
+    const handleRecordRefund = async () => {
+        if (!selectedTenant) return;
+        const amount = parseFloat(refundDraft.amount);
+        if (!amount || amount <= 0) {
+            setRefundError(ml.refundModal.amountRequired);
+            return;
+        }
+        setIsRecordingRefund(true);
+        setRefundError('');
+        try {
+            await api.recordTenantRefund(selectedTenant.id, {
+                amount,
+                notes: refundDraft.notes || undefined,
+            });
+            setShowRefundModal(false);
+            setRefundDraft({ amount: '', notes: '' });
+            showToast(formatMessage(ml.refundModal.success, { amount: amount.toFixed(2) }));
+            await loadLedger(selectedTenant.id);
+        } catch (err: any) {
+            setRefundError(err.message || ml.refundModal.failed);
+        } finally {
+            setIsRecordingRefund(false);
         }
     };
 
@@ -624,6 +724,81 @@ export default function AdminTenantsPage() {
                                         </div>
                                     </div>
                                 </div>
+
+                                {/* Payment Ledger */}
+                                <div className="rounded-3xl border border-emerald-100 bg-emerald-50/70 p-5 space-y-4">
+                                    <div className="flex items-start justify-between gap-4 flex-wrap">
+                                        <div>
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-emerald-500">{ml.badge}</p>
+                                            <h3 className="mt-2 text-lg font-black tracking-tight text-emerald-900">{ml.title}</h3>
+                                            <p className="mt-1 text-xs text-emerald-700/80">{ml.description}</p>
+                                        </div>
+                                        <div className="flex gap-2 flex-wrap">
+                                            <button
+                                                type="button"
+                                                onClick={() => { setPaymentDraft({ amount: '', method: '', notes: '' }); setPaymentError(''); setShowPaymentModal(true); }}
+                                                className="inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-4 py-2.5 text-xs font-black text-white shadow-lg shadow-emerald-200 transition hover:bg-emerald-700"
+                                            >
+                                                <ArrowDownLeft className="w-3.5 h-3.5" />
+                                                {ml.recordPayment}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => { setRefundDraft({ amount: '', notes: '' }); setRefundError(''); setShowRefundModal(true); }}
+                                                className="inline-flex items-center gap-2 rounded-2xl bg-white border border-emerald-200 px-4 py-2.5 text-xs font-black text-emerald-700 transition hover:bg-emerald-50"
+                                            >
+                                                <ArrowUpRight className="w-3.5 h-3.5" />
+                                                {ml.recordRefund}
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {ledgerError && (
+                                        <p className="text-xs font-semibold text-red-600">{ledgerError}</p>
+                                    )}
+
+                                    {isLoadingLedger ? (
+                                        <div className="flex items-center gap-2 py-4 text-sm text-emerald-700">
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                        </div>
+                                    ) : ledger.length === 0 ? (
+                                        <p className="text-xs text-emerald-700/70 py-4 text-center">{ml.noEvents}</p>
+                                    ) : (
+                                        <div className="rounded-2xl overflow-hidden border border-emerald-100">
+                                            <table className="w-full text-xs">
+                                                <thead>
+                                                    <tr className="bg-white/70">
+                                                        <th className="px-4 py-2.5 text-left font-black text-emerald-700 uppercase tracking-widest text-[10px]">{ml.columns.date}</th>
+                                                        <th className="px-4 py-2.5 text-left font-black text-emerald-700 uppercase tracking-widest text-[10px]">{ml.columns.type}</th>
+                                                        <th className="px-4 py-2.5 text-right font-black text-emerald-700 uppercase tracking-widest text-[10px]">{ml.columns.amount}</th>
+                                                        <th className="px-4 py-2.5 text-left font-black text-emerald-700 uppercase tracking-widest text-[10px] hidden md:table-cell">{ml.columns.notes}</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-emerald-50">
+                                                    {ledger.map((event) => {
+                                                        const isPayment = event.event_type === 'manual_payment';
+                                                        const notes = (event.payload as any)?.notes;
+                                                        return (
+                                                            <tr key={event.id} className="bg-white/40 hover:bg-white/80 transition">
+                                                                <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{formatDate(event.created_at)}</td>
+                                                                <td className="px-4 py-3">
+                                                                    <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-widest ${isPayment ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                                                                        {isPayment ? <ArrowDownLeft className="w-2.5 h-2.5" /> : <ArrowUpRight className="w-2.5 h-2.5" />}
+                                                                        {(ml.eventType as any)[event.event_type] ?? event.event_type}
+                                                                    </span>
+                                                                </td>
+                                                                <td className={`px-4 py-3 text-right font-black ${isPayment ? 'text-emerald-700' : 'text-amber-700'}`}>
+                                                                    {event.amount !== null ? `৳${Number(event.amount).toFixed(2)}` : '—'}
+                                                                </td>
+                                                                <td className="px-4 py-3 text-gray-500 hidden md:table-cell max-w-xs truncate">{notes || '—'}</td>
+                                                            </tr>
+                                                        );
+                                                    })}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    )}
+                                </div>
                             </>
                         ) : (
                             <div className="rounded-2xl border border-dashed border-gray-200 p-10 text-center text-sm text-gray-500">
@@ -793,6 +968,143 @@ export default function AdminTenantsPage() {
                                 {isCreating
                                     ? <><Loader2 className="w-4 h-4 animate-spin" /> {mc.creating}</>
                                     : mc.create}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Record Payment Modal */}
+            {showPaymentModal && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+                    onClick={() => { if (!isRecordingPayment) setShowPaymentModal(false); }}
+                >
+                    <div
+                        className="w-full max-w-md rounded-3xl bg-white shadow-2xl flex flex-col"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="border-b border-gray-100 px-6 py-5">
+                            <h2 className="text-lg font-black tracking-tight">{ml.paymentModal.title}</h2>
+                        </div>
+                        <div className="p-6 space-y-4">
+                            {paymentError && (
+                                <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">{paymentError}</p>
+                            )}
+                            <div className="space-y-1">
+                                <label className="text-xs font-medium text-gray-500">{ml.paymentModal.amountLabel}</label>
+                                <input
+                                    type="number"
+                                    min="0.01"
+                                    step="0.01"
+                                    value={paymentDraft.amount}
+                                    onChange={(e) => setPaymentDraft((d) => ({ ...d, amount: e.target.value }))}
+                                    placeholder={ml.paymentModal.amountPlaceholder}
+                                    className="w-full rounded-2xl border border-gray-100 bg-gray-50 px-4 py-3 text-sm outline-none"
+                                />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-xs font-medium text-gray-500">{ml.paymentModal.methodLabel}</label>
+                                <input
+                                    value={paymentDraft.method}
+                                    onChange={(e) => setPaymentDraft((d) => ({ ...d, method: e.target.value }))}
+                                    placeholder={ml.paymentModal.methodPlaceholder}
+                                    className="w-full rounded-2xl border border-gray-100 bg-gray-50 px-4 py-3 text-sm outline-none"
+                                />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-xs font-medium text-gray-500">{ml.paymentModal.notesLabel}</label>
+                                <textarea
+                                    value={paymentDraft.notes}
+                                    onChange={(e) => setPaymentDraft((d) => ({ ...d, notes: e.target.value }))}
+                                    placeholder={ml.paymentModal.notesPlaceholder}
+                                    rows={3}
+                                    className="w-full rounded-2xl border border-gray-100 bg-gray-50 px-4 py-3 text-sm outline-none resize-none"
+                                />
+                            </div>
+                        </div>
+                        <div className="flex justify-end gap-3 border-t border-gray-100 px-6 py-4">
+                            <button
+                                type="button"
+                                onClick={() => setShowPaymentModal(false)}
+                                disabled={isRecordingPayment}
+                                className="rounded-2xl bg-gray-100 px-5 py-2.5 text-sm font-black text-gray-700 hover:bg-gray-200 disabled:opacity-50"
+                            >
+                                {ml.paymentModal.cancel}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => void handleRecordPayment()}
+                                disabled={isRecordingPayment}
+                                className="inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-5 py-2.5 text-sm font-black text-white shadow-lg shadow-emerald-200 hover:bg-emerald-700 disabled:opacity-60"
+                            >
+                                {isRecordingPayment
+                                    ? <><Loader2 className="w-4 h-4 animate-spin" /> {ml.paymentModal.confirming}</>
+                                    : ml.paymentModal.confirm}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Record Refund Modal */}
+            {showRefundModal && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+                    onClick={() => { if (!isRecordingRefund) setShowRefundModal(false); }}
+                >
+                    <div
+                        className="w-full max-w-md rounded-3xl bg-white shadow-2xl flex flex-col"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="border-b border-gray-100 px-6 py-5">
+                            <h2 className="text-lg font-black tracking-tight">{ml.refundModal.title}</h2>
+                        </div>
+                        <div className="p-6 space-y-4">
+                            {refundError && (
+                                <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">{refundError}</p>
+                            )}
+                            <div className="space-y-1">
+                                <label className="text-xs font-medium text-gray-500">{ml.refundModal.amountLabel}</label>
+                                <input
+                                    type="number"
+                                    min="0.01"
+                                    step="0.01"
+                                    value={refundDraft.amount}
+                                    onChange={(e) => setRefundDraft((d) => ({ ...d, amount: e.target.value }))}
+                                    placeholder={ml.refundModal.amountPlaceholder}
+                                    className="w-full rounded-2xl border border-gray-100 bg-gray-50 px-4 py-3 text-sm outline-none"
+                                />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-xs font-medium text-gray-500">{ml.refundModal.notesLabel}</label>
+                                <textarea
+                                    value={refundDraft.notes}
+                                    onChange={(e) => setRefundDraft((d) => ({ ...d, notes: e.target.value }))}
+                                    placeholder={ml.refundModal.notesPlaceholder}
+                                    rows={3}
+                                    className="w-full rounded-2xl border border-gray-100 bg-gray-50 px-4 py-3 text-sm outline-none resize-none"
+                                />
+                            </div>
+                        </div>
+                        <div className="flex justify-end gap-3 border-t border-gray-100 px-6 py-4">
+                            <button
+                                type="button"
+                                onClick={() => setShowRefundModal(false)}
+                                disabled={isRecordingRefund}
+                                className="rounded-2xl bg-gray-100 px-5 py-2.5 text-sm font-black text-gray-700 hover:bg-gray-200 disabled:opacity-50"
+                            >
+                                {ml.refundModal.cancel}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => void handleRecordRefund()}
+                                disabled={isRecordingRefund}
+                                className="inline-flex items-center gap-2 rounded-2xl bg-amber-600 px-5 py-2.5 text-sm font-black text-white shadow-lg shadow-amber-200 hover:bg-amber-700 disabled:opacity-60"
+                            >
+                                {isRecordingRefund
+                                    ? <><Loader2 className="w-4 h-4 animate-spin" /> {ml.refundModal.confirming}</>
+                                    : ml.refundModal.confirm}
                             </button>
                         </div>
                     </div>
