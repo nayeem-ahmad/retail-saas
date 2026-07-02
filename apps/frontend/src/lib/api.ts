@@ -1123,6 +1123,19 @@ export const api = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
     }),
+    getTenantLedger: (tenantId: string) => fetchWithAuth(`/admin/tenants/${tenantId}/ledger`),
+    recordTenantPayment: (tenantId: string, data: { amount: number; notes?: string; method?: string }) =>
+        fetchWithAuth(`/admin/tenants/${tenantId}/payments`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+        }),
+    recordTenantRefund: (tenantId: string, data: { amount: number; notes?: string }) =>
+        fetchWithAuth(`/admin/tenants/${tenantId}/refunds`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+        }),
     lookupAdminUser: (email: string) =>
         fetchWithAuth(`/admin/users/lookup?email=${encodeURIComponent(email)}`),
     getAdminMetrics: () => fetchWithAuth('/admin/metrics'),

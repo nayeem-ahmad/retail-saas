@@ -586,3 +586,5 @@ Track all work here. Check off items as they're completed. Add new items as they
 - [x] Sidebar nav relabel — tenant Settings module renamed to Admin (`Building2`); settings hub quick links moved to Admin submenu; accounting subgroups renamed to Reports and Settings; `/settings` overview is account tabs only — done 2026-07-02
 
 
+
+- [x] Platform admin tenant payment/refund recording + ledger view — `POST /admin/tenants/:id/payments`, `POST /admin/tenants/:id/refunds`, `GET /admin/tenants/:id/ledger`; ledger section on admin tenants page with Record Payment/Refund modals and event table; auto-activates PAST_DUE subscription on payment — done 2026-07-02
