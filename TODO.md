@@ -350,6 +350,9 @@ Track all work here. Check off items as they're completed. Add new items as they
 
 ## COMPLETED
 
+- [x] Master data import endpoint Task 7: Customers — `POST /customers/import` with phone/email dedup, `customer_code` auto-generation, `customer_group_name` → `customer_group_id` lookup (null if not found, no error); `CustomersService.importRows()` + controller endpoint; 6 unit tests (create, skip-duplicate, upsert-duplicate, missing-name error, DB error resilience, group-not-found sets null) all passing — done 2026-07-02
+- [x] Shared bulk import utility — `runImport<T>`, `ImportResult`, `ImportConfig<T>`, `ImportRowsDto` in `apps/backend/src/common/import.util.ts` + `import.dto.ts`; 7 Jest tests all passing — done 2026-07-02
+- [x] Master data import endpoint Task 6: Price Lists — `POST /price-lists/import` with skip/upsert modes, imports `name` and `description` fields; `PriceListsService.importRows()` + controller endpoint; 5 unit tests (create, skip-duplicate, upsert-duplicate, missing-name error, DB error resilience) all passing — done 2026-07-02
 - [x] Platform admin user access control — self-demotion protection (cannot revoke own admin status), last-admin lockout (must keep at least 1 DB-flagged admin), `isAdmin` filter on `GET /admin/users`, admin-only filter toggle + "You" badge + pagination controls on `/admin/users` frontend page — done 2026-07-02
 - [x] Referee/referral commission system — Platform admin can add referees with referral codes; sign-up accepts referral code and applies signup discount; records commission for referee (PENDING → EARNED when client pays → PAID when admin records payment); billing applies discount at checkout; full ledger per referee; platform-admin API at `/admin/referrals/referees` and `/admin/referrals/commissions`; public validation endpoint `GET /auth/referral-code/:code` — done 2026-07-02
 - [x] Resizable left sidebar — drag handle on the right edge (desktop, expanded); width persisted in `localStorage` (`sidebar-width`, 176–400px); i18n en/bn/ms — done 2026-07-02
@@ -575,6 +578,7 @@ Track all work here. Check off items as they're completed. Add new items as they
 - [x] Fix VPS backend crash-loop on container start — `tsx` db:seed resolved `@erp71/shared-types` to raw `index.ts` (breaking `export * from './navigation'`); Docker runner now ships `dist/` only + explicit package `exports`; deployed to VPS at `79d317d` — done 2026-07-02
 - [x] Fix platform navigation Save Settings (HTTP 400) — `SaveNavLayoutDto` nested nodes lacked class-validator decorators; global `forbidNonWhitelisted` rejected all layout fields; added DTO validators + spec; deployed `283ab49` — done 2026-07-02
 - [x] Fix shared-types production build — added `tsc` build to `@erp71/shared-types` so Node can load compiled `navigation` re-exports; required in backend/frontend Dockerfiles — done 2026-07-02
+- [x] Fix suppliers importRows dead contact_person field — removed non-schema `contact_person` from castRow that was silently swallowing caller data; all 6 supplier tests pass — done 2026-07-02
 - [x] Deploy latest main to VPS (`c4307e9`) — dynamic navigation + shared-types build fix; `/opt/erp71` `scripts/deploy.sh main` rebuilt erp71 stack; smoke checks green at `api.erp71.com` / `app.erp71.com` — done 2026-07-02
 - [x] Custom tenant roles — OWNER can CRUD role templates from `StorePermission` enum; auto-sync member branch permissions on role edit/assignment; Roles tab on `/team`; permission-based nav gates; spec `docs/superpowers/specs/2026-07-02-custom-tenant-roles-design.md` — done 2026-07-02
 - [x] Deploy custom tenant roles (`6e6a47f`) — pushed dev/main; VPS `/opt/erp71` `scripts/deploy.sh main` via SSH; manual migration SQL applied; seed helper moved to `@erp71/database`; smoke checks green at `api.erp71.com` / `app.erp71.com` — done 2026-07-02
@@ -585,6 +589,7 @@ Track all work here. Check off items as they're completed. Add new items as they
 - [x] Phase 5 granular plan entitlements — advanced accounting reports, AI, and voice gated per plan; plan editor grouped by module — done 2026-07-02
 - [x] Fix accounting-only dashboard layout — `/dashboard` hides retail quick links (sales/customer/supplier), KPI tiles, recent activity, and inventory panels when `accountingOnly` plan entitlement is set; shows accounting-focused quick links instead — done 2026-07-02
 - [x] Sidebar nav relabel — tenant Settings module renamed to Admin (`Building2`); settings hub quick links moved to Admin submenu; accounting subgroups renamed to Reports and Settings; `/settings` overview is account tabs only — done 2026-07-02
+- [x] Task 10: Frontend ImportDialog component — shared React component for CSV/XLSX bulk import (file upload → field mapping → preview → result); four-step wizard with duplicate-handling modes (skip/upsert); automatic header matching; `@erp71/shared-types` exports `ImportField` and `ImportResult` interfaces; component at `apps/frontend/src/components/import-dialog.tsx`; papaparse installed; TypeScript compiles clean; consumed by all 11 list pages in Task 11 — done 2026-07-02
 
 
 

@@ -1,11 +1,16 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Plus, Save, Settings2, Warehouse } from 'lucide-react';
+import { Plus, Save, Settings2, Warehouse, Upload } from 'lucide-react';
 import { api } from '@/lib/api';
 import PageHeader from '@/components/ui/compact/PageHeader';
 import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 import { useI18n } from '@/lib/i18n';
+import { ImportDialog, type ImportField } from '@/components/import-dialog';
+
+const WAREHOUSE_IMPORT_FIELDS: ImportField[] = [
+    { key: 'name', label: 'Name', required: true },
+];
 
 export default function InventorySettingsPage() {
     const { t } = useI18n();
@@ -16,6 +21,7 @@ export default function InventorySettingsPage() {
     const [message, setMessage] = useState('');
     const [warehouseForm, setWarehouseForm] = useState<any>({ storeId: '', name: '', code: '', isDefault: false });
     const [reasonForm, setReasonForm] = useState<any>({ type: 'SHRINKAGE', code: '', label: '' });
+    const [importWarehouseOpen, setImportWarehouseOpen] = useState(false);
 
     useEffect(() => {
         void loadAll();
@@ -188,9 +194,18 @@ export default function InventorySettingsPage() {
                 </section>
 
                 <section className="bg-white border border-gray-100 rounded-2xl p-6 space-y-4">
-                    <div className="flex items-center gap-2">
-                        <Warehouse className="w-5 h-5 text-blue-600" />
-                        <h2 className="font-black text-lg">{t.inventorySettings.warehouses}</h2>
+                    <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                            <Warehouse className="w-5 h-5 text-blue-600" />
+                            <h2 className="font-black text-lg">{t.inventorySettings.warehouses}</h2>
+                        </div>
+                        <button
+                            onClick={() => setImportWarehouseOpen(true)}
+                            className="bg-white border border-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center transition-all hover:border-blue-300 hover:text-blue-700"
+                        >
+                            <Upload className="w-4 h-4 mr-1.5" />
+                            Import
+                        </button>
                     </div>
                     <div className="grid md:grid-cols-4 gap-4">
                         <input value={warehouseForm.storeId} onChange={(e) => setWarehouseForm((current: any) => ({ ...current, storeId: e.target.value }))} className="w-full bg-gray-50 border-none rounded-xl py-3 px-4 text-sm font-medium" placeholder={t.inventorySettings.storeId} />
@@ -215,6 +230,15 @@ export default function InventorySettingsPage() {
                         ))}
                     </div>
                 </section>
+
+            <ImportDialog
+                open={importWarehouseOpen}
+                onClose={() => setImportWarehouseOpen(false)}
+                entityLabel="Warehouses"
+                fields={WAREHOUSE_IMPORT_FIELDS}
+                importFn={(rows, mode) => api.importWarehouses(rows, mode)}
+                onSuccess={() => void loadAll()}
+            />
 
                 <section className="bg-white border border-gray-100 rounded-2xl p-6 space-y-4">
                     <h2 className="font-black text-lg">{t.inventorySettings.alertRules}</h2>

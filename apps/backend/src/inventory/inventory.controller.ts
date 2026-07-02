@@ -11,6 +11,7 @@ import {
     UpdateInventorySettingsDto,
     UpdateWarehouseDto,
 } from './inventory.dto';
+import { ImportRowsDto } from '../common/import.dto';
 import { InventoryService } from './inventory.service';
 
 @Controller('inventory')
@@ -27,6 +28,11 @@ export class InventoryController {
     @Post('warehouses')
     createWarehouse(@Tenant() tenant: TenantContext, @Body() dto: CreateWarehouseDto) {
         return this.service.createWarehouse(tenant.tenantId, dto);
+    }
+
+    @Post('warehouses/import')
+    importWarehouses(@Tenant() tenant: TenantContext, @Body() body: ImportRowsDto) {
+        return this.service.importWarehouses(tenant.tenantId, body.rows, body.mode);
     }
 
     @Patch('warehouses/:id')

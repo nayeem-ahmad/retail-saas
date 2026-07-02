@@ -22,6 +22,7 @@ import {
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { TenantInterceptor } from '../database/tenant.interceptor';
 import { Tenant, TenantContext } from '../database/tenant.decorator';
+import { ImportRowsDto } from '../common/import.dto';
 
 @Controller('price-lists')
 @UseGuards(JwtAuthGuard)
@@ -32,6 +33,11 @@ export class PriceListsController {
     @Post()
     create(@Tenant() tenant: TenantContext, @Body() dto: CreatePriceListDto) {
         return this.service.create(tenant.tenantId, dto);
+    }
+
+    @Post('import')
+    importRows(@Tenant() tenant: TenantContext, @Body() body: ImportRowsDto) {
+        return this.service.importRows(tenant.tenantId, body.rows, body.mode);
     }
 
     @Get()

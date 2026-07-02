@@ -2,13 +2,19 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { createColumnHelper, type ColumnDef } from '@tanstack/react-table';
-import { Tag, Plus, Pencil, Trash2, X } from 'lucide-react';
+import { Tag, Plus, Pencil, Trash2, X, Upload } from 'lucide-react';
 import { DataTable } from '@/components/data-table';
 import { api } from '@/lib/api';
 import { formatDate } from '@/lib/format';
 import PageHeader from '@/components/ui/compact/PageHeader';
 import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 import { useI18n } from '@/lib/i18n';
+import { ImportDialog, type ImportField } from '@/components/import-dialog';
+
+const IMPORT_FIELDS: ImportField[] = [
+    { key: 'name', label: 'Name', required: true },
+    { key: 'description', label: 'Description', required: false },
+];
 
 interface Brand {
     id: string;
@@ -33,6 +39,7 @@ export default function BrandsPage() {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
     const [deleteId, setDeleteId] = useState<string | null>(null);
+    const [importOpen, setImportOpen] = useState(false);
 
     useEffect(() => {
         void load();
@@ -197,13 +204,22 @@ export default function BrandsPage() {
                         'inventory',
                     )}
                     actions={(
-                        <button
-                            onClick={openCreate}
-                            className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center shadow-lg shadow-blue-200 transition-all hover:-translate-y-0.5 active:translate-y-0"
-                        >
-                            <Plus className="w-4 h-4 mr-2" />
-                            {t.brands.newBrand}
-                        </button>
+                        <>
+                            <button
+                                onClick={() => setImportOpen(true)}
+                                className="bg-white border border-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center transition-all hover:border-blue-300 hover:text-blue-700"
+                            >
+                                <Upload className="w-4 h-4 mr-1.5" />
+                                Import
+                            </button>
+                            <button
+                                onClick={openCreate}
+                                className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center shadow-lg shadow-blue-200 transition-all hover:-translate-y-0.5 active:translate-y-0"
+                            >
+                                <Plus className="w-4 h-4 mr-2" />
+                                {t.brands.newBrand}
+                            </button>
+                        </>
                     )}
                 />
 
@@ -285,6 +301,15 @@ export default function BrandsPage() {
                     </div>
                 </div>
             )}
+
+            <ImportDialog
+                open={importOpen}
+                onClose={() => setImportOpen(false)}
+                entityLabel="Brands"
+                fields={IMPORT_FIELDS}
+                importFn={(rows, mode) => api.importBrands(rows, mode)}
+                onSuccess={() => void load()}
+            />
 
             {deleteId && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">

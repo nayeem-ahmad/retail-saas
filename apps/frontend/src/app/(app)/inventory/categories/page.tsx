@@ -2,13 +2,25 @@
 
 import { useEffect, useMemo, useState, type SyntheticEvent } from 'react';
 import { createColumnHelper, type ColumnDef } from '@tanstack/react-table';
-import { FolderTree, Plus, Tag, Trash2, Pencil, X } from 'lucide-react';
+import { FolderTree, Plus, Tag, Trash2, Pencil, X, Upload } from 'lucide-react';
 import { DataTable } from '@/components/data-table';
 import { api } from '@/lib/api';
 import PageHeader from '@/components/ui/compact/PageHeader';
 import { modulePageBreadcrumbs } from '@/lib/page-breadcrumbs';
 import { useI18n } from '@/lib/i18n';
 import type { MessageDictionary } from '@/lib/localization/messages/types';
+import { ImportDialog, type ImportField } from '@/components/import-dialog';
+
+const GROUP_IMPORT_FIELDS: ImportField[] = [
+    { key: 'name', label: 'Name', required: true },
+    { key: 'description', label: 'Description', required: false },
+];
+
+const SUBGROUP_IMPORT_FIELDS: ImportField[] = [
+    { key: 'name', label: 'Name', required: true },
+    { key: 'group_name', label: 'Group Name', required: true },
+    { key: 'description', label: 'Description', required: false },
+];
 
 interface ProductGroup {
     id: string;
@@ -162,6 +174,8 @@ export default function InventoryCategoriesPage() {
     const [subgroupFormOpen, setSubgroupFormOpen] = useState(false);
     const [editingGroup, setEditingGroup] = useState<ProductGroup | null>(null);
     const [editingSubgroup, setEditingSubgroup] = useState<ProductSubgroup | null>(null);
+    const [importGroupOpen, setImportGroupOpen] = useState(false);
+    const [importSubgroupOpen, setImportSubgroupOpen] = useState(false);
 
     useEffect(() => {
         void refreshAll();
@@ -238,6 +252,22 @@ export default function InventoryCategoriesPage() {
                     )}
                     actions={(
                         <div className="flex gap-3">
+                            <button
+                                type="button"
+                                onClick={() => setImportGroupOpen(true)}
+                                className="bg-white border border-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center transition-all hover:border-blue-300 hover:text-blue-700"
+                            >
+                                <Upload className="w-4 h-4 mr-1.5" />
+                                Import Groups
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setImportSubgroupOpen(true)}
+                                className="bg-white border border-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center transition-all hover:border-blue-300 hover:text-blue-700"
+                            >
+                                <Upload className="w-4 h-4 mr-1.5" />
+                                Import Subgroups
+                            </button>
                             <button
                                 type="button"
                                 onClick={() => {
@@ -317,6 +347,24 @@ export default function InventoryCategoriesPage() {
                     searchPlaceholder={t.inventoryCategories.searchSubgroups}
                 />
             </div>
+
+            <ImportDialog
+                open={importGroupOpen}
+                onClose={() => setImportGroupOpen(false)}
+                entityLabel="Product Groups"
+                fields={GROUP_IMPORT_FIELDS}
+                importFn={(rows, mode) => api.importProductGroups(rows, mode)}
+                onSuccess={() => void refreshAll()}
+            />
+
+            <ImportDialog
+                open={importSubgroupOpen}
+                onClose={() => setImportSubgroupOpen(false)}
+                entityLabel="Product Subgroups"
+                fields={SUBGROUP_IMPORT_FIELDS}
+                importFn={(rows, mode) => api.importProductSubgroups(rows, mode)}
+                onSuccess={() => void refreshAll()}
+            />
         </div>
     );
 }
